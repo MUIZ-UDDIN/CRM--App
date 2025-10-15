@@ -1,0 +1,523 @@
+import { useState } from 'react';
+import toast from 'react-hot-toast';
+import ActionButtons from '../components/common/ActionButtons';
+import {
+  UserGroupIcon,
+  BuildingOfficeIcon,
+  ShieldCheckIcon,
+  CreditCardIcon,
+  PuzzlePieceIcon,
+  PlusIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline';
+
+type TabType = 'team' | 'company' | 'security' | 'billing' | 'integrations';
+
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  joined_at: string;
+}
+
+interface Integration {
+  id: string;
+  name: string;
+  description: string;
+  status: 'connected' | 'disconnected';
+  icon: string;
+}
+
+export default function Settings() {
+  const [activeTab, setActiveTab] = useState<TabType>('team');
+  const [showAddTeamModal, setShowAddTeamModal] = useState(false);
+  const [showEditTeamModal, setShowEditTeamModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
+    { id: '1', name: 'John Doe', email: 'john@company.com', role: 'Admin', status: 'active', joined_at: '2024-01-01' },
+    { id: '2', name: 'Jane Smith', email: 'jane@company.com', role: 'Sales Manager', status: 'active', joined_at: '2024-01-05' },
+  ]);
+
+  const [integrations, setIntegrations] = useState<Integration[]>([
+    { id: '1', name: 'Gmail', description: 'Sync emails and calendar', status: 'connected', icon: '📧' },
+    { id: '2', name: 'Slack', description: 'Get notifications in Slack', status: 'disconnected', icon: '💬' },
+    { id: '3', name: 'Zapier', description: 'Connect with 5000+ apps', status: 'disconnected', icon: '⚡' },
+  ]);
+
+  const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Sales Rep' });
+  const [companyForm, setCompanyForm] = useState({
+    name: 'My Company',
+    email: 'contact@company.com',
+    phone: '+1 (555) 123-4567',
+    address: '123 Business St',
+    city: 'San Francisco',
+    state: 'CA',
+    zip: '94105',
+  });
+  const [securityForm, setSecurityForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+    twoFactorEnabled: false,
+  });
+
+  const tabs = [
+    { id: 'team' as TabType, name: 'Team', icon: UserGroupIcon },
+    { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
+    { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
+    { id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon },
+    { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
+  ];
+
+  const handleAddTeamMember = () => {
+    const newMember: TeamMember = {
+      id: String(teamMembers.length + 1),
+      name: teamForm.name,
+      email: teamForm.email,
+      role: teamForm.role,
+      status: 'active',
+      joined_at: new Date().toISOString().split('T')[0],
+    };
+    setTeamMembers([...teamMembers, newMember]);
+    setShowAddTeamModal(false);
+    setTeamForm({ name: '', email: '', role: 'Sales Rep' });
+    toast.success('Team member added');
+  };
+
+  const handleEditTeamMember = (member: TeamMember) => {
+    setSelectedMember(member);
+    setTeamForm({ name: member.name, email: member.email, role: member.role });
+    setShowEditTeamModal(true);
+  };
+
+  const handleUpdateTeamMember = () => {
+    if (!selectedMember) return;
+    setTeamMembers(teamMembers.map(m => 
+      m.id === selectedMember.id ? { ...m, ...teamForm } : m
+    ));
+    setShowEditTeamModal(false);
+    toast.success('Team member updated');
+  };
+
+  const handleDeleteTeamMember = (member: TeamMember) => {
+    if (!confirm(`Remove ${member.name}?`)) return;
+    setTeamMembers(teamMembers.filter(m => m.id !== member.id));
+    toast.success('Team member removed');
+  };
+
+  const handleToggleIntegration = (integration: Integration) => {
+    setIntegrations(integrations.map(i =>
+      i.id === integration.id
+        ? { ...i, status: i.status === 'connected' ? 'disconnected' : 'connected' }
+        : i
+    ));
+    toast.success(`${integration.name} ${integration.status === 'connected' ? 'disconnected' : 'connected'}`);
+  };
+
+  return (
+    <div className="min-h-full">
+      <div className="bg-white shadow">
+        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+          <div className="py-6">
+            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
+            <p className="mt-1 text-sm text-gray-500">Manage your account and application settings</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+        <div className="border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
+          <nav className="-mb-px flex space-x-3 sm:space-x-8 min-w-max">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center py-3 sm:py-4 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
+                  activeTab === tab.id
+                    ? 'border-primary-500 text-primary-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <tab.icon className="h-4 w-4 sm:h-5 sm:w-5 mr-1.5 sm:mr-2 flex-shrink-0" />
+                <span className="truncate">{tab.name}</span>
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        {activeTab === 'team' && (
+          <div className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <h2 className="text-lg font-medium text-gray-900">Team Members</h2>
+              <button
+                onClick={() => setShowAddTeamModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto justify-center"
+              >
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Add Member
+              </button>
+            </div>
+            
+            {/* Desktop Table */}
+            <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {teamMembers.map((member) => (
+                    <tr key={member.id}>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{member.name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.role}</td>
+                      <td className="px-6 py-4 text-right">
+                        <ActionButtons
+                          onEdit={() => handleEditTeamMember(member)}
+                          onDelete={() => handleDeleteTeamMember(member)}
+                          showView={false}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'company' && (
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Company Information</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                <input
+                  type="text"
+                  value={companyForm.name}
+                  onChange={(e) => setCompanyForm({...companyForm, name: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                <input
+                  type="email"
+                  value={companyForm.email}
+                  onChange={(e) => setCompanyForm({...companyForm, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                <input
+                  type="tel"
+                  value={companyForm.phone}
+                  onChange={(e) => setCompanyForm({...companyForm, phone: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                <input
+                  type="text"
+                  value={companyForm.address}
+                  onChange={(e) => setCompanyForm({...companyForm, address: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                <input
+                  type="text"
+                  value={companyForm.city}
+                  onChange={(e) => setCompanyForm({...companyForm, city: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                <input
+                  type="text"
+                  value={companyForm.state}
+                  onChange={(e) => setCompanyForm({...companyForm, state: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
+                <input
+                  type="text"
+                  value={companyForm.zip}
+                  onChange={(e) => setCompanyForm({...companyForm, zip: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => toast.success('Company settings saved')}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+              >
+                Save Changes
+              </button>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'security' && (
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Security Settings</h2>
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-4">Change Password</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                    <input
+                      type="password"
+                      value={securityForm.currentPassword}
+                      onChange={(e) => setSecurityForm({...securityForm, currentPassword: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                    <input
+                      type="password"
+                      value={securityForm.newPassword}
+                      onChange={(e) => setSecurityForm({...securityForm, newPassword: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                    <input
+                      type="password"
+                      value={securityForm.confirmPassword}
+                      onChange={(e) => setSecurityForm({...securityForm, confirmPassword: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-sm font-medium text-gray-900 mb-4">Two-Factor Authentication</h3>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-gray-600">Add an extra layer of security</p>
+                  <button
+                    onClick={() => setSecurityForm({...securityForm, twoFactorEnabled: !securityForm.twoFactorEnabled})}
+                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
+                      securityForm.twoFactorEnabled ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
+                      securityForm.twoFactorEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`} />
+                  </button>
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => toast.success('Security settings updated')}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Update Security Settings
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'billing' && (
+          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+            <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Billing & Subscription</h2>
+            <div className="space-y-6">
+              <div className="border border-gray-200 rounded-lg p-6">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">Professional Plan</h3>
+                    <p className="text-sm text-gray-600 mt-1">Billed monthly</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-gray-900">$99</p>
+                    <p className="text-sm text-gray-600">/month</p>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <p className="text-sm text-gray-600">Next billing date: February 15, 2024</p>
+                </div>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-900 mb-4">Payment Method</h3>
+                <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                  <div className="flex items-center">
+                    <CreditCardIcon className="h-8 w-8 text-gray-400 mr-3" />
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">•••• •••• •••• 4242</p>
+                      <p className="text-sm text-gray-600">Expires 12/2025</p>
+                    </div>
+                  </div>
+                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">Update</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'integrations' && (
+          <div className="space-y-4 sm:space-y-6">
+            <h2 className="text-lg font-medium text-gray-900">Integrations</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+              {integrations.map((integration) => (
+                <div key={integration.id} className="bg-white shadow rounded-lg p-6">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center">
+                      <span className="text-4xl mr-3">{integration.icon}</span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{integration.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1">{integration.description}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
+                    <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                      integration.status === 'connected' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {integration.status}
+                    </span>
+                    <button
+                      onClick={() => handleToggleIntegration(integration)}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                        integration.status === 'connected'
+                          ? 'text-red-600 hover:bg-red-50'
+                          : 'text-white bg-primary-600 hover:bg-primary-700'
+                      }`}
+                    >
+                      {integration.status === 'connected' ? 'Disconnect' : 'Connect'}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Add Team Member Modal */}
+      {showAddTeamModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Add Team Member</h3>
+              <button onClick={() => setShowAddTeamModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Name"
+                value={teamForm.name}
+                onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={teamForm.email}
+                onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <select
+                value={teamForm.role}
+                onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="Admin">Admin</option>
+                <option value="Sales Manager">Sales Manager</option>
+                <option value="Sales Rep">Sales Rep</option>
+                <option value="Support">Support</option>
+              </select>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowAddTeamModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddTeamMember}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Add Member
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Team Member Modal */}
+      {showEditTeamModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Edit Team Member</h3>
+              <button onClick={() => setShowEditTeamModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Name"
+                value={teamForm.name}
+                onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={teamForm.email}
+                onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <select
+                value={teamForm.role}
+                onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="Admin">Admin</option>
+                <option value="Sales Manager">Sales Manager</option>
+                <option value="Sales Rep">Sales Rep</option>
+                <option value="Support">Support</option>
+              </select>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowEditTeamModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleUpdateTeamMember}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

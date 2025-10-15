@@ -1,0 +1,233 @@
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import toast from 'react-hot-toast';
+
+export default function Register() {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const { register, isLoading, error, clearError } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
+  }, [error, clearError]);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const { firstName, lastName, email, password, confirmPassword } = formData;
+
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      toast.error('Password must be at least 6 characters long');
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await register({ firstName, lastName, email, password });
+      toast.success('Registration successful!');
+      navigate('/dashboard');
+    } catch (error) {
+      // Error is handled by the context and useEffect above
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-md space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-gray-900">Create your account</h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Or{' '}
+          <Link
+            to="/auth/login"
+            className="font-medium text-primary-600 hover:text-primary-500 transition-colors duration-200"
+          >
+            sign in to your existing account
+          </Link>
+        </p>
+      </div>
+
+      <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="firstName" className="sr-only">
+                First name
+              </label>
+              <input
+                id="firstName"
+                name="firstName"
+                type="text"
+                required
+                value={formData.firstName}
+                onChange={handleChange}
+                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                placeholder="First name"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="lastName" className="sr-only">
+                Last name
+              </label>
+              <input
+                id="lastName"
+                name="lastName"
+                type="text"
+                required
+                value={formData.lastName}
+                onChange={handleChange}
+                className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                placeholder="Last name"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="email" className="sr-only">
+              Email address
+            </label>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autoComplete="email"
+              required
+              value={formData.email}
+              onChange={handleChange}
+              className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="Email address"
+            />
+          </div>
+
+          <div className="relative">
+            <label htmlFor="password" className="sr-only">
+              Password
+            </label>
+            <input
+              id="password"
+              name="password"
+              type={showPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="Password"
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <EyeSlashIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              ) : (
+                <EyeIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              )}
+            </button>
+          </div>
+
+          <div className="relative">
+            <label htmlFor="confirmPassword" className="sr-only">
+              Confirm password
+            </label>
+            <input
+              id="confirmPassword"
+              name="confirmPassword"
+              type={showConfirmPassword ? 'text' : 'password'}
+              autoComplete="new-password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              placeholder="Confirm password"
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <EyeSlashIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              ) : (
+                <EyeIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+              )}
+            </button>
+          </div>
+        </div>
+
+        <div className="flex items-center">
+          <input
+            id="agree-terms"
+            name="agree-terms"
+            type="checkbox"
+            required
+            className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+          />
+          <label htmlFor="agree-terms" className="ml-2 block text-sm text-gray-900">
+            I agree to the{' '}
+            <a href="#" className="text-primary-600 hover:text-primary-500">
+              Terms of Service
+            </a>{' '}
+            and{' '}
+            <a href="#" className="text-primary-600 hover:text-primary-500">
+              Privacy Policy
+            </a>
+          </label>
+        </div>
+
+        <div>
+          <button
+            type="submit"
+            disabled={isSubmitting || isLoading}
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+          >
+            {isSubmitting || isLoading ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Creating account...
+              </div>
+            ) : (
+              'Create account'
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
