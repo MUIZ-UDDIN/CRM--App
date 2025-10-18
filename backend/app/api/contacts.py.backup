@@ -1,0 +1,356 @@
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
+from typing import List, Optional
+from pydantic import BaseModel
+import pandas as pd
+import io
+from datetime import datetime
+import uuid
+
+from app.core.database import get_db
+from app.models.contacts import Contact as ContactModel
+from app.api.auth import get_current_active_user
+
+# Pydantic schemas
+class ContactBase(BaseModel):
+    name: str
+    email: str
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    position: Optional[str] = None
+    status: str = "active"
+
+class ContactCreate(ContactBase):
+    pass
+
+class ContactUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    company: Optional[str] = None
+    position: Optional[str] = None
+    status: Optional[str] = None
+
+class Contact(ContactBase):
+    id: int
+    user_id: uuid.UUID
+    created_at: datetime
+    updated_at: datetime
+    is_deleted: bool = False
+
+    class Config:
+        from_attributes = True
+
+router = APIRouter()
+
+@router.get("/", response_model=List[Contact])
+async def get_contacts(
+    skip: int = 0,
+    limit: int = 100,
+    search: Optional[str] = None,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all contacts with optional search and pagination"""
+    query = db.query(ContactModel).filter(ContactModel.is_deleted == False)
+    
+    if search:
+        query = query.filter(
+            (ContactModel.name.ilike(f"%{search}%")) |
+            (ContactModel.email.ilike(f"%{search}%")) |
+            (ContactModel.company.ilike(f"%{search}%"))
+        )
+    
+    contacts = query.offset(skip).limit(limit).all()
+    return contacts
+
+@router.post("/", response_model=Contact)
+async def create_contact(
+    contact: ContactCreate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new contact"""
+    existing_contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.email == contact.email,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
+    if existing_contact:
+        raise HTTPException(status_code=400, detail="Contact with this email already exists")
+    
+    try:
+        user_id = current_user["id"]
+        if isinstance(user_id, str):
+            user_id = uuid.UUID(user_id)
+        
+        db_contact = ContactModel(
+            **contact.dict(),
+            user_id=user_id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(db_contact)
+        db.commit()
+        db.refresh(db_contact)
+        return db_contact
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create contact: {str(e)}")
+
+@router.get("/{contact_id}", response_model=Contact)
+async def get_contact(
+    contact_id: int,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get a specific contact by ID"""
+    contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.id == contact_id,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return contact
+
+@router.put("/{contact_id}", response_model=Contact)
+async def update_contact(
+    contact_id: int,
+    contact_update: ContactUpdate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update a specific contact"""
+    contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.id == contact_id,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    update_data = contact_update.dict(exclude_unset=True)
+    if "email" in update_data:
+        existing_contact = db.query(ContactModel).filter(
+            and_(
+                ContactModel.email == update_data["email"],
+                ContactModel.id != contact_id,
+                ContactModel.is_deleted == False
+            )
+        ).first()
+        
+        if existing_contact:
+            raise HTTPException(status_code=400, detail="Contact with this email already exists")
+    
+    try:
+        for field, value in update_data.items():
+            setattr(contact, field, value)
+        contact.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(contact)
+        return contact
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update contact: {str(e)}")
+
+@router.delete("/{contact_id}")
+async def delete_contact(
+    contact_id: int,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Soft delete a specific contact"""
+    contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.id == contact_id,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
+    if not contact:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    
+    try:
+        contact.is_deleted = True
+        contact.updated_at = datetime.utcnow()
+        db.commit()
+        return {"message": "Contact deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete contact: {str(e)}")
+
+@router.get("/stats/summary")
+async def get_contacts_stats(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get contacts statistics"""
+    contacts = db.query(ContactModel).filter(ContactModel.is_deleted == False).all()
+    total_contacts = len(contacts)
+    
+    companies = {}
+    for contact in contacts:
+        if contact.company:
+            companies[contact.company] = companies.get(contact.company, 0) + 1
+    
+    return {
+        "total_contacts": total_contacts,
+        "total_companies": len(companies),
+        "companies_breakdown": companies
+    }
+
+@router.post("/upload-csv")
+async def upload_csv_contacts(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload contacts from CSV file"""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV file")
+    
+    try:
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        if '\t' in content_str and content_str.count('\t') > content_str.count(','):
+            delimiter = '\t'
+        else:
+            delimiter = ','
+        
+        df = pd.read_csv(io.StringIO(content_str), delimiter=delimiter)
+        
+        user_id = current_user["id"]
+        if isinstance(user_id, str):
+            user_id = uuid.UUID(user_id)
+        
+        successful_imports = 0
+        failed_imports = 0
+        errors = []
+        
+        for index, row in df.iterrows():
+            try:
+                existing_contact = db.query(ContactModel).filter(
+                    and_(
+                        ContactModel.email == row.get('email'),
+                        ContactModel.is_deleted == False
+                    )
+                ).first()
+                
+                if existing_contact:
+                    errors.append(f"Row {index + 1}: Contact with email {row.get('email')} already exists")
+                    failed_imports += 1
+                    continue
+                
+                contact_data = {
+                    'name': row.get('name', ''),
+                    'email': row.get('email', ''),
+                    'phone': row.get('phone', ''),
+                    'company': row.get('company', ''),
+                    'position': row.get('position', ''),
+                    'status': row.get('status', 'active'),
+                    'user_id': user_id,
+                    'created_at': datetime.utcnow(),
+                    'updated_at': datetime.utcnow()
+                }
+                
+                db_contact = ContactModel(**contact_data)
+                db.add(db_contact)
+                successful_imports += 1
+                
+            except Exception as e:
+                errors.append(f"Row {index + 1}: {str(e)}")
+                failed_imports += 1
+        
+        if successful_imports > 0:
+            db.commit()
+        
+        return {
+            "message": "CSV upload completed",
+            "successful_imports": successful_imports,
+            "failed_imports": failed_imports,
+            "errors": errors
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Failed to process CSV file: {str(e)}")
+
+@router.post("/upload-excel")
+async def upload_excel_contacts(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload contacts from Excel file"""
+    if not (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx or .xls)")
+    
+    try:
+        content = await file.read()
+        df = pd.read_excel(io.BytesIO(content))
+        
+        user_id = current_user["id"]
+        if isinstance(user_id, str):
+            user_id = uuid.UUID(user_id)
+        
+        successful_imports = 0
+        failed_imports = 0
+        errors = []
+        
+        for index, row in df.iterrows():
+            try:
+                existing_contact = db.query(ContactModel).filter(
+                    and_(
+                        ContactModel.email == row.get('email'),
+                        ContactModel.is_deleted == False
+                    )
+                ).first()
+                
+                if existing_contact:
+                    errors.append(f"Row {index + 1}: Contact with email {row.get('email')} already exists")
+                    failed_imports += 1
+                    continue
+                
+                contact_data = {
+                    'name': str(row.get('name', '')),
+                    'email': str(row.get('email', '')),
+                    'phone': str(row.get('phone', '')),
+                    'company': str(row.get('company', '')),
+                    'position': str(row.get('position', '')),
+                    'status': str(row.get('status', 'active')),
+                    'user_id': user_id,
+                    'created_at': datetime.utcnow(),
+                    'updated_at': datetime.utcnow()
+                }
+                
+                db_contact = ContactModel(**contact_data)
+                db.add(db_contact)
+                successful_imports += 1
+                
+            except Exception as e:
+                errors.append(f"Row {index + 1}: {str(e)}")
+                failed_imports += 1
+        
+        if successful_imports > 0:
+            db.commit()
+        
+        return {
+            "message": "Excel upload completed",
+            "successful_imports": successful_imports,
+            "failed_imports": failed_imports,
+            "errors": errors
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Failed to process Excel file: {str(e)}")

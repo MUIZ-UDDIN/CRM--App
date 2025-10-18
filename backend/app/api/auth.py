@@ -5,6 +5,7 @@ Authentication API endpoints
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, EmailStr
+from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
 
@@ -13,9 +14,10 @@ from ..core.security import (
     create_access_token,
     create_refresh_token,
     get_current_active_user,
-    get_password_hash,
-    MOCK_USERS
+    get_password_hash
 )
+from ..core.database import get_db
+from ..models.users import User as UserModel, Role as RoleModel
 
 router = APIRouter()
 security = HTTPBearer()
@@ -44,7 +46,6 @@ class LoginResponse(BaseModel):
 class UserResponse(BaseModel):
     id: str
     email: str
-    username: str
     first_name: str
     last_name: str
     role: str
@@ -53,9 +54,9 @@ class UserResponse(BaseModel):
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """Login endpoint"""
-    user = authenticate_user(request.email, request.password)
+    user = authenticate_user(db, request.email, request.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -64,11 +65,23 @@ async def login(request: LoginRequest):
         )
     
     # Create tokens
-    access_token = create_access_token(data={"sub": user["email"]})
-    refresh_token = create_refresh_token(data={"sub": user["email"]})
+    access_token = create_access_token(data={"sub": user.email})
+    refresh_token = create_refresh_token(data={"sub": user.email})
     
-    # Remove password hash from user data
-    user_data = {k: v for k, v in user.items() if k != "hashed_password"}
+    # Update last login
+    user.last_login = datetime.utcnow()
+    db.commit()
+    
+    # Prepare user data
+    user_data = {
+        "id": str(user.id),
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.role,
+        "team_id": str(user.team_id) if user.team_id else None,
+        "is_active": True
+    }
     
     return {
         "access_token": access_token,
@@ -79,38 +92,47 @@ async def login(request: LoginRequest):
 
 
 @router.post("/register", response_model=LoginResponse)
-async def register(request: RegisterRequest):
+async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register new user endpoint"""
     # Check if user already exists
-    if request.email in MOCK_USERS:
+    existing_user = db.query(UserModel).filter(UserModel.email == request.email).first()
+    if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
         )
     
-    # Create new user (in production, this would be saved to database)
-    user_id = str(len(MOCK_USERS) + 1)
-    new_user = {
-        "id": user_id,
-        "email": request.email,
-        "username": request.email.split("@")[0],
-        "first_name": request.first_name,
-        "last_name": request.last_name,
-        "role": "Sales Rep",
-        "team_id": None,
-        "hashed_password": get_password_hash(request.password),
-        "is_active": True,
-    }
+    # Assign role based on email (first admin@company.com becomes Super Admin)
+    role = "Super Admin" if request.email == "admin@company.com" else "Regular User"
     
-    # Add to mock database
-    MOCK_USERS[request.email] = new_user
+    # Create new user
+    new_user = UserModel(
+        email=request.email,
+        hashed_password=get_password_hash(request.password),
+        first_name=request.first_name,
+        last_name=request.last_name,
+        role=role,
+        email_verified=False
+    )
+    
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     
     # Create tokens
-    access_token = create_access_token(data={"sub": new_user["email"]})
-    refresh_token = create_refresh_token(data={"sub": new_user["email"]})
+    access_token = create_access_token(data={"sub": new_user.email})
+    refresh_token = create_refresh_token(data={"sub": new_user.email})
     
-    # Remove password hash from user data
-    user_data = {k: v for k, v in new_user.items() if k != "hashed_password"}
+    # Prepare user data
+    user_data = {
+        "id": str(new_user.id),
+        "email": new_user.email,
+        "first_name": new_user.first_name,
+        "last_name": new_user.last_name,
+        "role": new_user.role,
+        "team_id": None,
+        "is_active": True
+    }
     
     return {
         "access_token": access_token,

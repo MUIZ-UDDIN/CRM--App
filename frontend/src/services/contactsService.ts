@@ -15,7 +15,7 @@ const apiClient = axios.create({
 
 // Add auth token
 apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('access_token');
+  const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -90,4 +90,29 @@ export default {
   updateContact,
   deleteContact,
   bulkImportContacts,
+};
+
+// Add upload functions
+export const uploadCSV = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await apiClient.post('/contacts/upload-csv', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const uploadExcel = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const response = await apiClient.post('/contacts/upload-xlsx', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
 };

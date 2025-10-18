@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import * as contactsService from '../services/contactsService';
 import ActionButtons from '../components/common/ActionButtons';
+import ContactUpload from '../components/contacts/ContactUpload';
 import { 
   UserGroupIcon, 
   PlusIcon, 
@@ -527,25 +528,20 @@ export default function Contacts() {
       )}
 
       {/* Upload Modal */}
-      {showUploadModal && (
+            {showUploadModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
+          <div className="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
               <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">Upload a CSV or Excel file with your contacts.</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv,.xlsx,.xls"
-                onChange={handleFileUpload}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
-            </div>
+            
+            <ContactUpload onUploadComplete={() => {
+              fetchContacts();
+              setShowUploadModal(false);
+            }} />
           </div>
         </div>
       )}

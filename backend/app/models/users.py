@@ -45,16 +45,17 @@ class User(BaseModel):
     # Profile fields
     title = Column(String(100))
     department = Column(String(100))
-    team_id = Column(UUID(as_uuid=True), ForeignKey('teams.id'))
-    manager_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+    team_id = Column(UUID(as_uuid=True), ForeignKey('teams.id', name='fk_user_team'))
+    manager_id = Column(UUID(as_uuid=True), ForeignKey('users.id', name='fk_user_manager'))
     
     # Settings
     email_verified = Column(String, default=False)
     last_login = Column(String)
+    role = Column(String(50), default="Regular User")  # User role
     
     # Relationships
     roles = relationship('Role', secondary=user_roles, back_populates='users')
-    team = relationship('Team', back_populates='members')
+    team = relationship('Team', back_populates='members', foreign_keys=[team_id])
     manager = relationship('User', remote_side='User.id', backref='direct_reports')
     
     # Related entities
@@ -72,7 +73,7 @@ class Team(BaseModel):
     
     name = Column(String(100), nullable=False, index=True)
     description = Column(String(500))
-    team_lead_id = Column(UUID(as_uuid=True), ForeignKey('users.id'))
+    team_lead_id = Column(UUID(as_uuid=True), ForeignKey('users.id', name='fk_team_lead'))
     
     # Relationships
     members = relationship('User', back_populates='team', foreign_keys='User.team_id')

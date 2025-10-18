@@ -1,190 +1,379 @@
-"""
-Contacts API endpoints
-"""
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
+import pandas as pd
+import io
 from datetime import datetime
-from ..core.security import get_current_active_user
+import uuid
 
-router = APIRouter()
+from app.core.database import get_db
+from app.models.contacts import Contact as ContactModel, ContactStatus
+from app.api.auth import get_current_active_user
 
-
-class ContactCreate(BaseModel):
-    name: str
-    email: EmailStr
+# Pydantic schemas
+class ContactBase(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
     phone: Optional[str] = None
     company: Optional[str] = None
-    position: Optional[str] = None
-    notes: Optional[str] = None
+    title: Optional[str] = None
 
+class ContactCreate(ContactBase):
+    pass
 
 class ContactUpdate(BaseModel):
     name: Optional[str] = None
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
     position: Optional[str] = None
-    notes: Optional[str] = None
+    status: Optional[str] = None
 
-
-class Contact(BaseModel):
+class Contact(ContactBase):
     id: int
-    name: str
-    email: EmailStr
-    phone: Optional[str] = None
-    company: Optional[str] = None
-    position: Optional[str] = None
-    notes: Optional[str] = None
+    user_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
+    is_deleted: bool = False
 
+    class Config:
+        from_attributes = True
 
-# Mock data for testing
-MOCK_CONTACTS = [
-    {
-        "id": 1,
-        "name": "John Smith",
-        "email": "john.smith@example.com",
-        "phone": "+1-555-0123",
-        "company": "Tech Corp",
-        "position": "CTO",
-        "notes": "Interested in enterprise solutions",
-        "created_at": "2024-01-01T10:00:00",
-        "updated_at": "2024-01-15T14:30:00"
-    },
-    {
-        "id": 2,
-        "name": "Sarah Johnson",
-        "email": "sarah.johnson@marketing.com",
-        "phone": "+1-555-0456",
-        "company": "Marketing Pro",
-        "position": "Marketing Director",
-        "notes": "Looking for consulting services",
-        "created_at": "2024-01-05T09:15:00",
-        "updated_at": "2024-01-20T11:45:00"
-    },
-    {
-        "id": 3,
-        "name": "Mike Wilson",
-        "email": "mike@startup.io",
-        "phone": "+1-555-0789",
-        "company": "Startup Inc",
-        "position": "Founder",
-        "notes": "Needs website redesign",
-        "created_at": "2024-01-10T08:30:00",
-        "updated_at": "2024-01-22T16:20:00"
-    }
-]
-
+router = APIRouter()
 
 @router.get("/", response_model=List[Contact])
 async def get_contacts(
+    skip: int = 0,
+    limit: int = 100,
     search: Optional[str] = None,
-    company: Optional[str] = None,
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Get all contacts, optionally filtered by search term or company"""
-    contacts = MOCK_CONTACTS.copy()
+    """Get all contacts with optional search and pagination"""
+    query = db.query(ContactModel).filter(ContactModel.is_deleted == False)
     
     if search:
-        search_lower = search.lower()
-        contacts = [
-            contact for contact in contacts
-            if search_lower in contact["name"].lower() 
-            or search_lower in contact["email"].lower()
-            or (contact["company"] and search_lower in contact["company"].lower())
-        ]
+        query = query.filter(
+            (ContactModel.name.ilike(f"%{search}%")) |
+            (ContactModel.email.ilike(f"%{search}%")) |
+            (ContactModel.company.ilike(f"%{search}%"))
+        )
     
-    if company:
-        contacts = [contact for contact in contacts if contact.get("company") == company]
-    
+    contacts = query.offset(skip).limit(limit).all()
     return contacts
-
 
 @router.post("/", response_model=Contact)
 async def create_contact(
     contact: ContactCreate,
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Create a new contact"""
-    # Check if email already exists
-    if any(c["email"] == contact.email for c in MOCK_CONTACTS):
+    existing_contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.email == contact.email,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
+    if existing_contact:
         raise HTTPException(status_code=400, detail="Contact with this email already exists")
     
-    new_contact = {
-        "id": len(MOCK_CONTACTS) + 1,
-        **contact.dict(),
-        "created_at": datetime.now(),
-        "updated_at": datetime.now()
-    }
-    MOCK_CONTACTS.append(new_contact)
-    return new_contact
-
+    try:
+        user_id = current_user["id"]
+        if isinstance(user_id, str):
+            user_id = uuid.UUID(user_id)
+        
+        db_contact = ContactModel(
+            **contact.dict(),
+            user_id=user_id,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(db_contact)
+        db.commit()
+        db.refresh(db_contact)
+        return db_contact
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to create contact: {str(e)}")
 
 @router.get("/{contact_id}", response_model=Contact)
 async def get_contact(
     contact_id: int,
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Get a specific contact by ID"""
-    contact = next((c for c in MOCK_CONTACTS if c["id"] == contact_id), None)
+    contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.id == contact_id,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     return contact
-
 
 @router.put("/{contact_id}", response_model=Contact)
 async def update_contact(
     contact_id: int,
     contact_update: ContactUpdate,
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Update a specific contact"""
-    contact = next((c for c in MOCK_CONTACTS if c["id"] == contact_id), None)
+    contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.id == contact_id,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     
-    # Check if email is being updated and already exists
     update_data = contact_update.dict(exclude_unset=True)
     if "email" in update_data:
-        if any(c["email"] == update_data["email"] and c["id"] != contact_id for c in MOCK_CONTACTS):
+        existing_contact = db.query(ContactModel).filter(
+            and_(
+                ContactModel.email == update_data["email"],
+                ContactModel.id != contact_id,
+                ContactModel.is_deleted == False
+            )
+        ).first()
+        
+        if existing_contact:
             raise HTTPException(status_code=400, detail="Contact with this email already exists")
     
-    for field, value in update_data.items():
-        contact[field] = value
-    contact["updated_at"] = datetime.now()
-    
-    return contact
+    try:
+        for field, value in update_data.items():
+            setattr(contact, field, value)
+        contact.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(contact)
+        return contact
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to update contact: {str(e)}")
 
+@router.patch("/{contact_id}", response_model=Contact)
+async def patch_contact(
+    contact_id: int,
+    contact_update: ContactUpdate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update specific fields of a contact"""
+    return await update_contact(contact_id, contact_update, current_user, db)
 
 @router.delete("/{contact_id}")
 async def delete_contact(
     contact_id: int,
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Delete a specific contact"""
-    contact_index = next((i for i, c in enumerate(MOCK_CONTACTS) if c["id"] == contact_id), None)
-    if contact_index is None:
+    """Soft delete a specific contact"""
+    contact = db.query(ContactModel).filter(
+        and_(
+            ContactModel.id == contact_id,
+            ContactModel.is_deleted == False
+        )
+    ).first()
+    
+    if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
     
-    MOCK_CONTACTS.pop(contact_index)
-    return {"message": "Contact deleted successfully"}
-
+    try:
+        contact.is_deleted = True
+        contact.updated_at = datetime.utcnow()
+        db.commit()
+        return {"message": "Contact deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete contact: {str(e)}")
 
 @router.get("/stats/summary")
-async def get_contacts_stats(current_user: dict = Depends(get_current_active_user)):
+async def get_contacts_stats(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
     """Get contacts statistics"""
-    total_contacts = len(MOCK_CONTACTS)
+    contacts = db.query(ContactModel).filter(ContactModel.is_deleted == False).all()
+    total_contacts = len(contacts)
     
     companies = {}
-    for contact in MOCK_CONTACTS:
-        if contact["company"]:
-            companies[contact["company"]] = companies.get(contact["company"], 0) + 1
+    for contact in contacts:
+        if contact.company:
+            companies[contact.company] = companies.get(contact.company, 0) + 1
     
     return {
         "total_contacts": total_contacts,
         "total_companies": len(companies),
         "companies_breakdown": companies
     }
+
+@router.post("/upload-csv")
+async def upload_csv_contacts(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload contacts from CSV file"""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV file")
+    
+    try:
+        content = await file.read()
+        content_str = content.decode('utf-8')
+        
+        if '\t' in content_str and content_str.count('\t') > content_str.count(','):
+            delimiter = '\t'
+        else:
+            delimiter = ','
+        
+        df = pd.read_csv(io.StringIO(content_str), delimiter=delimiter)
+        
+        user_id = current_user["id"]
+        if isinstance(user_id, str):
+            user_id = uuid.UUID(user_id)
+        
+        successful_imports = 0
+        failed_imports = 0
+        errors = []
+        
+        for index, row in df.iterrows():
+            try:
+                existing_contact = db.query(ContactModel).filter(
+                    and_(
+                        ContactModel.email == row.get('email'),
+                        ContactModel.is_deleted == False
+                    )
+                ).first()
+                
+                if existing_contact:
+                    errors.append(f"Row {index + 1}: Contact with email {row.get('email')} already exists")
+                    failed_imports += 1
+                    continue
+                
+                contact_data = {
+                    'first_name': str(row.get('first_name', '')),
+                    'email': row.get('email', ''),
+                    'phone': row.get('phone', ''),
+                    'company': row.get('company', ''),
+                    'last_name': str(row.get('last_name', '')),
+                    'title': str(row.get('title', '')),
+                    'status': ContactStatus.NEW,
+                    'user_id': user_id,
+                    'created_at': datetime.utcnow(),
+                    'updated_at': datetime.utcnow()
+                }
+                
+                db_contact = ContactModel(**contact_data)
+                db.add(db_contact)
+                successful_imports += 1
+                
+            except Exception as e:
+                errors.append(f"Row {index + 1}: {str(e)}")
+                failed_imports += 1
+        
+        if successful_imports > 0:
+            db.commit()
+        
+        return {
+            "message": "CSV upload completed",
+            "successful_imports": successful_imports,
+            "failed_imports": failed_imports,
+            "errors": errors
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Failed to process CSV file: {str(e)}")
+
+@router.post("/upload-excel")
+async def upload_excel_contacts(
+    file: UploadFile = File(...),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload contacts from Excel file"""
+    if not (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
+        raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx or .xls)")
+    
+    try:
+        content = await file.read()
+        df = pd.read_excel(io.BytesIO(content))
+        
+        user_id = current_user["id"]
+        if isinstance(user_id, str):
+            user_id = uuid.UUID(user_id)
+        
+        successful_imports = 0
+        failed_imports = 0
+        errors = []
+        
+        for index, row in df.iterrows():
+            try:
+                existing_contact = db.query(ContactModel).filter(
+                    and_(
+                        ContactModel.email == row.get('email'),
+                        ContactModel.is_deleted == False
+                    )
+                ).first()
+                
+                if existing_contact:
+                    errors.append(f"Row {index + 1}: Contact with email {row.get('email')} already exists")
+                    failed_imports += 1
+                    continue
+                
+                contact_data = {
+                    'first_name': str(row.get('first_name', '')),
+                    'email': str(row.get('email', '')),
+                    'phone': str(row.get('phone', '')),
+                    'company': str(row.get('company', '')),
+                    'last_name': str(row.get('last_name', '')),
+                    'title': str(row.get('title', '')),
+                    'status': ContactStatus.NEW,
+                    'user_id': user_id,
+                    'created_at': datetime.utcnow(),
+                    'updated_at': datetime.utcnow()
+                }
+                
+                db_contact = ContactModel(**contact_data)
+                db.add(db_contact)
+                successful_imports += 1
+                
+            except Exception as e:
+                errors.append(f"Row {index + 1}: {str(e)}")
+                failed_imports += 1
+        
+        if successful_imports > 0:
+            db.commit()
+        
+        return {
+            "message": "Excel upload completed",
+            "successful_imports": successful_imports,
+            "failed_imports": failed_imports,
+            "errors": errors
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Failed to process Excel file: {str(e)}")
+
+@router.patch("/{contact_id}", response_model=Contact)
+async def patch_contact(
+    contact_id: int,
+    contact_update: ContactUpdate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update specific fields of a contact"""
+    return await update_contact(contact_id, contact_update, current_user, db)
+

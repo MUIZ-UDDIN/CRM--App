@@ -18,6 +18,7 @@ import {
   TrashIcon,
   Bars3Icon,
   XMarkIcon,
+  InboxIcon
 } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
@@ -42,6 +43,7 @@ const navigation: NavItem[] = [
   },
   { name: 'Contacts', href: '/contacts', icon: UserGroupIcon },
   { name: 'Activities', href: '/activities', icon: CalendarIcon },
+  { name: 'Inbox', href: '/inbox', icon: InboxIcon },
   { 
     name: 'More', 
     icon: FolderIcon,

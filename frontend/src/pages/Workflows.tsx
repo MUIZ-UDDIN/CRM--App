@@ -34,7 +34,7 @@ export default function Workflows() {
     name: '',
     description: '',
     trigger: 'contact_created',
-    status: 'draft' as const,
+    status: 'draft',
   });
 
   useEffect(() => {

@@ -3,12 +3,15 @@ Security utilities for authentication and authorization
 """
 
 from datetime import datetime, timedelta
-from typing import Optional, Union
+from typing import Optional
 from jose import jwt, JWTError
 from passlib.context import CryptContext
 from fastapi import HTTPException, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 from .config import settings
+from .database import get_db
+from ..models.users import User as UserModel
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -61,35 +64,17 @@ def verify_token(token: str) -> Optional[dict]:
         return None
 
 
-# Mock user for demo purposes - in production, this would query your database
-# Password hash generated for 'admin123'
-MOCK_USERS = {
-    "admin@company.com": {
-        "id": "1",
-        "email": "admin@company.com",
-        "username": "admin",
-        "first_name": "John",
-        "last_name": "Doe",
-        "role": "Admin",
-        "team_id": "1",
-        "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGga31lW",  # admin123
-        "is_active": True,
-    }
-}
-
-
-def authenticate_user(email: str, password: str) -> Optional[dict]:
+def authenticate_user(db: Session, email: str, password: str) -> Optional[UserModel]:
     """Authenticate user with email and password"""
-    user = MOCK_USERS.get(email)
+    user = db.query(UserModel).filter(UserModel.email == email).first()
     if not user:
         return None
-    # Simple password check for demo purposes
-    if password != "admin123":
+    if not verify_password(password, user.hashed_password):
         return None
     return user
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)) -> dict:
     """Get current user from JWT token"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -106,13 +91,21 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         if email is None:
             raise credentials_exception
             
-        # In production, you would fetch the user from database
-        user = MOCK_USERS.get(email)
+        # Fetch the user from database
+        user = db.query(UserModel).filter(UserModel.email == email).first()
         if user is None:
             raise credentials_exception
             
-        # Remove password hash from response
-        user_data = {k: v for k, v in user.items() if k != "hashed_password"}
+        # Prepare user data
+        user_data = {
+            "id": str(user.id),
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user.role,
+            "team_id": str(user.team_id) if user.team_id else None,
+            "is_active": True
+        }
         return user_data
         
     except JWTError:

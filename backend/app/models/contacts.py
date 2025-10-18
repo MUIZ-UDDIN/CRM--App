@@ -80,3 +80,5 @@ class Contact(BaseModel):
     
     def __repr__(self):
         return f"<Contact {self.first_name} {self.last_name} - {self.email}>"
+
+    # Add this to the Contact class relationships section:

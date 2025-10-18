@@ -38,7 +38,7 @@ export default function Quotes() {
     client: '',
     deal: '',
     valid_until: '',
-    status: 'draft' as const,
+    status: 'draft',
   });
 
   useEffect(() => {

@@ -1,11 +1,12 @@
 """
-Deals API endpoints
+Deals API endpoints with mock data
 """
 
 from fastapi import APIRouter, Depends, HTTPException
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
+
 from ..core.security import get_current_active_user
 
 router = APIRouter()
@@ -14,115 +15,140 @@ router = APIRouter()
 class DealCreate(BaseModel):
     title: str
     value: float
-    stage: str
-    contact_id: Optional[int] = None
-    description: Optional[str] = None
-    expected_close_date: Optional[datetime] = None
-
-
-class DealUpdate(BaseModel):
-    title: Optional[str] = None
-    value: Optional[float] = None
-    stage: Optional[str] = None
-    contact_id: Optional[int] = None
+    company: Optional[str] = None
+    contact: Optional[str] = None  
+    stage_id: str
+    pipeline_id: str
     description: Optional[str] = None
     expected_close_date: Optional[datetime] = None
 
 
 class Deal(BaseModel):
-    id: int
+    id: str
     title: str
     value: float
-    stage: str
-    contact_id: Optional[int] = None
+    stage_id: str
+    pipeline_id: str
+    company: Optional[str] = None
+    contact: Optional[str] = None
     description: Optional[str] = None
     expected_close_date: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
 
 
-# Mock data for testing
+# Mock deals data
 MOCK_DEALS = [
     {
-        "id": 1,
-        "title": "Enterprise Software License",
-        "value": 50000.0,
-        "stage": "proposal",
-        "contact_id": 1,
-        "description": "Annual software license for enterprise solution",
+        "id": "1",
+        "title": "Enterprise Software Deal",
+        "value": 15000.0,
+        "stage_id": "qualification",
+        "pipeline_id": "1",
+        "company": "TechCorp Inc",
+        "contact": "John Smith",
+        "description": "Large enterprise software implementation",
         "expected_close_date": "2024-02-15T00:00:00",
-        "created_at": "2024-01-01T10:00:00",
-        "updated_at": "2024-01-15T14:30:00"
+        "created_at": "2024-01-15T10:00:00",
+        "updated_at": "2024-01-15T10:00:00"
     },
     {
-        "id": 2,
+        "id": "2",
         "title": "Marketing Consulting",
-        "value": 25000.0,
-        "stage": "negotiation",
-        "contact_id": 2,
+        "value": 5000.0,
+        "stage_id": "proposal",
+        "pipeline_id": "1",
+        "company": "Marketing Solutions",
+        "contact": "Sarah Johnson",
         "description": "3-month marketing strategy consulting",
         "expected_close_date": "2024-01-30T00:00:00",
-        "created_at": "2024-01-05T09:15:00",
-        "updated_at": "2024-01-20T11:45:00"
+        "created_at": "2024-01-10T14:30:00",
+        "updated_at": "2024-01-20T16:45:00"
     },
     {
-        "id": 3,
+        "id": "3",
         "title": "Website Redesign",
-        "value": 15000.0,
-        "stage": "qualified",
-        "contact_id": 3,
-        "description": "Complete website redesign and development",
-        "expected_close_date": "2024-02-28T00:00:00",
-        "created_at": "2024-01-10T08:30:00",
-        "updated_at": "2024-01-22T16:20:00"
+        "value": 8000.0,
+        "stage_id": "negotiation",
+        "pipeline_id": "1",
+        "company": "Digital Agency",
+        "contact": "Mike Wilson",
+        "description": "Complete website overhaul with modern design",
+        "expected_close_date": "2024-02-20T00:00:00",
+        "created_at": "2024-01-05T09:15:00",
+        "updated_at": "2024-01-25T11:30:00"
     }
 ]
 
 
 @router.get("/", response_model=List[Deal])
-async def get_deals(
+def get_deals(
     stage: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all deals, optionally filtered by stage"""
+    """Get all deals"""
     deals = MOCK_DEALS.copy()
+    
     if stage:
-        deals = [deal for deal in deals if deal["stage"] == stage]
+        deals = [d for d in deals if d["stage_id"] == stage]
+    
     return deals
 
 
-@router.post("/", response_model=Deal)
-async def create_deal(
+@router.post("/")
+def create_deal(
     deal: DealCreate,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Create a new deal"""
+    # Generate new ID
+    new_id = str(max([int(d["id"]) for d in MOCK_DEALS]) + 1)
+    
     new_deal = {
-        "id": len(MOCK_DEALS) + 1,
-        **deal.dict(),
-        "created_at": datetime.now(),
-        "updated_at": datetime.now()
+        "id": new_id,
+        "title": deal.title,
+        "value": deal.value,
+        "stage_id": deal.stage_id,
+        "pipeline_id": deal.pipeline_id,
+        "company": deal.company,
+        "contact": deal.contact,
+        "description": deal.description,
+        "expected_close_date": deal.expected_close_date.isoformat() if deal.expected_close_date else None,
+        "created_at": datetime.now().isoformat(),
+        "updated_at": datetime.now().isoformat()
     }
+    
     MOCK_DEALS.append(new_deal)
-    return new_deal
+    
+    return {
+        "id": new_deal["id"],
+        "title": new_deal["title"],
+        "value": new_deal["value"],
+        "stage_id": new_deal["stage_id"],
+        "pipeline_id": new_deal["pipeline_id"],
+        "company": new_deal["company"],
+        "contact": new_deal["contact"],
+        "created_at": new_deal["created_at"],
+        "message": "Deal created successfully"
+    }
 
 
-@router.get("/{deal_id}", response_model=Deal)
-async def get_deal(
-    deal_id: int,
+@router.get("/{deal_id}")
+def get_deal(
+    deal_id: str,
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get a specific deal by ID"""
+    """Get a specific deal"""
     deal = next((d for d in MOCK_DEALS if d["id"] == deal_id), None)
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
     return deal
 
 
-@router.put("/{deal_id}", response_model=Deal)
-async def update_deal(
-    deal_id: int,
-    deal_update: DealUpdate,
+@router.patch("/{deal_id}")
+def update_deal(
+    deal_id: str,
+    deal_data: dict,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Update a specific deal"""
@@ -130,45 +156,40 @@ async def update_deal(
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
     
-    update_data = deal_update.dict(exclude_unset=True)
-    for field, value in update_data.items():
-        deal[field] = value
-    deal["updated_at"] = datetime.now()
+    # Update fields
+    for field, value in deal_data.items():
+        if field in deal and value is not None:
+            deal[field] = value
+    
+    deal["updated_at"] = datetime.now().isoformat()
     
     return deal
 
 
 @router.delete("/{deal_id}")
-async def delete_deal(
-    deal_id: int,
+def delete_deal(
+    deal_id: str,
     current_user: dict = Depends(get_current_active_user)
 ):
     """Delete a specific deal"""
-    deal_index = next((i for i, d in enumerate(MOCK_DEALS) if d["id"] == deal_id), None)
-    if deal_index is None:
-        raise HTTPException(status_code=404, detail="Deal not found")
+    global MOCK_DEALS
+    MOCK_DEALS = [d for d in MOCK_DEALS if d["id"] != deal_id]
     
-    MOCK_DEALS.pop(deal_index)
     return {"message": "Deal deleted successfully"}
 
 
-@router.get("/stats/pipeline")
-async def get_pipeline_stats(current_user: dict = Depends(get_current_active_user)):
-    """Get pipeline statistics"""
-    total_deals = len(MOCK_DEALS)
-    total_value = sum(deal["value"] for deal in MOCK_DEALS)
+@router.patch("/{deal_id}/move")
+def move_deal_stage(
+    deal_id: str,
+    stage_data: dict,
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Move deal to different stage"""
+    deal = next((d for d in MOCK_DEALS if d["id"] == deal_id), None)
+    if not deal:
+        raise HTTPException(status_code=404, detail="Deal not found")
     
-    stage_stats = {}
-    for deal in MOCK_DEALS:
-        stage = deal["stage"]
-        if stage not in stage_stats:
-            stage_stats[stage] = {"count": 0, "value": 0}
-        stage_stats[stage]["count"] += 1
-        stage_stats[stage]["value"] += deal["value"]
+    deal["stage_id"] = stage_data.get("to_stage_id", deal["stage_id"])
+    deal["updated_at"] = datetime.now().isoformat()
     
-    return {
-        "total_deals": total_deals,
-        "total_value": total_value,
-        "average_deal_value": total_value / total_deals if total_deals > 0 else 0,
-        "stages": stage_stats
-    }
+    return deal
