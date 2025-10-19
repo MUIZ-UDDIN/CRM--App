@@ -14,7 +14,12 @@ from .database import get_db
 from ..models.users import User as UserModel
 
 # Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["bcrypt"],
+    deprecated="auto",
+    bcrypt__ident="2b",  # Use bcrypt 2b variant
+    bcrypt__truncate_error=False  # Don't error on long passwords, truncate instead
+)
 
 # JWT Security
 security = HTTPBearer()
