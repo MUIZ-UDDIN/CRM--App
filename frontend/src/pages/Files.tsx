@@ -76,51 +76,9 @@ export default function Files() {
         }));
         setFiles(formattedFiles);
       } else {
-        // Fallback to mock data
-        setFiles([
-          {
-            id: '1',
-            name: 'Proposals',
-            type: 'folder',
-            category: 'Sales',
-            tags: ['proposals', 'sales'],
-            status: 'active',
-            created_at: '2024-01-15',
-          },
-          {
-            id: '2',
-            name: 'Contracts',
-            type: 'folder',
-            category: 'Legal',
-            tags: ['contracts', 'legal'],
-            status: 'active',
-            created_at: '2024-01-10',
-          },
-          {
-            id: '3',
-            name: 'TechCorp_Proposal_v2.pdf',
-            type: 'file',
-          size: 2340000,
-          category: 'Sales',
-          tags: ['proposal', 'techcorp'],
-          status: 'active',
-          contact: 'John Smith',
-          deal: 'Enterprise Software License',
-          created_at: '2024-01-14',
-        },
-        {
-          id: '4',
-          name: 'Marketing_Contract_Draft.docx',
-          type: 'file',
-          size: 1140000,
-          category: 'Legal',
-          tags: ['contract', 'draft'],
-          status: 'draft',
-          contact: 'Sarah Johnson',
-          deal: 'Marketing Consulting',
-          created_at: '2024-01-12',
-        },
-      ]);
+        toast.error('Failed to load files');
+        setFiles([]);
+      }
     } catch (error) {
       toast.error('Failed to load files');
     } finally {

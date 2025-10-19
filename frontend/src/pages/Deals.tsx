@@ -79,22 +79,13 @@ export default function Deals() {
       });
       setDeals(grouped);
     } catch (error) {
-      console.error('Error:', error);
-      // Use mock data
+      console.error('Error fetching deals:', error);
+      toast.error('Failed to load deals');
       setDeals({
-        qualification: [
-          { id: '1', title: 'Enterprise Software License', value: 50000, company: 'TechCorp', contact: 'David Tech', stage_id: 'qualification', pipeline_id: '1' },
-          { id: '2', title: 'Marketing Consulting', value: 25000, company: 'Marketing Inc', contact: 'Sarah Marketing', stage_id: 'qualification', pipeline_id: '1' }
-        ],
-        proposal: [
-          { id: '3', title: 'Cloud Infrastructure Setup', value: 75000, company: 'CloudTech', contact: 'Mike Cloud', stage_id: 'proposal', pipeline_id: '1' }
-        ],
-        negotiation: [
-          { id: '4', title: 'Digital Transformation', value: 120000, company: 'DigitalCorp', contact: 'Lisa Digital', stage_id: 'negotiation', pipeline_id: '1' }
-        ],
-        'closed-won': [
-          { id: '5', title: 'Website Redesign', value: 35000, company: 'WebDesign Co', contact: 'John Web', stage_id: 'closed-won', pipeline_id: '1' }
-        ]
+        qualification: [],
+        proposal: [],
+        negotiation: [],
+        'closed-won': []
       });
     } finally {
       setLoading(false);

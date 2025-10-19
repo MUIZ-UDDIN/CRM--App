@@ -144,22 +144,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
               payload: { user, token },
             });
           } catch (apiError) {
-            console.warn('API user validation failed, using mock user:', apiError);
-            
-            // Fallback to mock user if token exists (assume it's valid)
-            const mockUser: User = {
-              id: '1',
-              email: 'admin@company.com',
-              firstName: 'John',
-              lastName: 'Doe',
-              role: 'Admin',
-              teamId: '1',
-            };
-            
-            dispatch({
-              type: 'AUTH_SUCCESS',
-              payload: { user: mockUser, token },
-            });
+            console.error('API user validation failed:', apiError);
+            localStorage.removeItem('token');
+            dispatch({ type: 'LOGOUT' });
           }
         } catch (error) {
           localStorage.removeItem('token');
@@ -198,31 +185,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
         return;
       } catch (apiError: any) {
-        console.warn('API login failed, using mock authentication:', apiError.message);
-        
-        // Fallback to mock authentication
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        if (email === 'admin@company.com' && password === 'admin123') {
-          const user: User = {
-            id: '1',
-            email: 'admin@company.com',
-            firstName: 'John',
-            lastName: 'Doe',
-            role: 'Admin',
-            teamId: '1',
-          };
-          
-          const token = 'mock-jwt-token-' + Date.now();
-          
-          localStorage.setItem('token', token);
-          dispatch({
-            type: 'AUTH_SUCCESS',
-            payload: { user, token },
-          });
-        } else {
-          throw new Error('Invalid email or password');
-        }
+        throw apiError;
       }
     } catch (error: any) {
       dispatch({
@@ -264,26 +227,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
         return;
       } catch (apiError: any) {
-        console.warn('API registration failed, using mock registration:', apiError.message);
-        
-        // Fallback to mock registration
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        const user: User = {
-          id: Date.now().toString(),
-          email: userData.email,
-          firstName: userData.firstName,
-          lastName: userData.lastName,
-          role: 'Sales Rep',
-        };
-        
-        const token = 'mock-jwt-token-' + Date.now();
-        
-        localStorage.setItem('token', token);
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: { user, token },
-        });
+        throw apiError;
       }
     } catch (error: any) {
       dispatch({
