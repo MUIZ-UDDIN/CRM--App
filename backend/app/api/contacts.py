@@ -291,20 +291,19 @@ async def upload_csv_contacts(
                 
                 db_contact = ContactModel(**contact_data)
                 db.add(db_contact)
+                db.commit()  # Commit each row individually
                 successful_imports += 1
                 
             except Exception as e:
+                db.rollback()  # Rollback failed row
                 errors.append(f"Row {index + 1}: {str(e)}")
                 failed_imports += 1
         
-        if successful_imports > 0:
-            db.commit()
-        
         return {
             "message": "CSV upload completed",
-            "successful_imports": successful_imports,
-            "failed_imports": failed_imports,
-            "errors": errors
+            "created_count": successful_imports,
+            "failed_count": failed_imports,
+            "errors": errors[:10]  # Limit errors to first 10
         }
         
     except Exception as e:
@@ -374,20 +373,19 @@ async def upload_excel_contacts(
                 
                 db_contact = ContactModel(**contact_data)
                 db.add(db_contact)
+                db.commit()  # Commit each row individually
                 successful_imports += 1
                 
             except Exception as e:
+                db.rollback()  # Rollback failed row
                 errors.append(f"Row {index + 1}: {str(e)}")
                 failed_imports += 1
         
-        if successful_imports > 0:
-            db.commit()
-        
         return {
             "message": "Excel upload completed",
-            "successful_imports": successful_imports,
-            "failed_imports": failed_imports,
-            "errors": errors
+            "created_count": successful_imports,
+            "failed_count": failed_imports,
+            "errors": errors[:10]  # Limit errors to first 10
         }
         
     except Exception as e:
