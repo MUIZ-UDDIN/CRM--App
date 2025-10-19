@@ -16,6 +16,7 @@ from .calls import Call, CallDirection, CallStatus
 from .documents import Document, DocumentSignature, DocumentType, DocumentStatus
 from .workflows import Workflow, WorkflowExecution, WorkflowStatus, WorkflowTrigger
 from .security import AuditLog, SecurityLog, Session, AuditAction, SecurityEventType
+from .twilio_settings import TwilioSettings
 
 # Analytics models (materialized views / aggregation tables)
 from .analytics import (
@@ -99,4 +100,7 @@ __all__ = [
     'ContactMetrics',
     'DocumentMetrics',
     'RevenueMetrics',
+    
+    # Twilio
+    'TwilioSettings',
 ]
