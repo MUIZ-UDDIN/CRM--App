@@ -856,39 +856,100 @@ async def get_custom_analytics(
 
 
 @router.get("/dashboard")
-async def get_dashboard_analytics(current_user: dict = Depends(get_current_active_user)):
-    """Get overall dashboard analytics"""
+async def get_dashboard_analytics(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get overall dashboard analytics with real-time data"""
+    from datetime import datetime, timedelta
+    from sqlalchemy import func, and_
+    from ..models.deals import Deal as DealModel, DealStatus
+    from ..models.contacts import Contact as ContactModel
+    from ..models.activities import Activity as ActivityModel, ActivityStatus
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    today = datetime.utcnow().date()
+    month_start = datetime.utcnow().replace(day=1).date()
+    last_month_start = (datetime.utcnow().replace(day=1) - timedelta(days=1)).replace(day=1).date()
+    
+    # Total Pipeline Value
+    total_pipeline = db.query(func.sum(DealModel.value)).filter(
+        and_(
+            DealModel.owner_id == user_id,
+            DealModel.is_deleted == False,
+            DealModel.status != DealStatus.LOST,
+            DealModel.status != DealStatus.WON
+        )
+    ).scalar() or 0.0
+    
+    # Active Deals Count
+    active_deals = db.query(func.count(DealModel.id)).filter(
+        and_(
+            DealModel.owner_id == user_id,
+            DealModel.is_deleted == False,
+            DealModel.status != DealStatus.LOST,
+            DealModel.status != DealStatus.WON
+        )
+    ).scalar() or 0
+    
+    # Win Rate
+    total_closed = db.query(func.count(DealModel.id)).filter(
+        and_(
+            DealModel.owner_id == user_id,
+            DealModel.is_deleted == False,
+            or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST)
+        )
+    ).scalar() or 0
+    
+    won_deals = db.query(func.count(DealModel.id)).filter(
+        and_(
+            DealModel.owner_id == user_id,
+            DealModel.is_deleted == False,
+            DealModel.status == DealStatus.WON
+        )
+    ).scalar() or 0
+    
+    win_rate = (won_deals / total_closed * 100) if total_closed > 0 else 0
+    
+    # Activities Today
+    activities_today = db.query(func.count(ActivityModel.id)).filter(
+        and_(
+            ActivityModel.owner_id == user_id,
+            ActivityModel.is_deleted == False,
+            func.date(ActivityModel.scheduled_at) == today
+        )
+    ).scalar() or 0
+    
+    # Previous month metrics for growth calculation
+    last_month_pipeline = db.query(func.sum(DealModel.value)).filter(
+        and_(
+            DealModel.owner_id == user_id,
+            DealModel.is_deleted == False,
+            func.date(DealModel.created_at) >= last_month_start,
+            func.date(DealModel.created_at) < month_start
+        )
+    ).scalar() or 0.0
+    
+    last_month_deals = db.query(func.count(DealModel.id)).filter(
+        and_(
+            DealModel.owner_id == user_id,
+            DealModel.is_deleted == False,
+            func.date(DealModel.created_at) >= last_month_start,
+            func.date(DealModel.created_at) < month_start
+        )
+    ).scalar() or 0
+    
+    # Calculate growth percentages
+    pipeline_growth = ((total_pipeline - last_month_pipeline) / last_month_pipeline * 100) if last_month_pipeline > 0 else 0
+    deal_growth = ((active_deals - last_month_deals) / last_month_deals * 100) if last_month_deals > 0 else 0
+    
     return {
         "kpis": {
-            "total_revenue": 995000.0,
-            "total_deals": 35,
-            "active_deals": 23,
-            "total_contacts": 154,
-            "activities_completed": 188,
-            "activities_pending": 27
-        },
-        "trends": {
-            "revenue_growth": 12.5,
-            "deal_growth": 8.3,
-            "contact_growth": 15.2,
-            "activity_completion_rate": 87.4
-        },
-        "recent_activity": [
-            {
-                "type": "deal_won",
-                "title": "Enterprise Software License closed",
-                "value": 50000.0,
-                "timestamp": "2024-01-23T14:30:00"
-            },
-            {
-                "type": "new_contact",
-                "title": "New lead from website",
-                "timestamp": "2024-01-23T13:15:00"
-            },
-            {
-                "type": "activity_completed",
-                "title": "Follow-up call completed",
-                "timestamp": "2024-01-23T12:00:00"
-            }
-        ]
+            "total_pipeline": round(total_pipeline, 2),
+            "pipeline_growth": round(pipeline_growth, 1),
+            "active_deals": active_deals,
+            "deal_growth": round(deal_growth, 1),
+            "win_rate": round(win_rate, 1),
+            "activities_today": activities_today
+        }
     }

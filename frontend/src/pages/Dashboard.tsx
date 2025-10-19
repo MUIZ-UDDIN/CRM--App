@@ -39,6 +39,7 @@ export default function Dashboard() {
   const [activities, setActivities] = useState<any[]>([]);
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [upcomingActivities, setUpcomingActivities] = useState<UpcomingActivity[]>([]);
+  const [dashboardData, setDashboardData] = useState<any>(null);
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -48,41 +49,90 @@ export default function Dashboard() {
     expectedCloseDate: ''
   });
 
-  const stats = [
+  const stats = dashboardData ? [
     {
       name: 'Total Pipeline',
-      value: '$156,420',
-      change: '+12.5%',
-      changeType: 'positive' as const,
+      value: `$${dashboardData.kpis.total_pipeline.toLocaleString()}`,
+      change: `${dashboardData.kpis.pipeline_growth >= 0 ? '+' : ''}${dashboardData.kpis.pipeline_growth}%`,
+      changeType: dashboardData.kpis.pipeline_growth >= 0 ? 'positive' as const : 'negative' as const,
       icon: CurrencyDollarIcon,
     },
     {
       name: 'Active Deals', 
-      value: '23',
-      change: '+3',
-      changeType: 'positive' as const,
+      value: dashboardData.kpis.active_deals.toString(),
+      change: `${dashboardData.kpis.deal_growth >= 0 ? '+' : ''}${dashboardData.kpis.deal_growth}%`,
+      changeType: dashboardData.kpis.deal_growth >= 0 ? 'positive' as const : 'negative' as const,
       icon: ChartBarIcon,
     },
     {
       name: 'Win Rate',
-      value: '87%',
-      change: '+2.1%',
+      value: `${dashboardData.kpis.win_rate}%`,
+      change: 'All time',
       changeType: 'positive' as const,
       icon: ArrowTrendingUpIcon,
     },
     {
       name: 'Activities Today',
-      value: '15',
-      change: '-2',
-      changeType: 'negative' as const,
+      value: dashboardData.kpis.activities_today.toString(),
+      change: 'Today',
+      changeType: 'positive' as const,
+      icon: CalendarIcon,
+    },
+  ] : [
+    {
+      name: 'Total Pipeline',
+      value: '$0',
+      change: '+0%',
+      changeType: 'positive' as const,
+      icon: CurrencyDollarIcon,
+    },
+    {
+      name: 'Active Deals', 
+      value: '0',
+      change: '+0',
+      changeType: 'positive' as const,
+      icon: ChartBarIcon,
+    },
+    {
+      name: 'Win Rate',
+      value: '0%',
+      change: '+0%',
+      changeType: 'positive' as const,
+      icon: ArrowTrendingUpIcon,
+    },
+    {
+      name: 'Activities Today',
+      value: '0',
+      change: '0',
+      changeType: 'positive' as const,
       icon: CalendarIcon,
     },
   ];
 
-  // Fetch activities on component mount
+  // Fetch activities and dashboard data on component mount
   useEffect(() => {
     fetchActivities();
+    fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/analytics/dashboard`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardData(data);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    }
+  };
 
   const fetchActivities = async () => {
     try {

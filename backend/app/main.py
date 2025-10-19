@@ -31,6 +31,8 @@ from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
 from app.api.sms import router as sms_router
 from app.api.calls import router as calls_router
+from app.api.emails import router as emails_router
+from app.api.notifications import router as notifications_router
 from app.api.twilio_settings import router as twilio_settings_router
 
 
@@ -170,6 +172,20 @@ app.include_router(
     calls_router,
     prefix="/api/calls",
     tags=["Calls"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    emails_router,
+    prefix="/api",
+    tags=["Emails"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    notifications_router,
+    prefix="/api",
+    tags=["Notifications"],
     dependencies=[Depends(get_current_user)]
 )
 

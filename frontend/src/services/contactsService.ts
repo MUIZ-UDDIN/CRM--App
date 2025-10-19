@@ -30,6 +30,7 @@ export interface Contact {
   phone?: string;
   company?: string;
   title?: string;
+  type?: string;
   status?: string;
   source?: string;
   lead_score?: number;
