@@ -272,6 +272,18 @@ async def upload_csv_contacts(
                     failed_imports += 1
                     continue
                 
+                # Delete any soft-deleted contacts with same email to avoid unique constraint violation
+                deleted_contacts = db.query(ContactModel).filter(
+                    and_(
+                        ContactModel.email.ilike(email),
+                        ContactModel.is_deleted == True
+                    )
+                ).all()
+                
+                for deleted_contact in deleted_contacts:
+                    db.delete(deleted_contact)
+                db.commit()
+                
                 # Handle owner_id from CSV or use current user
                 owner_id = user_id
                 if 'owner_id' in row and pd.notna(row.get('owner_id')):
@@ -361,6 +373,18 @@ async def upload_excel_contacts(
                     errors.append(f"Row {index + 1}: Contact with email {email} already exists")
                     failed_imports += 1
                     continue
+                
+                # Delete any soft-deleted contacts with same email to avoid unique constraint violation
+                deleted_contacts = db.query(ContactModel).filter(
+                    and_(
+                        ContactModel.email.ilike(email),
+                        ContactModel.is_deleted == True
+                    )
+                ).all()
+                
+                for deleted_contact in deleted_contacts:
+                    db.delete(deleted_contact)
+                db.commit()
                 
                 # Handle owner_id from Excel or use current user
                 owner_id = user_id
