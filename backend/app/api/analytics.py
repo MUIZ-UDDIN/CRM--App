@@ -5,7 +5,10 @@ Analytics API endpoints with comprehensive data aggregation and caching
 from fastapi import APIRouter, Depends, Query
 from typing import Optional, List
 from datetime import datetime, date, timedelta
+from sqlalchemy.orm import Session
+import uuid
 from ..core.security import get_current_active_user
+from ..core.database import get_db
 import json
 
 router = APIRouter()
