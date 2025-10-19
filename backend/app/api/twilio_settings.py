@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 
 from app.core.database import get_db
-from app.core.auth import get_current_active_user
+from app.core.security import get_current_active_user
 from app.models.twilio_settings import TwilioSettings as TwilioSettingsModel
 
 router = APIRouter(prefix="/twilio-settings", tags=["Twilio Settings"])
