@@ -106,7 +106,7 @@ async def create_contact(
 
 @router.get("/{contact_id}", response_model=Contact)
 async def get_contact(
-    contact_id: int,
+    contact_id: uuid.UUID,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -124,7 +124,7 @@ async def get_contact(
 
 @router.put("/{contact_id}", response_model=Contact)
 async def update_contact(
-    contact_id: int,
+    contact_id: uuid.UUID,
     contact_update: ContactUpdate,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -167,7 +167,7 @@ async def update_contact(
 
 @router.patch("/{contact_id}", response_model=Contact)
 async def patch_contact(
-    contact_id: int,
+    contact_id: uuid.UUID,
     contact_update: ContactUpdate,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -177,7 +177,7 @@ async def patch_contact(
 
 @router.delete("/{contact_id}")
 async def delete_contact(
-    contact_id: int,
+    contact_id: uuid.UUID,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
