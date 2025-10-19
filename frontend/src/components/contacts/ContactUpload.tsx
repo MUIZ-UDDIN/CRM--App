@@ -47,7 +47,7 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
 
       const endpoint = file.name.endsWith('.csv') 
         ? '/api/contacts/upload-csv' 
-        : '/api/contacts/upload-xlsx';
+        : '/api/contacts/upload-excel';
 
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {

@@ -34,7 +34,7 @@ class ContactUpdate(BaseModel):
     status: Optional[str] = None
 
 class Contact(ContactBase):
-    id: int
+    id: uuid.UUID
     owner_id: uuid.UUID
     status: str
     created_at: datetime
