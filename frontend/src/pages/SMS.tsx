@@ -30,7 +30,8 @@ export default function SMS() {
 
   const fetchSMSMessages = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/sms/messages`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/sms/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -86,7 +87,8 @@ export default function SMS() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/api/sms/send`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/sms/send`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -116,7 +118,8 @@ export default function SMS() {
     if (!confirm('Are you sure you want to delete this message?')) return;
     
     try {
-      const response = await fetch(`http://localhost:8000/api/sms/messages/${messageId}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/sms/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -135,7 +138,8 @@ export default function SMS() {
 
   const markAsRead = async (messageId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/sms/messages/${messageId}/mark-read`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/sms/messages/${messageId}/mark-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,

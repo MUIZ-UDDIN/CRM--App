@@ -33,7 +33,8 @@ export default function Calls() {
 
   const fetchCalls = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/calls`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/calls`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -107,7 +108,8 @@ export default function Calls() {
     }
 
     try {
-      const response = await fetch(`http://localhost:8000/api/calls/make`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -137,7 +139,8 @@ export default function Calls() {
     if (!confirm('Are you sure you want to delete this call record?')) return;
     
     try {
-      const response = await fetch(`http://localhost:8000/api/calls/${callId}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/calls/${callId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -30,9 +30,11 @@ export default function Email() {
     fetchEmails();
   }, [selectedTab]);
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
   const fetchEmails = async () => {
     try {
-      const response = await fetch(`http://localhost:8000/api/emails?type=${selectedTab}`, {
+      const response = await fetch(`${API_BASE_URL}/api/emails?type=${selectedTab}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -89,7 +91,7 @@ export default function Email() {
     if (!confirm('Are you sure you want to delete this email?')) return;
     
     try {
-      const response = await fetch(`http://localhost:8000/api/emails/${emailId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/emails/${emailId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -109,7 +111,7 @@ export default function Email() {
 
   const markAsRead = async (emailId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/emails/${emailId}/mark-read`, {
+      const response = await fetch(`${API_BASE_URL}/api/emails/${emailId}/mark-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
