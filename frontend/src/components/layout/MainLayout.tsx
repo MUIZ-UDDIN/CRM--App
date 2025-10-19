@@ -64,30 +64,7 @@ const navigation: NavItem[] = [
   },
 ];
 
-// Mock notifications data
-const notifications = [
-  {
-    id: 1,
-    title: 'New deal created',
-    message: 'Enterprise Software License - $50,000',
-    time: '2 minutes ago',
-    unread: true,
-  },
-  {
-    id: 2,
-    title: 'Meeting reminder',
-    message: 'Demo call with John Smith at 3:00 PM',
-    time: '1 hour ago',
-    unread: true,
-  },
-  {
-    id: 3,
-    title: 'Deal won',
-    message: 'Marketing Consulting deal closed successfully',
-    time: '2 hours ago',
-    unread: false,
-  },
-];
+// Notifications will be fetched from API
 
 export default function MainLayout() {
   const location = useLocation();
@@ -98,6 +75,50 @@ export default function MainLayout() {
   const [showProfile, setShowProfile] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Fetch notifications
+  useEffect(() => {
+    fetchNotifications();
+    fetchUnreadCount();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/notifications/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setNotifications(data);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  const fetchUnreadCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUnreadCount(data.count);
+      }
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+    }
+  };
   const [notificationsList, setNotificationsList] = useState(notifications);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
@@ -131,7 +152,7 @@ export default function MainLayout() {
     };
   }, []);
 
-  const unreadCount = notificationsList.filter(n => n.unread).length;
+  // unreadCount is now fetched from API
 
   // Mock search suggestions data
   const searchSuggestions = [

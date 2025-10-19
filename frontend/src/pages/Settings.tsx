@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import ActionButtons from '../components/common/ActionButtons';
+import { useAuth } from '../contexts/AuthContext';
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -36,10 +37,39 @@ export default function Settings() {
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([
-    { id: '1', name: 'John Doe', email: 'john@company.com', role: 'Admin', status: 'active', joined_at: '2024-01-01' },
-    { id: '2', name: 'Jane Smith', email: 'jane@company.com', role: 'Sales Manager', status: 'active', joined_at: '2024-01-05' },
-  ]);
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const { token } = useAuth();
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  useEffect(() => {
+    if (activeTab === 'team') {
+      fetchTeamMembers();
+    }
+  }, [activeTab]);
+
+  const fetchTeamMembers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTeamMembers(data.map((user: any) => ({
+          id: user.id,
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email,
+          role: user.role || 'User',
+          status: user.is_active ? 'active' : 'inactive',
+          joined_at: user.created_at?.split('T')[0] || 'N/A',
+        })));
+      }
+    } catch (error) {
+      console.error('Error fetching team members:', error);
+      toast.error('Failed to load team members');
+    }
+  };
 
   const [integrations, setIntegrations] = useState<Integration[]>([
     { id: '1', name: 'Gmail', description: 'Sync emails and calendar', status: 'connected', icon: '📧' },
@@ -72,19 +102,33 @@ export default function Settings() {
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
   ];
 
-  const handleAddTeamMember = () => {
-    const newMember: TeamMember = {
-      id: String(teamMembers.length + 1),
-      name: teamForm.name,
-      email: teamForm.email,
-      role: teamForm.role,
-      status: 'active',
-      joined_at: new Date().toISOString().split('T')[0],
-    };
-    setTeamMembers([...teamMembers, newMember]);
-    setShowAddTeamModal(false);
-    setTeamForm({ name: '', email: '', role: 'Sales Rep' });
-    toast.success('Team member added');
+  const handleAddTeamMember = async () => {
+    try {
+      const [firstName, ...lastNameParts] = teamForm.name.split(' ');
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: teamForm.email,
+          password: 'ChangeMe123!',
+          first_name: firstName,
+          last_name: lastNameParts.join(' ') || 'User',
+        }),
+      });
+      if (response.ok) {
+        toast.success('Team member added. Default password: ChangeMe123!');
+        setShowAddTeamModal(false);
+        setTeamForm({ name: '', email: '', role: 'Sales Rep' });
+        fetchTeamMembers();
+      } else {
+        toast.error('Failed to add team member');
+      }
+    } catch (error) {
+      console.error('Error adding team member:', error);
+      toast.error('Failed to add team member');
+    }
   };
 
   const handleEditTeamMember = (member: TeamMember) => {
@@ -115,6 +159,51 @@ export default function Settings() {
         : i
     ));
     toast.success(`${integration.name} ${integration.status === 'connected' ? 'disconnected' : 'connected'}`);
+  };
+
+  const handleChangePassword = async () => {
+    if (!securityForm.currentPassword || !securityForm.newPassword) {
+      toast.error('Please fill in all password fields');
+      return;
+    }
+    if (securityForm.newPassword !== securityForm.confirmPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (securityForm.newPassword.length < 8) {
+      toast.error('Password must be at least 8 characters');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/me/change-password`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          current_password: securityForm.currentPassword,
+          new_password: securityForm.newPassword,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Password changed successfully');
+        setSecurityForm({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: '',
+          twoFactorEnabled: securityForm.twoFactorEnabled,
+        });
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to change password');
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast.error('Failed to change password');
+    }
   };
 
   return (
@@ -326,7 +415,7 @@ export default function Settings() {
               </div>
               <div className="flex justify-end">
                 <button
-                  onClick={() => toast.success('Security settings updated')}
+                  onClick={handleChangePassword}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
                   Update Security Settings
