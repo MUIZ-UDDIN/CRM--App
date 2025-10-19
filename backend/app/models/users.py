@@ -62,6 +62,8 @@ class User(BaseModel):
     contacts = relationship('Contact', back_populates='owner', foreign_keys='Contact.owner_id')
     deals = relationship('Deal', back_populates='owner', foreign_keys='Deal.owner_id')
     activities = relationship('Activity', back_populates='owner', foreign_keys='Activity.owner_id')
+    sms_messages = relationship('SMSMessage', back_populates='user', foreign_keys='SMSMessage.user_id')
+    calls = relationship('Call', back_populates='user', foreign_keys='Call.user_id')
     
     def __repr__(self):
         return f"<User {self.email}>"

@@ -152,8 +152,8 @@ export default function Login() {
       <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <h3 className="text-sm font-medium text-gray-700 mb-2">Demo Credentials</h3>
         <div className="text-xs text-gray-600 space-y-1">
-          <p><strong>Email:</strong> admin@company.com</p>
-          <p><strong>Password:</strong> admin123</p>
+          <p><strong>Email:</strong> admin@sunstonecrm.com</p>
+          <p><strong>Password:</strong> Admin@123</p>
         </div>
       </div>
     </div>

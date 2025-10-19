@@ -17,6 +17,7 @@ from ..core.security import (
     get_password_hash
 )
 from ..core.database import get_db
+from ..core.validators import validate_password_strength
 from ..models.users import User as UserModel, Role as RoleModel
 
 router = APIRouter()
@@ -94,6 +95,9 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/register", response_model=LoginResponse)
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register new user endpoint"""
+    # Validate password strength
+    validate_password_strength(request.password)
+    
     # Check if user already exists
     existing_user = db.query(UserModel).filter(UserModel.email == request.email).first()
     if existing_user:
@@ -102,8 +106,8 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
-    # Assign role based on email (first admin@company.com becomes Super Admin)
-    role = "Super Admin" if request.email == "admin@company.com" else "Regular User"
+    # Assign role based on email (first admin@sunstonecrm.com becomes Super Admin)
+    role = "Super Admin" if request.email == "admin@sunstonecrm.com" else "Regular User"
     
     # Create new user
     new_user = UserModel(

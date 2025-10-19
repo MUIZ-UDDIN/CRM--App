@@ -49,7 +49,8 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
         ? '/api/contacts/upload-csv' 
         : '/api/contacts/upload-xlsx';
 
-      const response = await fetch(`https://sunstonecrm.com${endpoint}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -141,7 +142,7 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
 
       {/* Instructions */}
       <div className="bg-gray-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Required Columns:</h4>
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Supported Columns:</h4>
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div className="flex items-center">
             <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">email</code>
@@ -162,8 +163,18 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
           <div className="flex items-center">
             <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">title</code>
           </div>
+          <div className="flex items-center">
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">type</code>
+          </div>
+          <div className="flex items-center">
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">owner_id</code>
+          </div>
         </div>
-        <p className="text-xs text-gray-500 mt-2">* Required field</p>
+        <p className="text-xs text-gray-500 mt-3">* Required field</p>
+        <p className="text-xs text-gray-600 mt-2">
+          <strong>Type:</strong> Lead, Prospect, Customer, Partner, Marketing Qualified Lead<br/>
+          <strong>Owner ID:</strong> Optional UUID of the contact owner (defaults to current user)
+        </p>
       </div>
 
       {/* Upload Status */}

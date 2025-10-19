@@ -15,6 +15,15 @@ export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({
+    score: 0,
+    hasMinLength: false,
+    hasUppercase: false,
+    hasLowercase: false,
+    hasNumber: false,
+    hasSpecialChar: false,
+    message: ''
+  });
 
   const { register, isLoading, error, clearError } = useAuth();
   const navigate = useNavigate();
@@ -26,11 +35,58 @@ export default function Register() {
     }
   }, [error, clearError]);
 
+  // Password validation function
+  const validatePassword = (password: string) => {
+    const minLength = password.length >= 8;
+    const hasUppercase = /[A-Z]/.test(password);
+    const hasLowercase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    const criteriaCount = [minLength, hasUppercase, hasLowercase, hasNumber, hasSpecialChar].filter(Boolean).length;
+    
+    let score = 0;
+    let message = '';
+    
+    if (criteriaCount === 5) {
+      score = 5;
+      message = 'Very Strong';
+    } else if (criteriaCount === 4) {
+      score = 4;
+      message = 'Strong';
+    } else if (criteriaCount === 3) {
+      score = 3;
+      message = 'Moderate';
+    } else if (criteriaCount === 2) {
+      score = 2;
+      message = 'Weak';
+    } else {
+      score = 1;
+      message = 'Very Weak';
+    }
+    
+    setPasswordStrength({
+      score,
+      hasMinLength: minLength,
+      hasUppercase,
+      hasLowercase,
+      hasNumber,
+      hasSpecialChar,
+      message
+    });
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
+    
+    // Validate password strength when password field changes
+    if (name === 'password') {
+      validatePassword(value);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,8 +104,14 @@ export default function Register() {
       return;
     }
 
-    if (password.length < 6) {
-      toast.error('Password must be at least 6 characters long');
+    // Validate password strength
+    if (password.length < 8) {
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+    
+    if (passwordStrength.score < 3) {
+      toast.error('Password is too weak. Please ensure it contains at least 8 characters with uppercase, lowercase, numbers, and special characters.');
       return;
     }
 
@@ -146,20 +208,79 @@ export default function Register() {
               required
               value={formData.password}
               onChange={handleChange}
-              className="relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              className="relative block w-full px-3 py-2.5 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
               placeholder="Password"
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center z-10"
               onClick={() => setShowPassword(!showPassword)}
             >
               {showPassword ? (
-                <EyeSlashIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
               ) : (
-                <EyeIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
               )}
             </button>
+            
+            {/* Password Strength Indicator */}
+            {formData.password && (
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-gray-600">Password strength:</span>
+                  <span className={`text-xs font-medium ${
+                    passwordStrength.score >= 4 ? 'text-green-600' :
+                    passwordStrength.score === 3 ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {passwordStrength.message}
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                  <div 
+                    className={`h-1.5 rounded-full transition-all duration-300 ${
+                      passwordStrength.score >= 4 ? 'bg-green-500' :
+                      passwordStrength.score === 3 ? 'bg-yellow-500' :
+                      passwordStrength.score === 2 ? 'bg-orange-500' :
+                      'bg-red-500'
+                    }`}
+                    style={{ width: `${(passwordStrength.score / 5) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="grid grid-cols-2 gap-x-4 text-xs">
+                  <div className={`flex items-center ${
+                    passwordStrength.hasMinLength ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-1">{passwordStrength.hasMinLength ? '✓' : '○'}</span>
+                    8+ characters
+                  </div>
+                  <div className={`flex items-center ${
+                    passwordStrength.hasUppercase ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-1">{passwordStrength.hasUppercase ? '✓' : '○'}</span>
+                    Uppercase letter
+                  </div>
+                  <div className={`flex items-center ${
+                    passwordStrength.hasLowercase ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-1">{passwordStrength.hasLowercase ? '✓' : '○'}</span>
+                    Lowercase letter
+                  </div>
+                  <div className={`flex items-center ${
+                    passwordStrength.hasNumber ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-1">{passwordStrength.hasNumber ? '✓' : '○'}</span>
+                    Number
+                  </div>
+                  <div className={`flex items-center ${
+                    passwordStrength.hasSpecialChar ? 'text-green-600' : 'text-gray-400'
+                  }`}>
+                    <span className="mr-1">{passwordStrength.hasSpecialChar ? '✓' : '○'}</span>
+                    Special character
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="relative">
@@ -174,18 +295,18 @@ export default function Register() {
               required
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              className="relative block w-full px-3 py-2.5 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
               placeholder="Confirm password"
             />
             <button
               type="button"
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center z-10"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
             >
               {showConfirmPassword ? (
-                <EyeSlashIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
               ) : (
-                <EyeIcon className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
               )}
             </button>
           </div>

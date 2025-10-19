@@ -31,6 +31,8 @@ from app.api.activities import router as activities_router
 from app.api.analytics import router as analytics_router
 from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
+from app.api.sms import router as sms_router
+from app.api.calls import router as calls_router
 
 
 @asynccontextmanager
@@ -155,6 +157,20 @@ app.include_router(
     inbox_router,
     prefix="/api/inbox",
     tags=["Inbox"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    sms_router,
+    prefix="/api/sms",
+    tags=["SMS"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    calls_router,
+    prefix="/api/calls",
+    tags=["Calls"],
     dependencies=[Depends(get_current_user)]
 )
 

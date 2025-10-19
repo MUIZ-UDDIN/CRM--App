@@ -1,39 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { EnvelopeIcon, PlusIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { ChatBubbleLeftIcon, PlusIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-interface Email {
+interface SMSMessage {
   id: string;
   direction: 'inbound' | 'outbound';
   status: string;
   from_address: string;
   to_address: string;
-  subject: string;
   body: string;
   sent_at: string;
   read_at?: string;
 }
 
-export default function Inbox() {
-  const [emails, setEmails] = useState<Email[]>([]);
+export default function SMS() {
+  const [messages, setMessages] = useState<SMSMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [composeForm, setComposeForm] = useState({
     to: '',
-    subject: '',
-    body: ''
+    message: ''
   });
   const { token } = useAuth();
 
   useEffect(() => {
-    fetchEmails();
+    fetchSMSMessages();
   }, []);
 
-  const fetchEmails = async () => {
+  const fetchSMSMessages = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/emails`, {
+      const response = await fetch(`http://localhost:8000/api/sms/messages`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -41,87 +38,85 @@ export default function Inbox() {
 
       if (response.ok) {
         const data = await response.json();
-        setEmails(data);
+        setMessages(data);
       } else {
         // Mock data for development
-        setEmails([
+        setMessages([
           {
             id: '1',
             direction: 'inbound',
             status: 'delivered',
-            from_address: 'client@example.com',
-            to_address: 'you@sunstonecrm.com',
-            subject: 'Interested in your services',
-            body: 'Hi, I saw your website and I am interested in learning more about your CRM services. Could we schedule a call?',
+            from_address: '+1234567890',
+            to_address: '+0987654321',
+            body: 'Hi, I am interested in your services. Can you call me?',
             sent_at: new Date().toISOString()
           },
           {
             id: '2',
             direction: 'outbound',
-            status: 'sent',
-            from_address: 'you@sunstonecrm.com',
-            to_address: 'client@example.com',
-            subject: 'Re: Interested in your services',
-            body: 'Thank you for your interest! I would be happy to schedule a call. What time works best for you?',
-            sent_at: new Date(Date.now() - 3600000).toISOString()
+            status: 'delivered',
+            from_address: '+0987654321',
+            to_address: '+1555123456',
+            body: 'Hi! I saw you called. What can I help you with?',
+            sent_at: new Date(Date.now() - 6000000).toISOString()
           },
           {
             id: '3',
             direction: 'inbound',
             status: 'delivered',
-            from_address: 'prospect@company.com',
-            to_address: 'you@sunstonecrm.com',
-            subject: 'Demo Request',
-            body: 'Hello, we would like to request a demo of your CRM platform for our sales team of 50 people.',
-            sent_at: new Date(Date.now() - 7200000).toISOString()
+            from_address: '+1555987654',
+            to_address: '+0987654321',
+            body: 'When can we schedule a demo?',
+            sent_at: new Date(Date.now() - 12000000).toISOString()
           }
         ]);
       }
     } catch (error) {
-      console.error('Error fetching emails:', error);
-      toast.error('Failed to load emails');
+      console.error('Error fetching SMS messages:', error);
+      toast.error('Failed to load SMS messages');
     } finally {
       setLoading(false);
     }
   };
 
-  const sendEmail = async () => {
-    if (!composeForm.to.trim() || !composeForm.subject.trim() || !composeForm.body.trim()) {
+  const sendSMS = async () => {
+    if (!composeForm.to.trim() || !composeForm.message.trim()) {
       toast.error('Please fill in all fields');
       return;
     }
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/emails/send`, {
+      const response = await fetch(`http://localhost:8000/api/sms/send`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(composeForm)
+        body: JSON.stringify({
+          to: composeForm.to,
+          body: composeForm.message
+        })
       });
 
       if (response.ok) {
-        toast.success('Email sent successfully');
+        toast.success('SMS sent successfully');
         setShowComposeModal(false);
-        setComposeForm({ to: '', subject: '', body: '' });
-        fetchEmails();
+        setComposeForm({ to: '', message: '' });
+        fetchSMSMessages();
       } else {
-        toast.error('Failed to send email');
+        toast.error('Failed to send SMS');
       }
     } catch (error) {
-      console.error('Error sending email:', error);
-      toast.error('Failed to send email');
+      console.error('Error sending SMS:', error);
+      toast.error('Failed to send SMS');
     }
   };
 
-  const deleteEmail = async (emailId: string) => {
-    if (!confirm('Are you sure you want to delete this email?')) return;
+  const deleteMessage = async (messageId: string) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
     
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/emails/${emailId}`, {
+      const response = await fetch(`http://localhost:8000/api/sms/messages/${messageId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -129,19 +124,18 @@ export default function Inbox() {
       });
       
       if (response.ok) {
-        setEmails(emails.filter(email => email.id !== emailId));
-        toast.success('Email deleted');
+        setMessages(messages.filter(msg => msg.id !== messageId));
+        toast.success('Message deleted');
       }
     } catch (error) {
-      console.error('Error deleting email:', error);
-      toast.error('Failed to delete email');
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
     }
   };
 
-  const markAsRead = async (emailId: string) => {
+  const markAsRead = async (messageId: string) => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/emails/${emailId}/mark-read`, {
+      const response = await fetch(`http://localhost:8000/api/sms/messages/${messageId}/mark-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -149,12 +143,12 @@ export default function Inbox() {
       });
       
       if (response.ok) {
-        fetchEmails();
-        toast.success('Email marked as read');
+        fetchSMSMessages();
+        toast.success('Message marked as read');
       }
     } catch (error) {
-      console.error('Error marking email as read:', error);
-      toast.error('Failed to mark email as read');
+      console.error('Error marking message as read:', error);
+      toast.error('Failed to mark message as read');
     }
   };
 
@@ -178,10 +172,10 @@ export default function Inbox() {
           <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <div className="flex items-center space-x-3">
-                <EnvelopeIcon className="w-8 h-8 text-primary-600" />
+                <ChatBubbleLeftIcon className="w-8 h-8 text-primary-600" />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Email Inbox</h1>
-                  <p className="text-gray-600">Email communications via Twilio SendGrid</p>
+                  <h1 className="text-2xl font-bold text-gray-900">SMS Messages</h1>
+                  <p className="text-gray-600">Text messaging via Twilio SMS</p>
                 </div>
               </div>
             </div>
@@ -191,78 +185,75 @@ export default function Inbox() {
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
-                Compose Email
+                Send SMS
               </button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Emails List */}
+      {/* Messages List */}
       <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="divide-y divide-gray-200">
-            {emails.length === 0 ? (
+            {messages.length === 0 ? (
               <div className="p-12 text-center text-gray-500">
                 <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <EnvelopeIcon className="w-6 h-6 text-gray-400" />
+                  <ChatBubbleLeftIcon className="w-6 h-6 text-gray-400" />
                 </div>
-                <p>No emails found</p>
+                <p>No SMS messages found</p>
               </div>
             ) : (
-              emails.map((email) => (
+              messages.map((message) => (
                 <div
-                  key={email.id}
+                  key={message.id}
                   className={`p-6 hover:bg-gray-50 ${
-                    !email.read_at ? 'bg-blue-50' : ''
+                    !message.read_at ? 'bg-blue-50' : ''
                   }`}
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start space-x-4">
                       <div className={`p-3 rounded-full ${
-                        email.direction === 'inbound' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
+                        message.direction === 'inbound' ? 'bg-green-100 text-green-600' : 'bg-blue-100 text-blue-600'
                       }`}>
-                        <EnvelopeIcon className="w-5 h-5" />
+                        <ChatBubbleLeftIcon className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-2">
                           <span className={`text-sm font-medium ${
-                            email.direction === 'inbound' ? 'text-blue-600' : 'text-green-600'
+                            message.direction === 'inbound' ? 'text-green-600' : 'text-blue-600'
                           }`}>
-                            {email.direction === 'inbound' ? 'From' : 'To'}: {
-                              email.direction === 'inbound' ? email.from_address : email.to_address
+                            {message.direction === 'inbound' ? 'From' : 'To'}: {
+                              message.direction === 'inbound' ? message.from_address : message.to_address
                             }
                           </span>
                           <span className="text-xs text-gray-500">
-                            {formatDate(email.sent_at)}
+                            {formatDate(message.sent_at)}
                           </span>
-                          {!email.read_at && (
+                          {!message.read_at && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                               New
                             </span>
                           )}
                         </div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-1">
-                          {email.subject}
-                        </h4>
-                        <p className="text-sm text-gray-600">
-                          {email.body}
+                        <p className="text-sm text-gray-900">
+                          {message.body}
                         </p>
                         <div className="mt-2 flex items-center space-x-4">
                           <span className={`text-xs px-2 py-1 rounded-full ${
-                            email.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                            email.status === 'sent' ? 'bg-blue-100 text-blue-800' :
+                            message.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                            message.status === 'sent' ? 'bg-blue-100 text-blue-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {email.status}
+                            {message.status}
                           </span>
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      {!email.read_at && (
+                      {!message.read_at && (
                         <button
-                          onClick={() => markAsRead(email.id)}
+                          onClick={() => markAsRead(message.id)}
                           className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg"
                           title="Mark as read"
                         >
@@ -270,9 +261,9 @@ export default function Inbox() {
                         </button>
                       )}
                       <button
-                        onClick={() => deleteEmail(email.id)}
+                        onClick={() => deleteMessage(message.id)}
                         className="p-2 text-red-500 hover:bg-red-100 rounded-lg"
-                        title="Delete email"
+                        title="Delete message"
                       >
                         <TrashIcon className="w-4 h-4" />
                       </button>
@@ -284,13 +275,13 @@ export default function Inbox() {
           </div>
         </div>
       </div>
-      
-      {/* Compose Modal */}
+
+      {/* Compose SMS Modal */}
       {showComposeModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Compose New Message</h3>
+              <h3 className="text-lg font-medium text-gray-900">Send SMS Message</h3>
               <button 
                 onClick={() => setShowComposeModal(false)} 
                 className="text-gray-400 hover:text-gray-600"
@@ -303,28 +294,12 @@ export default function Inbox() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
-                  <option value="sms">SMS Message</option>
-                  <option value="email">Email</option>
-                  <option value="voice">Voice Call</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To Phone Number</label>
                 <input 
-                  type="text" 
-                  placeholder="Phone number or email address"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" 
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject (Email only)</label>
-                <input 
-                  type="text" 
-                  placeholder="Subject line"
+                  type="tel" 
+                  placeholder="+1234567890"
+                  value={composeForm.to}
+                  onChange={(e) => setComposeForm({...composeForm, to: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" 
                 />
               </div>
@@ -334,8 +309,14 @@ export default function Inbox() {
                 <textarea 
                   rows={4}
                   placeholder="Type your message here..."
+                  value={composeForm.message}
+                  onChange={(e) => setComposeForm({...composeForm, message: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  maxLength={160}
                 ></textarea>
+                <div className="text-right text-xs text-gray-500 mt-1">
+                  {composeForm.message.length}/160
+                </div>
               </div>
               
               <div className="flex justify-end space-x-3 pt-4">
@@ -346,9 +327,11 @@ export default function Inbox() {
                   Cancel
                 </button>
                 <button
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  onClick={sendSMS}
+                  disabled={!composeForm.to.trim() || !composeForm.message.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send Message
+                  Send SMS
                 </button>
               </div>
             </div>
@@ -357,4 +340,4 @@ export default function Inbox() {
       )}
     </div>
   );
-};
+}

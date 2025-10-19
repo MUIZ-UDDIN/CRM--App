@@ -4,7 +4,6 @@ import {
   HomeIcon,
   CurrencyDollarIcon,
   UserGroupIcon,
-  CalendarIcon,
   FolderIcon,
   DocumentTextIcon,
   Cog6ToothIcon,
@@ -39,21 +38,29 @@ const navigation: NavItem[] = [
       { name: 'Deals', href: '/deals' },
       { name: 'Pipeline', href: '/pipeline-settings' },
       { name: 'Quotes', href: '/quotes' },
+      { name: 'Analytics', href: '/analytics' },
     ]
   },
-  { name: 'Contacts', href: '/contacts', icon: UserGroupIcon },
-  { name: 'Activities', href: '/activities', icon: CalendarIcon },
-  { name: 'Inbox', href: '/inbox', icon: InboxIcon },
+  {
+    name: 'Communications',
+    icon: InboxIcon,
+    children: [
+      { name: 'Contacts', href: '/contacts' },
+      { name: 'Inbox', href: '/inbox' },
+      { name: 'SMS', href: '/sms' },
+      { name: 'Calls', href: '/calls' },
+    ]
+  },
   { 
     name: 'More', 
     icon: FolderIcon,
     children: [
+      { name: 'Activities', href: '/activities' },
       { name: 'Files', href: '/files' },
       { name: 'Workflows', href: '/workflows' },
-      { name: 'Analytics', href: '/analytics' },
+      { name: 'Settings', href: '/settings' },
     ]
   },
-  { name: 'Settings', href: '/settings', icon: Cog6ToothIcon },
 ];
 
 // Mock notifications data
@@ -256,10 +263,10 @@ export default function MainLayout() {
               {/* Logo */}
               <div className="flex-shrink-0 flex items-center">
                 <div className="w-6 h-6 sm:w-7 sm:h-7 bg-primary-500 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-xs">CRM</span>
+                  <span className="text-white font-bold text-xs">S</span>
                 </div>
                 <span className="ml-2 text-base sm:text-lg font-semibold text-gray-900 hidden sm:block">
-                  Sales CRM
+                  Sunstone CRM
                 </span>
               </div>
 

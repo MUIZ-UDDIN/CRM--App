@@ -14,12 +14,17 @@ interface Message {
   body: string;
   sent_at: string;
   read_at?: string;
+  duration?: number; // For voice calls
+  recording_url?: string; // For voice calls
 }
 
-const InboxView: React.FC = () => {
+interface InboxViewProps {
+  activeTab: 'all' | 'sms' | 'email' | 'voice';
+}
+
+const InboxView: React.FC<InboxViewProps> = ({ activeTab }) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'sms' | 'email'>('all');
   const { token } = useAuth();
 
   useEffect(() => {
@@ -32,8 +37,10 @@ const InboxView: React.FC = () => {
       
       if (activeTab === 'sms') endpoint = '/api/inbox/sms';
       else if (activeTab === 'email') endpoint = '/api/inbox/emails';
+      else if (activeTab === 'voice') endpoint = '/api/inbox/voice';
 
-      const response = await fetch(`https://sunstonecrm.com${endpoint}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -44,7 +51,7 @@ const InboxView: React.FC = () => {
         setMessages(data);
       } else {
         // Mock data for development
-        setMessages([
+        const mockData: Message[] = [
           {
             id: '1',
             message_type: 'sms',
@@ -52,7 +59,7 @@ const InboxView: React.FC = () => {
             status: 'delivered',
             from_address: '+1234567890',
             to_address: '+0987654321',
-            body: 'Hi, I am interested in your services',
+            body: 'Hi, I am interested in your services. Can you call me?',
             sent_at: new Date().toISOString()
           },
           {
@@ -63,10 +70,50 @@ const InboxView: React.FC = () => {
             from_address: 'you@sunstonecrm.com',
             to_address: 'client@example.com',
             subject: 'Follow up on your inquiry',
-            body: 'Thank you for your interest in our services...',
+            body: 'Thank you for your interest in our services. I will be calling you shortly.',
             sent_at: new Date(Date.now() - 3600000).toISOString()
+          },
+          {
+            id: '3',
+            message_type: 'voice',
+            direction: 'outbound',
+            status: 'completed',
+            from_address: '+0987654321',
+            to_address: '+1234567890',
+            body: 'Outbound call to discuss services',
+            duration: 180, // 3 minutes
+            recording_url: 'https://api.twilio.com/recordings/RE12345678',
+            sent_at: new Date(Date.now() - 1800000).toISOString()
+          },
+          {
+            id: '4',
+            message_type: 'voice',
+            direction: 'inbound',
+            status: 'missed',
+            from_address: '+1555123456',
+            to_address: '+0987654321',
+            body: 'Missed call from potential client',
+            duration: 0,
+            sent_at: new Date(Date.now() - 7200000).toISOString()
+          },
+          {
+            id: '5',
+            message_type: 'sms',
+            direction: 'outbound',
+            status: 'delivered',
+            from_address: '+0987654321',
+            to_address: '+1555123456',
+            body: 'Hi! I saw you called. What can I help you with?',
+            sent_at: new Date(Date.now() - 6000000).toISOString()
           }
-        ]);
+        ];
+        
+        // Filter messages based on activeTab
+        if (activeTab === 'all') {
+          setMessages(mockData);
+        } else {
+          setMessages(mockData.filter(msg => msg.message_type === activeTab));
+        }
       }
     } catch (error) {
       console.error('Error fetching messages:', error);
@@ -78,7 +125,8 @@ const InboxView: React.FC = () => {
 
   const markAsRead = async (messageId: string) => {
     try {
-      const response = await fetch(`https://sunstonecrm.com/api/inbox/${messageId}/mark-read`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/inbox/${messageId}/mark-read`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -99,7 +147,8 @@ const InboxView: React.FC = () => {
     if (!confirm('Are you sure you want to delete this message?')) return;
     
     try {
-      const response = await fetch(`https://sunstonecrm.com/api/inbox/${messageId}`, {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/inbox/${messageId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -141,45 +190,14 @@ const InboxView: React.FC = () => {
     );
   }
 
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-      {/* Tabs */}
-      <div className="border-b border-gray-200">
-        <div className="flex space-x-8 px-6">
-          <button
-            onClick={() => setActiveTab('all')}
-            className={`py-4 text-sm font-medium border-b-2 ${
-              activeTab === 'all'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            All Messages ({messages.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('sms')}
-            className={`py-4 text-sm font-medium border-b-2 flex items-center ${
-              activeTab === 'sms'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <ChatBubbleLeftIcon className="w-4 h-4 mr-2" />
-            SMS
-          </button>
-          <button
-            onClick={() => setActiveTab('email')}
-            className={`py-4 text-sm font-medium border-b-2 flex items-center ${
-              activeTab === 'email'
-                ? 'border-blue-500 text-blue-600'
-                : 'border-transparent text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            <EnvelopeIcon className="w-4 h-4 mr-2" />
-            Email
-          </button>
-        </div>
-      </div>
 
       {/* Messages List */}
       <div className="divide-y divide-gray-200">
@@ -230,9 +248,48 @@ const InboxView: React.FC = () => {
                         {message.subject}
                       </h4>
                     )}
-                    <p className="text-sm text-gray-600 truncate">
-                      {message.body}
-                    </p>
+                    
+                    {message.message_type === 'voice' ? (
+                      <div className="space-y-2">
+                        <p className="text-sm text-gray-600">
+                          {message.body}
+                        </p>
+                        <div className="flex items-center space-x-3">
+                          <span className={`text-sm font-medium ${
+                            message.status === 'completed' ? 'text-green-600' :
+                            message.status === 'missed' ? 'text-red-600' :
+                            'text-gray-600'
+                          }`}>
+                            {message.status === 'completed' ? 'Call Completed' :
+                             message.status === 'missed' ? 'Missed Call' :
+                             message.status}
+                          </span>
+                          {message.duration && message.duration > 0 && (
+                            <>
+                              <span className="text-gray-400">•</span>
+                              <span className="text-sm text-gray-600">
+                                {formatDuration(message.duration)}
+                              </span>
+                            </>
+                          )}
+                          {message.recording_url && (
+                            <>
+                              <span className="text-gray-400">•</span>
+                              <button 
+                                className="text-sm text-primary-600 hover:text-primary-800 font-medium"
+                                onClick={() => window.open(message.recording_url, '_blank')}
+                              >
+                                🎵 Play Recording
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-600 truncate">
+                        {message.body}
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center space-x-2">

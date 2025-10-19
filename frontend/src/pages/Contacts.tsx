@@ -20,9 +20,11 @@ interface Contact {
   phone?: string;
   company?: string;
   title?: string;
+  type?: string;
   status?: string;
   source?: string;
   lead_score?: number;
+  owner_id?: string;
 }
 
 export default function Contacts() {
@@ -36,6 +38,16 @@ export default function Contacts() {
   const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [contactTypes, setContactTypes] = useState([
+    'Marketing Qualified Lead',
+    'Prospect',
+    'Lead',
+    'Customer',
+    'Partner'
+  ]);
+  const [users, setUsers] = useState([{ id: 'current', name: 'Marc Hickson' }]);
+  const [showAddTypeModal, setShowAddTypeModal] = useState(false);
+  const [newTypeName, setNewTypeName] = useState('');
   const [contactForm, setContactForm] = useState({
     first_name: '',
     last_name: '',
@@ -43,8 +55,10 @@ export default function Contacts() {
     phone: '',
     company: '',
     title: '',
-    status: 'lead',
-    source: ''
+    type: 'lead',
+    status: 'new',
+    source: '',
+    owner_id: ''
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,8 +123,10 @@ export default function Contacts() {
       phone: contact.phone || '',
       company: contact.company || '',
       title: contact.title || '',
-      status: contact.status || 'lead',
-      source: contact.source || ''
+      type: contact.type || 'Lead',
+      status: contact.status || 'new',
+      source: contact.source || '',
+      owner_id: contact.owner_id || 'current'
     });
     setShowEditModal(true);
   };
@@ -129,6 +145,17 @@ export default function Contacts() {
     }
   };
   
+  // Handle add new contact type
+  const handleAddContactType = () => {
+    if (newTypeName.trim() && !contactTypes.includes(newTypeName.trim())) {
+      setContactTypes([...contactTypes, newTypeName.trim()]);
+      setContactForm({...contactForm, type: newTypeName.trim()});
+      setNewTypeName('');
+      setShowAddTypeModal(false);
+      toast.success('New contact type added');
+    }
+  };
+  
   // Handle create contact
   const handleCreate = async () => {
     try {
@@ -142,8 +169,10 @@ export default function Contacts() {
         phone: '',
         company: '',
         title: '',
-        status: 'lead',
-        source: ''
+        type: 'Lead',
+        status: 'new',
+        source: '',
+        owner_id: 'current'
       });
       fetchContacts();
     } catch (error) {
@@ -280,8 +309,9 @@ export default function Contacts() {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -305,16 +335,28 @@ export default function Contacts() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          contact.status === 'customer' ? 'bg-green-100 text-green-800' :
-                          contact.status === 'prospect' ? 'bg-blue-100 text-blue-800' :
-                          contact.status === 'lead' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
+                          contact.type === 'Customer' ? 'bg-blue-100 text-blue-800' :
+                          contact.type === 'Prospect' ? 'bg-teal-100 text-teal-800' :
+                          contact.type === 'Marketing Qualified Lead' ? 'bg-purple-100 text-purple-800' :
+                          contact.type === 'Partner' ? 'bg-orange-100 text-orange-800' :
+                          'bg-green-100 text-green-800'
                         }`}>
-                          {contact.status}
+                          {contact.type || 'Lead'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          contact.status === 'customer' ? 'bg-green-100 text-green-800' :
+                          contact.status === 'qualified' ? 'bg-blue-100 text-blue-800' :
+                          contact.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                          contact.status === 'new' ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {contact.status || 'new'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {contact.lead_score || 0}
+                        Marc Hickson
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <ActionButtons
@@ -394,6 +436,47 @@ export default function Contacts() {
                 onChange={(e) => setContactForm({...contactForm, title: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
+              
+              {/* Type Field */}
+              <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type <span className="text-red-500">*</span>
+                </label>
+                <div className="flex gap-2">
+                  <select
+                    value={contactForm.type}
+                    onChange={(e) => setContactForm({...contactForm, type: e.target.value})}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    {contactTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddTypeModal(true)}
+                    className="px-3 py-2 text-sm text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50"
+                  >
+                    + Add New Value
+                  </button>
+                </div>
+              </div>
+              
+              {/* Owner Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Owner <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={contactForm.owner_id}
+                  onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>{user.name}</option>
+                  ))}
+                </select>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -461,13 +544,54 @@ export default function Contacts() {
                 onChange={(e) => setContactForm({...contactForm, company: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="text"
-                placeholder="Title"
-                value={contactForm.title}
-                onChange={(e) => setContactForm({...contactForm, title: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+                <input
+                  type="text"
+                  placeholder="Title"
+                  value={contactForm.title}
+                  onChange={(e) => setContactForm({...contactForm, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                
+                {/* Type Field */}
+                <div className="relative">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Type <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-2">
+                    <select
+                      value={contactForm.type}
+                      onChange={(e) => setContactForm({...contactForm, type: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      {contactTypes.map((type) => (
+                        <option key={type} value={type}>{type}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddTypeModal(true)}
+                      className="px-3 py-2 text-sm text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50"
+                    >
+                      + Add New Value
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Owner Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Owner <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={contactForm.owner_id}
+                    onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                  </select>
+                </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowEditModal(false)}
@@ -542,6 +666,45 @@ export default function Contacts() {
               fetchContacts();
               setShowUploadModal(false);
             }} />
+          </div>
+        </div>
+      )}
+      
+      {/* Add New Type Modal */}
+      {showAddTypeModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Add New Contact Type</h3>
+              <button onClick={() => setShowAddTypeModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <input
+                type="text"
+                placeholder="Enter new contact type"
+                value={newTypeName}
+                onChange={(e) => setNewTypeName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                onKeyPress={(e) => e.key === 'Enter' && handleAddContactType()}
+              />
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowAddTypeModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddContactType}
+                  disabled={!newTypeName.trim()}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Add Type
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -20,6 +20,7 @@ class ContactBase(BaseModel):
     phone: Optional[str] = None
     company: Optional[str] = None
     title: Optional[str] = None
+    type: Optional[str] = None
 
 class ContactCreate(ContactBase):
     pass
@@ -34,7 +35,8 @@ class ContactUpdate(BaseModel):
 
 class Contact(ContactBase):
     id: int
-    user_id: uuid.UUID
+    owner_id: uuid.UUID
+    status: str
     created_at: datetime
     updated_at: datetime
     is_deleted: bool = False
@@ -57,7 +59,8 @@ async def get_contacts(
     
     if search:
         query = query.filter(
-            (ContactModel.name.ilike(f"%{search}%")) |
+            (ContactModel.first_name.ilike(f"%{search}%")) |
+            (ContactModel.last_name.ilike(f"%{search}%")) |
             (ContactModel.email.ilike(f"%{search}%")) |
             (ContactModel.company.ilike(f"%{search}%"))
         )
@@ -89,7 +92,7 @@ async def create_contact(
         
         db_contact = ContactModel(
             **contact.dict(),
-            user_id=user_id,
+            owner_id=user_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -224,7 +227,7 @@ async def upload_csv_contacts(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Upload contacts from CSV file"""
+    """Upload contacts from CSV file with Type and Owner support"""
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be a CSV file")
     
@@ -261,15 +264,27 @@ async def upload_csv_contacts(
                     failed_imports += 1
                     continue
                 
+                # Handle owner_id from CSV or use current user
+                owner_id = user_id
+                if 'owner_id' in row and pd.notna(row.get('owner_id')):
+                    try:
+                        owner_id = uuid.UUID(str(row.get('owner_id')))
+                    except (ValueError, AttributeError):
+                        owner_id = user_id
+                
+                # Handle type field with null check
+                contact_type = str(row.get('type', 'Lead')) if pd.notna(row.get('type')) else 'Lead'
+                
                 contact_data = {
                     'first_name': str(row.get('first_name', '')),
-                    'email': row.get('email', ''),
-                    'phone': row.get('phone', ''),
-                    'company': row.get('company', ''),
                     'last_name': str(row.get('last_name', '')),
-                    'title': str(row.get('title', '')),
+                    'email': str(row.get('email', '')),
+                    'phone': str(row.get('phone', '')) if pd.notna(row.get('phone')) else '',
+                    'company': str(row.get('company', '')) if pd.notna(row.get('company')) else '',
+                    'title': str(row.get('title', '')) if pd.notna(row.get('title')) else '',
+                    'type': contact_type,
                     'status': ContactStatus.NEW,
-                    'user_id': user_id,
+                    'owner_id': owner_id,
                     'created_at': datetime.utcnow(),
                     'updated_at': datetime.utcnow()
                 }
@@ -302,7 +317,7 @@ async def upload_excel_contacts(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Upload contacts from Excel file"""
+    """Upload contacts from Excel file with Type and Owner support"""
     if not (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
         raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx or .xls)")
     
@@ -332,15 +347,27 @@ async def upload_excel_contacts(
                     failed_imports += 1
                     continue
                 
+                # Handle owner_id from Excel or use current user
+                owner_id = user_id
+                if 'owner_id' in row and pd.notna(row.get('owner_id')):
+                    try:
+                        owner_id = uuid.UUID(str(row.get('owner_id')))
+                    except (ValueError, AttributeError):
+                        owner_id = user_id
+                
+                # Handle type field with null check
+                contact_type = str(row.get('type', 'Lead')) if pd.notna(row.get('type')) else 'Lead'
+                
                 contact_data = {
                     'first_name': str(row.get('first_name', '')),
-                    'email': str(row.get('email', '')),
-                    'phone': str(row.get('phone', '')),
-                    'company': str(row.get('company', '')),
                     'last_name': str(row.get('last_name', '')),
-                    'title': str(row.get('title', '')),
+                    'email': str(row.get('email', '')),
+                    'phone': str(row.get('phone', '')) if pd.notna(row.get('phone')) else '',
+                    'company': str(row.get('company', '')) if pd.notna(row.get('company')) else '',
+                    'title': str(row.get('title', '')) if pd.notna(row.get('title')) else '',
+                    'type': contact_type,
                     'status': ContactStatus.NEW,
-                    'user_id': user_id,
+                    'owner_id': owner_id,
                     'created_at': datetime.utcnow(),
                     'updated_at': datetime.utcnow()
                 }
@@ -367,13 +394,4 @@ async def upload_excel_contacts(
         db.rollback()
         raise HTTPException(status_code=400, detail=f"Failed to process Excel file: {str(e)}")
 
-@router.patch("/{contact_id}", response_model=Contact)
-async def patch_contact(
-    contact_id: int,
-    contact_update: ContactUpdate,
-    current_user: dict = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Update specific fields of a contact"""
-    return await update_contact(contact_id, contact_update, current_user, db)
 

@@ -20,6 +20,8 @@ import Notifications from './pages/Notifications';
 import PipelineSettings from './pages/PipelineSettings';
 import Workflows from './pages/Workflows';
 import Inbox from './pages/Inbox';
+import SMS from './pages/SMS';
+import Calls from './pages/Calls';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -73,6 +75,8 @@ function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="inbox" element={<Inbox />} />
+                <Route path="sms" element={<SMS />} />
+                <Route path="calls" element={<Calls />} />
               </Route>
 
               {/* Catch all route */}

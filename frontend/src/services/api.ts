@@ -71,6 +71,28 @@ class ApiService {
     return this.request<any>('/api/users/me');
   }
 
+  async updateCurrentUser(userData: any) {
+    return this.request<any>('/api/users/me', {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async changePassword(passwordData: { current_password: string; new_password: string }) {
+    return this.request<any>('/api/users/me/change-password', {
+      method: 'POST',
+      body: JSON.stringify(passwordData),
+    });
+  }
+
+  async getAllUsers() {
+    return this.request<any[]>('/api/users');
+  }
+
+  async getUser(userId: string) {
+    return this.request<any>(`/api/users/${userId}`);
+  }
+
   // Deals endpoints
   async getDeals() {
     return this.request<any[]>('/api/deals');

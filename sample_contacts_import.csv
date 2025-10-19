@@ -1,0 +1,11 @@
+email,first_name,last_name,phone,company,title,type
+john.smith@techcorp.com,John,Smith,555-0101,TechCorp,CEO,Customer
+sarah.johnson@marketing.com,Sarah,Johnson,555-0102,Marketing Inc,Director,Prospect
+mike.williams@sales.com,Mike,Williams,555-0103,Sales Corp,Manager,Lead
+emily.brown@startup.io,Emily,Brown,555-0104,Startup IO,Founder,Marketing Qualified Lead
+david.jones@enterprise.com,David,Jones,555-0105,Enterprise Co,VP Sales,Partner
+lisa.garcia@consulting.com,Lisa,Garcia,555-0106,Consulting LLC,Consultant,Prospect
+james.miller@tech.io,James,Miller,555-0107,Tech Solutions,CTO,Lead
+maria.rodriguez@digital.com,Maria,Rodriguez,555-0108,Digital Agency,Creative Director,Customer
+robert.martinez@finance.com,Robert,Martinez,555-0109,Finance Group,CFO,Prospect
+jennifer.lopez@media.com,Jennifer,Lopez,555-0110,Media Corp,Marketing Manager,Lead

@@ -44,6 +44,7 @@ class Contact(BaseModel):
     # Company Information
     company = Column(String(200), index=True)
     title = Column(String(100))
+    type = Column(String(100), default='Lead')
     department = Column(String(100))
     website = Column(String(255))
     
@@ -77,6 +78,8 @@ class Contact(BaseModel):
     deals = relationship('Deal', back_populates='contact')
     activities = relationship('Activity', back_populates='contact')
     emails = relationship('Email', back_populates='contact')
+    sms_messages = relationship('SMSMessage', back_populates='contact')
+    calls = relationship('Call', back_populates='contact')
     
     def __repr__(self):
         return f"<Contact {self.first_name} {self.last_name} - {self.email}>"
