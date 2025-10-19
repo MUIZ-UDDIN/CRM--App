@@ -13,7 +13,7 @@ import uuid
 from app.core.security import get_current_active_user
 from app.core.database import get_db
 
-router = APIRouter(prefix="/notifications", tags=["Notifications"])
+router = APIRouter(tags=["Notifications"])
 
 
 # Pydantic Models

@@ -919,7 +919,7 @@ async def get_dashboard_analytics(
         and_(
             ActivityModel.owner_id == user_id,
             ActivityModel.is_deleted == False,
-            func.date(ActivityModel.scheduled_at) == today
+            func.date(ActivityModel.due_date) == today
         )
     ).scalar() or 0
     
