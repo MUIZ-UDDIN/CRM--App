@@ -197,8 +197,16 @@ export default function Deals() {
   const onDragEnd = async (result: any) => {
     const { source, destination, draggableId } = result;
 
-    if (!destination) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+    console.log('Drag ended:', { source, destination, draggableId });
+
+    if (!destination) {
+      console.log('No destination - drag cancelled');
+      return;
+    }
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      console.log('Same position - no change');
+      return;
+    }
 
     const sourceStage = source.droppableId;
     const destStage = destination.droppableId;

@@ -80,6 +80,7 @@ class Contact(BaseModel):
     emails = relationship('Email', back_populates='contact')
     sms_messages = relationship('SMSMessage', back_populates='contact')
     calls = relationship('Call', back_populates='contact')
+    files = relationship('File', back_populates='contact')
     
     def __repr__(self):
         return f"<Contact {self.first_name} {self.last_name} - {self.email}>"

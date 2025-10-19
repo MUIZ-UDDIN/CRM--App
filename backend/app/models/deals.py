@@ -95,6 +95,7 @@ class Deal(BaseModel):
     contact = relationship('Contact', back_populates='deals')
     activities = relationship('Activity', back_populates='deal')
     documents = relationship('Document', back_populates='deal')
+    files = relationship('File', back_populates='deal')
     
     def __repr__(self):
         return f"<Deal {self.title} - ${self.value}>"

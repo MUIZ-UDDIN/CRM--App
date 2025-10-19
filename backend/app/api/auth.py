@@ -166,3 +166,25 @@ async def refresh_token(current_user: dict = Depends(get_current_active_user)):
         "access_token": access_token,
         "token_type": "bearer"
     }
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+@router.post("/forgot-password")
+async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Send password reset email (simplified version)"""
+    # Check if user exists
+    user = db.query(UserModel).filter(UserModel.email == request.email).first()
+    
+    # Always return success to prevent email enumeration
+    # In production, you would send an actual email with a reset token
+    if user:
+        # TODO: Generate reset token and send email
+        # For now, just log it
+        print(f"Password reset requested for: {request.email}")
+    
+    return {
+        "message": "If an account exists with this email, you will receive password reset instructions."
+    }

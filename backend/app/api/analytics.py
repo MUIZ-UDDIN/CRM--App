@@ -875,53 +875,66 @@ async def get_dashboard_analytics(
     month_start = datetime.utcnow().replace(day=1).date()
     last_month_start = (datetime.utcnow().replace(day=1) - timedelta(days=1)).replace(day=1).date()
     
+    # Check if user is superuser - show all deals, otherwise filter by owner
+    is_superuser = current_user.get("is_superuser", False)
+    
     # Total Pipeline Value
-    total_pipeline = db.query(func.sum(DealModel.value)).filter(
+    pipeline_query = db.query(func.sum(DealModel.value)).filter(
         and_(
-            DealModel.owner_id == user_id,
             DealModel.is_deleted == False,
             DealModel.status != DealStatus.LOST,
             DealModel.status != DealStatus.WON
         )
-    ).scalar() or 0.0
+    )
+    if not is_superuser:
+        pipeline_query = pipeline_query.filter(DealModel.owner_id == user_id)
+    total_pipeline = pipeline_query.scalar() or 0.0
     
     # Active Deals Count
-    active_deals = db.query(func.count(DealModel.id)).filter(
+    deals_query = db.query(func.count(DealModel.id)).filter(
         and_(
-            DealModel.owner_id == user_id,
             DealModel.is_deleted == False,
             DealModel.status != DealStatus.LOST,
             DealModel.status != DealStatus.WON
         )
-    ).scalar() or 0
+    )
+    if not is_superuser:
+        deals_query = deals_query.filter(DealModel.owner_id == user_id)
+    active_deals = deals_query.scalar() or 0
     
     # Win Rate
-    total_closed = db.query(func.count(DealModel.id)).filter(
+    closed_query = db.query(func.count(DealModel.id)).filter(
         and_(
-            DealModel.owner_id == user_id,
             DealModel.is_deleted == False,
             or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST)
         )
-    ).scalar() or 0
+    )
+    if not is_superuser:
+        closed_query = closed_query.filter(DealModel.owner_id == user_id)
+    total_closed = closed_query.scalar() or 0
     
-    won_deals = db.query(func.count(DealModel.id)).filter(
+    won_query = db.query(func.count(DealModel.id)).filter(
         and_(
-            DealModel.owner_id == user_id,
             DealModel.is_deleted == False,
             DealModel.status == DealStatus.WON
         )
-    ).scalar() or 0
+    )
+    if not is_superuser:
+        won_query = won_query.filter(DealModel.owner_id == user_id)
+    won_deals = won_query.scalar() or 0
     
     win_rate = (won_deals / total_closed * 100) if total_closed > 0 else 0
     
     # Activities Today
-    activities_today = db.query(func.count(ActivityModel.id)).filter(
+    activities_query = db.query(func.count(ActivityModel.id)).filter(
         and_(
-            ActivityModel.owner_id == user_id,
             ActivityModel.is_deleted == False,
             func.date(ActivityModel.due_date) == today
         )
-    ).scalar() or 0
+    )
+    if not is_superuser:
+        activities_query = activities_query.filter(ActivityModel.owner_id == user_id)
+    activities_today = activities_query.scalar() or 0
     
     # Previous month metrics for growth calculation
     last_month_pipeline = db.query(func.sum(DealModel.value)).filter(

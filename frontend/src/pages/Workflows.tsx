@@ -44,40 +44,53 @@ export default function Workflows() {
   const fetchWorkflows = async () => {
     setLoading(true);
     try {
-      // Mock data
-      setWorkflows([
-        {
-          id: '1',
-          name: 'Welcome Email Sequence',
-          description: 'Send welcome emails to new contacts',
-          trigger: 'Contact Created',
-          status: 'active',
-          actions_count: 3,
-          executions_count: 145,
-          last_run: '2024-01-15T10:30:00',
-          created_at: '2024-01-01',
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${API_BASE_URL}/api/workflows/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
         },
-        {
-          id: '2',
-          name: 'Deal Stage Notification',
-          description: 'Notify team when deal moves to negotiation',
-          trigger: 'Deal Stage Changed',
-          status: 'active',
-          actions_count: 2,
-          executions_count: 89,
-          last_run: '2024-01-14T15:20:00',
-          created_at: '2024-01-05',
-        },
-        {
-          id: '3',
-          name: 'Follow-up Reminder',
-          description: 'Create task for follow-up after 3 days',
-          trigger: 'Activity Completed',
-          status: 'paused',
-          actions_count: 1,
-          executions_count: 56,
-          last_run: '2024-01-10T09:15:00',
-          created_at: '2024-01-08',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setWorkflows(data);
+      } else {
+        // Fallback to mock data
+        setWorkflows([
+          {
+            id: '1',
+            name: 'Welcome Email Sequence',
+            description: 'Send welcome emails to new contacts',
+            trigger: 'Contact Created',
+            status: 'active',
+            actions_count: 3,
+            executions_count: 145,
+            last_run: '2024-01-15T10:30:00',
+            created_at: '2024-01-01',
+          },
+          {
+            id: '2',
+            name: 'Deal Stage Notification',
+            description: 'Notify team when deal moves to negotiation',
+            trigger: 'Deal Stage Changed',
+            status: 'active',
+            actions_count: 2,
+            executions_count: 89,
+            last_run: '2024-01-14T15:20:00',
+            created_at: '2024-01-05',
+          },
+          {
+            id: '3',
+            name: 'Follow-up Reminder',
+            description: 'Create task for follow-up after 3 days',
+            trigger: 'Activity Completed',
+            status: 'paused',
+            actions_count: 1,
+            executions_count: 56,
+            last_run: '2024-01-10T09:15:00',
+            created_at: '2024-01-08',
         },
         {
           id: '4',

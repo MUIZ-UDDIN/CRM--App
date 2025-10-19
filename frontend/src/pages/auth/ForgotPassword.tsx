@@ -19,11 +19,22 @@ export default function ForgotPassword() {
     setIsSubmitting(true);
 
     try {
-      // In a real app, you would call your API to send reset email
-      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
       
-      setEmailSent(true);
-      toast.success('Password reset email sent! Check your inbox.');
+      if (response.ok) {
+        setEmailSent(true);
+        toast.success('Password reset email sent! Check your inbox.');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to send reset email');
+      }
     } catch (error) {
       toast.error('Failed to send reset email. Please try again.');
     } finally {

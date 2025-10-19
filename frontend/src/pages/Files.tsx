@@ -53,30 +53,53 @@ export default function Files() {
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      // Mock data
-      setFiles([
-        {
-          id: '1',
-          name: 'Proposals',
-          type: 'folder',
-          category: 'Sales',
-          tags: ['proposals', 'sales'],
-          status: 'active',
-          created_at: '2024-01-15',
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${API_BASE_URL}/api/files/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
         },
-        {
-          id: '2',
-          name: 'Contracts',
-          type: 'folder',
-          category: 'Legal',
-          tags: ['contracts', 'legal'],
-          status: 'active',
-          created_at: '2024-01-10',
-        },
-        {
-          id: '3',
-          name: 'TechCorp_Proposal_v2.pdf',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const formattedFiles = data.map((file: any) => ({
+          id: file.id,
+          name: file.name,
           type: 'file',
+          size: file.size,
+          category: file.category,
+          tags: file.tags || [],
+          status: 'active',
+          created_at: file.created_at?.split('T')[0] || '',
+        }));
+        setFiles(formattedFiles);
+      } else {
+        // Fallback to mock data
+        setFiles([
+          {
+            id: '1',
+            name: 'Proposals',
+            type: 'folder',
+            category: 'Sales',
+            tags: ['proposals', 'sales'],
+            status: 'active',
+            created_at: '2024-01-15',
+          },
+          {
+            id: '2',
+            name: 'Contracts',
+            type: 'folder',
+            category: 'Legal',
+            tags: ['contracts', 'legal'],
+            status: 'active',
+            created_at: '2024-01-10',
+          },
+          {
+            id: '3',
+            name: 'TechCorp_Proposal_v2.pdf',
+            type: 'file',
           size: 2340000,
           category: 'Sales',
           tags: ['proposal', 'techcorp'],

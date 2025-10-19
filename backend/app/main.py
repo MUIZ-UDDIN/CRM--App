@@ -34,6 +34,8 @@ from app.api.calls import router as calls_router
 from app.api.emails import router as emails_router
 from app.api.notifications import router as notifications_router
 from app.api.twilio_settings import router as twilio_settings_router
+from app.api.files import router as files_router
+from app.api.workflows import router as workflows_router
 
 
 @asynccontextmanager
@@ -185,8 +187,7 @@ app.include_router(
 app.include_router(
     notifications_router,
     prefix="/api/notifications",
-    tags=["Notifications"],
-    dependencies=[Depends(get_current_user)]
+    tags=["Notifications"]
 )
 
 app.include_router(
@@ -194,6 +195,18 @@ app.include_router(
     prefix="/api",
     tags=["Twilio Settings"],
     dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    files_router,
+    prefix="/api/files",
+    tags=["Files"]
+)
+
+app.include_router(
+    workflows_router,
+    prefix="/api/workflows",
+    tags=["Workflows"]
 )
 
 

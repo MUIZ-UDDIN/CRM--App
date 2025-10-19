@@ -15,6 +15,7 @@ from .sms import SMSMessage, SMSDirection, SMSStatus
 from .calls import Call, CallDirection, CallStatus
 from .documents import Document, DocumentSignature, DocumentType, DocumentStatus
 from .workflows import Workflow, WorkflowExecution, WorkflowStatus, WorkflowTrigger
+from .files import File, Folder
 from .security import AuditLog, SecurityLog, Session, AuditAction, SecurityEventType
 from .twilio_settings import TwilioSettings
 
@@ -84,6 +85,10 @@ __all__ = [
     'WorkflowExecution',
     'WorkflowStatus',
     'WorkflowTrigger',
+    
+    # Files
+    'File',
+    'Folder',
     
     # Security
     'AuditLog',

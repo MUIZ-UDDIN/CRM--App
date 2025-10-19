@@ -119,8 +119,8 @@ export default function Register() {
 
     try {
       await register({ firstName, lastName, email, password });
-      toast.success('Registration successful!');
-      navigate('/dashboard');
+      toast.success('Registration successful! Please login to continue.');
+      navigate('/auth/login');
     } catch (error) {
       // Error is handled by the context and useEffect above
     } finally {
