@@ -865,7 +865,7 @@ async def get_dashboard_analytics(
 ):
     """Get overall dashboard analytics with real-time data"""
     from datetime import datetime, timedelta
-    from sqlalchemy import func, and_
+    from sqlalchemy import func, and_, or_
     from ..models.deals import Deal as DealModel, DealStatus
     from ..models.contacts import Contact as ContactModel
     from ..models.activities import Activity as ActivityModel, ActivityStatus
