@@ -125,7 +125,7 @@ export default function TwilioSettings() {
         if (data.is_verified) {
           fetchPhoneNumbers();
         } else {
-          toast.warning('Please verify your Twilio credentials');
+          toast('Please verify your Twilio credentials', { icon: '⚠️' });
         }
       } else {
         const error = await response.json();
