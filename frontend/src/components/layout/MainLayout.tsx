@@ -17,7 +17,8 @@ import {
   TrashIcon,
   Bars3Icon,
   XMarkIcon,
-  InboxIcon
+  InboxIcon,
+  CalendarIcon
 } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';

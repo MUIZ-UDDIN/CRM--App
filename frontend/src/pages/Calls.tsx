@@ -168,7 +168,7 @@ export default function Calls() {
   const playRecording = (recordingUrl: string, callId: string) => {
     if (playingRecording === callId) {
       setPlayingRecording(null);
-      toast.info('Recording stopped');
+      toast('Recording stopped');
     } else {
       setPlayingRecording(callId);
       // In a real app, you would implement audio playback here
