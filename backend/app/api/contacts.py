@@ -252,15 +252,23 @@ async def upload_csv_contacts(
         
         for index, row in df.iterrows():
             try:
+                # Clean and validate email
+                email = str(row.get('email', '')).strip().lower()
+                if not email or '@' not in email:
+                    errors.append(f"Row {index + 1}: Invalid or missing email")
+                    failed_imports += 1
+                    continue
+                
+                # Check for existing non-deleted contact with same email (case-insensitive)
                 existing_contact = db.query(ContactModel).filter(
                     and_(
-                        ContactModel.email == row.get('email'),
+                        ContactModel.email.ilike(email),
                         ContactModel.is_deleted == False
                     )
                 ).first()
                 
                 if existing_contact:
-                    errors.append(f"Row {index + 1}: Contact with email {row.get('email')} already exists")
+                    errors.append(f"Row {index + 1}: Contact with email {email} already exists")
                     failed_imports += 1
                     continue
                 
@@ -278,7 +286,7 @@ async def upload_csv_contacts(
                 contact_data = {
                     'first_name': str(row.get('first_name', '')),
                     'last_name': str(row.get('last_name', '')),
-                    'email': str(row.get('email', '')),
+                    'email': email,
                     'phone': str(row.get('phone', '')) if pd.notna(row.get('phone')) else '',
                     'company': str(row.get('company', '')) if pd.notna(row.get('company')) else '',
                     'title': str(row.get('title', '')) if pd.notna(row.get('title')) else '',
@@ -334,15 +342,23 @@ async def upload_excel_contacts(
         
         for index, row in df.iterrows():
             try:
+                # Clean and validate email
+                email = str(row.get('email', '')).strip().lower()
+                if not email or '@' not in email:
+                    errors.append(f"Row {index + 1}: Invalid or missing email")
+                    failed_imports += 1
+                    continue
+                
+                # Check for existing non-deleted contact with same email (case-insensitive)
                 existing_contact = db.query(ContactModel).filter(
                     and_(
-                        ContactModel.email == row.get('email'),
+                        ContactModel.email.ilike(email),
                         ContactModel.is_deleted == False
                     )
                 ).first()
                 
                 if existing_contact:
-                    errors.append(f"Row {index + 1}: Contact with email {row.get('email')} already exists")
+                    errors.append(f"Row {index + 1}: Contact with email {email} already exists")
                     failed_imports += 1
                     continue
                 
@@ -360,7 +376,7 @@ async def upload_excel_contacts(
                 contact_data = {
                     'first_name': str(row.get('first_name', '')),
                     'last_name': str(row.get('last_name', '')),
-                    'email': str(row.get('email', '')),
+                    'email': email,
                     'phone': str(row.get('phone', '')) if pd.notna(row.get('phone')) else '',
                     'company': str(row.get('company', '')) if pd.notna(row.get('company')) else '',
                     'title': str(row.get('title', '')) if pd.notna(row.get('title')) else '',
