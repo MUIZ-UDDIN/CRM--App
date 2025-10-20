@@ -72,13 +72,8 @@ async def get_contacts(
         query = query.filter(ContactModel.type == type)
     
     if status:
-        # Convert status string to ContactStatus enum value
-        try:
-            status_enum = ContactStatus(status.lower())
-            query = query.filter(ContactModel.status == status_enum)
-        except ValueError:
-            # Invalid status value, skip filter
-            pass
+        # Filter by status string directly (uppercase to match database)
+        query = query.filter(ContactModel.status == status.upper())
     
     if owner_id:
         query = query.filter(ContactModel.owner_id == uuid.UUID(owner_id))

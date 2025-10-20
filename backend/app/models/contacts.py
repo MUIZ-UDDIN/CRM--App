@@ -11,14 +11,14 @@ import enum
 
 class ContactStatus(str, enum.Enum):
     """Contact status enum"""
-    NEW = "new"
-    LEAD = "lead"
-    PROSPECT = "prospect"
-    CONTACTED = "contacted"
-    QUALIFIED = "qualified"
-    UNQUALIFIED = "unqualified"
-    CUSTOMER = "customer"
-    INACTIVE = "inactive"
+    NEW = "NEW"
+    LEAD = "LEAD"
+    PROSPECT = "PROSPECT"
+    CONTACTED = "CONTACTED"
+    QUALIFIED = "QUALIFIED"
+    UNQUALIFIED = "UNQUALIFIED"
+    CUSTOMER = "CUSTOMER"
+    INACTIVE = "INACTIVE"
 
 
 class LeadSource(str, enum.Enum):
