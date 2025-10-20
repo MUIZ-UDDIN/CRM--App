@@ -35,15 +35,18 @@ class WorkflowResponse(BaseModel):
 
 class WorkflowCreate(BaseModel):
     name: str
-    description: Optional[str]
-    trigger: str
-    status: str = "draft"
+    description: Optional[str] = None
+    trigger: Optional[str] = None  # For backward compatibility
+    trigger_type: Optional[str] = None  # New field from frontend
+    is_active: bool = False
 
 
 class WorkflowUpdate(BaseModel):
-    name: Optional[str]
-    description: Optional[str]
-    status: Optional[str]
+    name: Optional[str] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+    trigger_type: Optional[str] = None
+    is_active: Optional[bool] = None
 
 
 @router.get("/", response_model=List[WorkflowResponse])
@@ -92,17 +95,17 @@ async def create_workflow(
     """Create a new workflow"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
+    # Handle both trigger and trigger_type (frontend sends trigger_type)
+    trigger_value = workflow_data.trigger_type or workflow_data.trigger or "manual"
+    
     # Validate trigger type
     try:
-        trigger_type = WorkflowTrigger(workflow_data.trigger)
+        trigger_type = WorkflowTrigger(trigger_value)
     except ValueError:
         trigger_type = WorkflowTrigger.SCHEDULED
     
-    # Validate status
-    try:
-        status = WorkflowStatus(workflow_data.status)
-    except ValueError:
-        status = WorkflowStatus.INACTIVE
+    # Determine status from is_active
+    status = WorkflowStatus.ACTIVE if workflow_data.is_active else WorkflowStatus.INACTIVE
     
     new_workflow = Workflow(
         name=workflow_data.name,

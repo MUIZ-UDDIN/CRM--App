@@ -195,17 +195,27 @@ export default function PipelineSettings() {
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Select Pipeline
           </label>
-          <select
-            value={selectedPipeline}
-            onChange={(e) => setSelectedPipeline(e.target.value)}
-            className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-          >
-            {pipelines.map(pipeline => (
-              <option key={pipeline.id} value={pipeline.id}>
-                {pipeline.name}
-              </option>
-            ))}
-          </select>
+          {loading ? (
+            <div className="text-sm text-gray-500">Loading pipelines...</div>
+          ) : pipelines.length === 0 ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+              <p className="text-sm text-yellow-800">
+                No pipelines found. Please create a pipeline first in the Deals section.
+              </p>
+            </div>
+          ) : (
+            <select
+              value={selectedPipeline}
+              onChange={(e) => setSelectedPipeline(e.target.value)}
+              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              {pipelines.map(pipeline => (
+                <option key={pipeline.id} value={pipeline.id}>
+                  {pipeline.name}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Stages List */}

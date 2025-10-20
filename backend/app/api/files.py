@@ -101,6 +101,47 @@ async def get_files(
     ]
 
 
+@router.post("/upload", response_model=FileResponse)
+async def upload_file(
+    file: UploadFile = FastAPIFile(...),
+    category: Optional[str] = None,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload a file"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # For now, just create a file record without actually storing the file
+    # In production, you'd save to S3/storage and get the URL
+    new_file = File(
+        name=file.filename,
+        original_name=file.filename,
+        file_type=file.content_type,
+        size=0,  # Would be file.size in real implementation
+        category=category,
+        storage_path=f"/uploads/{file.filename}",  # Mock path
+        url=f"/uploads/{file.filename}",  # Mock URL
+        owner_id=user_id
+    )
+    
+    db.add(new_file)
+    db.commit()
+    db.refresh(new_file)
+    
+    return FileResponse(
+        id=str(new_file.id),
+        name=new_file.name,
+        original_name=new_file.original_name,
+        file_type=new_file.file_type,
+        size=new_file.size,
+        category=new_file.category,
+        tags=new_file.tags or [],
+        url=new_file.url,
+        created_at=new_file.created_at.isoformat() if new_file.created_at else None,
+        updated_at=new_file.updated_at.isoformat() if new_file.updated_at else None
+    )
+
+
 @router.post("/", response_model=FileResponse)
 async def create_file(
     file_data: FileCreate,
@@ -226,7 +267,7 @@ async def get_folders(
     ]
 
 
-@router.post("/folders/", response_model=FolderResponse)
+@router.post("/folders", response_model=FolderResponse)
 async def create_folder(
     folder_data: FolderCreate,
     current_user: dict = Depends(get_current_active_user),

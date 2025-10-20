@@ -155,12 +155,27 @@ async def create_quote(
     ).count()
     quote_number = f"QT-{year}-{str(count + 1).zfill(3)}"
     
+    # Handle empty strings for UUIDs
+    client_uuid = None
+    if quote_data.client_id and quote_data.client_id.strip():
+        try:
+            client_uuid = uuid.UUID(quote_data.client_id)
+        except ValueError:
+            pass
+    
+    deal_uuid = None
+    if quote_data.deal_id and quote_data.deal_id.strip():
+        try:
+            deal_uuid = uuid.UUID(quote_data.deal_id)
+        except ValueError:
+            pass
+    
     quote = QuoteModel(
         quote_number=quote_number,
         title=quote_data.title,
         amount=quote_data.amount,
-        client_id=uuid.UUID(quote_data.client_id) if quote_data.client_id else None,
-        deal_id=uuid.UUID(quote_data.deal_id) if quote_data.deal_id else None,
+        client_id=client_uuid,
+        deal_id=deal_uuid,
         owner_id=user_id,
         valid_until=quote_data.valid_until,
         description=quote_data.description,
@@ -215,9 +230,21 @@ async def update_quote(
     if quote_data.amount is not None:
         quote.amount = quote_data.amount
     if quote_data.client_id is not None:
-        quote.client_id = uuid.UUID(quote_data.client_id) if quote_data.client_id else None
+        if quote_data.client_id and quote_data.client_id.strip():
+            try:
+                quote.client_id = uuid.UUID(quote_data.client_id)
+            except ValueError:
+                quote.client_id = None
+        else:
+            quote.client_id = None
     if quote_data.deal_id is not None:
-        quote.deal_id = uuid.UUID(quote_data.deal_id) if quote_data.deal_id else None
+        if quote_data.deal_id and quote_data.deal_id.strip():
+            try:
+                quote.deal_id = uuid.UUID(quote_data.deal_id)
+            except ValueError:
+                quote.deal_id = None
+        else:
+            quote.deal_id = None
     if quote_data.valid_until is not None:
         quote.valid_until = quote_data.valid_until
     if quote_data.description is not None:
