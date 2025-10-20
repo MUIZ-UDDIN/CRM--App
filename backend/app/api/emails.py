@@ -14,7 +14,7 @@ from app.core.security import get_current_active_user
 from app.core.database import get_db
 from app.models.emails import Email as EmailModel, EmailStatus
 
-router = APIRouter(prefix="/emails", tags=["Emails"])
+router = APIRouter(tags=["Emails"])
 
 
 # Pydantic Models

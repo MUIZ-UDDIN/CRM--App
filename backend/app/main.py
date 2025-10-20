@@ -179,7 +179,7 @@ app.include_router(
 
 app.include_router(
     emails_router,
-    prefix="/api",
+    prefix="/api/emails",
     tags=["Emails"],
     dependencies=[Depends(get_current_user)]
 )

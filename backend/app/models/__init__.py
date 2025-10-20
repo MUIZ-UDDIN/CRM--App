@@ -16,6 +16,7 @@ from .calls import Call, CallDirection, CallStatus
 from .documents import Document, DocumentSignature, DocumentType, DocumentStatus
 from .workflows import Workflow, WorkflowExecution, WorkflowStatus, WorkflowTrigger
 from .files import File, Folder
+from .notifications import Notification, NotificationType
 from .security import AuditLog, SecurityLog, Session, AuditAction, SecurityEventType
 from .twilio_settings import TwilioSettings
 
@@ -89,6 +90,10 @@ __all__ = [
     # Files
     'File',
     'Folder',
+    
+    # Notifications
+    'Notification',
+    'NotificationType',
     
     # Security
     'AuditLog',
