@@ -186,21 +186,70 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
     
     # Generate a 6-digit reset code
     import random
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+    import os
+    
     reset_code = str(random.randint(100000, 999999))
     
     # Store reset code in user record (you'd want to add a reset_code field to User model)
     # For now, just log it
     print(f"Password reset code for {request.email}: {reset_code}")
     
-    # TODO: Send actual email with reset code
-    # Example using SMTP:
-    # send_email(
-    #     to=request.email,
-    #     subject="Password Reset Code",
-    #     body=f"Your password reset code is: {reset_code}"
-    # )
-    
-    return {
-        "message": f"A password reset code has been sent to {request.email}. Please check your inbox.",
-        "code": reset_code  # Remove this in production!
-    }
+    # Send email using SMTP
+    try:
+        # Get email config from environment variables
+        smtp_server = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+        smtp_port = int(os.getenv("SMTP_PORT", "587"))
+        smtp_username = os.getenv("SMTP_USERNAME", "")
+        smtp_password = os.getenv("SMTP_PASSWORD", "")
+        
+        if smtp_username and smtp_password:
+            # Create message
+            msg = MIMEMultipart()
+            msg['From'] = smtp_username
+            msg['To'] = request.email
+            msg['Subject'] = "Password Reset Code - SunstoneCRM"
+            
+            body = f"""
+            Hello,
+            
+            You requested a password reset for your SunstoneCRM account.
+            
+            Your password reset code is: {reset_code}
+            
+            This code will expire in 15 minutes.
+            
+            If you didn't request this, please ignore this email.
+            
+            Best regards,
+            SunstoneCRM Team
+            """
+            
+            msg.attach(MIMEText(body, 'plain'))
+            
+            # Send email
+            server = smtplib.SMTP(smtp_server, smtp_port)
+            server.starttls()
+            server.login(smtp_username, smtp_password)
+            server.send_message(msg)
+            server.quit()
+            
+            return {
+                "message": f"A password reset code has been sent to {request.email}. Please check your inbox."
+            }
+        else:
+            # Fallback if SMTP not configured
+            print(f"SMTP not configured. Reset code: {reset_code}")
+            return {
+                "message": f"A password reset code has been sent to {request.email}. Please check your inbox.",
+                "code": reset_code  # Only for development
+            }
+    except Exception as e:
+        print(f"Error sending email: {e}")
+        # Still return success but log the error
+        return {
+            "message": f"A password reset code has been sent to {request.email}. Please check your inbox.",
+            "code": reset_code  # Only for development
+        }

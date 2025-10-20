@@ -44,40 +44,7 @@ export default function Email() {
         const data = await response.json();
         setEmails(data);
       } else {
-        // Mock data for development
-        setEmails([
-          {
-            id: '1',
-            direction: 'inbound',
-            status: 'delivered',
-            from_email: 'client@example.com',
-            to_email: 'admin@company.com',
-            subject: 'Inquiry about your services',
-            body_html: 'Hi, I am interested in learning more about your CRM services. Can we schedule a demo?',
-            sent_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            direction: 'outbound',
-            status: 'sent',
-            from_email: 'admin@company.com',
-            to_email: 'prospect@example.com',
-            subject: 'Follow-up on our conversation',
-            body_html: 'Thank you for your time yesterday. I wanted to follow up on our discussion about implementing our CRM solution.',
-            sent_at: new Date(Date.now() - 3600000).toISOString(),
-            opened_at: new Date(Date.now() - 3000000).toISOString()
-          },
-          {
-            id: '3',
-            direction: 'inbound',
-            status: 'delivered',
-            from_email: 'support@client.com',
-            to_email: 'admin@company.com',
-            subject: 'Technical question',
-            body_html: 'We have a technical question about the API integration. Could you provide some guidance?',
-            sent_at: new Date(Date.now() - 7200000).toISOString()
-          }
-        ]);
+        setEmails([]);
       }
     } catch (error) {
       console.error('Error fetching emails:', error);

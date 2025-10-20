@@ -113,33 +113,8 @@ export default function Contacts() {
       setContacts(data);
     } catch (error) {
       console.error('Error:', error);
-      // Use mock data if API fails
-      setContacts([
-        {
-          id: '1',
-          first_name: 'John',
-          last_name: 'Smith',
-          email: 'john.smith@techcorp.com',
-          phone: '+1 (555) 123-4567',
-          company: 'TechCorp',
-          title: 'CTO',
-          status: 'prospect',
-          source: 'Website',
-          lead_score: 85
-        },
-        {
-          id: '2',
-          first_name: 'Sarah',
-          last_name: 'Johnson',
-          email: 'sarah.j@marketing.inc',
-          phone: '+1 (555) 234-5678',
-          company: 'Marketing Inc',
-          title: 'Marketing Director',
-          status: 'customer',
-          source: 'Referral',
-          lead_score: 92
-        },
-      ]);
+      toast.error('Failed to load contacts');
+      setContacts([]);
     } finally {
       setLoading(false);
     }

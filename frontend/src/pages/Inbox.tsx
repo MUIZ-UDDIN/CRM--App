@@ -43,39 +43,7 @@ export default function Inbox() {
         const data = await response.json();
         setEmails(data);
       } else {
-        // Mock data for development
-        setEmails([
-          {
-            id: '1',
-            direction: 'inbound',
-            status: 'delivered',
-            from_address: 'client@example.com',
-            to_address: 'you@sunstonecrm.com',
-            subject: 'Interested in your services',
-            body: 'Hi, I saw your website and I am interested in learning more about your CRM services. Could we schedule a call?',
-            sent_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            direction: 'outbound',
-            status: 'sent',
-            from_address: 'you@sunstonecrm.com',
-            to_address: 'client@example.com',
-            subject: 'Re: Interested in your services',
-            body: 'Thank you for your interest! I would be happy to schedule a call. What time works best for you?',
-            sent_at: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: '3',
-            direction: 'inbound',
-            status: 'delivered',
-            from_address: 'prospect@company.com',
-            to_address: 'you@sunstonecrm.com',
-            subject: 'Demo Request',
-            body: 'Hello, we would like to request a demo of your CRM platform for our sales team of 50 people.',
-            sent_at: new Date(Date.now() - 7200000).toISOString()
-          }
-        ]);
+        setEmails([]);
       }
     } catch (error) {
       console.error('Error fetching emails:', error);

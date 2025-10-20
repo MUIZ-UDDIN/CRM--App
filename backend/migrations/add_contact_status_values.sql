@@ -9,7 +9,7 @@ BEGIN
         WHERE enumlabel = 'lead' 
         AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'contactstatus')
     ) THEN
-        ALTER TYPE contactstatus ADD VALUE 'lead' AFTER 'new';
+        ALTER TYPE contactstatus ADD VALUE IF NOT EXISTS 'lead';
     END IF;
 END$$;
 
@@ -21,6 +21,6 @@ BEGIN
         WHERE enumlabel = 'prospect' 
         AND enumtypid = (SELECT oid FROM pg_type WHERE typname = 'contactstatus')
     ) THEN
-        ALTER TYPE contactstatus ADD VALUE 'prospect' AFTER 'lead';
+        ALTER TYPE contactstatus ADD VALUE IF NOT EXISTS 'prospect';
     END IF;
 END$$;

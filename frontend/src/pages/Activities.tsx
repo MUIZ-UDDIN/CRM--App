@@ -75,48 +75,8 @@ export default function Activities() {
       setActivities(data);
     } catch (error) {
       console.error('Error:', error);
-      // Use mock data if API fails
-      setActivities([
-        {
-          id: '1',
-          type: 'call',
-          subject: 'Follow-up call with John Smith',
-          description: 'Discuss proposal details',
-          status: 'pending',
-          due_date: '2024-01-20T14:00:00',
-          duration_minutes: 30,
-          priority: 2,
-        },
-        {
-          id: '2',
-          type: 'meeting',
-          subject: 'Product demo with Sarah Johnson',
-          description: 'Show new features',
-          status: 'completed',
-          due_date: '2024-01-18T10:00:00',
-          completed_at: '2024-01-18T10:45:00',
-          duration_minutes: 60,
-          priority: 2,
-        },
-        {
-          id: '3',
-          type: 'email',
-          subject: 'Send proposal to Michael Brown',
-          description: 'Include pricing and timeline',
-          status: 'pending',
-          due_date: '2024-01-19T09:00:00',
-          priority: 1,
-        },
-        {
-          id: '4',
-          type: 'task',
-          subject: 'Prepare quarterly report',
-          description: 'Sales metrics and forecasts',
-          status: 'overdue',
-          due_date: '2024-01-15T17:00:00',
-          priority: 2,
-        },
-      ]);
+      toast.error('Failed to load activities');
+      setActivities([]);
     } finally {
       setLoading(false);
     }

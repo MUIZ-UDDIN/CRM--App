@@ -41,36 +41,7 @@ export default function SMS() {
         const data = await response.json();
         setMessages(data);
       } else {
-        // Mock data for development
-        setMessages([
-          {
-            id: '1',
-            direction: 'inbound',
-            status: 'delivered',
-            from_address: '+1234567890',
-            to_address: '+0987654321',
-            body: 'Hi, I am interested in your services. Can you call me?',
-            sent_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            direction: 'outbound',
-            status: 'delivered',
-            from_address: '+0987654321',
-            to_address: '+1555123456',
-            body: 'Hi! I saw you called. What can I help you with?',
-            sent_at: new Date(Date.now() - 6000000).toISOString()
-          },
-          {
-            id: '3',
-            direction: 'inbound',
-            status: 'delivered',
-            from_address: '+1555987654',
-            to_address: '+0987654321',
-            body: 'When can we schedule a demo?',
-            sent_at: new Date(Date.now() - 12000000).toISOString()
-          }
-        ]);
+        setMessages([]);
       }
     } catch (error) {
       console.error('Error fetching SMS messages:', error);

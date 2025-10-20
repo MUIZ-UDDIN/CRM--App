@@ -263,16 +263,19 @@ export default function CallsNew() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact or Phone Number)</label>
                 <input
                   type="text"
-                  value={searchTo}
-                  onChange={(e) => setSearchTo(e.target.value)}
-                  placeholder="Search contacts..."
+                  value={callForm.to}
+                  onChange={(e) => {
+                    setCallForm({...callForm, to: e.target.value});
+                    setSearchTo(e.target.value);
+                  }}
+                  placeholder="Search contact or enter phone number..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 {searchTo && filteredContacts.length > 0 && (
-                  <div className="mt-1 max-h-40 overflow-y-auto border border-gray-300 rounded-lg bg-white">
+                  <div className="mt-1 max-h-40 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg">
                     {filteredContacts.slice(0, 5).map((contact) => (
                       <button
                         key={contact.id}
@@ -280,21 +283,14 @@ export default function CallsNew() {
                           setCallForm({...callForm, to: contact.phone || contact.mobile || ''});
                           setSearchTo('');
                         }}
-                        className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm"
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm border-b last:border-b-0"
                       >
                         <div className="font-medium">{contact.first_name} {contact.last_name}</div>
-                        <div className="text-gray-500">{contact.phone || contact.mobile}</div>
+                        <div className="text-gray-500 text-xs">{contact.phone || contact.mobile}</div>
                       </button>
                     ))}
                   </div>
                 )}
-                <input
-                  type="tel"
-                  value={callForm.to}
-                  onChange={(e) => setCallForm({...callForm, to: e.target.value})}
-                  placeholder="Or enter phone number"
-                  className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
               </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">

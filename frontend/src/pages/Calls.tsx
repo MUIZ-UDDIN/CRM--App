@@ -44,54 +44,7 @@ export default function Calls() {
         const data = await response.json();
         setCalls(data);
       } else {
-        // Mock data for development
-        setCalls([
-          {
-            id: '1',
-            direction: 'outbound',
-            status: 'completed',
-            from_address: '+0987654321',
-            to_address: '+1234567890',
-            duration: 180, // 3 minutes
-            recording_url: 'https://api.twilio.com/recordings/RE12345678',
-            started_at: new Date(Date.now() - 1800000).toISOString(),
-            ended_at: new Date(Date.now() - 1620000).toISOString(),
-            notes: 'Discussed service requirements'
-          },
-          {
-            id: '2',
-            direction: 'inbound',
-            status: 'missed',
-            from_address: '+1555123456',
-            to_address: '+0987654321',
-            duration: 0,
-            started_at: new Date(Date.now() - 7200000).toISOString(),
-            notes: 'Missed call from potential client'
-          },
-          {
-            id: '3',
-            direction: 'outbound',
-            status: 'completed',
-            from_address: '+0987654321',
-            to_address: '+1555987654',
-            duration: 420, // 7 minutes
-            recording_url: 'https://api.twilio.com/recordings/RE87654321',
-            started_at: new Date(Date.now() - 14400000).toISOString(),
-            ended_at: new Date(Date.now() - 14100000).toISOString(),
-            notes: 'Demo call - very interested'
-          },
-          {
-            id: '4',
-            direction: 'inbound',
-            status: 'completed',
-            from_address: '+1444555666',
-            to_address: '+0987654321',
-            duration: 120, // 2 minutes
-            started_at: new Date(Date.now() - 21600000).toISOString(),
-            ended_at: new Date(Date.now() - 21480000).toISOString(),
-            notes: 'Follow-up call'
-          }
-        ]);
+        setCalls([]);
       }
     } catch (error) {
       console.error('Error fetching calls:', error);
