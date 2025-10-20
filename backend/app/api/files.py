@@ -2,7 +2,7 @@
 Files API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File as FastAPIFile
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File as FastAPIFile, Form
 from fastapi.responses import FileResponse as FastAPIFileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
@@ -106,23 +106,46 @@ async def get_files(
 @router.post("/upload", response_model=FileResponse)
 async def upload_file(
     file: UploadFile = FastAPIFile(...),
-    category: Optional[str] = None,
+    category: Optional[str] = Form(None),
+    folder_id: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Upload a file"""
+    import os
+    import shutil
+    from pathlib import Path
+    
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    # For now, just create a file record without actually storing the file
-    # In production, you'd save to S3/storage and get the URL
+    # Create uploads directory if it doesn't exist
+    upload_dir = Path("/var/www/crm-app/uploads")
+    upload_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    file_extension = Path(file.filename).suffix
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = upload_dir / unique_filename
+    
+    # Save file to disk
+    try:
+        with file_path.open("wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        file_size = file_path.stat().st_size
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+    
+    # Create database record
     new_file = File(
         name=file.filename,
         original_name=file.filename,
         file_type=file.content_type,
-        size=0,  # Would be file.size in real implementation
+        size=file_size,
         category=category,
-        storage_path=f"/uploads/{file.filename}",  # Mock path
-        url=f"/uploads/{file.filename}",  # Mock URL
+        storage_path=str(file_path),
+        url=str(file_path),
+        folder_id=uuid.UUID(folder_id) if folder_id else None,
         owner_id=user_id
     )
     
