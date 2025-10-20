@@ -18,8 +18,8 @@ interface Quote {
   title: string;
   amount: number;
   status: 'draft' | 'sent' | 'accepted' | 'rejected';
-  client: string;
-  deal?: string;
+  client_id?: string;
+  deal_id?: string;
   valid_until: string;
   created_at: string;
 }
@@ -35,11 +35,12 @@ export default function Quotes() {
   const [loading, setLoading] = useState(false);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [quoteForm, setQuoteForm] = useState({
     title: '',
     amount: '',
-    client: '',
-    deal: '',
+    client_id: '',
+    deal_id: '',
     valid_until: '',
     status: 'draft',
   });
@@ -56,7 +57,24 @@ export default function Quotes() {
 
   useEffect(() => {
     fetchQuotes();
+    fetchContacts();
   }, [filterStatus]);
+
+  const fetchContacts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/contacts/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    }
+  };
 
   const fetchQuotes = async () => {
     setLoading(true);
@@ -72,6 +90,12 @@ export default function Quotes() {
     }
   };
 
+  const getClientName = (clientId?: string) => {
+    if (!clientId) return 'No Client';
+    const contact = contacts.find(c => c.id === clientId);
+    return contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Client';
+  };
+
   const handleView = (quote: Quote) => {
     setSelectedQuote(quote);
     setShowViewModal(true);
@@ -82,8 +106,8 @@ export default function Quotes() {
     setQuoteForm({
       title: quote.title,
       amount: quote.amount.toString(),
-      client: quote.client,
-      deal: quote.deal || '',
+      client_id: quote.client_id || '',
+      deal_id: quote.deal_id || '',
       valid_until: quote.valid_until,
       status: quote.status,
     });
@@ -112,8 +136,8 @@ export default function Quotes() {
       await quotesService.createQuote({
         title: quoteForm.title,
         amount: parseFloat(quoteForm.amount),
-        client_id: quoteForm.client || undefined,
-        deal_id: quoteForm.deal || undefined,
+        client_id: quoteForm.client_id || undefined,
+        deal_id: quoteForm.deal_id || undefined,
         valid_until: quoteForm.valid_until || undefined,
         status: quoteForm.status as any,
       });
@@ -122,8 +146,8 @@ export default function Quotes() {
       setQuoteForm({
         title: '',
         amount: '',
-        client: '',
-        deal: '',
+        client_id: '',
+        deal_id: '',
         valid_until: '',
         status: 'draft',
       });
@@ -139,8 +163,8 @@ export default function Quotes() {
       await quotesService.updateQuote(selectedQuote.id, {
         title: quoteForm.title,
         amount: parseFloat(quoteForm.amount),
-        client_id: quoteForm.client || undefined,
-        deal_id: quoteForm.deal || undefined,
+        client_id: quoteForm.client_id || undefined,
+        deal_id: quoteForm.deal_id || undefined,
         valid_until: quoteForm.valid_until || undefined,
         status: quoteForm.status as any,
       });
@@ -166,7 +190,7 @@ export default function Quotes() {
     const matchesSearch = 
       quote.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       quote.quote_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      quote.client.toLowerCase().includes(searchQuery.toLowerCase());
+      getClientName(quote.client_id).toLowerCase().includes(searchQuery.toLowerCase());
     
     const matchesStatus = filterStatus === 'all' || quote.status === filterStatus;
     
@@ -299,7 +323,7 @@ export default function Quotes() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Client</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{quote.client}</p>
+                        <p className="text-sm font-medium text-gray-900 truncate">{getClientName(quote.client_id)}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Valid Until</p>
@@ -307,7 +331,7 @@ export default function Quotes() {
                       </div>
                     </div>
 
-                    {quote.deal && (
+                    {quote.deal_id && (
                       <div className="mt-3">
                         <p className="text-xs text-gray-500">Related Deal</p>
                         <p className="text-sm text-primary-600">{quote.deal}</p>
@@ -388,8 +412,8 @@ export default function Quotes() {
               <input
                 type="text"
                 placeholder="Client Name"
-                value={quoteForm.client}
-                onChange={(e) => setQuoteForm({...quoteForm, client: e.target.value})}
+                value={quoteForm.client_id}
+                onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input
@@ -446,8 +470,8 @@ export default function Quotes() {
               <input
                 type="text"
                 placeholder="Client Name"
-                value={quoteForm.client}
-                onChange={(e) => setQuoteForm({...quoteForm, client: e.target.value})}
+                value={quoteForm.client_id}
+                onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <div className="flex justify-end space-x-3 pt-4">
@@ -494,7 +518,7 @@ export default function Quotes() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Client</label>
-                <p className="text-gray-900">{selectedQuote.client}</p>
+                <p className="text-gray-900">{getClientName(selectedQuote.client_id)}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Status</label>

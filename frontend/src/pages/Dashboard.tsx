@@ -40,6 +40,7 @@ export default function Dashboard() {
   const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [upcomingActivities, setUpcomingActivities] = useState<UpcomingActivity[]>([]);
   const [dashboardData, setDashboardData] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -109,11 +110,31 @@ export default function Dashboard() {
     },
   ];
 
-  // Fetch activities and dashboard data on component mount
+  // Fetch activities, dashboard data, and user info on component mount
   useEffect(() => {
     fetchActivities();
     fetchDashboardData();
+    fetchCurrentUser();
   }, []);
+
+  const fetchCurrentUser = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUser(data);
+      }
+    } catch (error) {
+      console.error('Error fetching current user:', error);
+    }
+  };
 
   const fetchDashboardData = async () => {
     try {
@@ -288,7 +309,9 @@ export default function Dashboard() {
               <div className="flex items-center">
                 <div>
                   <div className="flex items-center">
-                    <h1 className="ml-0 text-2xl font-bold leading-7 text-gray-900 sm:truncate">Good morning, John! 👋</h1>
+                    <h1 className="ml-0 text-2xl font-bold leading-7 text-gray-900 sm:truncate">
+                      Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {currentUser?.full_name?.split(' ')[0] || 'there'}! 👋
+                    </h1>
                   </div>
                   <dl className="flex flex-col sm:flex-row">
                     <dt className="sr-only">Current date</dt>

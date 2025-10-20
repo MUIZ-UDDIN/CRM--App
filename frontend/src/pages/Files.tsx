@@ -194,6 +194,9 @@ export default function Files() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('category', fileForm.category);
+      if (currentFolderId) {
+        formData.append('folder_id', currentFolderId);
+      }
       
       await filesService.uploadFile(formData);
       toast.success('File uploaded successfully');

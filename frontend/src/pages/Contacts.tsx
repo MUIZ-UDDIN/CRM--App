@@ -369,7 +369,7 @@ export default function Contacts() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        Marc Hickson
+                        {users.find(u => u.id === contact.owner_id)?.full_name || 'Unassigned'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <ActionButtons

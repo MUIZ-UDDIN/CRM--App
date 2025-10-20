@@ -144,6 +144,9 @@ def create_activity(
         "description": db_activity.description or "",
         "type": str(db_activity.type),
         "status": str(db_activity.status),
+        "due_date": db_activity.due_date.isoformat() if db_activity.due_date else None,
+        "duration_minutes": db_activity.duration_minutes,
+        "priority": db_activity.priority,
         "created_at": str(db_activity.created_at),
         "message": "Activity created successfully"
     }
