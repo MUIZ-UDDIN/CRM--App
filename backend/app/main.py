@@ -256,10 +256,14 @@ else:
 
 
 if __name__ == "__main__":
+    import os
+    # Only use reload in development
+    is_dev = os.getenv("ENVIRONMENT", "production") == "development"
+    
     uvicorn.run(
-        "main:app",
+        "app.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=True,
+        reload=is_dev,
         log_level="info"
     )
