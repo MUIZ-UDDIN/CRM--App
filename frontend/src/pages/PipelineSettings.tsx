@@ -83,7 +83,7 @@ export default function PipelineSettings() {
   };
 
   const onDragEnd = async (result: any) => {
-    if (!result.destination || !currentPipeline) return;
+    if (!result.destination || !currentPipeline || !currentPipeline.stages) return;
 
     const stages = Array.from(currentPipeline.stages);
     const [reorderedStage] = stages.splice(result.source.index, 1);
@@ -218,7 +218,7 @@ export default function PipelineSettings() {
                     ref={provided.innerRef}
                     className="space-y-3"
                   >
-                    {currentPipeline?.stages.map((stage, index) => (
+                    {currentPipeline?.stages?.map((stage, index) => (
                       <Draggable key={stage.id} draggableId={stage.id} index={index}>
                         {(provided, snapshot) => (
                           <div
