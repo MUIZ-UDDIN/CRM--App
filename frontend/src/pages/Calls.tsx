@@ -1,45 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { PhoneIcon, PlusIcon, TrashIcon, PlayIcon, StopIcon } from '@heroicons/react/24/outline';
+import { PhoneIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
-interface Call {
+interface Contact {
   id: string;
-  direction: 'inbound' | 'outbound';
-  status: 'completed' | 'missed' | 'busy' | 'no-answer' | 'failed';
-  from_address: string;
-  to_address: string;
-  duration: number;
-  recording_url?: string;
-  started_at: string;
-  ended_at?: string;
-  notes?: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+  mobile?: string;
 }
 
-export default function Calls() {
+interface Call {
+  id: string;
+  from: string;
+  to: string;
+  duration: number;
+  status: string;
+  direction: 'inbound' | 'outbound';
+  created_at: string;
+}
+
+export default function CallsNew() {
   const [calls, setCalls] = useState<Call[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCallModal, setShowCallModal] = useState(false);
-  const [playingRecording, setPlayingRecording] = useState<string | null>(null);
-  const [callForm, setCallForm] = useState({
-    to: '',
-    notes: ''
-  });
+  const [selectedTab, setSelectedTab] = useState<'all' | 'incoming' | 'outgoing'>('all');
   const { token } = useAuth();
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const [callForm, setCallForm] = useState({
+    from: '',
+    to: ''
+  });
+
+  const [searchTo, setSearchTo] = useState('');
+  const [twilioNumbers, setTwilioNumbers] = useState<string[]>([]);
 
   useEffect(() => {
     fetchCalls();
-  }, []);
+    fetchContacts();
+    loadTwilioConfig();
+  }, [selectedTab]);
+
+  const loadTwilioConfig = () => {
+    const twilioConfig = localStorage.getItem('twilioConfig');
+    if (twilioConfig) {
+      const config = JSON.parse(twilioConfig);
+      setTwilioNumbers([config.phoneNumber]);
+      setCallForm(prev => ({ ...prev, from: config.phoneNumber }));
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/contacts/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    }
+  };
 
   const fetchCalls = async () => {
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/calls`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await fetch(`${API_BASE_URL}/api/calls?type=${selectedTab}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
       });
-
       if (response.ok) {
         const data = await response.json();
         setCalls(data);
@@ -48,274 +80,223 @@ export default function Calls() {
       }
     } catch (error) {
       console.error('Error fetching calls:', error);
-      toast.error('Failed to load calls');
     } finally {
       setLoading(false);
     }
   };
 
-  const makeCall = async () => {
-    if (!callForm.to.trim()) {
-      toast.error('Please enter a phone number');
+  const handleMakeCall = async () => {
+    if (!callForm.from || !callForm.to) {
+      toast.error('Please select from number and enter recipient number');
       return;
     }
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
+      const response = await fetch(`${API_BASE_URL}/api/calls/initiate`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          to: callForm.to,
-          notes: callForm.notes
-        })
+        body: JSON.stringify(callForm)
       });
 
       if (response.ok) {
-        toast.success('Call initiated');
+        toast.success('Call initiated successfully!');
         setShowCallModal(false);
-        setCallForm({ to: '', notes: '' });
+        setCallForm({ from: callForm.from, to: '' });
         fetchCalls();
       } else {
-        toast.error('Failed to make call');
+        toast.error('Failed to initiate call');
       }
     } catch (error) {
-      console.error('Error making call:', error);
-      toast.error('Failed to make call');
+      console.error('Error initiating call:', error);
+      toast.error('Failed to initiate call');
     }
   };
 
-  const deleteCall = async (callId: string) => {
-    if (!confirm('Are you sure you want to delete this call record?')) return;
-    
-    try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/calls/${callId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        setCalls(calls.filter(call => call.id !== callId));
-        toast.success('Call record deleted');
-      }
-    } catch (error) {
-      console.error('Error deleting call:', error);
-      toast.error('Failed to delete call');
-    }
-  };
+  const filteredContacts = contacts.filter(c =>
+    (c.phone && c.phone.toLowerCase().includes(searchTo.toLowerCase())) ||
+    (c.mobile && c.mobile.toLowerCase().includes(searchTo.toLowerCase())) ||
+    `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchTo.toLowerCase())
+  );
 
   const formatDuration = (seconds: number) => {
-    if (seconds === 0) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const playRecording = (recordingUrl: string, callId: string) => {
-    if (playingRecording === callId) {
-      setPlayingRecording(null);
-      toast('Recording stopped');
-    } else {
-      setPlayingRecording(callId);
-      // In a real app, you would implement audio playback here
-      toast.success('Playing recording...');
-      // Simulate recording playback
-      setTimeout(() => setPlayingRecording(null), 5000);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'missed':
-        return 'bg-red-100 text-red-800';
-      case 'busy':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'no-answer':
-        return 'bg-gray-100 text-gray-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getDirectionColor = (direction: string) => {
-    return direction === 'inbound' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600';
-  };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="py-6 flex justify-between items-center">
             <div>
-              <div className="flex items-center space-x-3">
-                <PhoneIcon className="w-8 h-8 text-primary-600" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Voice Calls</h1>
-                  <p className="text-gray-600">Voice calls and recordings via Twilio Voice</p>
-                </div>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Calls</h1>
+              <p className="mt-1 text-sm text-gray-500">Make and track phone calls</p>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowCallModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Make Call
-              </button>
-            </div>
+            <button
+              onClick={() => setShowCallModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+            >
+              <PhoneIcon className="h-4 w-4 mr-2" />
+              Make Call
+            </button>
           </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="border-b border-gray-200 bg-white">
+        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+          <nav className="-mb-px flex space-x-8">
+            <button
+              onClick={() => setSelectedTab('all')}
+              className={`${
+                selectedTab === 'all'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              All Calls
+            </button>
+            <button
+              onClick={() => setSelectedTab('incoming')}
+              className={`${
+                selectedTab === 'incoming'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Incoming
+            </button>
+            <button
+              onClick={() => setSelectedTab('outgoing')}
+              className={`${
+                selectedTab === 'outgoing'
+                  ? 'border-primary-500 text-primary-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
+            >
+              Outgoing
+            </button>
+          </nav>
         </div>
       </div>
 
       {/* Calls List */}
       <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="divide-y divide-gray-200">
-            {calls.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">
-                <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
-                  <PhoneIcon className="w-6 h-6 text-gray-400" />
-                </div>
-                <p>No calls found</p>
-              </div>
-            ) : (
-              calls.map((call) => (
-                <div key={call.id} className="p-6 hover:bg-gray-50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className={`p-3 rounded-full ${getDirectionColor(call.direction)}`}>
-                        <PhoneIcon className="w-5 h-5" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className={`text-sm font-medium ${
-                            call.direction === 'inbound' ? 'text-blue-600' : 'text-green-600'
-                          }`}>
-                            {call.direction === 'inbound' ? 'From' : 'To'}: {
-                              call.direction === 'inbound' ? call.from_address : call.to_address
-                            }
-                          </span>
-                          <span className="text-xs text-gray-500">
-                            {formatDate(call.started_at)}
-                          </span>
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(call.status)}`}>
-                            {call.status.charAt(0).toUpperCase() + call.status.slice(1)}
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4 mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm text-gray-600">Duration:</span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {formatDuration(call.duration)}
-                            </span>
-                          </div>
-                          
-                          {call.recording_url && (
-                            <>
-                              <span className="text-gray-400">•</span>
-                              <button 
-                                className="flex items-center space-x-1 text-sm text-primary-600 hover:text-primary-800 font-medium"
-                                onClick={() => playRecording(call.recording_url!, call.id)}
-                              >
-                                {playingRecording === call.id ? (
-                                  <StopIcon className="w-4 h-4" />
-                                ) : (
-                                  <PlayIcon className="w-4 h-4" />
-                                )}
-                                <span>{playingRecording === call.id ? 'Stop' : 'Play'} Recording</span>
-                              </button>
-                            </>
-                          )}
-                        </div>
-                        
-                        {call.notes && (
-                          <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                            <span className="font-medium">Notes:</span> {call.notes}
-                          </p>
-                        )}
-                      </div>
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          </div>
+        ) : calls.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <PhoneIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No calls</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by making a new call.</p>
+          </div>
+        ) : (
+          <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
+            {calls.map((call) => (
+              <div key={call.id} className="p-4 hover:bg-gray-50">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3">
+                      <PhoneIcon className={`h-5 w-5 ${
+                        call.direction === 'outbound' ? 'text-blue-600' : 'text-green-600'
+                      }`} />
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        call.direction === 'outbound' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                      }`}>
+                        {call.direction === 'outbound' ? 'Outgoing' : 'Incoming'}
+                      </span>
+                      <span className={`px-2 py-1 text-xs rounded-full ${
+                        call.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                        call.status === 'no-answer' ? 'bg-yellow-100 text-yellow-800' :
+                        'bg-gray-100 text-gray-800'
+                      }`}>
+                        {call.status}
+                      </span>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => deleteCall(call.id)}
-                        className="p-2 text-red-500 hover:bg-red-100 rounded-lg"
-                        title="Delete call record"
-                      >
-                        <TrashIcon className="w-4 h-4" />
-                      </button>
-                    </div>
+                    <p className="mt-1 text-sm text-gray-600">
+                      From: {call.from} → To: {call.to}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-900">
+                      Duration: {formatDuration(call.duration)}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-400">
+                      {new Date(call.created_at).toLocaleString()}
+                    </p>
                   </div>
                 </div>
-              ))
-            )}
+              </div>
+            ))}
           </div>
-        </div>
+        )}
       </div>
 
       {/* Make Call Modal */}
       {showCallModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Make Phone Call</h3>
-              <button 
-                onClick={() => setShowCallModal(false)} 
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
+              <h3 className="text-lg font-medium text-gray-900">Make a Call</h3>
+              <button onClick={() => setShowCallModal(false)} className="text-gray-400 hover:text-gray-600">
+                ×
               </button>
             </div>
-            
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To Phone Number</label>
-                <input 
-                  type="tel" 
-                  placeholder="+1234567890"
-                  value={callForm.to}
-                  onChange={(e) => setCallForm({...callForm, to: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" 
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (Optional)</label>
-                <textarea 
-                  rows={3}
-                  placeholder="Add notes about this call..."
-                  value={callForm.notes}
-                  onChange={(e) => setCallForm({...callForm, notes: e.target.value})}
+                <label className="block text-sm font-medium text-gray-700 mb-1">From (Your Twilio Number)</label>
+                <select
+                  value={callForm.from}
+                  onChange={(e) => setCallForm({...callForm, from: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                ></textarea>
+                >
+                  <option value="">Select number</option>
+                  {twilioNumbers.map((num) => (
+                    <option key={num} value={num}>{num}</option>
+                  ))}
+                </select>
               </div>
-              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact or Phone Number)</label>
+                <input
+                  type="text"
+                  value={callForm.to}
+                  onChange={(e) => {
+                    setCallForm({...callForm, to: e.target.value});
+                    setSearchTo(e.target.value);
+                  }}
+                  placeholder="Search contact or enter phone number..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                {searchTo && filteredContacts.length > 0 && (
+                  <div className="mt-1 max-h-40 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg">
+                    {filteredContacts.slice(0, 5).map((contact) => (
+                      <button
+                        key={contact.id}
+                        onClick={() => {
+                          setCallForm({...callForm, to: contact.phone || contact.mobile || ''});
+                          setSearchTo('');
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-50 text-sm border-b last:border-b-0"
+                      >
+                        <div className="font-medium">{contact.first_name} {contact.last_name}</div>
+                        <div className="text-gray-500 text-xs">{contact.phone || contact.mobile}</div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> This will initiate a call through Twilio. Make sure your Twilio account is configured correctly.
+                </p>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowCallModal(false)}
@@ -324,11 +305,11 @@ export default function Calls() {
                   Cancel
                 </button>
                 <button
-                  onClick={makeCall}
-                  disabled={!callForm.to.trim()}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={handleMakeCall}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
-                  Make Call
+                  <PhoneIcon className="h-4 w-4 inline mr-2" />
+                  Call Now
                 </button>
               </div>
             </div>
