@@ -26,12 +26,15 @@ class ContactCreate(ContactBase):
     pass
 
 class ContactUpdate(BaseModel):
-    name: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
     company: Optional[str] = None
-    position: Optional[str] = None
+    title: Optional[str] = None
+    type: Optional[str] = None
     status: Optional[str] = None
+    source: Optional[str] = None
 
 class Contact(ContactBase):
     id: uuid.UUID
