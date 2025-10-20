@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
 import { 
   UserCircleIcon, 
   CameraIcon,
@@ -8,30 +10,97 @@ import {
 } from '@heroicons/react/24/outline';
 
 export default function Profile() {
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [profileData, setProfileData] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@company.com',
-    phone: '+1 (555) 123-4567',
-    title: 'Senior Sales Manager',
-    department: 'Sales',
-    location: 'New York, NY',
-    bio: 'Experienced sales professional with 8+ years in B2B software sales. Passionate about building relationships and driving revenue growth.',
-    joinDate: '2020-03-15'
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    title: '',
+    department: '',
+    location: '',
+    bio: '',
+    joinDate: ''
   });
 
   const [tempData, setTempData] = useState(profileData);
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  // Fetch user profile data
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const profile = {
+          firstName: data.first_name || '',
+          lastName: data.last_name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          title: data.title || '',
+          department: data.department || '',
+          location: '',
+          bio: '',
+          joinDate: data.created_at || ''
+        };
+        setProfileData(profile);
+        setTempData(profile);
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      toast.error('Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = () => {
     setTempData(profileData);
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    setProfileData(tempData);
-    setIsEditing(false);
-    alert('Profile updated successfully!');
+  const handleSave = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          first_name: tempData.firstName,
+          last_name: tempData.lastName,
+          phone: tempData.phone,
+          title: tempData.title,
+          department: tempData.department
+        })
+      });
+      
+      if (response.ok) {
+        setProfileData(tempData);
+        setIsEditing(false);
+        toast.success('Profile updated successfully!');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to update profile');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Failed to update profile');
+    }
   };
 
   const handleCancel = () => {

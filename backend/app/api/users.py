@@ -183,3 +183,34 @@ async def get_user(
         is_active=True,
         created_at=user.created_at
     )
+
+
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a user (soft delete)"""
+    # Check if current user is admin
+    if current_user.get("role") not in ["Admin", "Super Admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can delete users")
+    
+    # Prevent self-deletion
+    if str(current_user["id"]) == user_id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    
+    user = db.query(UserModel).filter(
+        UserModel.id == user_id,
+        UserModel.is_deleted == False
+    ).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Soft delete
+    user.is_deleted = True
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    
+    return {"message": "User deleted successfully"}

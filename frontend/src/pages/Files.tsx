@@ -26,6 +26,7 @@ interface FileItem {
   contact?: string;
   deal?: string;
   url?: string;
+  folder_id?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -43,6 +44,8 @@ export default function Files() {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<FileItem[]>([]);
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
+  const [currentFolderName, setCurrentFolderName] = useState<string>('All Files');
   const [fileForm, setFileForm] = useState({
     name: '',
     category: '',
@@ -130,27 +133,51 @@ export default function Files() {
     }
   };
 
-  const handleDownload = (file: FileItem) => {
+  const handleDownload = async (file: FileItem) => {
     if (file.type === 'folder') {
       toast.error('Cannot download folders');
       return;
     }
     
-    // For now, just show a message. In production, you'd download from the URL
-    if (file.url) {
-      window.open(file.url, '_blank');
-      toast.success(`Opening ${file.name}...`);
-    } else {
-      toast.error('File URL not available');
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${API_BASE_URL}/api/files/${file.id}/download`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast.success(`Downloaded ${file.name}`);
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download file');
     }
   };
   
   const handleOpenFolder = (folder: FileItem) => {
     if (folder.type !== 'folder') return;
-    // In a real app, you'd navigate to the folder view
-    // For now, just show a message
-    toast.success(`Opening folder: ${folder.name}`);
-    // You could set a currentFolderId state and filter files by it
+    setCurrentFolderId(folder.id);
+    setCurrentFolderName(folder.name);
+    toast.success(`Opened folder: ${folder.name}`);
+  };
+  
+  const handleBackToRoot = () => {
+    setCurrentFolderId(null);
+    setCurrentFolderName('All Files');
   };
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -222,6 +249,10 @@ export default function Files() {
   };
 
   const filteredFiles = files.filter(file => {
+    // Filter by current folder
+    if (currentFolderId && file.folder_id !== currentFolderId) return false;
+    if (!currentFolderId && file.folder_id) return false;
+    
     const matchesSearch = 
       file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (file.tags && file.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));

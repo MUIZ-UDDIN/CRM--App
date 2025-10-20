@@ -47,6 +47,20 @@ export default function Settings() {
   useEffect(() => {
     if (activeTab === 'team') {
       fetchTeamMembers();
+    } else if (activeTab === 'company') {
+      // Load company settings from localStorage
+      const savedCompany = localStorage.getItem('companySettings');
+      if (savedCompany) {
+        setCompanyForm(JSON.parse(savedCompany));
+      }
+    } else if (activeTab === 'integrations') {
+      // Check if Twilio is connected
+      const savedTwilio = localStorage.getItem('twilioConfig');
+      if (savedTwilio) {
+        setIntegrations(integrations.map(i =>
+          i.name === 'Twilio' ? { ...i, status: 'connected' } : i
+        ));
+      }
     }
   }, [activeTab]);
 
@@ -75,20 +89,28 @@ export default function Settings() {
   };
 
   const [integrations, setIntegrations] = useState<Integration[]>([
-    { id: '1', name: 'Gmail', description: 'Sync emails and calendar', status: 'connected', icon: '📧' },
-    { id: '2', name: 'Slack', description: 'Get notifications in Slack', status: 'disconnected', icon: '💬' },
-    { id: '3', name: 'Zapier', description: 'Connect with 5000+ apps', status: 'disconnected', icon: '⚡' },
+    { id: '1', name: 'Twilio', description: 'SMS, Voice calls, and messaging', status: 'disconnected', icon: '📱' },
+    { id: '2', name: 'Gmail', description: 'Sync emails and calendar', status: 'disconnected', icon: '📧' },
+    { id: '3', name: 'Slack', description: 'Get notifications in Slack', status: 'disconnected', icon: '💬' },
+    { id: '4', name: 'Zapier', description: 'Connect with 5000+ apps', status: 'disconnected', icon: '⚡' },
   ]);
+  
+  const [showTwilioModal, setShowTwilioModal] = useState(false);
+  const [twilioForm, setTwilioForm] = useState({
+    accountSid: '',
+    authToken: '',
+    phoneNumber: ''
+  });
 
   const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Sales Rep' });
   const [companyForm, setCompanyForm] = useState({
-    name: 'My Company',
-    email: 'contact@company.com',
-    phone: '+1 (555) 123-4567',
-    address: '123 Business St',
-    city: 'San Francisco',
-    state: 'CA',
-    zip: '94105',
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    city: '',
+    state: '',
+    zip: '',
   });
   const [securityForm, setSecurityForm] = useState({
     currentPassword: '',
@@ -149,19 +171,76 @@ export default function Settings() {
     toast.success('Team member updated');
   };
 
-  const handleDeleteTeamMember = (member: TeamMember) => {
-    if (!confirm(`Remove ${member.name}?`)) return;
-    setTeamMembers(teamMembers.filter(m => m.id !== member.id));
-    toast.success('Team member removed');
+  const handleDeleteTeamMember = async (member: TeamMember) => {
+    if (!confirm(`Remove ${member.name}? This will permanently delete their account.`)) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/users/${member.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      if (response.ok) {
+        setTeamMembers(teamMembers.filter(m => m.id !== member.id));
+        toast.success('Team member removed permanently');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to remove team member');
+      }
+    } catch (error) {
+      console.error('Error deleting team member:', error);
+      toast.error('Failed to remove team member');
+    }
   };
 
   const handleToggleIntegration = (integration: Integration) => {
+    if (integration.name === 'Twilio' && integration.status === 'disconnected') {
+      // Load saved Twilio config
+      const savedTwilio = localStorage.getItem('twilioConfig');
+      if (savedTwilio) {
+        setTwilioForm(JSON.parse(savedTwilio));
+      }
+      setShowTwilioModal(true);
+      return;
+    }
+    
+    if (integration.name === 'Twilio' && integration.status === 'connected') {
+      // Disconnect Twilio
+      localStorage.removeItem('twilioConfig');
+      setIntegrations(integrations.map(i =>
+        i.id === integration.id ? { ...i, status: 'disconnected' } : i
+      ));
+      toast.success('Twilio disconnected');
+      return;
+    }
+    
     setIntegrations(integrations.map(i =>
       i.id === integration.id
         ? { ...i, status: i.status === 'connected' ? 'disconnected' : 'connected' }
         : i
     ));
     toast.success(`${integration.name} ${integration.status === 'connected' ? 'disconnected' : 'connected'}`);
+  };
+  
+  const handleSaveTwilio = () => {
+    if (!twilioForm.accountSid || !twilioForm.authToken || !twilioForm.phoneNumber) {
+      toast.error('Please fill in all Twilio credentials');
+      return;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('twilioConfig', JSON.stringify(twilioForm));
+    
+    // Update integration status
+    setIntegrations(integrations.map(i =>
+      i.name === 'Twilio' ? { ...i, status: 'connected' } : i
+    ));
+    
+    setShowTwilioModal(false);
+    toast.success('Twilio connected successfully!');
   };
 
   const handleChangePassword = async () => {
@@ -361,7 +440,10 @@ export default function Settings() {
             </div>
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => toast.success('Company settings saved')}
+                onClick={() => {
+                  localStorage.setItem('companySettings', JSON.stringify(companyForm));
+                  toast.success('Company settings saved successfully');
+                }}
                 className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
               >
                 Save Changes
@@ -404,22 +486,6 @@ export default function Settings() {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
                   </div>
-                </div>
-              </div>
-              <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-sm font-medium text-gray-900 mb-4">Two-Factor Authentication</h3>
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-gray-600">Add an extra layer of security</p>
-                  <button
-                    onClick={() => setSecurityForm({...securityForm, twoFactorEnabled: !securityForm.twoFactorEnabled})}
-                    className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ${
-                      securityForm.twoFactorEnabled ? 'bg-primary-600' : 'bg-gray-200'
-                    }`}
-                  >
-                    <span className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ${
-                      securityForm.twoFactorEnabled ? 'translate-x-5' : 'translate-x-0'
-                    }`} />
-                  </button>
                 </div>
               </div>
               <div className="flex justify-end">
@@ -610,6 +676,74 @@ export default function Settings() {
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
                   Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Twilio Configuration Modal */}
+      {showTwilioModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Configure Twilio</h3>
+              <button onClick={() => setShowTwilioModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Account SID</label>
+                <input
+                  type="text"
+                  placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  value={twilioForm.accountSid}
+                  onChange={(e) => setTwilioForm({...twilioForm, accountSid: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Auth Token</label>
+                <input
+                  type="password"
+                  placeholder="Your Twilio Auth Token"
+                  value={twilioForm.authToken}
+                  onChange={(e) => setTwilioForm({...twilioForm, authToken: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                <input
+                  type="tel"
+                  placeholder="+1234567890"
+                  value={twilioForm.phoneNumber}
+                  onChange={(e) => setTwilioForm({...twilioForm, phoneNumber: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Get your Twilio credentials from{' '}
+                  <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="underline">
+                    console.twilio.com
+                  </a>
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowTwilioModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveTwilio}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Connect Twilio
                 </button>
               </div>
             </div>
