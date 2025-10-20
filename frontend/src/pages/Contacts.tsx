@@ -297,10 +297,13 @@ export default function Contacts() {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
               >
                 <option value="all">All Status</option>
+                <option value="new">New</option>
                 <option value="lead">Lead</option>
                 <option value="prospect">Prospect</option>
+                <option value="contacted">Contacted</option>
+                <option value="qualified">Qualified</option>
+                <option value="unqualified">Unqualified</option>
                 <option value="customer">Customer</option>
-                <option value="inactive">Inactive</option>
               </select>
             )}
           </div>
