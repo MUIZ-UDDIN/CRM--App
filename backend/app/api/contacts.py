@@ -34,7 +34,6 @@ class ContactUpdate(BaseModel):
     title: Optional[str] = None
     type: Optional[str] = None
     status: Optional[str] = None
-    source: Optional[str] = None
 
 class Contact(ContactBase):
     id: uuid.UUID

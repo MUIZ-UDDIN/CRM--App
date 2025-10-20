@@ -198,7 +198,9 @@ export default function Contacts() {
     if (!selectedContact) return;
     
     try {
-      await contactsService.updateContact(selectedContact.id, contactForm);
+      // Remove empty source field to avoid enum validation errors
+      const { source, owner_id, ...updateData } = contactForm;
+      await contactsService.updateContact(selectedContact.id, updateData);
       toast.success('Contact updated');
       setShowEditModal(false);
       fetchContacts();
