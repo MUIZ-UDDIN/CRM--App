@@ -56,11 +56,17 @@ export default function Settings() {
     } else if (activeTab === 'integrations') {
       // Check if Twilio is connected
       const savedTwilio = localStorage.getItem('twilioConfig');
-      if (savedTwilio) {
-        setIntegrations(integrations.map(i =>
-          i.name === 'Twilio' ? { ...i, status: 'connected' } : i
-        ));
-      }
+      const savedGmail = localStorage.getItem('gmailConfig');
+      
+      setIntegrations(integrations.map(i => {
+        if (i.name === 'Twilio' && savedTwilio) {
+          return { ...i, status: 'connected' };
+        }
+        if (i.name === 'Gmail' && savedGmail) {
+          return { ...i, status: 'connected' };
+        }
+        return i;
+      }));
     }
   }, [activeTab]);
 
@@ -91,8 +97,6 @@ export default function Settings() {
   const [integrations, setIntegrations] = useState<Integration[]>([
     { id: '1', name: 'Twilio', description: 'SMS, Voice calls, and messaging', status: 'disconnected', icon: '📱' },
     { id: '2', name: 'Gmail', description: 'Sync emails and calendar', status: 'disconnected', icon: '📧' },
-    { id: '3', name: 'Slack', description: 'Get notifications in Slack', status: 'disconnected', icon: '💬' },
-    { id: '4', name: 'Zapier', description: 'Connect with 5000+ apps', status: 'disconnected', icon: '⚡' },
   ]);
   
   const [showTwilioModal, setShowTwilioModal] = useState(false);
@@ -100,6 +104,12 @@ export default function Settings() {
     accountSid: '',
     authToken: '',
     phoneNumber: ''
+  });
+  
+  const [showGmailModal, setShowGmailModal] = useState(false);
+  const [gmailForm, setGmailForm] = useState({
+    email: '',
+    appPassword: ''
   });
 
   const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Sales Rep' });
@@ -197,8 +207,8 @@ export default function Settings() {
   };
 
   const handleToggleIntegration = (integration: Integration) => {
+    // Twilio handling
     if (integration.name === 'Twilio' && integration.status === 'disconnected') {
-      // Load saved Twilio config
       const savedTwilio = localStorage.getItem('twilioConfig');
       if (savedTwilio) {
         setTwilioForm(JSON.parse(savedTwilio));
@@ -208,12 +218,30 @@ export default function Settings() {
     }
     
     if (integration.name === 'Twilio' && integration.status === 'connected') {
-      // Disconnect Twilio
       localStorage.removeItem('twilioConfig');
       setIntegrations(integrations.map(i =>
         i.id === integration.id ? { ...i, status: 'disconnected' } : i
       ));
       toast.success('Twilio disconnected');
+      return;
+    }
+    
+    // Gmail handling
+    if (integration.name === 'Gmail' && integration.status === 'disconnected') {
+      const savedGmail = localStorage.getItem('gmailConfig');
+      if (savedGmail) {
+        setGmailForm(JSON.parse(savedGmail));
+      }
+      setShowGmailModal(true);
+      return;
+    }
+    
+    if (integration.name === 'Gmail' && integration.status === 'connected') {
+      localStorage.removeItem('gmailConfig');
+      setIntegrations(integrations.map(i =>
+        i.id === integration.id ? { ...i, status: 'disconnected' } : i
+      ));
+      toast.success('Gmail disconnected');
       return;
     }
     
@@ -241,6 +269,24 @@ export default function Settings() {
     
     setShowTwilioModal(false);
     toast.success('Twilio connected successfully!');
+  };
+  
+  const handleSaveGmail = () => {
+    if (!gmailForm.email || !gmailForm.appPassword) {
+      toast.error('Please fill in all Gmail credentials');
+      return;
+    }
+    
+    // Save to localStorage
+    localStorage.setItem('gmailConfig', JSON.stringify(gmailForm));
+    
+    // Update integration status
+    setIntegrations(integrations.map(i =>
+      i.name === 'Gmail' ? { ...i, status: 'connected' } : i
+    ));
+    
+    setShowGmailModal(false);
+    toast.success('Gmail connected successfully!');
   };
 
   const handleChangePassword = async () => {
@@ -744,6 +790,65 @@ export default function Settings() {
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
                   Connect Twilio
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Gmail Configuration Modal */}
+      {showGmailModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Configure Gmail</h3>
+              <button onClick={() => setShowGmailModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Gmail Address</label>
+                <input
+                  type="email"
+                  placeholder="your.email@gmail.com"
+                  value={gmailForm.email}
+                  onChange={(e) => setGmailForm({...gmailForm, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">App Password</label>
+                <input
+                  type="password"
+                  placeholder="16-character app password"
+                  value={gmailForm.appPassword}
+                  onChange={(e) => setGmailForm({...gmailForm, appPassword: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Generate an App Password from{' '}
+                  <a href="https://myaccount.google.com/apppasswords" target="_blank" rel="noopener noreferrer" className="underline">
+                    Google Account Settings
+                  </a>
+                  . Regular passwords won't work.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowGmailModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveGmail}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Connect Gmail
                 </button>
               </div>
             </div>

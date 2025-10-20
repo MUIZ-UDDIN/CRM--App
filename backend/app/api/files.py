@@ -3,12 +3,14 @@ Files API endpoints
 """
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File as FastAPIFile
+from fastapi.responses import FileResponse as FastAPIFileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 import uuid
+import os
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
@@ -259,6 +261,37 @@ async def create_file(
         created_at=new_file.created_at.isoformat() if new_file.created_at else None,
         updated_at=new_file.updated_at.isoformat() if new_file.updated_at else None
     )
+
+
+@router.get("/{file_id}/download")
+async def download_file(
+    file_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Download a file"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    file = db.query(File).filter(
+        and_(
+            File.id == uuid.UUID(file_id),
+            File.owner_id == user_id,
+            File.is_deleted == False
+        )
+    ).first()
+    
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Check if file exists on disk
+    if file.url and os.path.exists(file.url):
+        return FastAPIFileResponse(
+            path=file.url,
+            filename=file.original_name,
+            media_type='application/octet-stream'
+        )
+    else:
+        raise HTTPException(status_code=404, detail="File not found on disk")
 
 
 @router.get("/{file_id}", response_model=FileResponse)

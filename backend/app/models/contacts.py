@@ -12,6 +12,8 @@ import enum
 class ContactStatus(str, enum.Enum):
     """Contact status enum"""
     NEW = "new"
+    LEAD = "lead"
+    PROSPECT = "prospect"
     CONTACTED = "contacted"
     QUALIFIED = "qualified"
     UNQUALIFIED = "unqualified"

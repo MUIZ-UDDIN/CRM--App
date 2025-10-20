@@ -309,6 +309,24 @@ export default function Files() {
         </div>
       </div>
 
+      {/* Breadcrumb Navigation */}
+      {currentFolderId && (
+        <div className="bg-gray-50 border-b border-gray-200">
+          <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-3">
+            <div className="flex items-center space-x-2 text-sm">
+              <button
+                onClick={handleBackToRoot}
+                className="text-primary-600 hover:text-primary-700 font-medium"
+              >
+                All Files
+              </button>
+              <span className="text-gray-400">/</span>
+              <span className="text-gray-900 font-medium">{currentFolderName}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
         <div className="flex flex-col sm:flex-row gap-4 mb-6">
