@@ -2,7 +2,7 @@
 Security and Audit Log models
 """
 
-from sqlalchemy import Column, String, ForeignKey, DateTime, Text, Enum as SQLEnum
+from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB, INET
 from .base import BaseModel
@@ -117,7 +117,7 @@ class Session(BaseModel):
     last_activity_at = Column(DateTime, default=datetime.utcnow)
     
     # Status
-    is_revoked = Column(String, default=False)
+    is_revoked = Column(Boolean, default=False)
     revoked_at = Column(DateTime)
     revoked_reason = Column(String(255))
     

@@ -2,7 +2,7 @@
 Document and E-Signature models
 """
 
-from sqlalchemy import Column, String, ForeignKey, DateTime, Text, Integer, Float, Enum as SQLEnum
+from sqlalchemy import Column, String, Boolean, ForeignKey, DateTime, Text, Integer, Float, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from .base import BaseModel
@@ -51,7 +51,7 @@ class Document(BaseModel):
     deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'), index=True)
     
     # E-Signature Information
-    requires_signature = Column(String, default=False)
+    requires_signature = Column(Boolean, default=False)
     signature_provider = Column(String(50))  # e.g., "docusign", "hellosign"
     signature_request_id = Column(String(255))
     
@@ -96,7 +96,7 @@ class DocumentSignature(BaseModel):
     user_agent = Column(String(500))
     
     # Status
-    is_signed = Column(String, default=False)
+    is_signed = Column(Boolean, default=False)
     
     # Relationships
     document = relationship('Document', back_populates='signatures')

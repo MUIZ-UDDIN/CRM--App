@@ -2,7 +2,7 @@
 User and Role models
 """
 
-from sqlalchemy import Column, String, ForeignKey, Table
+from sqlalchemy import Column, String, Boolean, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from .base import BaseModel
@@ -49,7 +49,7 @@ class User(BaseModel):
     manager_id = Column(UUID(as_uuid=True), ForeignKey('users.id', name='fk_user_manager'))
     
     # Settings
-    email_verified = Column(String, default=False)
+    email_verified = Column(Boolean, default=False)
     last_login = Column(String)
     role = Column(String(50), default="Regular User")  # User role
     

@@ -43,8 +43,8 @@ class PipelineStage(BaseModel):
     probability = Column(Float, default=0.0)  # Win probability %
     
     # Stage settings
-    is_closed = Column(String, default=False)  # Is this a closed stage (won/lost)
-    is_won = Column(String, default=False)  # Is this a won stage
+    is_closed = Column(Boolean, default=False)  # Is this a closed stage (won/lost)
+    is_won = Column(Boolean, default=False)  # Is this a won stage
     
     # Relationships
     pipeline = relationship('Pipeline', back_populates='stages')
