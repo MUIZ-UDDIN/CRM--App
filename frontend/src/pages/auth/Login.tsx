@@ -8,6 +8,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const { login, isLoading, error, clearError } = useAuth();
@@ -20,6 +21,13 @@ export default function Login() {
     if (error) {
       toast.error(error);
       clearError();
+    }
+    // Load saved credentials if remember me was checked
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    const savedRememberMe = localStorage.getItem('rememberMe') === 'true';
+    if (savedEmail && savedRememberMe) {
+      setEmail(savedEmail);
+      setRememberMe(true);
     }
   }, [error, clearError]);
 
@@ -35,6 +43,14 @@ export default function Login() {
 
     try {
       await login(email, password);
+      // Handle remember me
+      if (rememberMe) {
+        localStorage.setItem('rememberedEmail', email);
+        localStorage.setItem('rememberMe', 'true');
+      } else {
+        localStorage.removeItem('rememberedEmail');
+        localStorage.removeItem('rememberMe');
+      }
       toast.success('Login successful!');
       navigate(from, { replace: true });
     } catch (error) {
@@ -113,6 +129,8 @@ export default function Login() {
               id="remember-me"
               name="remember-me"
               type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
@@ -147,15 +165,6 @@ export default function Login() {
           </button>
         </div>
       </form>
-
-      {/* Demo credentials */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-        <h3 className="text-sm font-medium text-gray-700 mb-2">Demo Credentials</h3>
-        <div className="text-xs text-gray-600 space-y-1">
-          <p><strong>Email:</strong> admin@sunstonecrm.com</p>
-          <p><strong>Password:</strong> Admin@123</p>
-        </div>
-      </div>
     </div>
   );
 }

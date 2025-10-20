@@ -413,9 +413,11 @@ export default function Files() {
                 
                 <div className="space-y-1 text-xs text-gray-600 flex-grow">
                   {file.type === 'file' && (
-                    <p>Size: {formatFileSize(file.size)}</p>
+                    <>
+                      <p>Size: {formatFileSize(file.size)}</p>
+                      <p>Category: {file.category || 'N/A'}</p>
+                    </>
                   )}
-                  <p>Category: {file.category || 'N/A'}</p>
                   <p>Status: <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
                     file.status === 'active' ? 'bg-green-100 text-green-800' :
                     file.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
@@ -542,16 +544,13 @@ export default function Files() {
                 onChange={(e) => setFileForm({...fileForm, name: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <select
+              <textarea
+                placeholder="Description (optional)"
                 value={fileForm.category}
                 onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Category</option>
-                <option value="Sales">Sales</option>
-                <option value="Legal">Legal</option>
-                <option value="Marketing">Marketing</option>
-              </select>
+                rows={3}
+              />
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowCreateFolderModal(false)}

@@ -91,12 +91,18 @@ export default function Activities() {
   // Handle edit activity
   const handleEdit = (activity: Activity) => {
     setSelectedActivity(activity);
+    // Convert ISO date to datetime-local format (YYYY-MM-DDTHH:mm)
+    let formattedDate = '';
+    if (activity.due_date) {
+      const date = new Date(activity.due_date);
+      formattedDate = date.toISOString().slice(0, 16);
+    }
     setActivityForm({
       type: activity.type,
       subject: activity.subject,
       description: activity.description || '',
       status: activity.status || 'pending',
-      due_date: activity.due_date || '',
+      due_date: formattedDate,
       duration_minutes: activity.duration_minutes || 30,
       priority: activity.priority || 1,
     });
