@@ -2,7 +2,7 @@
 Deal and Pipeline models
 """
 
-from sqlalchemy import Column, String, ForeignKey, Float, Integer, DateTime, Text, Enum as SQLEnum
+from sqlalchemy import Column, String, ForeignKey, Float, Integer, DateTime, Text, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from .base import BaseModel
@@ -24,7 +24,7 @@ class Pipeline(BaseModel):
     
     name = Column(String(100), nullable=False, index=True)
     description = Column(String(500))
-    is_default = Column(String, default=False)
+    is_default = Column(Boolean, default=False)
     order_index = Column(Integer, default=0)
     
     # Relationships
