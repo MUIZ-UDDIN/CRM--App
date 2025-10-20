@@ -68,7 +68,7 @@ async def get_emails(
     """Get emails by type (inbox, sent, draft, trash)"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    query = db.query(EmailModel).filter(EmailModel.user_id == user_id)
+    query = db.query(EmailModel).filter(EmailModel.owner_id == user_id)
     
     # Filter by type
     if type == "inbox":
