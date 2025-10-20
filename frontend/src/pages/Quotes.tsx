@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import * as quotesService from '../services/quotesService';
 import ActionButtons from '../components/common/ActionButtons';
 import { 
   DocumentTextIcon, 
@@ -48,33 +49,12 @@ export default function Quotes() {
   const fetchQuotes = async () => {
     setLoading(true);
     try {
-      // Mock data
-      setQuotes([
-        {
-          id: '1',
-          quote_number: 'QT-2024-001',
-          title: 'Enterprise Software License',
-          amount: 50000,
-          status: 'sent',
-          client: 'TechCorp Inc.',
-          deal: 'Enterprise Software License',
-          valid_until: '2024-02-15',
-          created_at: '2024-01-15',
-        },
-        {
-          id: '2',
-          quote_number: 'QT-2024-002',
-          title: 'Marketing Consulting Services',
-          amount: 25000,
-          status: 'accepted',
-          client: 'Marketing Inc.',
-          deal: 'Marketing Consulting',
-          valid_until: '2024-02-10',
-          created_at: '2024-01-12',
-        },
-      ]);
+      const data = await quotesService.getQuotes({ status: filterStatus !== 'all' ? filterStatus : undefined });
+      setQuotes(data);
     } catch (error) {
+      console.error('Error:', error);
       toast.error('Failed to load quotes');
+      setQuotes([]);
     } finally {
       setLoading(false);
     }
@@ -101,10 +81,12 @@ export default function Quotes() {
   const handleDelete = async (quote: Quote) => {
     if (!confirm(`Delete quote "${quote.quote_number}"?`)) return;
     try {
+      await quotesService.deleteQuote(quote.id);
       toast.success('Quote deleted');
       fetchQuotes();
-    } catch (error) {
-      toast.error('Failed to delete quote');
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error?.response?.data?.detail || error?.message || 'Failed to delete quote');
     }
   };
 
@@ -115,6 +97,14 @@ export default function Quotes() {
 
   const handleCreate = async () => {
     try {
+      await quotesService.createQuote({
+        title: quoteForm.title,
+        amount: parseFloat(quoteForm.amount),
+        client_id: quoteForm.client || undefined,
+        deal_id: quoteForm.deal || undefined,
+        valid_until: quoteForm.valid_until || undefined,
+        status: quoteForm.status as any,
+      });
       toast.success('Quote created');
       setShowAddModal(false);
       setQuoteForm({
@@ -134,6 +124,14 @@ export default function Quotes() {
   const handleUpdate = async () => {
     if (!selectedQuote) return;
     try {
+      await quotesService.updateQuote(selectedQuote.id, {
+        title: quoteForm.title,
+        amount: parseFloat(quoteForm.amount),
+        client_id: quoteForm.client || undefined,
+        deal_id: quoteForm.deal || undefined,
+        valid_until: quoteForm.valid_until || undefined,
+        status: quoteForm.status as any,
+      });
       toast.success('Quote updated');
       setShowEditModal(false);
       fetchQuotes();
@@ -144,6 +142,7 @@ export default function Quotes() {
 
   const handleStatusChange = async (quote: Quote, newStatus: string) => {
     try {
+      await quotesService.updateQuote(quote.id, { status: newStatus as any });
       toast.success(`Quote ${newStatus}`);
       fetchQuotes();
     } catch (error) {

@@ -3,8 +3,9 @@
  * Drag-and-drop reorder, add/delete/rename stages
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import * as pipelinesService from '../services/pipelinesService';
 import {
   PlusIcon,
   XMarkIcon,
@@ -30,27 +31,56 @@ interface Pipeline {
 }
 
 export default function PipelineSettings() {
-  const [pipelines, setPipelines] = useState<Pipeline[]>([
-    {
-      id: '1',
-      name: 'Sales Pipeline',
-      stages: [
-        { id: 'qualification', name: 'Qualification', probability: 25, order_index: 0, is_closed: false, is_won: false },
-        { id: 'proposal', name: 'Proposal', probability: 50, order_index: 1, is_closed: false, is_won: false },
-        { id: 'negotiation', name: 'Negotiation', probability: 75, order_index: 2, is_closed: false, is_won: false },
-        { id: 'closed-won', name: 'Closed Won', probability: 100, order_index: 3, is_closed: true, is_won: true },
-      ]
-    }
-  ]);
-
-  const [selectedPipeline, setSelectedPipeline] = useState('1');
+  const [pipelines, setPipelines] = useState<Pipeline[]>([]);
+  const [selectedPipeline, setSelectedPipeline] = useState('');
   const [showAddStageModal, setShowAddStageModal] = useState(false);
   const [showEditStageModal, setShowEditStageModal] = useState(false);
   const [editingStage, setEditingStage] = useState<Stage | null>(null);
   const [newStageName, setNewStageName] = useState('');
   const [newStageProbability, setNewStageProbability] = useState(50);
+  const [loading, setLoading] = useState(false);
 
   const currentPipeline = pipelines.find(p => p.id === selectedPipeline);
+
+  // Fetch pipelines on mount
+  useEffect(() => {
+    fetchPipelines();
+  }, []);
+
+  // Fetch stages when pipeline changes
+  useEffect(() => {
+    if (selectedPipeline) {
+      fetchPipelineStages(selectedPipeline);
+    }
+  }, [selectedPipeline]);
+
+  const fetchPipelines = async () => {
+    setLoading(true);
+    try {
+      const data = await pipelinesService.getPipelines();
+      setPipelines(data);
+      if (data.length > 0 && !selectedPipeline) {
+        setSelectedPipeline(data[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching pipelines:', error);
+      toast.error('Failed to load pipelines');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchPipelineStages = async (pipelineId: string) => {
+    try {
+      const stages = await pipelinesService.getPipelineStages(pipelineId);
+      setPipelines(pipelines.map(p =>
+        p.id === pipelineId ? { ...p, stages } : p
+      ));
+    } catch (error) {
+      console.error('Error fetching stages:', error);
+      toast.error('Failed to load stages');
+    }
+  };
 
   const onDragEnd = async (result: any) => {
     if (!result.destination || !currentPipeline) return;
@@ -70,40 +100,33 @@ export default function PipelineSettings() {
     ));
 
     try {
-      // Call API to update stage order
-      // await axios.patch(`/api/pipelines/${selectedPipeline}/reorder-stages`, {
-      //   stages: updatedStages.map(s => ({ id: s.id, order_index: s.order_index }))
-      // });
+      await pipelinesService.reorderStages(
+        selectedPipeline,
+        updatedStages.map(s => ({ id: s.id, order_index: s.order_index }))
+      );
       toast.success('Stage order updated');
     } catch (error) {
       toast.error('Failed to update stage order');
+      fetchPipelineStages(selectedPipeline); // Revert on error
     }
   };
 
   const handleAddStage = async () => {
     if (!newStageName.trim() || !currentPipeline) return;
 
-    const newStage: Stage = {
-      id: `s${Date.now()}`,
-      name: newStageName,
-      probability: newStageProbability,
-      order_index: currentPipeline.stages.length,
-      is_closed: false,
-      is_won: false
-    };
-
-    setPipelines(pipelines.map(p =>
-      p.id === selectedPipeline
-        ? { ...p, stages: [...p.stages, newStage] }
-        : p
-    ));
-
     try {
-      // await axios.post(`/api/pipelines/${selectedPipeline}/stages`, newStage);
+      await pipelinesService.createStage(selectedPipeline, {
+        name: newStageName,
+        probability: newStageProbability,
+        order_index: currentPipeline.stages?.length || 0,
+        is_closed: false,
+        is_won: false
+      });
       toast.success('Stage added successfully');
       setShowAddStageModal(false);
       setNewStageName('');
       setNewStageProbability(50);
+      fetchPipelineStages(selectedPipeline);
     } catch (error) {
       toast.error('Failed to add stage');
     }
@@ -112,22 +135,17 @@ export default function PipelineSettings() {
   const handleEditStage = async () => {
     if (!editingStage || !currentPipeline) return;
 
-    setPipelines(pipelines.map(p =>
-      p.id === selectedPipeline
-        ? {
-            ...p,
-            stages: p.stages.map(s =>
-              s.id === editingStage.id ? editingStage : s
-            )
-          }
-        : p
-    ));
-
     try {
-      // await axios.patch(`/api/pipeline-stages/${editingStage.id}`, editingStage);
+      await pipelinesService.updateStage(editingStage.id, {
+        name: editingStage.name,
+        probability: editingStage.probability,
+        is_closed: editingStage.is_closed,
+        is_won: editingStage.is_won
+      });
       toast.success('Stage updated successfully');
       setShowEditStageModal(false);
       setEditingStage(null);
+      fetchPipelineStages(selectedPipeline);
     } catch (error) {
       toast.error('Failed to update stage');
     }
@@ -135,20 +153,12 @@ export default function PipelineSettings() {
 
   const handleDeleteStage = async (stageId: string) => {
     if (!currentPipeline) return;
-
-    if (!confirm('Are you sure you want to delete this stage? All deals in this stage will need to be moved.')) {
-      return;
-    }
-
-    setPipelines(pipelines.map(p =>
-      p.id === selectedPipeline
-        ? { ...p, stages: p.stages.filter(s => s.id !== stageId) }
-        : p
-    ));
+    if (!confirm('Are you sure you want to delete this stage?')) return;
 
     try {
-      // await axios.delete(`/api/pipeline-stages/${stageId}`);
+      await pipelinesService.deleteStage(stageId);
       toast.success('Stage deleted successfully');
+      fetchPipelineStages(selectedPipeline);
     } catch (error) {
       toast.error('Failed to delete stage');
     }

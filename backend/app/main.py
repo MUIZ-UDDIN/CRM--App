@@ -30,6 +30,8 @@ from app.api.analytics import router as analytics_router
 from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
 from app.api.sms import router as sms_router
+from app.api.twilio_settings import router as twilio_settings_router
+from app.api.quotes import router as quotes_router
 from app.api.calls import router as calls_router
 
 # Import with error handling for debugging
@@ -46,8 +48,6 @@ try:
 except Exception as e:
     logger.error(f"❌ Failed to import notifications router: {e}")
     notifications_router = None
-
-from app.api.twilio_settings import router as twilio_settings_router
 
 try:
     from app.api.files import router as files_router
@@ -253,6 +253,13 @@ if workflows_router:
     logger.info("✅ Workflows routes registered")
 else:
     logger.warning("⚠️ Workflows router not loaded - skipping registration")
+
+app.include_router(
+    quotes_router,
+    prefix="/api/quotes",
+    tags=["Quotes"],
+    dependencies=[Depends(get_current_user)]
+)
 
 
 if __name__ == "__main__":
