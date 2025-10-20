@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import * as workflowsService from '../services/workflowsService';
 import ActionButtons from '../components/common/ActionButtons';
 import { 
   BoltIcon, 
@@ -44,24 +45,12 @@ export default function Workflows() {
   const fetchWorkflows = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      
-      const response = await fetch(`${API_BASE_URL}/api/workflows/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setWorkflows(data);
-      } else {
-        toast.error('Failed to load workflows');
-        setWorkflows([]);
-      }
+      const data = await workflowsService.getWorkflows();
+      setWorkflows(data);
     } catch (error) {
+      console.error('Error fetching workflows:', error);
       toast.error('Failed to load workflows');
+      setWorkflows([]);
     } finally {
       setLoading(false);
     }
@@ -86,26 +75,41 @@ export default function Workflows() {
   const handleDelete = async (workflow: Workflow) => {
     if (!confirm(`Delete workflow "${workflow.name}"?`)) return;
     try {
+      await workflowsService.deleteWorkflow(workflow.id);
       toast.success('Workflow deleted');
       fetchWorkflows();
-    } catch (error) {
-      toast.error('Failed to delete workflow');
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to delete workflow');
     }
   };
 
   const handleToggleStatus = async (workflow: Workflow) => {
     const newStatus = workflow.status === 'active' ? 'paused' : 'active';
     try {
+      await workflowsService.toggleWorkflow(workflow.id, newStatus === 'active');
       toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'paused'}`);
       fetchWorkflows();
-    } catch (error) {
-      toast.error('Failed to update workflow status');
+    } catch (error: any) {
+      console.error('Toggle error:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to update workflow status');
     }
   };
 
   const handleCreate = async () => {
+    if (!workflowForm.name.trim()) {
+      toast.error('Please enter a workflow name');
+      return;
+    }
+
     try {
-      toast.success('Workflow created');
+      await workflowsService.createWorkflow({
+        name: workflowForm.name,
+        description: workflowForm.description,
+        trigger_type: workflowForm.trigger,
+        is_active: workflowForm.status === 'active',
+      });
+      toast.success('Workflow created successfully');
       setShowAddModal(false);
       setWorkflowForm({
         name: '',
@@ -114,19 +118,27 @@ export default function Workflows() {
         status: 'draft',
       });
       fetchWorkflows();
-    } catch (error) {
-      toast.error('Failed to create workflow');
+    } catch (error: any) {
+      console.error('Create error:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to create workflow');
     }
   };
 
   const handleUpdate = async () => {
     if (!selectedWorkflow) return;
     try {
-      toast.success('Workflow updated');
+      await workflowsService.updateWorkflow(selectedWorkflow.id, {
+        name: workflowForm.name,
+        description: workflowForm.description,
+        trigger_type: workflowForm.trigger,
+        is_active: workflowForm.status === 'active',
+      });
+      toast.success('Workflow updated successfully');
       setShowEditModal(false);
       fetchWorkflows();
-    } catch (error) {
-      toast.error('Failed to update workflow');
+    } catch (error: any) {
+      console.error('Update error:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to update workflow');
     }
   };
 

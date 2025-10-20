@@ -112,9 +112,20 @@ export default function PipelineSettings() {
   };
 
   const handleAddStage = async () => {
-    if (!newStageName.trim() || !currentPipeline) return;
+    console.log('handleAddStage called', { newStageName, currentPipeline, selectedPipeline });
+    
+    if (!newStageName.trim()) {
+      toast.error('Please enter a stage name');
+      return;
+    }
+    
+    if (!currentPipeline) {
+      toast.error('No pipeline selected');
+      return;
+    }
 
     try {
+      console.log('Creating stage...');
       await pipelinesService.createStage(selectedPipeline, {
         name: newStageName,
         probability: newStageProbability,
@@ -127,8 +138,9 @@ export default function PipelineSettings() {
       setNewStageName('');
       setNewStageProbability(50);
       fetchPipelineStages(selectedPipeline);
-    } catch (error) {
-      toast.error('Failed to add stage');
+    } catch (error: any) {
+      console.error('Add stage error:', error);
+      toast.error(error?.response?.data?.detail || error?.message || 'Failed to add stage');
     }
   };
 

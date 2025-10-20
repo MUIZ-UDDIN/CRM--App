@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import * as filesService from '../services/filesService';
 import ActionButtons from '../components/common/ActionButtons';
 import { 
   FolderIcon, 
@@ -53,34 +54,14 @@ export default function Files() {
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      
-      const response = await fetch(`${API_BASE_URL}/api/files/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const data = await filesService.getFiles({
+        category: filterCategory !== 'all' ? filterCategory : undefined,
       });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const formattedFiles = data.map((file: any) => ({
-          id: file.id,
-          name: file.name,
-          type: 'file',
-          size: file.size,
-          category: file.category,
-          tags: file.tags || [],
-          status: 'active',
-          created_at: file.created_at?.split('T')[0] || '',
-        }));
-        setFiles(formattedFiles);
-      } else {
-        toast.error('Failed to load files');
-        setFiles([]);
-      }
+      setFiles(data);
     } catch (error) {
+      console.error('Error fetching files:', error);
       toast.error('Failed to load files');
+      setFiles([]);
     } finally {
       setLoading(false);
     }
@@ -120,19 +101,49 @@ export default function Files() {
     toast.success(`Downloading ${file.name}...`);
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const file = fileInput?.files?.[0];
+    
+    if (!file) {
+      toast.error('Please select a file');
+      return;
+    }
+
     try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('category', fileForm.category);
+      
+      await filesService.uploadFile(formData);
       toast.success('File uploaded successfully');
       setShowUploadModal(false);
+      setFileForm({
+        name: '',
+        category: '',
+        tags: '',
+        status: 'active',
+      });
       fetchFiles();
-    } catch (error) {
-      toast.error('Failed to upload file');
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to upload file');
     }
   };
 
   const handleCreateFolder = async () => {
+    if (!fileForm.name.trim()) {
+      toast.error('Please enter a folder name');
+      return;
+    }
+
     try {
-      toast.success('Folder created');
+      await filesService.createFolder({
+        name: fileForm.name,
+        description: fileForm.category,
+      });
+      toast.success('Folder created successfully');
       setShowCreateFolderModal(false);
       setFileForm({
         name: '',
@@ -141,8 +152,9 @@ export default function Files() {
         status: 'active',
       });
       fetchFiles();
-    } catch (error) {
-      toast.error('Failed to create folder');
+    } catch (error: any) {
+      console.error('Create folder error:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to create folder');
     }
   };
 
