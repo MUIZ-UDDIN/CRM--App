@@ -311,7 +311,7 @@ export default function MainLayout() {
               </div>
 
               {/* Navigation Tabs - Desktop */}
-              <nav className="ml-6 hidden lg:flex space-x-1 overflow-x-auto scrollbar-hide">
+              <nav className="ml-6 hidden lg:flex space-x-1">
                 {navigation.map((item) => {
                   if (item.children) {
                     // Dropdown menu item
