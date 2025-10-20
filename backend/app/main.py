@@ -187,7 +187,8 @@ app.include_router(
 app.include_router(
     notifications_router,
     prefix="/api/notifications",
-    tags=["Notifications"]
+    tags=["Notifications"],
+    dependencies=[Depends(get_current_user)]
 )
 
 app.include_router(
@@ -200,13 +201,15 @@ app.include_router(
 app.include_router(
     files_router,
     prefix="/api/files",
-    tags=["Files"]
+    tags=["Files"],
+    dependencies=[Depends(get_current_user)]
 )
 
 app.include_router(
     workflows_router,
     prefix="/api/workflows",
-    tags=["Workflows"]
+    tags=["Workflows"],
+    dependencies=[Depends(get_current_user)]
 )
 
 
