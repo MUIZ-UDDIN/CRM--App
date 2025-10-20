@@ -334,7 +334,7 @@ export default function Quotes() {
                     {quote.deal_id && (
                       <div className="mt-3">
                         <p className="text-xs text-gray-500">Related Deal</p>
-                        <p className="text-sm text-primary-600">{quote.deal}</p>
+                        <p className="text-sm text-primary-600">Deal ID: {quote.deal_id}</p>
                       </div>
                     )}
 
