@@ -36,7 +36,7 @@ export default function Contacts() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [filterType, setFilterType] = useState('all');
   const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
@@ -101,13 +101,13 @@ export default function Contacts() {
   // Fetch contacts
   useEffect(() => {
     fetchContacts();
-  }, [filterStatus, searchQuery]);
+  }, [filterType, searchQuery]);
   
   const fetchContacts = async () => {
     setLoading(true);
     try {
       const data = await contactsService.getContacts({ 
-        status: filterStatus !== 'all' ? filterStatus : undefined,
+        type: filterType !== 'all' ? filterType : undefined,
         search: searchQuery || undefined
       });
       setContacts(data);
@@ -292,18 +292,14 @@ export default function Contacts() {
             </button>
             {showFilters && (
               <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
+                value={filterType}
+                onChange={(e) => setFilterType(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px]"
               >
-                <option value="all">All Status</option>
-                <option value="new">New</option>
-                <option value="lead">Lead</option>
-                <option value="prospect">Prospect</option>
-                <option value="contacted">Contacted</option>
-                <option value="qualified">Qualified</option>
-                <option value="unqualified">Unqualified</option>
-                <option value="customer">Customer</option>
+                <option value="all">All Types</option>
+                {contactTypes.map((type) => (
+                  <option key={type} value={type}>{type}</option>
+                ))}
               </select>
             )}
           </div>
