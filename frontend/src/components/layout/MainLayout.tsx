@@ -77,6 +77,24 @@ export default function MainLayout() {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const quickAddRef = useRef<HTMLDivElement>(null);
+
+  // Close quick add menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (quickAddRef.current && !quickAddRef.current.contains(event.target as Node)) {
+        setShowQuickAdd(false);
+      }
+    };
+
+    if (showQuickAdd) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showQuickAdd]);
 
   // Fetch notifications
   useEffect(() => {
@@ -207,17 +225,17 @@ export default function MainLayout() {
   // Handle quick actions
   const handleQuickAdd = (type: string) => {
     setShowQuickAdd(false);
-    // Navigate based on type
+    // Navigate based on type with action parameter to open add modal
     if (type === 'deal') {
-      navigate('/deals');
+      navigate('/deals?action=add');
     } else if (type === 'contact') {
-      navigate('/contacts');
+      navigate('/contacts?action=add');
     } else if (type === 'activity') {
-      navigate('/activities');
+      navigate('/activities?action=add');
     } else if (type === 'file') {
-      navigate('/files');
+      navigate('/files?action=upload');
     } else if (type === 'quote') {
-      navigate('/quotes');
+      navigate('/quotes?action=add');
     }
   };
 
@@ -650,7 +668,7 @@ export default function MainLayout() {
 
       {/* Floating Action Button */}
       <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50">
-        <div className="relative">
+        <div className="relative" ref={quickAddRef}>
           <button 
             onClick={() => setShowQuickAdd(!showQuickAdd)}
             className="bg-primary-500 hover:bg-primary-600 text-white rounded-full p-4 shadow-lg hover:shadow-xl transition-all duration-200 group"

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import * as dealsService from '../services/dealsService';
@@ -29,6 +30,7 @@ interface Stage {
 }
 
 export default function Deals() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAddDealModal, setShowAddDealModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -57,6 +59,16 @@ export default function Deals() {
   ];
 
   // Fetch deals
+  // Check for action query parameter
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'add') {
+      setShowAddDealModal(true);
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     fetchDeals();
   }, []);

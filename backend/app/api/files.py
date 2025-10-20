@@ -142,6 +142,87 @@ async def upload_file(
     )
 
 
+# Folder endpoints (MUST be before /{file_id} to avoid route conflicts)
+@router.get("/folders", response_model=List[FolderResponse])
+async def get_folders(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get all folders"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    folders = db.query(Folder).filter(
+        and_(
+            Folder.owner_id == user_id,
+            Folder.is_deleted == False
+        )
+    ).order_by(Folder.name).all()
+    
+    return [
+        FolderResponse(
+            id=str(folder.id),
+            name=folder.name,
+            description=folder.description,
+            created_at=folder.created_at.isoformat() if folder.created_at else None
+        )
+        for folder in folders
+    ]
+
+
+@router.post("/folders", response_model=FolderResponse)
+async def create_folder(
+    folder_data: FolderCreate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Create a new folder"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    new_folder = Folder(
+        name=folder_data.name,
+        description=folder_data.description,
+        parent_id=uuid.UUID(folder_data.parent_id) if folder_data.parent_id else None,
+        owner_id=user_id
+    )
+    
+    db.add(new_folder)
+    db.commit()
+    db.refresh(new_folder)
+    
+    return FolderResponse(
+        id=str(new_folder.id),
+        name=new_folder.name,
+        description=new_folder.description,
+        created_at=new_folder.created_at.isoformat() if new_folder.created_at else None
+    )
+
+
+@router.delete("/folders/{folder_id}")
+async def delete_folder(
+    folder_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete a folder"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    folder = db.query(Folder).filter(
+        and_(
+            Folder.id == uuid.UUID(folder_id),
+            Folder.owner_id == user_id,
+            Folder.is_deleted == False
+        )
+    ).first()
+    
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    folder.is_deleted = True
+    db.commit()
+    
+    return {"message": "Folder deleted successfully"}
+
+
 @router.post("/", response_model=FileResponse)
 async def create_file(
     file_data: FileCreate,
@@ -238,84 +319,3 @@ async def delete_file(
     db.commit()
     
     return {"message": "File deleted successfully"}
-
-
-# Folder endpoints
-@router.get("/folders/", response_model=List[FolderResponse])
-async def get_folders(
-    current_user: dict = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Get all folders"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
-    
-    folders = db.query(Folder).filter(
-        and_(
-            Folder.owner_id == user_id,
-            Folder.is_deleted == False
-        )
-    ).order_by(Folder.name).all()
-    
-    return [
-        FolderResponse(
-            id=str(folder.id),
-            name=folder.name,
-            description=folder.description,
-            created_at=folder.created_at.isoformat() if folder.created_at else None
-        )
-        for folder in folders
-    ]
-
-
-@router.post("/folders", response_model=FolderResponse)
-async def create_folder(
-    folder_data: FolderCreate,
-    current_user: dict = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Create a new folder"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
-    
-    new_folder = Folder(
-        name=folder_data.name,
-        description=folder_data.description,
-        parent_id=uuid.UUID(folder_data.parent_id) if folder_data.parent_id else None,
-        owner_id=user_id
-    )
-    
-    db.add(new_folder)
-    db.commit()
-    db.refresh(new_folder)
-    
-    return FolderResponse(
-        id=str(new_folder.id),
-        name=new_folder.name,
-        description=new_folder.description,
-        created_at=new_folder.created_at.isoformat() if new_folder.created_at else None
-    )
-
-
-@router.delete("/folders/{folder_id}")
-async def delete_folder(
-    folder_id: str,
-    current_user: dict = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Delete a folder"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
-    
-    folder = db.query(Folder).filter(
-        and_(
-            Folder.id == uuid.UUID(folder_id),
-            Folder.owner_id == user_id,
-            Folder.is_deleted == False
-        )
-    ).first()
-    
-    if not folder:
-        raise HTTPException(status_code=404, detail="Folder not found")
-    
-    folder.is_deleted = True
-    db.commit()
-    
-    return {"message": "Folder deleted successfully"}

@@ -37,6 +37,10 @@ class StageReorder(BaseModel):
     order_index: int
 
 
+class StageReorderRequest(BaseModel):
+    stages: List[StageReorder]
+
+
 class PipelineCreate(BaseModel):
     name: str
     description: Optional[str] = None
@@ -255,7 +259,7 @@ async def delete_stage(
 @router.patch("/pipelines/{pipeline_id}/reorder-stages")
 async def reorder_stages(
     pipeline_id: str,
-    stages: List[StageReorder],
+    request: StageReorderRequest,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
@@ -266,7 +270,7 @@ async def reorder_stages(
         raise HTTPException(status_code=404, detail="Pipeline not found")
     
     # Update order_index for each stage
-    for stage_data in stages:
+    for stage_data in request.stages:
         stage = db.query(PipelineStage).filter(
             PipelineStage.id == stage_data.id
         ).first()

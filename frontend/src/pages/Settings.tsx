@@ -38,8 +38,11 @@ export default function Settings() {
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  
+  // Check if current user is super admin
+  const isSuperAdmin = user?.role === 'Super Admin' || user?.role === 'Admin';
 
   useEffect(() => {
     if (activeTab === 'team') {
@@ -241,13 +244,15 @@ export default function Settings() {
           <div className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-lg font-medium text-gray-900">Team Members</h2>
-              <button
-                onClick={() => setShowAddTeamModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto justify-center"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Add Member
-              </button>
+              {isSuperAdmin && (
+                <button
+                  onClick={() => setShowAddTeamModal(true)}
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto justify-center"
+                >
+                  <PlusIcon className="h-4 w-4 mr-2" />
+                  Add Member
+                </button>
+              )}
             </div>
             
             {/* Desktop Table */}
@@ -268,11 +273,15 @@ export default function Settings() {
                       <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{member.role}</td>
                       <td className="px-6 py-4 text-right">
-                        <ActionButtons
-                          onEdit={() => handleEditTeamMember(member)}
-                          onDelete={() => handleDeleteTeamMember(member)}
-                          showView={false}
-                        />
+                        {isSuperAdmin ? (
+                          <ActionButtons
+                            onEdit={() => handleEditTeamMember(member)}
+                            onDelete={() => handleDeleteTeamMember(member)}
+                            showView={false}
+                          />
+                        ) : (
+                          <span className="text-sm text-gray-400">No actions</span>
+                        )}
                       </td>
                     </tr>
                   ))}

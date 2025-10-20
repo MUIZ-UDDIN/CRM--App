@@ -52,7 +52,9 @@ class Activity(BaseModel):
 @router.get("/", response_model=List[Activity])
 def get_activities(
     activity_type: Optional[str] = None,
+    type: Optional[str] = None,  # Alias for activity_type
     completed: Optional[bool] = None,
+    status: Optional[str] = None,  # Alternative to completed
     contact_id: Optional[str] = None,
     deal_id: Optional[str] = None,
     db: Session = Depends(get_db),
@@ -61,10 +63,15 @@ def get_activities(
     """Get all activities from database"""
     query = db.query(ActivityModel)
     
-    if activity_type:
-        query = query.filter(ActivityModel.type == activity_type)
+    # Handle type filter (accept both activity_type and type)
+    filter_type = activity_type or type
+    if filter_type:
+        query = query.filter(ActivityModel.type == filter_type)
     
-    if completed is not None:
+    # Handle status filter (accept both completed boolean and status string)
+    if status:
+        query = query.filter(ActivityModel.status == status)
+    elif completed is not None:
         if completed:
             query = query.filter(ActivityModel.status == ActivityStatus.COMPLETED)
         else:

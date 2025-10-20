@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as activitiesService from '../services/activitiesService';
 import ActionButtons from '../components/common/ActionButtons';
@@ -27,6 +28,7 @@ interface Activity {
 }
 
 export default function Activities() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -47,6 +49,16 @@ export default function Activities() {
     priority: 1,
   });
   
+  // Check for action query parameter
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'add') {
+      setShowAddModal(true);
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams]);
+
   // Fetch activities
   useEffect(() => {
     fetchActivities();

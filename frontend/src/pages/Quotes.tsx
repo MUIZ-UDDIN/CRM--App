@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as quotesService from '../services/quotesService';
 import ActionButtons from '../components/common/ActionButtons';
@@ -24,6 +25,7 @@ interface Quote {
 }
 
 export default function Quotes() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -41,6 +43,16 @@ export default function Quotes() {
     valid_until: '',
     status: 'draft',
   });
+
+  // Check for action query parameter
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'add') {
+      setShowAddModal(true);
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchQuotes();

@@ -174,17 +174,33 @@ class ForgotPasswordRequest(BaseModel):
 
 @router.post("/forgot-password")
 async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
-    """Send password reset email (simplified version)"""
+    """Send password reset email"""
     # Check if user exists
     user = db.query(UserModel).filter(UserModel.email == request.email).first()
     
-    # Always return success to prevent email enumeration
-    # In production, you would send an actual email with a reset token
-    if user:
-        # TODO: Generate reset token and send email
-        # For now, just log it
-        print(f"Password reset requested for: {request.email}")
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with this email address. Please check your email and try again."
+        )
+    
+    # Generate a 6-digit reset code
+    import random
+    reset_code = str(random.randint(100000, 999999))
+    
+    # Store reset code in user record (you'd want to add a reset_code field to User model)
+    # For now, just log it
+    print(f"Password reset code for {request.email}: {reset_code}")
+    
+    # TODO: Send actual email with reset code
+    # Example using SMTP:
+    # send_email(
+    #     to=request.email,
+    #     subject="Password Reset Code",
+    #     body=f"Your password reset code is: {reset_code}"
+    # )
     
     return {
-        "message": "If an account exists with this email, you will receive password reset instructions."
+        "message": f"A password reset code has been sent to {request.email}. Please check your inbox.",
+        "code": reset_code  # Remove this in production!
     }

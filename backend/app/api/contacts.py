@@ -51,10 +51,13 @@ async def get_contacts(
     skip: int = 0,
     limit: int = 100,
     search: Optional[str] = None,
+    type: Optional[str] = None,
+    status: Optional[str] = None,
+    owner_id: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all contacts with optional search and pagination"""
+    """Get all contacts with optional search, filters and pagination"""
     query = db.query(ContactModel).filter(ContactModel.is_deleted == False)
     
     if search:
@@ -64,6 +67,15 @@ async def get_contacts(
             (ContactModel.email.ilike(f"%{search}%")) |
             (ContactModel.company.ilike(f"%{search}%"))
         )
+    
+    if type:
+        query = query.filter(ContactModel.type == type)
+    
+    if status:
+        query = query.filter(ContactModel.status == status)
+    
+    if owner_id:
+        query = query.filter(ContactModel.owner_id == uuid.UUID(owner_id))
     
     contacts = query.offset(skip).limit(limit).all()
     return contacts

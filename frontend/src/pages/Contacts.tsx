@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as contactsService from '../services/contactsService';
 import ActionButtons from '../components/common/ActionButtons';
@@ -28,6 +29,7 @@ interface Contact {
 }
 
 export default function Contacts() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -45,7 +47,7 @@ export default function Contacts() {
     'Customer',
     'Partner'
   ]);
-  const [users, setUsers] = useState([{ id: 'current', name: 'Marc Hickson' }]);
+  const [users, setUsers] = useState<Array<{id: string, name: string, email: string}>>([]);
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
   const [contactForm, setContactForm] = useState({
@@ -55,7 +57,7 @@ export default function Contacts() {
     phone: '',
     company: '',
     title: '',
-    type: 'lead',
+    type: 'Marketing Qualified Lead',
     status: 'new',
     source: '',
     owner_id: ''
@@ -63,15 +65,51 @@ export default function Contacts() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // Fetch users for owner dropdown
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/users', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const data = await response.json();
+        setUsers(data.map((user: any) => ({
+          id: user.id,
+          name: `${user.first_name} ${user.last_name}`,
+          email: user.email
+        })));
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+      }
+    };
+    fetchUsers();
+  }, []);
+  
+  // Check for action query parameter
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'add') {
+      setShowAddModal(true);
+      // Remove the action parameter from URL
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams]);
+
   // Fetch contacts
   useEffect(() => {
     fetchContacts();
-  }, [filterStatus]);
+  }, [filterStatus, searchQuery]);
   
   const fetchContacts = async () => {
     setLoading(true);
     try {
-      const data = await contactsService.getContacts({ status: filterStatus !== 'all' ? filterStatus : undefined });
+      const data = await contactsService.getContacts({ 
+        status: filterStatus !== 'all' ? filterStatus : undefined,
+        search: searchQuery || undefined
+      });
       setContacts(data);
     } catch (error) {
       console.error('Error:', error);
@@ -467,15 +505,28 @@ export default function Contacts() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Owner <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={contactForm.owner_id}
-                  onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>{user.name}</option>
-                  ))}
-                </select>
+                <div className="flex gap-2">
+                  <select
+                    value={contactForm.owner_id}
+                    onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    {users.length === 0 && <option value="">Loading users...</option>}
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      toast('Please add new users from Settings > Team Members', { icon: 'ℹ️' });
+                    }}
+                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    title="Add new owner"
+                  >
+                    <PlusIcon className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -582,15 +633,28 @@ export default function Contacts() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Owner <span className="text-red-500">*</span>
                   </label>
-                  <select
-                    value={contactForm.owner_id}
-                    onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  >
-                    {users.map((user) => (
-                      <option key={user.id} value={user.id}>{user.name}</option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={contactForm.owner_id}
+                      onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
+                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      {users.length === 0 && <option value="">Loading users...</option>}
+                      {users.map((user) => (
+                        <option key={user.id} value={user.id}>{user.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        toast('Please add new users from Settings > Team Members', { icon: 'ℹ️' });
+                      }}
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                      title="Add new owner"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                    </button>
+                  </div>
                 </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button

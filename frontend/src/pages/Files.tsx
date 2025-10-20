@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as filesService from '../services/filesService';
 import ActionButtons from '../components/common/ActionButtons';
@@ -30,6 +31,7 @@ interface FileItem {
 }
 
 export default function Files() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -47,6 +49,16 @@ export default function Files() {
     tags: '',
     status: 'active',
   });
+
+  // Check for action query parameter
+  useEffect(() => {
+    const action = searchParams.get('action');
+    if (action === 'upload') {
+      setShowUploadModal(true);
+      searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchFiles();
