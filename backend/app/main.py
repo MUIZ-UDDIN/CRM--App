@@ -31,11 +31,37 @@ from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
 from app.api.sms import router as sms_router
 from app.api.calls import router as calls_router
-from app.api.emails import router as emails_router
-from app.api.notifications import router as notifications_router
+
+# Import with error handling for debugging
+try:
+    from app.api.emails import router as emails_router
+    logger.info("✅ Emails router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import emails router: {e}")
+    emails_router = None
+
+try:
+    from app.api.notifications import router as notifications_router
+    logger.info("✅ Notifications router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import notifications router: {e}")
+    notifications_router = None
+
 from app.api.twilio_settings import router as twilio_settings_router
-from app.api.files import router as files_router
-from app.api.workflows import router as workflows_router
+
+try:
+    from app.api.files import router as files_router
+    logger.info("✅ Files router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import files router: {e}")
+    files_router = None
+
+try:
+    from app.api.workflows import router as workflows_router
+    logger.info("✅ Workflows router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import workflows router: {e}")
+    workflows_router = None
 
 
 @asynccontextmanager
@@ -177,19 +203,27 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 
-app.include_router(
-    emails_router,
-    prefix="/api/emails",
-    tags=["Emails"],
-    dependencies=[Depends(get_current_user)]
-)
+if emails_router:
+    app.include_router(
+        emails_router,
+        prefix="/api/emails",
+        tags=["Emails"],
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Emails routes registered")
+else:
+    logger.warning("⚠️ Emails router not loaded - skipping registration")
 
-app.include_router(
-    notifications_router,
-    prefix="/api/notifications",
-    tags=["Notifications"],
-    dependencies=[Depends(get_current_user)]
-)
+if notifications_router:
+    app.include_router(
+        notifications_router,
+        prefix="/api/notifications",
+        tags=["Notifications"],
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Notifications routes registered")
+else:
+    logger.warning("⚠️ Notifications router not loaded - skipping registration")
 
 app.include_router(
     twilio_settings_router,
@@ -198,19 +232,27 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 
-app.include_router(
-    files_router,
-    prefix="/api/files",
-    tags=["Files"],
-    dependencies=[Depends(get_current_user)]
-)
+if files_router:
+    app.include_router(
+        files_router,
+        prefix="/api/files",
+        tags=["Files"],
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Files routes registered")
+else:
+    logger.warning("⚠️ Files router not loaded - skipping registration")
 
-app.include_router(
-    workflows_router,
-    prefix="/api/workflows",
-    tags=["Workflows"],
-    dependencies=[Depends(get_current_user)]
-)
+if workflows_router:
+    app.include_router(
+        workflows_router,
+        prefix="/api/workflows",
+        tags=["Workflows"],
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Workflows routes registered")
+else:
+    logger.warning("⚠️ Workflows router not loaded - skipping registration")
 
 
 if __name__ == "__main__":
