@@ -24,6 +24,7 @@ interface FileItem {
   status?: string;
   contact?: string;
   deal?: string;
+  url?: string;
   created_at: string;
   updated_at?: string;
 }
@@ -54,10 +55,28 @@ export default function Files() {
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      const data = await filesService.getFiles({
-        category: filterCategory !== 'all' ? filterCategory : undefined,
-      });
-      setFiles(data);
+      // Fetch both files and folders
+      const [filesData, foldersData] = await Promise.all([
+        filesService.getFiles({
+          category: filterCategory !== 'all' ? filterCategory : undefined,
+        }),
+        filesService.getFolders()
+      ]);
+      
+      // Combine files and folders, marking their type
+      const allItems = [
+        ...foldersData.map((folder: any) => ({
+          ...folder,
+          type: 'folder' as const,
+          size: undefined,
+        })),
+        ...filesData.map((file: any) => ({
+          ...file,
+          type: 'file' as const,
+        }))
+      ];
+      
+      setFiles(allItems);
     } catch (error) {
       console.error('Error fetching files:', error);
       toast.error('Failed to load files');
@@ -86,10 +105,16 @@ export default function Files() {
   const handleDelete = async (file: FileItem) => {
     if (!confirm(`Delete "${file.name}"?`)) return;
     try {
-      toast.success(`${file.type === 'folder' ? 'Folder' : 'File'} deleted`);
+      if (file.type === 'folder') {
+        await filesService.deleteFolder(file.id);
+      } else {
+        await filesService.deleteFile(file.id);
+      }
+      toast.success(`${file.type === 'folder' ? 'Folder' : 'File'} deleted successfully`);
       fetchFiles();
-    } catch (error) {
-      toast.error('Failed to delete');
+    } catch (error: any) {
+      console.error('Delete error:', error);
+      toast.error(error?.response?.data?.detail || 'Failed to delete');
     }
   };
 
@@ -98,7 +123,22 @@ export default function Files() {
       toast.error('Cannot download folders');
       return;
     }
-    toast.success(`Downloading ${file.name}...`);
+    
+    // For now, just show a message. In production, you'd download from the URL
+    if (file.url) {
+      window.open(file.url, '_blank');
+      toast.success(`Opening ${file.name}...`);
+    } else {
+      toast.error('File URL not available');
+    }
+  };
+  
+  const handleOpenFolder = (folder: FileItem) => {
+    if (folder.type !== 'folder') return;
+    // In a real app, you'd navigate to the folder view
+    // For now, just show a message
+    toast.success(`Opening folder: ${folder.name}`);
+    // You could set a currentFolderId state and filter files by it
   };
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -290,7 +330,7 @@ export default function Files() {
               <div 
                 key={file.id} 
                 className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow flex flex-col"
-                onClick={() => file.type === 'folder' && toast.success(`Opening folder: ${file.name}`)}
+                onClick={() => file.type === 'folder' && handleOpenFolder(file)}
                 style={{ cursor: file.type === 'folder' ? 'pointer' : 'default' }}
               >
                 {/* File/Folder Icon */}
