@@ -191,7 +191,8 @@ async def delete_own_account(
     db: Session = Depends(get_db)
 ):
     """Delete own account (soft delete)"""
-    user_id = current_user["id"]
+    import uuid
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
     user = db.query(UserModel).filter(
         UserModel.id == user_id,
