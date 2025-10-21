@@ -111,6 +111,9 @@ export default function Settings() {
     email: '',
     appPassword: ''
   });
+  
+  const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Sales Rep' });
   const [companyForm, setCompanyForm] = useState({
@@ -542,6 +545,20 @@ export default function Settings() {
                   Update Security Settings
                 </button>
               </div>
+              
+              {/* Delete Account Section */}
+              <div className="pt-6 border-t border-gray-200">
+                <h3 className="text-sm font-medium text-red-900 mb-2">Delete Account</h3>
+                <p className="text-sm text-gray-600 mb-4">
+                  Once you delete your account, there is no going back. Please be certain.
+                </p>
+                <button
+                  onClick={() => setShowDeleteAccountModal(true)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+                >
+                  Delete My Account
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -849,6 +866,83 @@ export default function Settings() {
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
                   Connect Gmail
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Modal */}
+      {showDeleteAccountModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-red-900">Delete Account</h3>
+              <button onClick={() => {
+                setShowDeleteAccountModal(false);
+                setDeleteConfirmText('');
+              }} className="text-gray-400 hover:text-gray-600">
+                <span className="text-2xl">&times;</span>
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800">
+                  <strong>Warning:</strong> This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type <strong>DELETE MY ACCOUNT</strong> to confirm
+                </label>
+                <input
+                  type="text"
+                  value={deleteConfirmText}
+                  onChange={(e) => setDeleteConfirmText(e.target.value)}
+                  placeholder="DELETE MY ACCOUNT"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-red-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowDeleteAccountModal(false);
+                    setDeleteConfirmText('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (deleteConfirmText === 'DELETE MY ACCOUNT') {
+                      try {
+                        const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+                          method: 'DELETE',
+                          headers: {
+                            'Authorization': `Bearer ${token}`,
+                          },
+                        });
+                        if (response.ok) {
+                          toast.success('Account deleted successfully');
+                          // Logout and redirect
+                          localStorage.removeItem('token');
+                          window.location.href = '/auth/login';
+                        } else {
+                          toast.error('Failed to delete account');
+                        }
+                      } catch (error) {
+                        toast.error('Failed to delete account');
+                      }
+                    } else {
+                      toast.error('Please type DELETE MY ACCOUNT to confirm');
+                    }
+                  }}
+                  disabled={deleteConfirmText !== 'DELETE MY ACCOUNT'}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Delete Account
                 </button>
               </div>
             </div>
