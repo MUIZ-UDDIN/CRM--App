@@ -277,12 +277,18 @@ export default function Files() {
     e.preventDefault();
     const fileId = e.dataTransfer.getData('fileId');
     
-    if (!fileId) return;
+    if (!fileId) {
+      console.log('No fileId in drag data');
+      return;
+    }
+
+    console.log('Moving file:', fileId, 'to folder:', targetFolderId);
 
     try {
-      await filesService.updateFile(fileId, { folder_id: targetFolderId || undefined });
+      const result = await filesService.updateFile(fileId, { folder_id: targetFolderId || undefined });
+      console.log('Move result:', result);
       toast.success('File moved successfully');
-      fetchFiles();
+      await fetchFiles();
     } catch (error) {
       console.error('Move error:', error);
       toast.error('Failed to move file');
@@ -363,7 +369,7 @@ export default function Files() {
                 onClick={handleBackToRoot}
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
-                All Files (Drop here to move to root)
+                All Files
               </button>
               <span className="text-gray-400">/</span>
               <span className="text-gray-900 font-medium">{currentFolderName}</span>

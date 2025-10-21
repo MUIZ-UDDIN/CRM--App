@@ -393,14 +393,14 @@ export default function Activities() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                 <input
                   type="datetime-local"
                   value={activityForm.due_date}
                   onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  placeholder="Date and time (optional time)"
                 />
-                <p className="text-xs text-gray-500 mt-1">You can enter date only or date with time</p>
+                <p className="text-xs text-gray-500 mt-1">Select date and time (time is optional, defaults to 00:00)</p>
               </div>
               <input
                 type="number"
@@ -472,12 +472,16 @@ export default function Activities() {
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="datetime-local"
-                value={activityForm.due_date}
-                onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                <input
+                  type="datetime-local"
+                  value={activityForm.due_date}
+                  onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Select date and time (time is optional, defaults to 00:00)</p>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowEditModal(false)}

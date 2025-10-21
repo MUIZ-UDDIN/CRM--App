@@ -40,13 +40,7 @@ export default function Contacts() {
   const [loading, setLoading] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
-  const [contactTypes, setContactTypes] = useState([
-    'Marketing Qualified Lead',
-    'Prospect',
-    'Lead',
-    'Customer',
-    'Partner'
-  ]);
+  const [contactTypes, setContactTypes] = useState<string[]>([]);
   const [users, setUsers] = useState<Array<{id: string, name: string, email: string}>>([]);
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
   const [newTypeName, setNewTypeName] = useState('');
@@ -98,6 +92,22 @@ export default function Contacts() {
     }
   }, [searchParams]);
 
+  // Fetch all contact types on mount
+  useEffect(() => {
+    const fetchAllTypes = async () => {
+      try {
+        const allContacts = await contactsService.getContacts({});
+        const uniqueTypes = Array.from(new Set(
+          allContacts.map((contact: Contact) => contact.type).filter((type): type is string => !!type)
+        )).sort();
+        setContactTypes(uniqueTypes);
+      } catch (error) {
+        console.error('Error fetching types:', error);
+      }
+    };
+    fetchAllTypes();
+  }, []);
+
   // Fetch contacts
   useEffect(() => {
     fetchContacts();
@@ -114,7 +124,6 @@ export default function Contacts() {
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to load contacts');
-      setContacts([]);
     } finally {
       setLoading(false);
     }
