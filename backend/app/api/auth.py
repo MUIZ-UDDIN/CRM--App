@@ -98,8 +98,11 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     # Validate password strength
     validate_password_strength(request.password)
     
-    # Check if user already exists
-    existing_user = db.query(UserModel).filter(UserModel.email == request.email).first()
+    # Check if user already exists (only active users)
+    existing_user = db.query(UserModel).filter(
+        UserModel.email == request.email,
+        UserModel.is_deleted == False
+    ).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
