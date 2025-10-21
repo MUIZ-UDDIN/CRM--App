@@ -133,14 +133,28 @@ export default function Quotes() {
 
   const handleCreate = async () => {
     try {
-      await quotesService.createQuote({
+      const payload: any = {
         title: quoteForm.title,
         amount: parseFloat(quoteForm.amount),
-        client_id: quoteForm.client_id || undefined,
-        deal_id: quoteForm.deal_id || undefined,
-        valid_until: quoteForm.valid_until || undefined,
         status: quoteForm.status as any,
-      });
+      };
+      
+      // Only add client_id if it has a value
+      if (quoteForm.client_id && quoteForm.client_id.trim()) {
+        payload.client_id = quoteForm.client_id;
+      }
+      
+      // Only add deal_id if it has a value
+      if (quoteForm.deal_id && quoteForm.deal_id.trim()) {
+        payload.deal_id = quoteForm.deal_id;
+      }
+      
+      // Only add valid_until if it has a value
+      if (quoteForm.valid_until && quoteForm.valid_until.trim()) {
+        payload.valid_until = quoteForm.valid_until;
+      }
+      
+      await quotesService.createQuote(payload);
       toast.success('Quote created');
       setShowAddModal(false);
       setQuoteForm({
@@ -160,14 +174,28 @@ export default function Quotes() {
   const handleUpdate = async () => {
     if (!selectedQuote) return;
     try {
-      await quotesService.updateQuote(selectedQuote.id, {
+      const payload: any = {
         title: quoteForm.title,
         amount: parseFloat(quoteForm.amount),
-        client_id: quoteForm.client_id || undefined,
-        deal_id: quoteForm.deal_id || undefined,
-        valid_until: quoteForm.valid_until || undefined,
         status: quoteForm.status as any,
-      });
+      };
+      
+      // Only add client_id if it has a value
+      if (quoteForm.client_id && quoteForm.client_id.trim()) {
+        payload.client_id = quoteForm.client_id;
+      }
+      
+      // Only add deal_id if it has a value
+      if (quoteForm.deal_id && quoteForm.deal_id.trim()) {
+        payload.deal_id = quoteForm.deal_id;
+      }
+      
+      // Only add valid_until if it has a value
+      if (quoteForm.valid_until && quoteForm.valid_until.trim()) {
+        payload.valid_until = quoteForm.valid_until;
+      }
+      
+      await quotesService.updateQuote(selectedQuote.id, payload);
       toast.success('Quote updated');
       setShowEditModal(false);
       fetchQuotes();
