@@ -65,17 +65,17 @@ export default function Files() {
 
   useEffect(() => {
     fetchFiles();
-  }, [filterCategory, filterStatus]);
+  }, [filterCategory, filterStatus, currentFolderId]);
 
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      // Fetch both files and folders
+      // Fetch both files and folders for current folder
       const [filesData, foldersData] = await Promise.all([
         filesService.getFiles({
           category: filterCategory !== 'all' ? filterCategory : undefined,
         }),
-        filesService.getFolders()
+        filesService.getFolders(currentFolderId || undefined)
       ]);
       
       // Combine files and folders, marking their type
@@ -235,10 +235,20 @@ export default function Files() {
     }
 
     try {
-      await filesService.createFolder({
+      const folderData: any = {
         name: fileForm.name,
         description: fileForm.category,
-      });
+      };
+      
+      // If we're inside a folder, set it as parent
+      if (currentFolderId) {
+        console.log('Creating folder inside:', currentFolderId);
+        folderData.parent_id = currentFolderId;
+      } else {
+        console.log('Creating folder in root');
+      }
+      
+      await filesService.createFolder(folderData);
       toast.success('Folder created successfully');
       setShowCreateFolderModal(false);
       setFileForm({

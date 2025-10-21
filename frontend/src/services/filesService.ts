@@ -56,9 +56,11 @@ export const getFiles = async (params?: any) => {
   return response.data;
 };
 
-// Get all folders
-export const getFolders = async () => {
-  const response = await apiClient.get('/files/folders');
+// Get all folders, optionally filtered by parent_id
+export const getFolders = async (parentId?: string) => {
+  const response = await apiClient.get('/files/folders', {
+    params: parentId ? { parent_id: parentId } : {}
+  });
   return response.data;
 };
 

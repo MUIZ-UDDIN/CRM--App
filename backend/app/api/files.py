@@ -255,18 +255,27 @@ async def update_file(
 # Folder endpoints (MUST be before /{file_id} to avoid route conflicts)
 @router.get("/folders", response_model=List[FolderResponse])
 async def get_folders(
+    parent_id: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all folders"""
+    """Get all folders, optionally filtered by parent_id"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    folders = db.query(Folder).filter(
+    query = db.query(Folder).filter(
         and_(
             Folder.owner_id == user_id,
             Folder.is_deleted == False
         )
-    ).order_by(Folder.name).all()
+    )
+    
+    # Filter by parent_id if provided, otherwise get root folders (parent_id is None)
+    if parent_id:
+        query = query.filter(Folder.parent_id == uuid.UUID(parent_id))
+    else:
+        query = query.filter(Folder.parent_id == None)
+    
+    folders = query.order_by(Folder.name).all()
     
     return [
         FolderResponse(
@@ -288,10 +297,13 @@ async def create_folder(
     """Create a new folder"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
+    parent_uuid = uuid.UUID(folder_data.parent_id) if folder_data.parent_id else None
+    print(f"Creating folder '{folder_data.name}' with parent_id: {parent_uuid}")
+    
     new_folder = Folder(
         name=folder_data.name,
         description=folder_data.description,
-        parent_id=uuid.UUID(folder_data.parent_id) if folder_data.parent_id else None,
+        parent_id=parent_uuid,
         owner_id=user_id
     )
     
