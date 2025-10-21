@@ -194,13 +194,15 @@ async def delete_own_account(
     import uuid
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    user = db.query(UserModel).filter(
-        UserModel.id == user_id,
-        UserModel.is_deleted == False
-    ).first()
+    # Check if user exists (including deleted ones)
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check if already deleted
+    if user.is_deleted:
+        raise HTTPException(status_code=400, detail="Account is already deleted")
     
     # Soft delete
     user.is_deleted = True
