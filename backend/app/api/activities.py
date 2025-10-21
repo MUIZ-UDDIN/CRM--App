@@ -116,8 +116,10 @@ def create_activity(
     due_date = None
     if activity.due_date and activity.due_date.strip():
         try:
+            # Handle datetime-local format (YYYY-MM-DDTHH:mm)
             due_date = datetime.fromisoformat(activity.due_date.replace('Z', '+00:00'))
-        except:
+        except Exception as e:
+            print(f"Failed to parse due_date: {activity.due_date}, error: {e}")
             due_date = None
     
     db_activity = ActivityModel(
