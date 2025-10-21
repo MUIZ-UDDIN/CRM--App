@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { EnvelopeIcon, PlusIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../components/common/SearchableSelect';
 
 interface Email {
   id: string;
@@ -26,12 +27,33 @@ export default function Inbox() {
   });
   const [contactEmails, setContactEmails] = useState<string[]>([]);
   const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
+  const [twilioEmails, setTwilioEmails] = useState<string[]>([]);
+  const [fromEmail, setFromEmail] = useState('');
   const { token } = useAuth();
 
   useEffect(() => {
     fetchEmails();
     fetchContactEmails();
+    loadTwilioEmails();
   }, []);
+
+  const loadTwilioEmails = () => {
+    // Load Twilio emails from localStorage (configured in settings)
+    const twilioConfig = localStorage.getItem('twilioConfig');
+    if (twilioConfig) {
+      try {
+        const config = JSON.parse(twilioConfig);
+        // In real implementation, this would fetch from Twilio API
+        // For now, use configured email
+        if (config.email) {
+          setTwilioEmails([config.email]);
+          setFromEmail(config.email);
+        }
+      } catch (error) {
+        console.error('Failed to load Twilio config:', error);
+      }
+    }
+  };
 
   const fetchContactEmails = async () => {
     try {
@@ -292,13 +314,14 @@ export default function Inbox() {
             </div>
             
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
-                <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
-                  <option value="default">Default Email</option>
-                  <option value="twilio">Twilio Email (Configure in Settings)</option>
-                </select>
-              </div>
+              <SearchableSelect
+                label="From (Twilio Email)"
+                options={twilioEmails}
+                value={fromEmail}
+                onChange={setFromEmail}
+                placeholder="Search Twilio emails or enter manually..."
+                allowCustom={true}
+              />
               
               <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">To</label>

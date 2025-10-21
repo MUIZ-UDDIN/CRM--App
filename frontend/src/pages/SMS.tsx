@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ChatBubbleLeftRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import SearchableSelect from '../components/common/SearchableSelect';
 
 interface Contact {
   id: string;
@@ -227,22 +228,14 @@ export default function SMSNew() {
               </button>
             </div>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From (Your Twilio Number)</label>
-                <input
-                  type="text"
-                  list="twilio-numbers"
-                  value={smsForm.from}
-                  onChange={(e) => setSmsForm({...smsForm, from: e.target.value})}
-                  placeholder="Select from Twilio or enter manually..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-                <datalist id="twilio-numbers">
-                  {twilioNumbers.map((num) => (
-                    <option key={num} value={num}>{num}</option>
-                  ))}
-                </datalist>
-              </div>
+              <SearchableSelect
+                label="From (Your Twilio Number)"
+                options={twilioNumbers}
+                value={smsForm.from}
+                onChange={(value) => setSmsForm({...smsForm, from: value})}
+                placeholder="Search Twilio numbers or enter manually..."
+                allowCustom={true}
+              />
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact or Phone Number)</label>
                 <input
