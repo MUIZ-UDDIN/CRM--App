@@ -190,26 +190,21 @@ async def delete_own_account(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete own account (soft delete)"""
+    """Delete own account (permanent deletion)"""
     import uuid
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    # Check if user exists (including deleted ones)
+    # Check if user exists
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Check if already deleted
-    if user.is_deleted:
-        raise HTTPException(status_code=400, detail="Account is already deleted")
-    
-    # Soft delete
-    user.is_deleted = True
-    user.updated_at = datetime.utcnow()
+    # Hard delete - permanently remove from database
+    db.delete(user)
     db.commit()
     
-    return {"message": "Account deleted successfully"}
+    return {"message": "Account permanently deleted"}
 
 
 @router.delete("/{user_id}")
