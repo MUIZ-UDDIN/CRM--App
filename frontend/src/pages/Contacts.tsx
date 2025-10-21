@@ -240,6 +240,7 @@ export default function Contacts() {
       contact.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (contact.phone && contact.phone.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (contact.company && contact.company.toLowerCase().includes(searchQuery.toLowerCase()));
     
     return matchesSearch;

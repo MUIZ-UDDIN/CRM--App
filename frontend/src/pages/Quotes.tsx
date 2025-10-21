@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as quotesService from '../services/quotesService';
+import SearchableSelect from '../components/common/SearchableSelect';
 import ActionButtons from '../components/common/ActionButtons';
 import { 
   DocumentTextIcon, 
@@ -36,6 +37,7 @@ export default function Quotes() {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [selectedQuote, setSelectedQuote] = useState<Quote | null>(null);
   const [contacts, setContacts] = useState<any[]>([]);
+  const [contactOptions, setContactOptions] = useState<{label: string, value: string}[]>([]);
   const [quoteForm, setQuoteForm] = useState({
     title: '',
     amount: '',
@@ -70,6 +72,12 @@ export default function Quotes() {
       if (response.ok) {
         const data = await response.json();
         setContacts(data);
+        // Create searchable options
+        const options = data.map((c: any) => ({
+          label: `${c.first_name} ${c.last_name} (${c.email})`,
+          value: c.id
+        }));
+        setContactOptions(options);
       }
     } catch (error) {
       console.error('Error fetching contacts:', error);
