@@ -280,7 +280,7 @@ export default function Files() {
     if (!fileId) return;
 
     try {
-      await filesService.updateFile(fileId, { folder_id: targetFolderId });
+      await filesService.updateFile(fileId, { folder_id: targetFolderId || undefined });
       toast.success('File moved successfully');
       fetchFiles();
     } catch (error) {
