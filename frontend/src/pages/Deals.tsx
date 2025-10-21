@@ -97,6 +97,8 @@ export default function Deals() {
     setLoading(true);
     try {
       const data = await dealsService.getDeals();
+      console.log('Fetched deals:', data);
+      
       // Group deals by stage
       const grouped: Record<string, Deal[]> = {
         qualification: [],
@@ -104,11 +106,17 @@ export default function Deals() {
         negotiation: [],
         'closed-won': []
       };
+      
       data.forEach((deal: Deal) => {
+        console.log('Processing deal:', deal.title, 'stage_id:', deal.stage_id);
         if (grouped[deal.stage_id]) {
           grouped[deal.stage_id].push(deal);
+        } else {
+          console.warn('Unknown stage_id:', deal.stage_id, 'for deal:', deal.title);
         }
       });
+      
+      console.log('Grouped deals:', grouped);
       setDeals(grouped);
     } catch (error) {
       console.error('Error fetching deals:', error);
