@@ -22,6 +22,20 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 errors (unauthorized)
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token expired or invalid - redirect to login
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/auth/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface Deal {
   id: string;
   title: string;
