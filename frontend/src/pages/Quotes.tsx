@@ -87,10 +87,12 @@ export default function Quotes() {
   const fetchQuotes = async () => {
     setLoading(true);
     try {
+      console.log('Fetching quotes with filter:', filterStatus);
       const data = await quotesService.getQuotes({ status: filterStatus !== 'all' ? filterStatus : undefined });
+      console.log('Fetched quotes:', data.length, 'quotes');
       setQuotes(data);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching quotes:', error);
       toast.error('Failed to load quotes');
       setQuotes([]);
     } finally {
