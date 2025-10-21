@@ -307,17 +307,17 @@ async def upload_csv_contacts(
                     except (ValueError, AttributeError):
                         owner_id = user_id
                 
-                # Handle type field with null check
-                contact_type = str(row.get('type', 'Lead')) if pd.notna(row.get('type')) else 'Lead'
+                # Handle type field with null check and trim whitespace
+                contact_type = str(row.get('type', 'Lead')).strip() if pd.notna(row.get('type')) else 'Lead'
                 
                 contact_data = {
-                    'first_name': str(row.get('first_name', '')),
-                    'last_name': str(row.get('last_name', '')),
+                    'first_name': str(row.get('first_name', '')).strip(),
+                    'last_name': str(row.get('last_name', '')).strip(),
                     'email': email,
-                    'phone': str(row.get('phone', '')) if pd.notna(row.get('phone')) else '',
-                    'company': str(row.get('company', '')) if pd.notna(row.get('company')) else '',
-                    'title': str(row.get('title', '')) if pd.notna(row.get('title')) else '',
-                    'type': contact_type,
+                    'phone': str(row.get('phone', '')).strip() if pd.notna(row.get('phone')) else '',
+                    'company': str(row.get('company', '')).strip() if pd.notna(row.get('company')) else '',
+                    'title': str(row.get('title', '')).strip() if pd.notna(row.get('title')) else '',
+                    'type': contact_type.strip(),
                     'status': ContactStatus.NEW,
                     'owner_id': owner_id,
                     'created_at': datetime.utcnow(),
@@ -409,17 +409,17 @@ async def upload_excel_contacts(
                     except (ValueError, AttributeError):
                         owner_id = user_id
                 
-                # Handle type field with null check
-                contact_type = str(row.get('type', 'Lead')) if pd.notna(row.get('type')) else 'Lead'
+                # Handle type field with null check and trim whitespace
+                contact_type = str(row.get('type', 'Lead')).strip() if pd.notna(row.get('type')) else 'Lead'
                 
                 contact_data = {
-                    'first_name': str(row.get('first_name', '')),
-                    'last_name': str(row.get('last_name', '')),
+                    'first_name': str(row.get('first_name', '')).strip(),
+                    'last_name': str(row.get('last_name', '')).strip(),
                     'email': email,
-                    'phone': str(row.get('phone', '')) if pd.notna(row.get('phone')) else '',
-                    'company': str(row.get('company', '')) if pd.notna(row.get('company')) else '',
-                    'title': str(row.get('title', '')) if pd.notna(row.get('title')) else '',
-                    'type': contact_type,
+                    'phone': str(row.get('phone', '')).strip() if pd.notna(row.get('phone')) else '',
+                    'company': str(row.get('company', '')).strip() if pd.notna(row.get('company')) else '',
+                    'title': str(row.get('title', '')).strip() if pd.notna(row.get('title')) else '',
+                    'type': contact_type.strip(),
                     'status': ContactStatus.NEW,
                     'owner_id': owner_id,
                     'created_at': datetime.utcnow(),
