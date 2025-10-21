@@ -97,8 +97,8 @@ export default function Contacts() {
     const fetchAllTypes = async () => {
       try {
         const allContacts = await contactsService.getContacts({});
-        const uniqueTypes = Array.from(new Set(
-          allContacts.map((contact: Contact) => contact.type).filter((type): type is string => !!type)
+        const uniqueTypes: string[] = Array.from(new Set(
+          allContacts.map((contact: Contact) => contact.type).filter((type: string | undefined): type is string => !!type)
         )).sort();
         setContactTypes(uniqueTypes);
       } catch (error) {
