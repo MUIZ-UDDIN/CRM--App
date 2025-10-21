@@ -196,32 +196,34 @@ export default function Register() {
             />
           </div>
 
-          <div className="relative">
-            <label htmlFor="password" className="sr-only">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              className="relative block w-full px-3 py-2.5 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
-              placeholder="Password"
-            />
-            <button
-              type="button"
-              className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center z-10"
-              onClick={() => setShowPassword(!showPassword)}
-            >
-              {showPassword ? (
-                <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
-              ) : (
-                <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
-              )}
-            </button>
+          <div>
+            <div className="relative">
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                className="relative block w-full px-3 py-2.5 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+              />
+              <button
+                type="button"
+                className="absolute top-1/2 -translate-y-1/2 right-0 pr-3 flex items-center z-10"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                ) : (
+                  <EyeIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors" />
+                )}
+              </button>
+            </div>
             
             {/* Password Strength Indicator */}
             {formData.password && (
