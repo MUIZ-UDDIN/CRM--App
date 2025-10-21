@@ -72,6 +72,7 @@ class Deal(BaseModel):
     # Ownership
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     contact_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
+    company = Column(String(255), index=True)  # Company name as text field
     
     # Dates
     expected_close_date = Column(DateTime, index=True)
