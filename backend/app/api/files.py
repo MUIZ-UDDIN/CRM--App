@@ -144,6 +144,14 @@ async def upload_file(
         raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
     
     # Create database record
+    # Handle folder_id - convert to UUID if valid, otherwise None
+    folder_uuid = None
+    if folder_id and folder_id.strip():
+        try:
+            folder_uuid = uuid.UUID(folder_id)
+        except ValueError:
+            pass
+    
     new_file = File(
         name=file.filename,
         original_name=file.filename,
@@ -152,7 +160,7 @@ async def upload_file(
         category=category,
         storage_path=str(file_path),
         url=str(file_path),
-        folder_id=uuid.UUID(folder_id) if folder_id else None,
+        folder_id=folder_uuid,
         owner_id=user_id
     )
     
