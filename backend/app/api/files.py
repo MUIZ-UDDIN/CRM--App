@@ -60,6 +60,7 @@ class FileUpdate(BaseModel):
     category: Optional[str] = None
     tags: Optional[List[str]] = None
     status: Optional[str] = None
+    folder_id: Optional[str] = None
 
 
 class FolderCreate(BaseModel):
@@ -206,7 +207,17 @@ async def update_file(
     # Update fields
     update_data = file_update.dict(exclude_unset=True)
     for field, value in update_data.items():
-        setattr(file, field, value)
+        # Handle folder_id conversion to UUID
+        if field == 'folder_id':
+            if value is None or value == '':
+                setattr(file, field, None)
+            else:
+                try:
+                    setattr(file, field, uuid.UUID(value))
+                except ValueError:
+                    pass
+        else:
+            setattr(file, field, value)
     
     from datetime import datetime
     file.updated_at = datetime.utcnow()

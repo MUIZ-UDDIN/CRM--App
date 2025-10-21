@@ -195,7 +195,10 @@ export default function Files() {
       formData.append('file', file);
       formData.append('category', fileForm.category);
       if (currentFolderId) {
+        console.log('Uploading to folder:', currentFolderId);
         formData.append('folder_id', currentFolderId);
+      } else {
+        console.log('Uploading to root (no folder)');
       }
       
       await filesService.uploadFile(formData);
@@ -257,6 +260,32 @@ export default function Files() {
     } catch (error) {
       console.error('Update error:', error);
       toast.error('Failed to update');
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, file: FileItem) => {
+    e.dataTransfer.setData('fileId', file.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
+    e.preventDefault();
+    const fileId = e.dataTransfer.getData('fileId');
+    
+    if (!fileId) return;
+
+    try {
+      await filesService.updateFile(fileId, { folder_id: targetFolderId });
+      toast.success('File moved successfully');
+      fetchFiles();
+    } catch (error) {
+      console.error('Move error:', error);
+      toast.error('Failed to move file');
     }
   };
 
@@ -323,14 +352,18 @@ export default function Files() {
 
       {/* Breadcrumb Navigation */}
       {currentFolderId && (
-        <div className="bg-gray-50 border-b border-gray-200">
+        <div 
+          className="bg-gray-50 border-b border-gray-200"
+          onDragOver={handleDragOver}
+          onDrop={(e) => handleDrop(e, null)}
+        >
           <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-3">
             <div className="flex items-center space-x-2 text-sm">
               <button
                 onClick={handleBackToRoot}
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
-                All Files
+                All Files (Drop here to move to root)
               </button>
               <span className="text-gray-400">/</span>
               <span className="text-gray-900 font-medium">{currentFolderName}</span>
@@ -402,7 +435,11 @@ export default function Files() {
             {filteredFiles.map((file) => (
               <div 
                 key={file.id} 
-                className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow flex flex-col"
+                draggable={file.type === 'file'}
+                onDragStart={(e) => file.type === 'file' && handleDragStart(e, file)}
+                onDragOver={file.type === 'folder' ? handleDragOver : undefined}
+                onDrop={file.type === 'folder' ? (e) => handleDrop(e, file.id) : undefined}
+                className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow flex flex-col cursor-move"
                 onClick={() => file.type === 'folder' && handleOpenFolder(file)}
                 style={{ cursor: file.type === 'folder' ? 'pointer' : 'default' }}
               >
