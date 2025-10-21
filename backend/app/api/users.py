@@ -192,6 +192,8 @@ async def delete_own_account(
 ):
     """Delete own account (permanent deletion)"""
     import uuid
+    from sqlalchemy import text
+    
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
     # Check if user exists
@@ -200,11 +202,25 @@ async def delete_own_account(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Hard delete - permanently remove from database
-    db.delete(user)
-    db.commit()
-    
-    return {"message": "Account permanently deleted"}
+    try:
+        # Delete related data first using raw SQL to avoid relationship loading issues
+        db.execute(text("DELETE FROM twilio_settings WHERE user_id = :user_id"), {"user_id": user_id})
+        db.execute(text("DELETE FROM workflows WHERE owner_id = :user_id"), {"user_id": user_id})
+        db.execute(text("DELETE FROM folders WHERE owner_id = :user_id"), {"user_id": user_id})
+        db.execute(text("DELETE FROM files WHERE owner_id = :user_id"), {"user_id": user_id})
+        db.execute(text("DELETE FROM documents WHERE owner_id = :user_id"), {"user_id": user_id})
+        db.execute(text("DELETE FROM deals WHERE owner_id = :user_id"), {"user_id": user_id})
+        db.execute(text("DELETE FROM activities WHERE owner_id = :user_id"), {"user_id": user_id})
+        db.execute(text("DELETE FROM contacts WHERE owner_id = :user_id"), {"user_id": user_id})
+        
+        # Now delete the user
+        db.execute(text("DELETE FROM users WHERE id = :user_id"), {"user_id": user_id})
+        db.commit()
+        
+        return {"message": "Account permanently deleted"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
 
 
 @router.delete("/{user_id}")
