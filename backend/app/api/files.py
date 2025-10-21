@@ -206,15 +206,20 @@ async def update_file(
     
     # Update fields
     update_data = file_update.dict(exclude_unset=True)
+    print(f"Updating file {file_id} with data: {update_data}")
     for field, value in update_data.items():
         # Handle folder_id conversion to UUID
         if field == 'folder_id':
             if value is None or value == '':
+                print(f"Setting folder_id to None")
                 setattr(file, field, None)
             else:
                 try:
-                    setattr(file, field, uuid.UUID(value))
+                    folder_uuid = uuid.UUID(value)
+                    print(f"Setting folder_id to {folder_uuid}")
+                    setattr(file, field, folder_uuid)
                 except ValueError:
+                    print(f"Invalid folder_id UUID: {value}")
                     pass
         else:
             setattr(file, field, value)
@@ -225,6 +230,8 @@ async def update_file(
     db.commit()
     db.refresh(file)
     
+    print(f"File after update - folder_id: {file.folder_id}")
+    
     return FileResponse(
         id=str(file.id),
         name=file.name,
@@ -234,6 +241,7 @@ async def update_file(
         category=file.category,
         tags=file.tags or [],
         url=file.url,
+        folder_id=str(file.folder_id) if file.folder_id else None,
         created_at=file.created_at.isoformat() if file.created_at else None,
         updated_at=file.updated_at.isoformat() if file.updated_at else None
     )
