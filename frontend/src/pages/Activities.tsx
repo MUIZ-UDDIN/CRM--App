@@ -392,12 +392,16 @@ export default function Activities() {
                 rows={3}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="datetime-local"
-                value={activityForm.due_date}
-                onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <input
+                  type="datetime-local"
+                  value={activityForm.due_date}
+                  onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="Date and time (optional time)"
+                />
+                <p className="text-xs text-gray-500 mt-1">You can enter date only or date with time</p>
+              </div>
               <input
                 type="number"
                 placeholder="Duration (minutes)"

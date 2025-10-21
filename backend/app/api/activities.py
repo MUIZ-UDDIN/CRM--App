@@ -116,11 +116,16 @@ def create_activity(
     due_date = None
     if activity.due_date and activity.due_date.strip():
         try:
-            # Handle datetime-local format (YYYY-MM-DDTHH:mm) - add seconds if missing
+            # Handle datetime-local format (YYYY-MM-DDTHH:mm) or date-only (YYYY-MM-DD)
             date_str = activity.due_date.replace('Z', '+00:00')
-            if 'T' in date_str and date_str.count(':') == 1:
+            
+            # If date-only format (no 'T'), add default time
+            if 'T' not in date_str:
+                date_str = date_str + 'T00:00:00'
+            elif date_str.count(':') == 1:
                 # Add :00 for seconds if not present
                 date_str = date_str + ':00'
+            
             due_date = datetime.fromisoformat(date_str)
             print(f"Successfully parsed due_date: {activity.due_date} -> {due_date}")
         except Exception as e:
