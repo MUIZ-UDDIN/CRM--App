@@ -259,7 +259,13 @@ def update_deal(
     
     # Update fields
     for field, value in deal_data.items():
-        if hasattr(deal, field) and value is not None:
+        if field == 'contact':
+            # Handle contact - try to parse as UUID for contact_id
+            try:
+                deal.contact_id = uuid.UUID(value) if value else None
+            except (ValueError, AttributeError):
+                pass  # Ignore if not a valid UUID
+        elif hasattr(deal, field) and value is not None:
             if field in ['stage_id', 'pipeline_id']:
                 setattr(deal, field, uuid.UUID(value))
             else:
@@ -270,14 +276,23 @@ def update_deal(
     db.commit()
     db.refresh(deal)
     
+    # Map stage name to frontend format
+    stage_name_map = {
+        'Qualification': 'qualification',
+        'Proposal': 'proposal',
+        'Negotiation': 'negotiation',
+        'Closed Won': 'closed-won',
+        'Closed Lost': 'closed-lost'
+    }
+    
     return {
         "id": str(deal.id),
         "title": deal.title,
         "value": deal.value,
-        "stage_id": str(deal.stage_id),
+        "stage_id": stage_name_map.get(deal.stage.name, deal.stage.name.lower()) if deal.stage else str(deal.stage_id),
         "pipeline_id": str(deal.pipeline_id),
         "company": deal.company,
-        "contact": deal.contact_person,
+        "contact": f"{deal.contact.first_name} {deal.contact.last_name}" if deal.contact else None,
         "description": deal.description,
         "updated_at": deal.updated_at
     }
@@ -320,6 +335,8 @@ def move_deal_stage(
     db: Session = Depends(get_db)
 ):
     """Move deal to different stage"""
+    from ..models.deals import Pipeline, PipelineStage
+    
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
     deal = db.query(DealModel).filter(
@@ -333,19 +350,54 @@ def move_deal_stage(
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
     
-    deal.stage_id = uuid.UUID(stage_data.get("to_stage_id", str(deal.stage_id)))
+    # Handle stage_id - accept either UUID or stage name
+    to_stage_id_str = stage_data.get("to_stage_id", str(deal.stage_id))
+    try:
+        stage_id = uuid.UUID(to_stage_id_str)
+    except (ValueError, AttributeError):
+        # Try to find stage by name (case-insensitive)
+        stage_name_map = {
+            'qualification': 'Qualification',
+            'proposal': 'Proposal',
+            'negotiation': 'Negotiation',
+            'closed-won': 'Closed Won',
+            'closed-lost': 'Closed Lost'
+        }
+        stage_name = stage_name_map.get(to_stage_id_str.lower(), to_stage_id_str)
+        stage = db.query(PipelineStage).filter(
+            and_(
+                PipelineStage.pipeline_id == deal.pipeline_id,
+                PipelineStage.name == stage_name,
+                PipelineStage.is_deleted == False
+            )
+        ).first()
+        
+        if not stage:
+            raise HTTPException(status_code=400, detail=f"Stage '{to_stage_id_str}' not found")
+        stage_id = stage.id
+    
+    deal.stage_id = stage_id
     deal.updated_at = datetime.utcnow()
     
     db.commit()
     db.refresh(deal)
     
+    # Map stage name to frontend format
+    stage_name_map = {
+        'Qualification': 'qualification',
+        'Proposal': 'proposal',
+        'Negotiation': 'negotiation',
+        'Closed Won': 'closed-won',
+        'Closed Lost': 'closed-lost'
+    }
+    
     return {
         "id": str(deal.id),
         "title": deal.title,
         "value": deal.value,
-        "stage_id": str(deal.stage_id),
+        "stage_id": stage_name_map.get(deal.stage.name, deal.stage.name.lower()) if deal.stage else str(deal.stage_id),
         "pipeline_id": str(deal.pipeline_id),
         "company": deal.company,
-        "contact": deal.contact_person,
+        "contact": f"{deal.contact.first_name} {deal.contact.last_name}" if deal.contact else None,
         "updated_at": deal.updated_at
     }
