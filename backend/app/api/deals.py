@@ -89,8 +89,13 @@ def create_deal(
 ):
     """Create a new deal"""
     from ..models.deals import Pipeline, PipelineStage
+    import traceback
     
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    try:
+        user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    except Exception as e:
+        print(f"Error parsing user_id: {e}")
+        raise HTTPException(status_code=400, detail=f"Invalid user ID: {str(e)}")
     
     # Get default pipeline if pipeline_id not provided or invalid
     try:
@@ -130,36 +135,42 @@ def create_deal(
             raise HTTPException(status_code=400, detail=f"Stage '{deal.stage_id}' not found")
         stage_id = stage.id
     
-    new_deal = DealModel(
-        title=deal.title,
-        value=deal.value,
-        stage_id=stage_id,
-        pipeline_id=pipeline_id,
-        company=deal.company,
-        contact_person=deal.contact,
-        description=deal.description,
-        expected_close_date=deal.expected_close_date,
-        owner_id=user_id,
-        status=DealStatus.OPEN,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
-    )
-    
-    db.add(new_deal)
-    db.commit()
-    db.refresh(new_deal)
-    
-    return {
-        "id": str(new_deal.id),
-        "title": new_deal.title,
-        "value": new_deal.value,
-        "stage_id": str(new_deal.stage_id),
-        "pipeline_id": str(new_deal.pipeline_id),
-        "company": new_deal.company,
-        "contact": new_deal.contact_person,
-        "created_at": new_deal.created_at,
-        "message": "Deal created successfully"
-    }
+    try:
+        new_deal = DealModel(
+            title=deal.title,
+            value=deal.value,
+            stage_id=stage_id,
+            pipeline_id=pipeline_id,
+            company=deal.company,
+            contact_person=deal.contact,
+            description=deal.description,
+            expected_close_date=deal.expected_close_date,
+            owner_id=user_id,
+            status=DealStatus.OPEN,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.add(new_deal)
+        db.commit()
+        db.refresh(new_deal)
+        
+        return {
+            "id": str(new_deal.id),
+            "title": new_deal.title,
+            "value": new_deal.value,
+            "stage_id": str(new_deal.stage_id),
+            "pipeline_id": str(new_deal.pipeline_id),
+            "company": new_deal.company,
+            "contact": new_deal.contact_person,
+            "created_at": new_deal.created_at,
+            "message": "Deal created successfully"
+        }
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating deal: {e}")
+        print(traceback.format_exc())
+        raise HTTPException(status_code=400, detail=f"Failed to create deal: {str(e)}")
 
 
 @router.get("/{deal_id}")

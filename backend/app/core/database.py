@@ -92,6 +92,7 @@ def get_sync_session():
     except Exception as e:
         session.rollback()
         logger.error(f"Sync database session error: {e}")
+        logger.exception("Full traceback:")
         raise
     finally:
         session.close()
