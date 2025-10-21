@@ -41,6 +41,7 @@ class FolderResponse(BaseModel):
     id: str
     name: str
     description: Optional[str]
+    parent_id: Optional[str] = None
     created_at: str
     
     class Config:
@@ -282,6 +283,7 @@ async def get_folders(
             id=str(folder.id),
             name=folder.name,
             description=folder.description,
+            parent_id=str(folder.parent_id) if folder.parent_id else None,
             created_at=folder.created_at.isoformat() if folder.created_at else None
         )
         for folder in folders
@@ -315,6 +317,7 @@ async def create_folder(
         id=str(new_folder.id),
         name=new_folder.name,
         description=new_folder.description,
+        parent_id=str(new_folder.parent_id) if new_folder.parent_id else None,
         created_at=new_folder.created_at.isoformat() if new_folder.created_at else None
     )
 
@@ -365,6 +368,7 @@ async def update_folder(
         id=str(folder.id),
         name=folder.name,
         description=folder.description,
+        parent_id=str(folder.parent_id) if folder.parent_id else None,
         created_at=folder.created_at.isoformat() if folder.created_at else None
     )
 

@@ -26,7 +26,8 @@ interface FileItem {
   contact?: string;
   deal?: string;
   url?: string;
-  folder_id?: string;
+  folder_id?: string;  // For files - which folder they're in
+  parent_id?: string;  // For folders - which folder they're in
   created_at: string;
   updated_at?: string;
 }
@@ -338,16 +339,23 @@ export default function Files() {
   };
 
   const filteredFiles = files.filter(file => {
-    // Filter by current folder
-    if (currentFolderId && file.folder_id !== currentFolderId) return false;
-    if (!currentFolderId && file.folder_id) return false;
+    // Filter by current folder - folders use parent_id, files use folder_id
+    if (file.type === 'folder') {
+      // For folders, check parent_id
+      if (currentFolderId && file.parent_id !== currentFolderId) return false;
+      if (!currentFolderId && file.parent_id) return false;
+    } else {
+      // For files, check folder_id
+      if (currentFolderId && file.folder_id !== currentFolderId) return false;
+      if (!currentFolderId && file.folder_id) return false;
+    }
     
     const matchesSearch = 
       file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (file.tags && file.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     
-    const matchesCategory = filterCategory === 'all' || file.category === filterCategory;
-    const matchesStatus = filterStatus === 'all' || file.status === filterStatus;
+    const matchesCategory = filterCategory === 'all' || file.category === filterCategory || file.type === 'folder';
+    const matchesStatus = filterStatus === 'all' || file.status === filterStatus || file.type === 'folder';
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
