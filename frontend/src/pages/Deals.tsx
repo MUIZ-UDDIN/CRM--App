@@ -50,6 +50,7 @@ export default function Deals() {
     negotiation: [],
     'closed-won': []
   });
+  const [contacts, setContacts] = useState<any[]>([]);
 
   const stages: Stage[] = [
     { id: 'qualification', name: 'Qualification', color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
@@ -58,7 +59,26 @@ export default function Deals() {
     { id: 'closed-won', name: 'Closed Won', color: 'bg-green-50 border-green-200', textColor: 'text-green-700' }
   ];
 
-  // Fetch deals
+  // Fetch contacts
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${API_BASE_URL}/api/contacts/`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setContacts(data);
+        }
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+      }
+    };
+    fetchContacts();
+  }, []);
+
   // Check for action query parameter
   useEffect(() => {
     const action = searchParams.get('action');
@@ -401,14 +421,19 @@ export default function Deals() {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="text"
+              <select
                 name="contact"
-                placeholder="Contact Person"
                 value={dealFormData.contact}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              >
+                <option value="">Select Contact Person</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={`${contact.first_name} ${contact.last_name}`}>
+                    {contact.first_name} {contact.last_name} ({contact.email})
+                  </option>
+                ))}
+              </select>
               <select
                 name="stage_id"
                 value={dealFormData.stage_id}
@@ -474,14 +499,19 @@ export default function Deals() {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="text"
+              <select
                 name="contact"
-                placeholder="Contact Person"
                 value={dealFormData.contact}
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              >
+                <option value="">Select Contact Person</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={`${contact.first_name} ${contact.last_name}`}>
+                    {contact.first_name} {contact.last_name} ({contact.email})
+                  </option>
+                ))}
+              </select>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowEditModal(false)}
