@@ -29,6 +29,7 @@ class FileResponse(BaseModel):
     category: Optional[str]
     tags: List[str] = []
     url: Optional[str]
+    folder_id: Optional[str] = None
     created_at: str
     updated_at: Optional[str]
     
@@ -104,6 +105,7 @@ async def get_files(
             category=file.category,
             tags=file.tags or [],
             url=file.url,
+            folder_id=str(file.folder_id) if file.folder_id else None,
             created_at=file.created_at.isoformat() if file.created_at else None,
             updated_at=file.updated_at.isoformat() if file.updated_at else None
         )
