@@ -63,12 +63,21 @@ def get_deals(
     
     deals = query.all()
     
+    # Map stage names to frontend format
+    stage_name_map = {
+        'Qualification': 'qualification',
+        'Proposal': 'proposal',
+        'Negotiation': 'negotiation',
+        'Closed Won': 'closed-won',
+        'Closed Lost': 'closed-lost'
+    }
+    
     return [
         {
             "id": str(deal.id),
             "title": deal.title,
             "value": deal.value,
-            "stage_id": str(deal.stage_id),
+            "stage_id": stage_name_map.get(deal.stage.name, deal.stage.name.lower()) if deal.stage else str(deal.stage_id),
             "pipeline_id": str(deal.pipeline_id),
             "company": deal.company,
             "contact": f"{deal.contact.first_name} {deal.contact.last_name}" if deal.contact else None,
@@ -164,11 +173,20 @@ def create_deal(
         db.commit()
         db.refresh(new_deal)
         
+        # Map stage name to frontend format
+        stage_name_map = {
+            'Qualification': 'qualification',
+            'Proposal': 'proposal',
+            'Negotiation': 'negotiation',
+            'Closed Won': 'closed-won',
+            'Closed Lost': 'closed-lost'
+        }
+        
         return {
             "id": str(new_deal.id),
             "title": new_deal.title,
             "value": new_deal.value,
-            "stage_id": str(new_deal.stage_id),
+            "stage_id": stage_name_map.get(new_deal.stage.name, new_deal.stage.name.lower()) if new_deal.stage else str(new_deal.stage_id),
             "pipeline_id": str(new_deal.pipeline_id),
             "company": new_deal.company,
             "contact": f"{new_deal.contact.first_name} {new_deal.contact.last_name}" if new_deal.contact else None,
