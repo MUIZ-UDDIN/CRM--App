@@ -136,13 +136,20 @@ def create_deal(
         stage_id = stage.id
     
     try:
+        # Parse contact_id if provided
+        contact_id = None
+        if deal.contact:
+            try:
+                contact_id = uuid.UUID(deal.contact) if deal.contact else None
+            except (ValueError, AttributeError):
+                pass  # If it's not a UUID, ignore it
+        
         new_deal = DealModel(
             title=deal.title,
             value=deal.value,
             stage_id=stage_id,
             pipeline_id=pipeline_id,
-            company=deal.company,
-            contact_person=deal.contact,
+            contact_id=contact_id,
             description=deal.description,
             expected_close_date=deal.expected_close_date,
             owner_id=user_id,
