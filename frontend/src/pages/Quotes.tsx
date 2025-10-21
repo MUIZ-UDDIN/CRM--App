@@ -437,13 +437,18 @@ export default function Quotes() {
                 onChange={(e) => setQuoteForm({...quoteForm, amount: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="text"
-                placeholder="Client Name"
+              <select
                 value={quoteForm.client_id}
                 onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              >
+                <option value="">Select Client</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.first_name} {contact.last_name} ({contact.email})
+                  </option>
+                ))}
+              </select>
               <input
                 type="date"
                 placeholder="Valid Until"
