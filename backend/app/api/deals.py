@@ -23,7 +23,7 @@ class DealCreate(BaseModel):
     company: Optional[str] = None
     contact: Optional[str] = None  
     stage_id: str
-    pipeline_id: str
+    pipeline_id: Optional[str] = None  # Optional - will use default pipeline if not provided
     description: Optional[str] = None
     expected_close_date: Optional[datetime] = None
 

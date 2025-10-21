@@ -53,6 +53,10 @@ class User(BaseModel):
     last_login = Column(String)
     role = Column(String(50), default="Regular User")  # User role
     
+    # Password reset
+    reset_code = Column(String(6))
+    reset_code_expires = Column(DateTime)
+    
     # Relationships
     roles = relationship('Role', secondary=user_roles, back_populates='users')
     team = relationship('Team', back_populates='members', foreign_keys=[team_id])

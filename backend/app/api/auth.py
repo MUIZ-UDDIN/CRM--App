@@ -190,11 +190,15 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
     import os
+    from datetime import timedelta
     
     reset_code = str(random.randint(100000, 999999))
     
-    # Store reset code in user record (you'd want to add a reset_code field to User model)
-    # For now, just log it
+    # Store reset code in user record with 15-minute expiration
+    user.reset_code = reset_code
+    user.reset_code_expires = datetime.utcnow() + timedelta(minutes=15)
+    db.commit()
+    
     print(f"Password reset code for {request.email}: {reset_code}")
     
     # Send email using SMTP
@@ -253,3 +257,59 @@ async def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(
             "message": f"A password reset code has been sent to {request.email}. Please check your inbox.",
             "code": reset_code  # Only for development
         }
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    reset_code: str
+    new_password: str
+
+
+@router.post("/reset-password")
+async def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset password using reset code"""
+    # Find user by email
+    user = db.query(UserModel).filter(UserModel.email == request.email).first()
+    
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="No account found with this email address."
+        )
+    
+    # Check if reset code exists and is valid
+    if not user.reset_code or not user.reset_code_expires:
+        raise HTTPException(
+            status_code=400,
+            detail="No password reset request found. Please request a new reset code."
+        )
+    
+    # Check if code has expired
+    if datetime.utcnow() > user.reset_code_expires:
+        raise HTTPException(
+            status_code=400,
+            detail="Reset code has expired. Please request a new one."
+        )
+    
+    # Verify reset code
+    if user.reset_code != request.reset_code:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid reset code. Please check and try again."
+        )
+    
+    # Validate new password strength
+    validate_password_strength(request.new_password)
+    
+    # Update password
+    user.hashed_password = get_password_hash(request.new_password)
+    
+    # Clear reset code
+    user.reset_code = None
+    user.reset_code_expires = None
+    
+    db.commit()
+    
+    return {
+        "message": "Password has been reset successfully. You can now login with your new password."
+    }
