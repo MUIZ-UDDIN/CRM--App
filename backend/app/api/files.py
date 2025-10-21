@@ -55,6 +55,13 @@ class FileCreate(BaseModel):
     deal_id: Optional[str]
 
 
+class FileUpdate(BaseModel):
+    name: Optional[str] = None
+    category: Optional[str] = None
+    tags: Optional[List[str]] = None
+    status: Optional[str] = None
+
+
 class FolderCreate(BaseModel):
     name: str
     description: Optional[str] = None
@@ -164,6 +171,52 @@ async def upload_file(
         url=new_file.url,
         created_at=new_file.created_at.isoformat() if new_file.created_at else None,
         updated_at=new_file.updated_at.isoformat() if new_file.updated_at else None
+    )
+
+
+@router.patch("/{file_id}", response_model=FileResponse)
+async def update_file(
+    file_id: str,
+    file_update: FileUpdate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update a file's metadata"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    file = db.query(File).filter(
+        and_(
+            File.id == uuid.UUID(file_id),
+            File.owner_id == user_id,
+            File.is_deleted == False
+        )
+    ).first()
+    
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    # Update fields
+    update_data = file_update.dict(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(file, field, value)
+    
+    from datetime import datetime
+    file.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(file)
+    
+    return FileResponse(
+        id=str(file.id),
+        name=file.name,
+        original_name=file.original_name,
+        file_type=file.file_type,
+        size=file.size,
+        category=file.category,
+        tags=file.tags or [],
+        url=file.url,
+        created_at=file.created_at.isoformat() if file.created_at else None,
+        updated_at=file.updated_at.isoformat() if file.updated_at else None
     )
 
 

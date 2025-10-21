@@ -243,10 +243,19 @@ export default function Files() {
   const handleUpdate = async () => {
     if (!selectedFile) return;
     try {
+      const updateData: any = {
+        name: fileForm.name,
+        category: fileForm.category,
+        tags: fileForm.tags.split(',').map(t => t.trim()).filter(t => t),
+        status: fileForm.status,
+      };
+      
+      await filesService.updateFile(selectedFile.id, updateData);
       toast.success('Updated successfully');
       setShowEditModal(false);
       fetchFiles();
     } catch (error) {
+      console.error('Update error:', error);
       toast.error('Failed to update');
     }
   };
