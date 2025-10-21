@@ -24,11 +24,33 @@ export default function Inbox() {
     subject: '',
     body: ''
   });
+  const [contactEmails, setContactEmails] = useState<string[]>([]);
+  const [showEmailSuggestions, setShowEmailSuggestions] = useState(false);
   const { token } = useAuth();
 
   useEffect(() => {
     fetchEmails();
+    fetchContactEmails();
   }, []);
+
+  const fetchContactEmails = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/contacts`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const contacts = await response.json();
+        const emails = contacts.map((c: any) => c.email).filter((e: string) => e);
+        setContactEmails(emails);
+      }
+    } catch (error) {
+      console.error('Error fetching contact emails:', error);
+    }
+  };
 
   const fetchEmails = async () => {
     try {
@@ -279,13 +301,41 @@ export default function Inbox() {
                 </select>
               </div>
               
-              <div>
+              <div className="relative">
                 <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
                 <input 
                   type="text" 
-                  placeholder="Phone number or email address"
+                  placeholder="Email address"
+                  value={composeForm.to}
+                  onChange={(e) => {
+                    setComposeForm({...composeForm, to: e.target.value});
+                    setShowEmailSuggestions(e.target.value.length > 0);
+                  }}
+                  onFocus={() => setShowEmailSuggestions(composeForm.to.length > 0)}
+                  onBlur={() => setTimeout(() => setShowEmailSuggestions(false), 200)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500" 
                 />
+                {showEmailSuggestions && contactEmails.filter(email => 
+                  email.toLowerCase().includes(composeForm.to.toLowerCase())
+                ).length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    {contactEmails
+                      .filter(email => email.toLowerCase().includes(composeForm.to.toLowerCase()))
+                      .slice(0, 10)
+                      .map((email, index) => (
+                        <div
+                          key={index}
+                          onClick={() => {
+                            setComposeForm({...composeForm, to: email});
+                            setShowEmailSuggestions(false);
+                          }}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                        >
+                          {email}
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
               
               <div>

@@ -47,7 +47,7 @@ const navigation: NavItem[] = [
     icon: InboxIcon,
     children: [
       { name: 'Contacts', href: '/contacts' },
-      { name: 'Inbox', href: '/inbox' },
+      { name: 'Email', href: '/inbox' },
       { name: 'SMS', href: '/sms' },
       { name: 'Calls', href: '/calls' },
     ]
