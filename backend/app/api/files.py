@@ -169,6 +169,8 @@ async def upload_file(
     db.commit()
     db.refresh(new_file)
     
+    print(f"Uploaded file - folder_id: {new_file.folder_id}")
+    
     return FileResponse(
         id=str(new_file.id),
         name=new_file.name,
@@ -178,6 +180,7 @@ async def upload_file(
         category=new_file.category,
         tags=new_file.tags or [],
         url=new_file.url,
+        folder_id=str(new_file.folder_id) if new_file.folder_id else None,
         created_at=new_file.created_at.isoformat() if new_file.created_at else None,
         updated_at=new_file.updated_at.isoformat() if new_file.updated_at else None
     )

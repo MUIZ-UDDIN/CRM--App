@@ -201,7 +201,18 @@ export default function Files() {
         console.log('Uploading to root (no folder)');
       }
       
-      await filesService.uploadFile(formData);
+      const uploadResult = await filesService.uploadFile(formData);
+      console.log('Upload result:', uploadResult);
+      console.log('Upload result folder_id:', uploadResult.folder_id);
+      console.log('Expected folder_id:', currentFolderId);
+      
+      if (currentFolderId && uploadResult.folder_id !== currentFolderId) {
+        console.error('WARNING: Upload folder_id mismatch!', {
+          expected: currentFolderId,
+          received: uploadResult.folder_id
+        });
+      }
+      
       toast.success('File uploaded successfully');
       setShowUploadModal(false);
       setFileForm({
@@ -287,6 +298,16 @@ export default function Files() {
     try {
       const result = await filesService.updateFile(fileId, { folder_id: targetFolderId || undefined });
       console.log('Move result:', result);
+      console.log('Result folder_id:', result.folder_id);
+      console.log('Expected folder_id:', targetFolderId);
+      
+      if (result.folder_id !== targetFolderId && targetFolderId !== null) {
+        console.error('WARNING: folder_id mismatch!', {
+          expected: targetFolderId,
+          received: result.folder_id
+        });
+      }
+      
       toast.success('File moved successfully');
       await fetchFiles();
     } catch (error) {
