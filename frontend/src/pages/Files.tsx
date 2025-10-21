@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as filesService from '../services/filesService';
@@ -47,6 +47,7 @@ export default function Files() {
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolderName, setCurrentFolderName] = useState<string>('All Files');
+  const [folderPath, setFolderPath] = useState<Array<{id: string, name: string}>>([]);
   const [fileForm, setFileForm] = useState({
     name: '',
     category: '',
@@ -179,12 +180,21 @@ export default function Files() {
     if (folder.type !== 'folder') return;
     setCurrentFolderId(folder.id);
     setCurrentFolderName(folder.name);
+    setFolderPath(prev => [...prev, { id: folder.id, name: folder.name }]);
     toast.success(`Opened folder: ${folder.name}`);
   };
   
   const handleBackToRoot = () => {
     setCurrentFolderId(null);
     setCurrentFolderName('All Files');
+    setFolderPath([]);
+  };
+  
+  const handleNavigateToFolder = (folderId: string | null, folderName: string, index: number) => {
+    setCurrentFolderId(folderId);
+    setCurrentFolderName(folderName);
+    // Remove all folders after this index from the path
+    setFolderPath(prev => prev.slice(0, index));
   };
 
   const handleUpload = async (e: React.FormEvent) => {
@@ -407,22 +417,39 @@ export default function Files() {
       </div>
 
       {/* Breadcrumb Navigation */}
-      {currentFolderId && (
+      {folderPath.length > 0 && (
         <div 
           className="bg-gray-50 border-b border-gray-200"
           onDragOver={handleDragOver}
-          onDrop={(e) => handleDrop(e, null)}
+          onDrop={(e) => {
+            // Drop on breadcrumb goes to parent folder
+            const parentFolder = folderPath.length > 1 ? folderPath[folderPath.length - 2] : null;
+            handleDrop(e, parentFolder?.id || null);
+          }}
         >
           <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-3">
-            <div className="flex items-center space-x-2 text-sm">
+            <div className="flex items-center space-x-2 text-sm flex-wrap">
               <button
                 onClick={handleBackToRoot}
                 className="text-primary-600 hover:text-primary-700 font-medium"
               >
                 All Files
               </button>
-              <span className="text-gray-400">/</span>
-              <span className="text-gray-900 font-medium">{currentFolderName}</span>
+              {folderPath.map((folder, index) => (
+                <React.Fragment key={folder.id}>
+                  <span className="text-gray-400">/</span>
+                  {index === folderPath.length - 1 ? (
+                    <span className="text-gray-900 font-medium">{folder.name}</span>
+                  ) : (
+                    <button
+                      onClick={() => handleNavigateToFolder(folder.id, folder.name, index + 1)}
+                      className="text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      {folder.name}
+                    </button>
+                  )}
+                </React.Fragment>
+              ))}
             </div>
           </div>
         </div>

@@ -88,13 +88,53 @@ def create_deal(
     db: Session = Depends(get_db)
 ):
     """Create a new deal"""
+    from ..models.deals import Pipeline, PipelineStage
+    
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Get default pipeline if pipeline_id not provided or invalid
+    try:
+        pipeline_id = uuid.UUID(deal.pipeline_id) if deal.pipeline_id else None
+    except (ValueError, AttributeError):
+        pipeline_id = None
+    
+    if not pipeline_id:
+        # Get default pipeline
+        default_pipeline = db.query(Pipeline).filter(Pipeline.is_deleted == False).first()
+        if not default_pipeline:
+            raise HTTPException(status_code=400, detail="No pipeline found. Please create a pipeline first.")
+        pipeline_id = default_pipeline.id
+    
+    # Handle stage_id - accept either UUID or stage name
+    try:
+        stage_id = uuid.UUID(deal.stage_id)
+    except (ValueError, AttributeError):
+        # Try to find stage by name (case-insensitive)
+        stage_name_map = {
+            'qualification': 'Qualification',
+            'proposal': 'Proposal',
+            'negotiation': 'Negotiation',
+            'closed-won': 'Closed Won',
+            'closed-lost': 'Closed Lost'
+        }
+        stage_name = stage_name_map.get(deal.stage_id.lower(), deal.stage_id)
+        stage = db.query(PipelineStage).filter(
+            and_(
+                PipelineStage.pipeline_id == pipeline_id,
+                PipelineStage.name == stage_name,
+                PipelineStage.is_deleted == False
+            )
+        ).first()
+        
+        if not stage:
+            raise HTTPException(status_code=400, detail=f"Stage '{deal.stage_id}' not found")
+        stage_id = stage.id
     
     new_deal = DealModel(
         title=deal.title,
         value=deal.value,
-        stage_id=uuid.UUID(deal.stage_id),
-        pipeline_id=uuid.UUID(deal.pipeline_id),
+        stage_id=stage_id,
+        pipeline_id=pipeline_id,
         company=deal.company,
         contact_person=deal.contact,
         description=deal.description,

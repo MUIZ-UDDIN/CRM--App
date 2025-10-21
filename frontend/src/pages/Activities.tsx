@@ -91,11 +91,11 @@ export default function Activities() {
   // Handle edit activity
   const handleEdit = (activity: Activity) => {
     setSelectedActivity(activity);
-    // Convert ISO date to datetime-local format (YYYY-MM-DDTHH:mm)
+    // Convert ISO date to date format (YYYY-MM-DD)
     let formattedDate = '';
     if (activity.due_date) {
       const date = new Date(activity.due_date);
-      formattedDate = date.toISOString().slice(0, 16);
+      formattedDate = date.toISOString().slice(0, 10);
     }
     setActivityForm({
       type: activity.type,
@@ -184,12 +184,11 @@ export default function Activities() {
     try {
       const date = new Date(dateString);
       if (isNaN(date.getTime())) return 'N/A';
-      return date.toLocaleString('en-US', { 
+      // Show date only (no time)
+      return date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric', 
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        year: 'numeric'
       });
     } catch (error) {
       console.error('Date formatting error:', error, dateString);
@@ -481,12 +480,12 @@ export default function Activities() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
                 <input
-                  type="datetime-local"
+                  type="date"
                   value={activityForm.due_date}
                   onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">Select date and time (time is optional, defaults to 00:00)</p>
+                <p className="text-xs text-gray-500 mt-1">Select due date</p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
