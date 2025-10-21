@@ -229,16 +229,19 @@ export default function SMSNew() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">From (Your Twilio Number)</label>
-                <select
+                <input
+                  type="text"
+                  list="twilio-numbers"
                   value={smsForm.from}
                   onChange={(e) => setSmsForm({...smsForm, from: e.target.value})}
+                  placeholder="Select from Twilio or enter manually..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="">Select number</option>
+                />
+                <datalist id="twilio-numbers">
                   {twilioNumbers.map((num) => (
                     <option key={num} value={num}>{num}</option>
                   ))}
-                </select>
+                </datalist>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact or Phone Number)</label>

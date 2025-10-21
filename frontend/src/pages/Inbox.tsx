@@ -293,11 +293,10 @@ export default function Inbox() {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From</label>
                 <select className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500">
-                  <option value="sms">SMS Message</option>
-                  <option value="email">Email</option>
-                  <option value="voice">Voice Call</option>
+                  <option value="default">Default Email</option>
+                  <option value="twilio">Twilio Email (Configure in Settings)</option>
                 </select>
               </div>
               
