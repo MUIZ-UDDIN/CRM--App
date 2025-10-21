@@ -116,14 +116,25 @@ export default function Settings() {
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Sales Rep' });
-  const [companyForm, setCompanyForm] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    address: '',
-    city: '',
-    state: '',
-    zip: '',
+  const [companyForm, setCompanyForm] = useState(() => {
+    // Load company settings from localStorage on mount
+    const saved = localStorage.getItem('companySettings');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse company settings:', e);
+      }
+    }
+    return {
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      city: '',
+      state: '',
+      zip: '',
+    };
   });
   const [securityForm, setSecurityForm] = useState({
     currentPassword: '',
