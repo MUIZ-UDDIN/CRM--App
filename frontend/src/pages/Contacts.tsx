@@ -349,10 +349,10 @@ export default function Contacts() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          contact.type === 'Customer' ? 'bg-blue-100 text-blue-800' :
-                          contact.type === 'Prospect' ? 'bg-teal-100 text-teal-800' :
-                          contact.type === 'Marketing Qualified Lead' ? 'bg-purple-100 text-purple-800' :
-                          contact.type === 'Partner' ? 'bg-orange-100 text-orange-800' :
+                          contact.type?.toLowerCase().trim() === 'customer' ? 'bg-blue-100 text-blue-800' :
+                          contact.type?.toLowerCase().trim() === 'prospect' ? 'bg-teal-100 text-teal-800' :
+                          contact.type?.toLowerCase().trim() === 'marketing qualified lead' ? 'bg-purple-100 text-purple-800' :
+                          contact.type?.toLowerCase().trim() === 'partner' ? 'bg-orange-100 text-orange-800' :
                           'bg-green-100 text-green-800'
                         }`}>
                           {contact.type || 'Lead'}
