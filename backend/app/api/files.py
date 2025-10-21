@@ -319,6 +319,56 @@ async def create_folder(
     )
 
 
+@router.patch("/folders/{folder_id}", response_model=FolderResponse)
+async def update_folder(
+    folder_id: str,
+    folder_update: dict,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update a folder (e.g., move to different parent)"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    folder = db.query(Folder).filter(
+        and_(
+            Folder.id == uuid.UUID(folder_id),
+            Folder.owner_id == user_id,
+            Folder.is_deleted == False
+        )
+    ).first()
+    
+    if not folder:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    
+    # Update parent_id if provided
+    if 'parent_id' in folder_update:
+        parent_id = folder_update['parent_id']
+        if parent_id:
+            folder.parent_id = uuid.UUID(parent_id)
+            print(f"Moving folder '{folder.name}' to parent: {parent_id}")
+        else:
+            folder.parent_id = None
+            print(f"Moving folder '{folder.name}' to root")
+    
+    # Update other fields if provided
+    if 'name' in folder_update:
+        folder.name = folder_update['name']
+    if 'description' in folder_update:
+        folder.description = folder_update['description']
+    
+    folder.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(folder)
+    
+    return FolderResponse(
+        id=str(folder.id),
+        name=folder.name,
+        description=folder.description,
+        created_at=folder.created_at.isoformat() if folder.created_at else None
+    )
+
+
 @router.delete("/folders/{folder_id}")
 async def delete_folder(
     folder_id: str,

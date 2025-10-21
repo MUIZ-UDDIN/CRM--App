@@ -70,6 +70,8 @@ export default function Files() {
   const fetchFiles = async () => {
     setLoading(true);
     try {
+      console.log('Fetching files and folders for folder:', currentFolderId || 'root');
+      
       // Fetch both files and folders for current folder
       const [filesData, foldersData] = await Promise.all([
         filesService.getFiles({
@@ -77,6 +79,9 @@ export default function Files() {
         }),
         filesService.getFolders(currentFolderId || undefined)
       ]);
+      
+      console.log('Fetched folders:', foldersData);
+      console.log('Fetched files:', filesData);
       
       // Combine files and folders, marking their type
       const allItems = [
@@ -91,6 +96,7 @@ export default function Files() {
         }))
       ];
       
+      console.log('Combined items:', allItems);
       setFiles(allItems);
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -285,8 +291,11 @@ export default function Files() {
   };
 
   const handleDragStart = (e: React.DragEvent, file: FileItem) => {
-    e.dataTransfer.setData('fileId', file.id);
+    e.stopPropagation(); // Prevent triggering folder click
+    e.dataTransfer.setData('itemId', file.id);
+    e.dataTransfer.setData('itemType', file.type);
     e.dataTransfer.effectAllowed = 'move';
+    console.log('Dragging:', file.type, file.id, file.name);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -296,33 +305,35 @@ export default function Files() {
 
   const handleDrop = async (e: React.DragEvent, targetFolderId: string | null) => {
     e.preventDefault();
-    const fileId = e.dataTransfer.getData('fileId');
+    e.stopPropagation();
     
-    if (!fileId) {
-      console.log('No fileId in drag data');
+    const itemId = e.dataTransfer.getData('itemId');
+    const itemType = e.dataTransfer.getData('itemType');
+    
+    if (!itemId) {
+      console.log('No itemId in drag data');
       return;
     }
 
-    console.log('Moving file:', fileId, 'to folder:', targetFolderId);
+    console.log(`Moving ${itemType}:`, itemId, 'to folder:', targetFolderId);
 
     try {
-      const result = await filesService.updateFile(fileId, { folder_id: targetFolderId || undefined });
-      console.log('Move result:', result);
-      console.log('Result folder_id:', result.folder_id);
-      console.log('Expected folder_id:', targetFolderId);
-      
-      if (result.folder_id !== targetFolderId && targetFolderId !== null) {
-        console.error('WARNING: folder_id mismatch!', {
-          expected: targetFolderId,
-          received: result.folder_id
-        });
+      if (itemType === 'file') {
+        // Move file
+        const result = await filesService.updateFile(itemId, { folder_id: targetFolderId || undefined });
+        console.log('Move file result:', result);
+        toast.success('File moved successfully');
+      } else if (itemType === 'folder') {
+        // Move folder
+        const result = await filesService.updateFolder(itemId, { parent_id: targetFolderId || undefined });
+        console.log('Move folder result:', result);
+        toast.success('Folder moved successfully');
       }
       
-      toast.success('File moved successfully');
       await fetchFiles();
     } catch (error) {
       console.error('Move error:', error);
-      toast.error('Failed to move file');
+      toast.error(`Failed to move ${itemType}`);
     }
   };
 
@@ -472,13 +483,13 @@ export default function Files() {
             {filteredFiles.map((file) => (
               <div 
                 key={file.id} 
-                draggable={file.type === 'file'}
-                onDragStart={(e) => file.type === 'file' && handleDragStart(e, file)}
+                draggable={true}
+                onDragStart={(e) => handleDragStart(e, file)}
                 onDragOver={file.type === 'folder' ? handleDragOver : undefined}
                 onDrop={file.type === 'folder' ? (e) => handleDrop(e, file.id) : undefined}
                 className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow flex flex-col cursor-move"
                 onClick={() => file.type === 'folder' && handleOpenFolder(file)}
-                style={{ cursor: file.type === 'folder' ? 'pointer' : 'default' }}
+                style={{ cursor: file.type === 'folder' ? 'pointer' : 'grab' }}
               >
                 {/* File/Folder Icon */}
                 <div className="flex justify-center mb-3">

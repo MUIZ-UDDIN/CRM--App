@@ -92,6 +92,12 @@ export const updateFile = async (id: string, data: Partial<File>) => {
   return response.data;
 };
 
+// Update folder
+export const updateFolder = async (id: string, data: { parent_id?: string }) => {
+  const response = await apiClient.patch(`/files/folders/${id}`, data);
+  return response.data;
+};
+
 // Delete file
 export const deleteFile = async (id: string) => {
   const response = await apiClient.delete(`/files/${id}`);
@@ -111,6 +117,7 @@ export default {
   uploadFile,
   createFolder,
   updateFile,
+  updateFolder,
   deleteFile,
   deleteFolder,
 };
