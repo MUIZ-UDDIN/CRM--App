@@ -168,8 +168,7 @@ def create_deal(
             "value": new_deal.value,
             "stage_id": str(new_deal.stage_id),
             "pipeline_id": str(new_deal.pipeline_id),
-            "company": new_deal.company,
-            "contact": new_deal.contact_person,
+            "contact_id": str(new_deal.contact_id) if new_deal.contact_id else None,
             "created_at": new_deal.created_at,
             "message": "Deal created successfully"
         }
