@@ -185,13 +185,37 @@ async def get_user(
     )
 
 
+@router.delete("/me")
+async def delete_own_account(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Delete own account (soft delete)"""
+    user_id = current_user["id"]
+    
+    user = db.query(UserModel).filter(
+        UserModel.id == user_id,
+        UserModel.is_deleted == False
+    ).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Soft delete
+    user.is_deleted = True
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    
+    return {"message": "Account deleted successfully"}
+
+
 @router.delete("/{user_id}")
 async def delete_user(
     user_id: str,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a user (soft delete)"""
+    """Delete a user (soft delete) - Admin only"""
     # Check if current user is admin
     if current_user.get("role") not in ["Admin", "Super Admin"]:
         raise HTTPException(status_code=403, detail="Only admins can delete users")
