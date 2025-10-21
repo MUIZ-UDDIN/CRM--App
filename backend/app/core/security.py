@@ -74,7 +74,10 @@ def verify_token(token: str) -> Optional[dict]:
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[UserModel]:
     """Authenticate user with email and password"""
-    user = db.query(UserModel).filter(UserModel.email == email).first()
+    user = db.query(UserModel).filter(
+        UserModel.email == email,
+        UserModel.is_deleted == False
+    ).first()
     if not user:
         return None
     if not verify_password(password, user.hashed_password):
