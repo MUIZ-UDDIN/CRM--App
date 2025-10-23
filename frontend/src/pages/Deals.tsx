@@ -97,6 +97,7 @@ export default function Deals() {
     'closed-won': []
   });
   const [contacts, setContacts] = useState<any[]>([]);
+  const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps hardcoded names to UUIDs
 
   const stages: Stage[] = [
     { id: 'qualification', name: 'Qualification', color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
@@ -104,6 +105,34 @@ export default function Deals() {
     { id: 'negotiation', name: 'Negotiation', color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
     { id: 'closed-won', name: 'Closed Won', color: 'bg-green-50 border-green-200', textColor: 'text-green-700' }
   ];
+
+  // Fetch pipeline stages to get UUID mapping
+  useEffect(() => {
+    const fetchStages = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        // Fetch stages from the default pipeline (ID: 1)
+        const response = await fetch(`${API_BASE_URL}/api/pipelines/1/stages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+          const stages = await response.json();
+          // Create mapping from stage names to UUIDs
+          const mapping: Record<string, string> = {};
+          stages.forEach((stage: any) => {
+            // Map based on stage name (case-insensitive)
+            const normalizedName = stage.name.toLowerCase().replace(/\s+/g, '-');
+            mapping[normalizedName] = stage.id;
+          });
+          setStageMapping(mapping);
+        }
+      } catch (error) {
+        console.error('Error fetching stages:', error);
+      }
+    };
+    fetchStages();
+  }, []);
 
   // Fetch contacts
   useEffect(() => {
@@ -385,7 +414,7 @@ export default function Deals() {
 
     // Find and move the deal
     const [movedDeal] = sourceDeals.splice(source.index, 1);
-    movedDeal.stage_id = destStage;
+    const originalStageId = movedDeal.stage_id; // Keep the original UUID
     destDeals.splice(destination.index, 0, movedDeal);
 
     // Update state
@@ -393,12 +422,23 @@ export default function Deals() {
     newDeals[destStage] = destDeals;
     setDeals(newDeals);
 
-    // Update backend
+    // Update backend - use the actual stage_id (UUID) from the deal
     try {
-      await dealsService.moveDealStage(draggableId, sourceStage, destStage);
+      // Convert hardcoded stage name to UUID
+      const destStageUUID = stageMapping[destStage];
+      if (!destStageUUID) {
+        toast.error('Invalid destination stage');
+        fetchDeals(); // Revert on error
+        return;
+      }
+      
+      await dealsService.moveDealStage(draggableId, originalStageId, destStageUUID);
+      // Update the deal's stage_id with the new UUID
+      movedDeal.stage_id = destStageUUID;
       toast.success('Deal moved successfully');
-    } catch (error) {
-      toast.error('Failed to move deal');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.detail || 'Failed to move deal';
+      toast.error(errorMessage);
       fetchDeals(); // Revert on error
     }
   };

@@ -126,10 +126,35 @@ export default function PipelineSettings() {
     }
   };
 
+  // Check if input contains HTML tags or scripts
+  const containsHTMLOrScript = (input: string): boolean => {
+    const htmlPattern = /<[^>]*>/g;
+    const scriptPattern = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+    const jsPattern = /javascript:/gi;
+    const eventPattern = /on\w+\s*=/gi;
+    
+    return htmlPattern.test(input) || 
+           scriptPattern.test(input) || 
+           jsPattern.test(input) || 
+           eventPattern.test(input);
+  };
+
   const handleAddStage = async () => {
     // Validate stage name
     if (!newStageName.trim()) {
       toast.error('Stage Name is required');
+      return;
+    }
+
+    // Validate character limit
+    if (newStageName.length > 255) {
+      toast.error('Stage Name cannot exceed 255 characters');
+      return;
+    }
+
+    // Check for HTML/script tags
+    if (containsHTMLOrScript(newStageName)) {
+      toast.error('HTML tags and scripts are not allowed in Stage Name. Please use plain text only.');
       return;
     }
     
@@ -177,6 +202,18 @@ export default function PipelineSettings() {
       return;
     }
 
+    // Validate character limit
+    if (editingStage.name.length > 255) {
+      toast.error('Stage Name cannot exceed 255 characters');
+      return;
+    }
+
+    // Check for HTML/script tags
+    if (containsHTMLOrScript(editingStage.name)) {
+      toast.error('HTML tags and scripts are not allowed in Stage Name. Please use plain text only.');
+      return;
+    }
+
     // Validate probability
     if (editingStage.probability === null || editingStage.probability === undefined || isNaN(editingStage.probability)) {
       toast.error('Win Probability is required');
@@ -213,8 +250,10 @@ export default function PipelineSettings() {
       await pipelinesService.deleteStage(stageId);
       toast.success('Stage deleted successfully');
       fetchPipelineStages(selectedPipeline);
-    } catch (error) {
-      toast.error('Failed to delete stage');
+    } catch (error: any) {
+      // Show specific error message from backend (e.g., "Cannot delete stage with X active deals")
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to delete stage';
+      toast.error(errorMessage);
     }
   };
 
@@ -374,11 +413,22 @@ export default function PipelineSettings() {
                 <input
                   type="text"
                   value={newStageName}
-                  onChange={(e) => setNewStageName(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 255) {
+                      if (containsHTMLOrScript(value)) {
+                        toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+                        return;
+                      }
+                      setNewStageName(value);
+                    }
+                  }}
+                  maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   placeholder="e.g., Demo Scheduled"
                   required
                 />
+                <p className="text-xs text-gray-400 mt-1">{newStageName.length}/255</p>
               </div>
 
               <div>
@@ -448,10 +498,21 @@ export default function PipelineSettings() {
                 <input
                   type="text"
                   value={editingStage.name}
-                  onChange={(e) => setEditingStage({ ...editingStage, name: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value.length <= 255) {
+                      if (containsHTMLOrScript(value)) {
+                        toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+                        return;
+                      }
+                      setEditingStage({ ...editingStage, name: value });
+                    }
+                  }}
+                  maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
+                <p className="text-xs text-gray-400 mt-1">{editingStage.name.length}/255</p>
               </div>
 
               <div>
