@@ -310,8 +310,8 @@ export default function Dashboard() {
     try {
       // Validate positive number
       const dealValue = parseFloat(dealFormData.value);
-      if (dealValue < 0) {
-        toast.error('Please enter a valid positive number for deal value');
+      if (dealValue <= 0 || isNaN(dealValue)) {
+        toast.error('Please enter a positive number for deal value');
         return;
       }
 
@@ -514,8 +514,13 @@ export default function Dashboard() {
                 placeholder="Deal Value"
                 value={dealFormData.value}
                 onChange={handleInputChange}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                }}
                 required
-                min="0"
+                min="0.01"
                 step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
@@ -550,15 +555,23 @@ export default function Dashboard() {
                   <option key={stage.id} value={stage.id}>{stage.name}</option>
                 ))}
               </select>
-              <input
-                type="date"
-                name="expectedCloseDate"
-                placeholder="Expected Close Date"
-                value={dealFormData.expectedCloseDate}
-                onChange={handleInputChange}
-                min={getTodayDate()}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  name="expectedCloseDate"
+                  placeholder="Expected Close Date"
+                  value={dealFormData.expectedCloseDate}
+                  onChange={handleInputChange}
+                  min={getTodayDate()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                  onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                />
+                {dealFormData.expectedCloseDate && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Deal will be active until {new Date(dealFormData.expectedCloseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                )}
+              </div>
               
               <div className="flex justify-end space-x-3 pt-4">
                 <button

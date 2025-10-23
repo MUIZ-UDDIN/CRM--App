@@ -20,6 +20,7 @@ interface Deal {
   contact?: string;
   stage_id: string;
   pipeline_id: string;
+  expected_close_date?: string;
 }
 
 interface Stage {
@@ -49,6 +50,41 @@ export default function Deals() {
   const getTodayDate = () => {
     const today = new Date();
     return today.toISOString().split('T')[0];
+  };
+
+  // Check if deal is expired
+  const isDealExpired = (expectedCloseDate?: string) => {
+    if (!expectedCloseDate) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const closeDate = new Date(expectedCloseDate);
+    closeDate.setHours(0, 0, 0, 0);
+    return closeDate < today;
+  };
+
+  // Get expiration message
+  const getExpirationMessage = (expectedCloseDate?: string) => {
+    if (!expectedCloseDate) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const closeDate = new Date(expectedCloseDate);
+    closeDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = closeDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return { text: 'Expired', color: 'text-red-600 bg-red-50' };
+    } else if (diffDays === 0) {
+      return { text: 'Expires today', color: 'text-orange-600 bg-orange-50' };
+    } else if (diffDays === 1) {
+      return { text: 'Expires tomorrow', color: 'text-yellow-600 bg-yellow-50' };
+    } else if (diffDays <= 7) {
+      return { text: `${diffDays} days left`, color: 'text-yellow-600 bg-yellow-50' };
+    } else {
+      return { text: `Active until ${closeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, color: 'text-green-600 bg-green-50' };
+    }
   };
 
   const [deals, setDeals] = useState<Record<string, Deal[]>>({
@@ -152,8 +188,8 @@ export default function Deals() {
     try {
       // Validate positive number
       const dealValue = parseFloat(dealFormData.value);
-      if (dealValue < 0) {
-        toast.error('Please enter a valid positive number for deal value');
+      if (dealValue <= 0 || isNaN(dealValue)) {
+        toast.error('Please enter a positive number for deal value');
         return;
       }
 
@@ -377,6 +413,13 @@ export default function Deals() {
                                     <UserIcon className="h-4 w-4 mr-2 text-gray-400" />
                                     <span>{deal.contact}</span>
                                   </div>
+                                  {deal.expected_close_date && getExpirationMessage(deal.expected_close_date) && (
+                                    <div className="mt-2">
+                                      <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getExpirationMessage(deal.expected_close_date)?.color}`}>
+                                        {getExpirationMessage(deal.expected_close_date)?.text}
+                                      </span>
+                                    </div>
+                                  )}
                                   <div className="mt-2 pt-2 border-t border-gray-200">
                                     <span className="font-semibold text-gray-900">
                                       {formatCurrency(deal.value)}
@@ -435,8 +478,13 @@ export default function Deals() {
                 placeholder="Deal Value"
                 value={dealFormData.value}
                 onChange={handleInputChange}
+                onKeyDown={(e) => {
+                  if (e.key === '-' || e.key === 'e' || e.key === 'E') {
+                    e.preventDefault();
+                  }
+                }}
                 required
-                min="0"
+                min="0.01"
                 step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
@@ -471,15 +519,23 @@ export default function Deals() {
                   <option key={stage.id} value={stage.id}>{stage.name}</option>
                 ))}
               </select>
-              <input
-                type="date"
-                name="expectedCloseDate"
-                placeholder="Expected Close Date"
-                value={dealFormData.expectedCloseDate}
-                onChange={handleInputChange}
-                min={getTodayDate()}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-              />
+              <div className="relative">
+                <input
+                  type="date"
+                  name="expectedCloseDate"
+                  placeholder="Expected Close Date"
+                  value={dealFormData.expectedCloseDate}
+                  onChange={handleInputChange}
+                  min={getTodayDate()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                  onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                />
+                {dealFormData.expectedCloseDate && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    Deal will be active until {new Date(dealFormData.expectedCloseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                  </p>
+                )}
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
