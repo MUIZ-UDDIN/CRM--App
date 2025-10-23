@@ -33,10 +33,10 @@ export default function Analytics() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('sales');
   const [dateRange, setDateRange] = useState('last30days');
-  const [selectedMetric, setSelectedMetric] = useState('revenue');
   const [selectedUser, setSelectedUser] = useState('all');
-  const [selectedTeam, setSelectedTeam] = useState('all');
   const [selectedPipeline, setSelectedPipeline] = useState('all');
+  const [users, setUsers] = useState<any[]>([]);
+  const [pipelines, setPipelines] = useState<any[]>([]);
   
   // State for API data
   const [loading, setLoading] = useState(false);
@@ -49,10 +49,43 @@ export default function Analytics() {
   const [revenueAnalytics, setRevenueAnalytics] = useState<any>(null);
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
   
+  // Fetch users and pipelines on mount
+  useEffect(() => {
+    fetchUsersAndPipelines();
+  }, []);
+
   // Fetch analytics data from backend
   useEffect(() => {
     fetchAllAnalytics();
-  }, [dateRange, selectedUser, selectedTeam, selectedPipeline]);
+  }, [dateRange, selectedUser, selectedPipeline]);
+
+  const fetchUsersAndPipelines = async () => {
+    try {
+      // Fetch users
+      const usersResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/users`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json();
+        setUsers(usersData);
+      }
+
+      // Fetch pipelines
+      const pipelinesResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/pipelines`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (pipelinesResponse.ok) {
+        const pipelinesData = await pipelinesResponse.json();
+        setPipelines(pipelinesData);
+      }
+    } catch (error) {
+      console.error('Error fetching users/pipelines:', error);
+    }
+  };
   
   const fetchAllAnalytics = async () => {
     setLoading(true);
@@ -64,14 +97,11 @@ export default function Analytics() {
       };
       
       // Only add filter if it's not 'all' and is a valid number
-      if (selectedUser !== 'all' && !isNaN(parseInt(selectedUser))) {
-        filters.user_id = parseInt(selectedUser);
+      if (selectedUser !== 'all') {
+        filters.user_id = selectedUser;
       }
-      if (selectedTeam !== 'all' && !isNaN(parseInt(selectedTeam))) {
-        filters.team_id = parseInt(selectedTeam);
-      }
-      if (selectedPipeline !== 'all' && !isNaN(parseInt(selectedPipeline))) {
-        filters.pipeline_id = parseInt(selectedPipeline);
+      if (selectedPipeline !== 'all') {
+        filters.pipeline_id = selectedPipeline;
       };
       
       // Fetch all analytics in parallel
@@ -385,20 +415,11 @@ export default function Analytics() {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
               >
                 <option value="all">All Users</option>
-                <option value="john">John Doe</option>
-                <option value="jane">Jane Smith</option>
-                <option value="mike">Mike Johnson</option>
-              </select>
-              
-              <select
-                value={selectedTeam}
-                onChange={(e) => setSelectedTeam(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
-              >
-                <option value="all">All Teams</option>
-                <option value="sales">Sales Team</option>
-                <option value="marketing">Marketing Team</option>
-                <option value="support">Support Team</option>
+                {users.map(user => (
+                  <option key={user.id} value={user.id}>
+                    {user.first_name} {user.last_name}
+                  </option>
+                ))}
               </select>
               
               <select
@@ -407,8 +428,11 @@ export default function Analytics() {
                 className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
               >
                 <option value="all">All Pipelines</option>
-                <option value="sales">Sales Pipeline</option>
-                <option value="enterprise">Enterprise Pipeline</option>
+                {pipelines.map(pipeline => (
+                  <option key={pipeline.id} value={pipeline.id}>
+                    {pipeline.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex flex-wrap gap-2">

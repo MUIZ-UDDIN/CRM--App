@@ -26,6 +26,7 @@ class DealCreate(BaseModel):
     pipeline_id: Optional[str] = None  # Optional - will use default pipeline if not provided
     description: Optional[str] = None
     expected_close_date: Optional[datetime] = None
+    status: Optional[str] = 'open'
 
 
 class Deal(BaseModel):
@@ -38,6 +39,7 @@ class Deal(BaseModel):
     contact: Optional[str] = None
     description: Optional[str] = None
     expected_close_date: Optional[datetime] = None
+    status: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -84,6 +86,7 @@ def get_deals(
             "contact_id": str(deal.contact_id) if deal.contact_id else None,
             "description": deal.description,
             "expected_close_date": deal.expected_close_date.isoformat() if deal.expected_close_date else None,
+            "status": deal.status.value if deal.status else 'open',
             "created_at": deal.created_at,
             "updated_at": deal.updated_at
         }
@@ -154,6 +157,15 @@ def create_deal(
             except (ValueError, AttributeError):
                 pass  # If it's not a UUID, ignore it
         
+        # Parse status
+        status_map = {
+            'open': DealStatus.OPEN,
+            'won': DealStatus.WON,
+            'lost': DealStatus.LOST,
+            'abandoned': DealStatus.ABANDONED
+        }
+        deal_status = status_map.get(deal.status.lower() if deal.status else 'open', DealStatus.OPEN)
+        
         new_deal = DealModel(
             title=deal.title,
             value=deal.value,
@@ -164,7 +176,7 @@ def create_deal(
             description=deal.description,
             expected_close_date=deal.expected_close_date,
             owner_id=user_id,
-            status=DealStatus.OPEN,
+            status=deal_status,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -265,6 +277,15 @@ def update_deal(
                 deal.contact_id = uuid.UUID(value) if value else None
             except (ValueError, AttributeError):
                 pass  # Ignore if not a valid UUID
+        elif field == 'status':
+            # Handle status - convert string to enum
+            status_map = {
+                'open': DealStatus.OPEN,
+                'won': DealStatus.WON,
+                'lost': DealStatus.LOST,
+                'abandoned': DealStatus.ABANDONED
+            }
+            deal.status = status_map.get(value.lower() if value else 'open', DealStatus.OPEN)
         elif hasattr(deal, field) and value is not None:
             if field in ['stage_id', 'pipeline_id']:
                 setattr(deal, field, uuid.UUID(value))
@@ -294,6 +315,7 @@ def update_deal(
         "company": deal.company,
         "contact": f"{deal.contact.first_name} {deal.contact.last_name}" if deal.contact else None,
         "description": deal.description,
+        "status": deal.status.value if deal.status else 'open',
         "updated_at": deal.updated_at
     }
 
