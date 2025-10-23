@@ -120,21 +120,28 @@ export default function Analytics() {
   };
 
   // Mock data for charts
-  const revenueData = [
-    { month: 'Jan', revenue: 45000, deals: 12, target: 50000 },
-    { month: 'Feb', revenue: 52000, deals: 15, target: 50000 },
-    { month: 'Mar', revenue: 48000, deals: 13, target: 50000 },
-    { month: 'Apr', revenue: 61000, deals: 18, target: 55000 },
-    { month: 'May', revenue: 55000, deals: 16, target: 55000 },
-    { month: 'Jun', revenue: 67000, deals: 20, target: 60000 },
+  // Revenue data from API
+  const revenueData = revenueAnalytics?.monthly_revenue?.map((item: any) => ({
+    month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+    revenue: item.revenue,
+    deals: item.deal_count,
+    target: item.revenue * 1.1 // 10% above actual as target
+  })) || [
+    { month: 'Jan', revenue: 0, deals: 0, target: 0 },
+    { month: 'Feb', revenue: 0, deals: 0, target: 0 },
+    { month: 'Mar', revenue: 0, deals: 0, target: 0 },
+    { month: 'Apr', revenue: 0, deals: 0, target: 0 },
+    { month: 'May', revenue: 0, deals: 0, target: 0 },
+    { month: 'Jun', revenue: 0, deals: 0, target: 0 },
   ];
 
-  const pipelineData = [
-    { name: 'Qualification', value: 45000, deals: 8, color: '#3B82F6' },
-    { name: 'Proposal', value: 78000, deals: 5, color: '#EAB308' },
-    { name: 'Negotiation', value: 123000, deals: 3, color: '#F97316' },
-    { name: 'Closed Won', value: 156000, deals: 12, color: '#10B981' },
-  ];
+  // Pipeline data from API
+  const pipelineData = pipelineAnalytics?.stage_analytics?.map((stage: any, index: number) => ({
+    name: stage.stage_name,
+    value: stage.total_value,
+    deals: stage.deal_count,
+    color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
+  })) || [];
 
   const activityData = [
     { day: 'Mon', calls: 24, emails: 45, meetings: 8 },

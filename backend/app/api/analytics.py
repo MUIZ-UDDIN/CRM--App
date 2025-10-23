@@ -257,25 +257,75 @@ async def get_activity_analytics(
 
 
 @router.get("/revenue")
-async def get_revenue_analytics(current_user: dict = Depends(get_current_active_user)):
-    """Get revenue analytics"""
+async def get_revenue_analytics(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get revenue analytics with real monthly data"""
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Get last 6 months of revenue data
+    monthly_data = []
+    current_date = datetime.now()
+    
+    for i in range(5, -1, -1):  # Last 6 months
+        month_date = current_date - timedelta(days=30 * i)
+        month_start = month_date.replace(day=1)
+        
+        # Calculate next month start
+        if month_date.month == 12:
+            month_end = month_date.replace(year=month_date.year + 1, month=1, day=1)
+        else:
+            month_end = month_date.replace(month=month_date.month + 1, day=1)
+        
+        # Get revenue for this month (won deals only)
+        revenue = db.query(func.sum(Deal.value)).filter(
+            and_(
+                Deal.owner_id == owner_id,
+                Deal.is_deleted == False,
+                Deal.status == DealStatus.WON,
+                Deal.actual_close_date >= month_start,
+                Deal.actual_close_date < month_end
+            )
+        ).scalar() or 0.0
+        
+        # Get deal count for this month
+        deal_count = db.query(func.count(Deal.id)).filter(
+            and_(
+                Deal.owner_id == owner_id,
+                Deal.is_deleted == False,
+                Deal.status == DealStatus.WON,
+                Deal.actual_close_date >= month_start,
+                Deal.actual_close_date < month_end
+            )
+        ).scalar() or 0
+        
+        monthly_data.append({
+            "month": month_start.strftime("%Y-%m"),
+            "revenue": float(revenue),
+            "deal_count": deal_count
+        })
+    
+    # Calculate totals
+    total_revenue = sum(m["revenue"] for m in monthly_data)
+    total_deals = sum(m["deal_count"] for m in monthly_data)
+    avg_deal_size = (total_revenue / total_deals) if total_deals > 0 else 0
+    
+    # Calculate growth rate (last month vs previous month)
+    if len(monthly_data) >= 2:
+        last_month = monthly_data[-1]["revenue"]
+        prev_month = monthly_data[-2]["revenue"]
+        growth_rate = ((last_month - prev_month) / prev_month * 100) if prev_month > 0 else 0
+    else:
+        growth_rate = 0
+    
     return {
-        "monthly_revenue": [
-            {"month": "2024-01", "revenue": 125000.0, "deal_count": 5},
-            {"month": "2024-02", "revenue": 180000.0, "deal_count": 7},
-            {"month": "2024-03", "revenue": 220000.0, "deal_count": 8},
-            {"month": "2024-04", "revenue": 195000.0, "deal_count": 6},
-            {"month": "2024-05", "revenue": 275000.0, "deal_count": 9}
-        ],
-        "quarterly_revenue": [
-            {"quarter": "Q1 2024", "revenue": 525000.0, "deal_count": 20},
-            {"quarter": "Q2 2024", "revenue": 470000.0, "deal_count": 15}
-        ],
+        "monthly_revenue": monthly_data,
         "summary": {
-            "total_revenue": 995000.0,
-            "total_deals": 35,
-            "avg_deal_size": 28428.57,
-            "growth_rate": 12.5
+            "total_revenue": round(total_revenue, 2),
+            "total_deals": total_deals,
+            "avg_deal_size": round(avg_deal_size, 2),
+            "growth_rate": round(growth_rate, 1)
         }
     }
 
