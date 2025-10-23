@@ -47,8 +47,15 @@ export default function Dashboard() {
     value: '',
     company: '',
     contact: '',
-    stage_id: 'qualification'
+    stage_id: 'qualification',
+    expectedCloseDate: ''
   });
+
+  // Get today's date in YYYY-MM-DD format for min date
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
 
   const stages = [
     { id: 'qualification', name: 'Qualification' },
@@ -301,17 +308,25 @@ export default function Dashboard() {
     e.preventDefault();
     
     try {
+      // Validate positive number
+      const dealValue = parseFloat(dealFormData.value);
+      if (dealValue < 0) {
+        toast.error('Please enter a valid positive number for deal value');
+        return;
+      }
+
       await dealsService.createDeal({
         title: dealFormData.title,
-        value: parseFloat(dealFormData.value) || 0,
+        value: dealValue || 0,
         company: dealFormData.company,
         contact: dealFormData.contact,
         stage_id: dealFormData.stage_id,
-        pipeline_id: "1"
+        pipeline_id: "1",
+        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined
       });
       
       setDealFormData({
-        title: '', value: '', company: '', contact: '', stage_id: 'qualification'
+        title: '', value: '', company: '', contact: '', stage_id: 'qualification', expectedCloseDate: ''
       });
       setShowAddDealModal(false);
       toast.success('Deal created successfully!');
@@ -500,6 +515,8 @@ export default function Dashboard() {
                 value={dealFormData.value}
                 onChange={handleInputChange}
                 required
+                min="0"
+                step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input
@@ -533,6 +550,15 @@ export default function Dashboard() {
                   <option key={stage.id} value={stage.id}>{stage.name}</option>
                 ))}
               </select>
+              <input
+                type="date"
+                name="expectedCloseDate"
+                placeholder="Expected Close Date"
+                value={dealFormData.expectedCloseDate}
+                onChange={handleInputChange}
+                min={getTodayDate()}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+              />
               
               <div className="flex justify-end space-x-3 pt-4">
                 <button
