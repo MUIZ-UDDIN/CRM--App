@@ -538,7 +538,7 @@ export default function Deals() {
       {/* Add Deal Modal */}
       {showAddDealModal && (
         <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
           onClick={handleCloseAddModal}
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
@@ -648,7 +648,7 @@ export default function Deals() {
       {/* Edit Deal Modal */}
       {showEditModal && (
         <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
           onClick={handleCloseEditModal}
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
@@ -713,7 +713,7 @@ export default function Deals() {
       {/* View Deal Modal */}
       {showViewModal && selectedDeal && (
         <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
           onClick={() => setShowViewModal(false)}
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
@@ -754,7 +754,7 @@ export default function Deals() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && dealToDelete && (
         <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
           onClick={cancelDelete}
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}

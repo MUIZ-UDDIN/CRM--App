@@ -550,7 +550,7 @@ export default function Dashboard() {
       {/* Add Deal Modal */}
       {showAddDealModal && (
         <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
           onClick={handleCloseAddDealModal}
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
