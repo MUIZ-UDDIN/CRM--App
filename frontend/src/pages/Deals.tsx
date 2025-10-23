@@ -112,12 +112,33 @@ export default function Deals() {
       try {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        // Fetch stages from the default pipeline (ID: 1)
-        const response = await fetch(`${API_BASE_URL}/api/pipelines/1/stages`, {
+        
+        // First, fetch all pipelines to get the default pipeline UUID
+        const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        if (response.ok) {
-          const stages = await response.json();
+        
+        if (!pipelinesResponse.ok) {
+          console.error('Failed to fetch pipelines');
+          return;
+        }
+        
+        const pipelines = await pipelinesResponse.json();
+        if (pipelines.length === 0) {
+          console.error('No pipelines found');
+          return;
+        }
+        
+        // Use the first pipeline's UUID
+        const defaultPipelineId = pipelines[0].id;
+        
+        // Fetch stages from the default pipeline using its UUID
+        const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (stagesResponse.ok) {
+          const stages = await stagesResponse.json();
           // Create mapping from stage names to UUIDs
           const mapping: Record<string, string> = {};
           stages.forEach((stage: any) => {
