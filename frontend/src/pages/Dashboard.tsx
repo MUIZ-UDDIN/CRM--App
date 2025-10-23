@@ -41,6 +41,7 @@ export default function Dashboard() {
   const [upcomingActivities, setUpcomingActivities] = useState<UpcomingActivity[]>([]);
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [contacts, setContacts] = useState<any[]>([]);
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -49,6 +50,13 @@ export default function Dashboard() {
     stage_id: 'qualification',
     expectedCloseDate: ''
   });
+
+  const stages = [
+    { id: 'qualification', name: 'Qualification' },
+    { id: 'proposal', name: 'Proposal' },
+    { id: 'negotiation', name: 'Negotiation' },
+    { id: 'closed-won', name: 'Closed Won' }
+  ];
 
   const stats = dashboardData ? [
     {
@@ -110,11 +118,12 @@ export default function Dashboard() {
     },
   ];
 
-  // Fetch activities, dashboard data, and user info on component mount
+  // Fetch activities, dashboard data, user info, and contacts on component mount
   useEffect(() => {
     fetchActivities();
     fetchDashboardData();
     fetchCurrentUser();
+    fetchContacts();
   }, []);
 
   const fetchCurrentUser = async () => {
@@ -133,6 +142,25 @@ export default function Dashboard() {
       }
     } catch (error) {
       console.error('Error fetching current user:', error);
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/contacts/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data);
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
     }
   };
 
@@ -458,39 +486,78 @@ export default function Dashboard() {
             </div>
             
             <form onSubmit={handleAddDeal} className="space-y-4">
-              <div>
-                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Deal Title *</label>
-                <input type="text" name="title" id="title" required value={dealFormData.title} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter deal title" />
-              </div>
-              <div>
-                <label htmlFor="value" className="block text-sm font-medium text-gray-700 mb-1">Deal Value</label>
-                <input type="number" name="value" id="value" value={dealFormData.value} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter deal value" />
-              </div>
-              <div>
-                <label htmlFor="company" className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-                <input type="text" name="company" id="company" value={dealFormData.company} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter company name" />
-              </div>
-              <div>
-                <label htmlFor="contact" className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
-                <input type="text" name="contact" id="contact" value={dealFormData.contact} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter contact person" />
-              </div>
-              <div>
-                <label htmlFor="stage_id" className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
-                <select name="stage_id" id="stage_id" value={dealFormData.stage_id} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
-                  <option value="qualification">Qualification</option>
-                  <option value="proposal">Proposal</option>
-                  <option value="negotiation">Negotiation</option>
-                  <option value="closed-won">Closed Won</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="expectedCloseDate" className="block text-sm font-medium text-gray-700 mb-1">Expected Close Date</label>
-                <input type="date" name="expectedCloseDate" id="expectedCloseDate" value={dealFormData.expectedCloseDate} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" />
-              </div>
+              <input
+                type="text"
+                name="title"
+                placeholder="Deal Title"
+                value={dealFormData.title}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <input
+                type="number"
+                name="value"
+                placeholder="Deal Value"
+                value={dealFormData.value}
+                onChange={handleInputChange}
+                required
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <input
+                type="text"
+                name="company"
+                placeholder="Company"
+                value={dealFormData.company}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <select
+                name="contact"
+                value={dealFormData.contact}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                <option value="">Select Contact Person</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={`${contact.first_name} ${contact.last_name}`}>
+                    {contact.first_name} {contact.last_name} ({contact.email})
+                  </option>
+                ))}
+              </select>
+              <select
+                name="stage_id"
+                value={dealFormData.stage_id}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                {stages.map(stage => (
+                  <option key={stage.id} value={stage.id}>{stage.name}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                name="expectedCloseDate"
+                placeholder="Expected Close Date"
+                value={dealFormData.expectedCloseDate}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
               
               <div className="flex justify-end space-x-3 pt-4">
-                <button type="button" onClick={() => setShowAddDealModal(false)} className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">Cancel</button>
-                <button type="submit" className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">Create Deal</button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddDealModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Create Deal
+                </button>
               </div>
             </form>
           </div>
