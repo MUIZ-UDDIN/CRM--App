@@ -307,15 +307,12 @@ export default function Analytics() {
         date_to: new Date().toISOString().split('T')[0],
       };
       
-      // Only add filter if it's not 'all' and is a valid number
-      if (selectedUser !== 'all' && !isNaN(parseInt(selectedUser))) {
-        filters.user_id = parseInt(selectedUser);
+      // Only add filter if it's not 'all'
+      if (selectedUser !== 'all') {
+        filters.user_id = selectedUser;
       }
-      if (selectedTeam !== 'all' && !isNaN(parseInt(selectedTeam))) {
-        filters.team_id = parseInt(selectedTeam);
-      }
-      if (selectedPipeline !== 'all' && !isNaN(parseInt(selectedPipeline))) {
-        filters.pipeline_id = parseInt(selectedPipeline);
+      if (selectedPipeline !== 'all') {
+        filters.pipeline_id = selectedPipeline;
       }
       
       const blob = await analyticsService.exportAnalyticsToPDF(filters);
@@ -340,15 +337,12 @@ export default function Analytics() {
         date_to: new Date().toISOString().split('T')[0],
       };
       
-      // Only add filter if it's not 'all' and is a valid number
-      if (selectedUser !== 'all' && !isNaN(parseInt(selectedUser))) {
-        filters.user_id = parseInt(selectedUser);
+      // Only add filter if it's not 'all'
+      if (selectedUser !== 'all') {
+        filters.user_id = selectedUser;
       }
-      if (selectedTeam !== 'all' && !isNaN(parseInt(selectedTeam))) {
-        filters.team_id = parseInt(selectedTeam);
-      }
-      if (selectedPipeline !== 'all' && !isNaN(parseInt(selectedPipeline))) {
-        filters.pipeline_id = parseInt(selectedPipeline);
+      if (selectedPipeline !== 'all') {
+        filters.pipeline_id = selectedPipeline;
       }
       
       const blob = await analyticsService.exportAnalyticsToCSV(filters);
