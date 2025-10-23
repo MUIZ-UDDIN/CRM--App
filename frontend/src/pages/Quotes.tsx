@@ -18,7 +18,7 @@ interface Quote {
   quote_number: string;
   title: string;
   amount: number;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected';
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
   client_id?: string;
   deal_id?: string;
   valid_until: string;
@@ -105,11 +105,27 @@ export default function Quotes() {
     }
   };
 
+  // Check if quote is expired
+  const isQuoteExpired = (validUntil: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const validDate = new Date(validUntil);
+    validDate.setHours(0, 0, 0, 0);
+    return validDate < today;
+  };
+
   const fetchQuotes = async () => {
     setLoading(true);
     try {
       const data = await quotesService.getQuotes({ status: filterStatus !== 'all' ? filterStatus : undefined });
-      setQuotes(data);
+      // Update expired quotes
+      const updatedQuotes = data.map((quote: Quote) => {
+        if (quote.status !== 'accepted' && quote.status !== 'rejected' && isQuoteExpired(quote.valid_until)) {
+          return { ...quote, status: 'expired' as const };
+        }
+        return quote;
+      });
+      setQuotes(updatedQuotes);
     } catch (error) {
       console.error('Error fetching quotes:', error);
       toast.error('Failed to load quotes');
@@ -160,12 +176,52 @@ export default function Quotes() {
     // Implement PDF download logic
   };
 
+  // Get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  };
+
   const handleCreate = async () => {
+    // Validate mandatory fields
+    if (!quoteForm.title.trim()) {
+      toast.error('Quote Title is required');
+      return;
+    }
+
+    if (!quoteForm.amount || quoteForm.amount.trim() === '') {
+      toast.error('Amount is required');
+      return;
+    }
+
+    const amount = parseFloat(quoteForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Amount must be greater than 0');
+      return;
+    }
+
+    if (!quoteForm.valid_until || quoteForm.valid_until.trim() === '') {
+      toast.error('Valid Until date is required');
+      return;
+    }
+
+    // Validate that valid_until is a future date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const validUntilDate = new Date(quoteForm.valid_until);
+    validUntilDate.setHours(0, 0, 0, 0);
+
+    if (validUntilDate < today) {
+      toast.error('Valid Until date must be today or a future date');
+      return;
+    }
+
     try {
       const payload: any = {
         title: quoteForm.title,
-        amount: parseFloat(quoteForm.amount),
+        amount: amount,
         status: quoteForm.status as any,
+        valid_until: quoteForm.valid_until,
       };
       
       // Only add client_id if it has a value
@@ -176,11 +232,6 @@ export default function Quotes() {
       // Only add deal_id if it has a value
       if (quoteForm.deal_id && quoteForm.deal_id.trim()) {
         payload.deal_id = quoteForm.deal_id;
-      }
-      
-      // Only add valid_until if it has a value
-      if (quoteForm.valid_until && quoteForm.valid_until.trim()) {
-        payload.valid_until = quoteForm.valid_until;
       }
       
       await quotesService.createQuote(payload);
@@ -195,18 +246,54 @@ export default function Quotes() {
         status: 'draft',
       });
       fetchQuotes();
-    } catch (error) {
-      toast.error('Failed to create quote');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to create quote';
+      toast.error(errorMessage);
     }
   };
 
   const handleUpdate = async () => {
     if (!selectedQuote) return;
+
+    // Validate mandatory fields
+    if (!quoteForm.title.trim()) {
+      toast.error('Quote Title is required');
+      return;
+    }
+
+    if (!quoteForm.amount || quoteForm.amount.trim() === '') {
+      toast.error('Amount is required');
+      return;
+    }
+
+    const amount = parseFloat(quoteForm.amount);
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Amount must be greater than 0');
+      return;
+    }
+
+    if (!quoteForm.valid_until || quoteForm.valid_until.trim() === '') {
+      toast.error('Valid Until date is required');
+      return;
+    }
+
+    // Validate that valid_until is a future date
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const validUntilDate = new Date(quoteForm.valid_until);
+    validUntilDate.setHours(0, 0, 0, 0);
+
+    if (validUntilDate < today) {
+      toast.error('Valid Until date must be today or a future date');
+      return;
+    }
+
     try {
       const payload: any = {
         title: quoteForm.title,
-        amount: parseFloat(quoteForm.amount),
+        amount: amount,
         status: quoteForm.status as any,
+        valid_until: quoteForm.valid_until,
       };
       
       // Only add client_id if it has a value
@@ -357,10 +444,11 @@ export default function Quotes() {
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-gray-900 truncate">{quote.title}</h3>
                         <p className="text-sm text-gray-500 mt-1">
-                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full capitalize ${
                             quote.status === 'sent' ? 'bg-blue-100 text-blue-800' :
                             quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
                             quote.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            quote.status === 'expired' ? 'bg-orange-100 text-orange-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
                             {quote.status}
@@ -452,39 +540,73 @@ export default function Quotes() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Quote Title"
-                value={quoteForm.title}
-                onChange={(e) => setQuoteForm({...quoteForm, title: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <input
-                type="number"
-                placeholder="Amount"
-                value={quoteForm.amount}
-                onChange={(e) => setQuoteForm({...quoteForm, amount: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={quoteForm.client_id}
-                onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Client</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name} ({contact.email})
-                  </option>
-                ))}
-              </select>
-              <input
-                type="date"
-                placeholder="Valid Until"
-                value={quoteForm.valid_until}
-                onChange={(e) => setQuoteForm({...quoteForm, valid_until: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Quote Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter quote title"
+                  value={quoteForm.title}
+                  onChange={(e) => setQuoteForm({...quoteForm, title: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={quoteForm.amount}
+                  onChange={(e) => setQuoteForm({...quoteForm, amount: e.target.value})}
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                      e.preventDefault();
+                    }
+                  }}
+                  min="0.01"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Client
+                </label>
+                <select
+                  value={quoteForm.client_id}
+                  onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">Select Client (Optional)</option>
+                  {contacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.first_name} {contact.last_name} ({contact.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Valid Until <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={quoteForm.valid_until}
+                  onChange={(e) => setQuoteForm({...quoteForm, valid_until: e.target.value})}
+                  min={getTodayDate()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                  onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                  required
+                />
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseAddModal}

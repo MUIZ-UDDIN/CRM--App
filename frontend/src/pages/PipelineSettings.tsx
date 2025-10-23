@@ -439,11 +439,11 @@ export default function PipelineSettings() {
                   type="number"
                   min="0"
                   max="100"
-                  value={newStageProbability}
+                  value={newStageProbability === 0 ? '' : newStageProbability}
                   onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (e.target.value === '' || (value >= 0 && value <= 100)) {
-                      setNewStageProbability(value || 0);
+                    const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    if (value >= 0 && value <= 100) {
+                      setNewStageProbability(value);
                     }
                   }}
                   onKeyDown={(e) => {
@@ -523,11 +523,11 @@ export default function PipelineSettings() {
                   type="number"
                   min="0"
                   max="100"
-                  value={editingStage.probability}
+                  value={editingStage.probability === 0 ? '' : editingStage.probability}
                   onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (e.target.value === '' || (value >= 0 && value <= 100)) {
-                      setEditingStage({ ...editingStage, probability: value || 0 });
+                    const value = e.target.value === '' ? 0 : parseInt(e.target.value);
+                    if (value >= 0 && value <= 100) {
+                      setEditingStage({ ...editingStage, probability: value });
                     }
                   }}
                   onKeyDown={(e) => {
