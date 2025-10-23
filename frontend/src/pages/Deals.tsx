@@ -187,6 +187,27 @@ export default function Deals() {
     }));
   };
 
+  const resetDealForm = () => {
+    setDealFormData({
+      title: '',
+      value: '',
+      company: '',
+      contact: '',
+      stage_id: 'qualification',
+      expectedCloseDate: ''
+    });
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddDealModal(false);
+    resetDealForm();
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    resetDealForm();
+  };
+
   const handleAddDeal = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -458,7 +479,7 @@ export default function Deals() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Deal</h3>
-              <button onClick={() => setShowAddDealModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -547,7 +568,7 @@ export default function Deals() {
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddDealModal(false)}
+                  onClick={handleCloseAddModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
@@ -570,7 +591,7 @@ export default function Deals() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Deal</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -614,7 +635,7 @@ export default function Deals() {
               </select>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowEditModal(false)}
+                  onClick={handleCloseEditModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel

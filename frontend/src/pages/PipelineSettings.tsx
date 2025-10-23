@@ -40,6 +40,21 @@ export default function PipelineSettings() {
   const [newStageProbability, setNewStageProbability] = useState(50);
   const [loading, setLoading] = useState(false);
 
+  const resetStageForm = () => {
+    setNewStageName('');
+    setNewStageProbability(50);
+  };
+
+  const handleCloseAddStageModal = () => {
+    setShowAddStageModal(false);
+    resetStageForm();
+  };
+
+  const handleCloseEditStageModal = () => {
+    setShowEditStageModal(false);
+    setEditingStage(null);
+  };
+
   const currentPipeline = pipelines.find(p => p.id === selectedPipeline);
 
   // Fetch pipelines on mount
@@ -314,7 +329,7 @@ export default function PipelineSettings() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Stage</h3>
               <button
-                onClick={() => setShowAddStageModal(false)}
+                onClick={handleCloseAddStageModal}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <XMarkIcon className="h-5 w-5" />
@@ -351,7 +366,7 @@ export default function PipelineSettings() {
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowAddStageModal(false)}
+                  onClick={handleCloseAddStageModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel

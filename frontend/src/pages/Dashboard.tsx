@@ -347,6 +347,18 @@ export default function Dashboard() {
     }));
   };
 
+  const handleCloseAddDealModal = () => {
+    setShowAddDealModal(false);
+    setDealFormData({
+      title: '',
+      value: '',
+      company: '',
+      contact: '',
+      stage_id: 'qualification',
+      expectedCloseDate: ''
+    });
+  };
+
   return (
     <div className="min-h-full">
       <div className="bg-white shadow">
@@ -499,7 +511,7 @@ export default function Dashboard() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Deal</h3>
-              <button onClick={() => setShowAddDealModal(false)} className="text-gray-400 hover:text-gray-600 transition-colors duration-200">
+              <button onClick={handleCloseAddDealModal} className="text-gray-400 hover:text-gray-600 transition-colors duration-200">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -590,7 +602,7 @@ export default function Dashboard() {
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
-                  onClick={() => setShowAddDealModal(false)}
+                  onClick={handleCloseAddDealModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel

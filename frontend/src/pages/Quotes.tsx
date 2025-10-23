@@ -47,6 +47,27 @@ export default function Quotes() {
     status: 'draft',
   });
 
+  const resetQuoteForm = () => {
+    setQuoteForm({
+      title: '',
+      amount: '',
+      client_id: '',
+      deal_id: '',
+      valid_until: '',
+      status: 'draft',
+    });
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    resetQuoteForm();
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    resetQuoteForm();
+  };
+
   // Check for action query parameter
   useEffect(() => {
     const action = searchParams.get('action');
@@ -426,7 +447,7 @@ export default function Quotes() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Create Quote</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -466,7 +487,7 @@ export default function Quotes() {
               />
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={handleCloseAddModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
@@ -489,7 +510,7 @@ export default function Quotes() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Quote</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -522,7 +543,7 @@ export default function Quotes() {
               </select>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowEditModal(false)}
+                  onClick={handleCloseEditModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel

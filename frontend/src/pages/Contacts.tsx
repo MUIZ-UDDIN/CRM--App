@@ -58,6 +58,31 @@ export default function Contacts() {
   });
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const resetContactForm = () => {
+    setContactForm({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      company: '',
+      title: '',
+      type: 'Marketing Qualified Lead',
+      status: 'new',
+      source: '',
+      owner_id: ''
+    });
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    resetContactForm();
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    resetContactForm();
+  };
   
   // Fetch users for owner dropdown
   useEffect(() => {
@@ -412,7 +437,7 @@ export default function Contacts() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Contact</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -517,7 +542,7 @@ export default function Contacts() {
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={handleCloseAddModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
@@ -540,7 +565,7 @@ export default function Contacts() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Contact</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -645,7 +670,7 @@ export default function Contacts() {
                 </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowEditModal(false)}
+                  onClick={handleCloseEditModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
