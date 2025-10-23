@@ -268,9 +268,16 @@ export default function Deals() {
         grouped[stageName] = [];
       });
       
-      // Group deals by stage (convert UUID to normalized name)
+      // Group deals by stage (handle both UUID and string stage_id for backward compatibility)
       data.forEach((deal: Deal) => {
-        const normalizedStageName = uuidToName[deal.stage_id];
+        let normalizedStageName = uuidToName[deal.stage_id]; // Try UUID first
+        
+        // If not found, check if stage_id is already a normalized name (old format)
+        if (!normalizedStageName && grouped[deal.stage_id]) {
+          normalizedStageName = deal.stage_id;
+          console.log(`Deal "${deal.title}" has old format stage_id: "${deal.stage_id}"`);
+        }
+        
         if (normalizedStageName && grouped[normalizedStageName]) {
           grouped[normalizedStageName].push(deal);
         } else {
