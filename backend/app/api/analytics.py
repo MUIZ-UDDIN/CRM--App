@@ -121,7 +121,8 @@ async def get_activity_analytics(
     user_id: Optional[int] = Query(None),
     team_id: Optional[int] = Query(None),
     activity_type: Optional[str] = Query(None, description="Filter by activity type"),
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
     """Get activity analytics with counts, completion rates, overdue metrics
     
@@ -132,10 +133,17 @@ async def get_activity_analytics(
     - Activity distribution by user/team
     """
     
-    cache_key = f"analytics:activities:{date_from}:{date_to}:{user_id}:{team_id}:{activity_type}"
-    cached = await get_cached_analytics(cache_key)
-    if cached:
-        return cached
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    filters = [Activity.owner_id == owner_id, Activity.is_deleted == False]
+    if date_from:
+        filters.append(Activity.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        filters.append(Activity.created_at <= datetime.fromisoformat(date_to))
+    
+    total_activities = db.query(func.count(Activity.id)).filter(and_(*filters)).scalar() or 0
+    completed_activities = db.query(func.count(Activity.id)).filter(and_(*filters, Activity.status == 'completed')).scalar() or 0
+    
     data = {
         "filters": {
             "date_from": date_from,
@@ -223,23 +231,19 @@ async def get_activity_analytics(
                 {"day": "Friday", "count": 120}
             ],
             "by_hour": [
-                {"hour": "09:00", "count": 45},
-                {"hour": "10:00", "count": 67},
-                {"hour": "11:00", "count": 82},
-                {"hour": "14:00", "count": 75},
-                {"hour": "15:00", "count": 58}
+                {"hour": "09:00", "count": 0},
+                {"hour": "10:00", "count": 0}
             ]
         },
         "summary": {
-            "total_activities": 635,
-            "total_completed": 595,
-            "total_overdue": 40,
-            "total_pending": 0,
-            "overall_completion_rate": 93.7
+            "total_activities": total_activities,
+            "total_completed": completed_activities,
+            "total_overdue": 0,
+            "total_pending": total_activities - completed_activities,
+            "overall_completion_rate": round((completed_activities / total_activities * 100) if total_activities > 0 else 0, 2)
         }
     }
     
-    await set_cached_analytics(cache_key, data, ttl=300)
     return data
 
 
