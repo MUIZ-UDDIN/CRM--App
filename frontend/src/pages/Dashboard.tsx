@@ -365,7 +365,10 @@ export default function Dashboard() {
       // Convert stage name to UUID
       const stageUUID = stageMapping[dealFormData.stage_id];
       if (!stageUUID) {
-        toast.error('Invalid stage selected');
+        console.error('Stage mapping:', stageMapping);
+        console.error('Selected stage_id:', dealFormData.stage_id);
+        console.error('Available stages:', Object.keys(stageMapping));
+        toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
         return;
       }
 
