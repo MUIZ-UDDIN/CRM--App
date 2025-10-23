@@ -6,9 +6,16 @@ from fastapi import APIRouter, Depends, Query
 from typing import Optional, List
 from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
+from sqlalchemy import func, and_, or_, case
 import uuid
 from ..core.security import get_current_active_user
 from ..core.database import get_db
+from ..models.deals import Deal, Pipeline, PipelineStage, DealStatus
+from ..models.activities import Activity
+from ..models.emails import Email
+from ..models.calls import Call
+from ..models.contacts import Contact
+from ..models.documents import Document
 import json
 
 router = APIRouter()
@@ -38,109 +45,72 @@ async def get_pipeline_analytics(
     user_id: Optional[int] = Query(None, description="Filter by user ID"),
     team_id: Optional[int] = Query(None, description="Filter by team ID"),
     pipeline_id: Optional[int] = Query(None, description="Filter by pipeline ID"),
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Get pipeline analytics with conversion rates, stage durations, deal count per pipeline/stage
+    """Get pipeline analytics with real database queries"""
     
-    Returns:
-    - Conversion rates by stage
-    - Average deal duration per stage
-    - Deal count per stage
-    - Pipeline velocity metrics
-    - Stage-to-stage conversion rates
-    """
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    # Check cache first
-    cache_key = f"analytics:pipeline:{date_from}:{date_to}:{user_id}:{team_id}:{pipeline_id}"
-    cached = await get_cached_analytics(cache_key)
-    if cached:
-        return cached
+    # Build query filters
+    filters = [Deal.owner_id == owner_id, Deal.is_deleted == False]
     
-    # TODO: Implement actual database aggregation
-    # This is mock data structure - replace with actual DB queries
+    if date_from:
+        filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        filters.append(Deal.created_at <= datetime.fromisoformat(date_to))
+    if pipeline_id:
+        filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
+    
+    # Get stage analytics
+    stage_stats = db.query(
+        PipelineStage.id,
+        PipelineStage.name,
+        func.count(Deal.id).label('deal_count'),
+        func.sum(Deal.value).label('total_value'),
+        func.avg(Deal.value).label('avg_value'),
+        func.sum(case((Deal.status == DealStatus.WON, 1), else_=0)).label('deals_won'),
+        func.sum(case((Deal.status == DealStatus.LOST, 1), else_=0)).label('deals_lost')
+    ).join(Deal, Deal.stage_id == PipelineStage.id)\
+     .filter(and_(*filters))\
+     .group_by(PipelineStage.id, PipelineStage.name)\
+     .all()
+    
+    pipeline_analytics = []
+    for stage in stage_stats:
+        total_closed = (stage.deals_won or 0) + (stage.deals_lost or 0)
+        win_rate = (stage.deals_won / total_closed * 100) if total_closed > 0 else 0
+        
+        pipeline_analytics.append({
+            "stage_id": str(stage.id),
+            "stage_name": stage.name,
+            "deal_count": stage.deal_count or 0,
+            "total_value": float(stage.total_value or 0),
+            "avg_value": float(stage.avg_value or 0),
+            "deals_won": stage.deals_won or 0,
+            "deals_lost": stage.deals_lost or 0,
+            "win_rate": round(win_rate, 2)
+        })
+    
+    # Get summary
+    total_deals = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
+    total_value = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0
+    avg_deal_size = (total_value / total_deals) if total_deals > 0 else 0
+    
     data = {
         "filters": {
             "date_from": date_from,
             "date_to": date_to,
-            "user_id": user_id,
-            "team_id": team_id,
             "pipeline_id": pipeline_id
         },
-        "pipeline_analytics": [
-            {
-                "stage_id": 1,
-                "stage_name": "Qualification",
-                "deal_count": 15,
-                "total_value": 450000.0,
-                "avg_value": 30000.0,
-                "conversion_rate": 75.0,
-                "avg_duration_days": 5.2,
-                "deals_won": 12,
-                "deals_lost": 3,
-                "win_rate": 80.0
-            },
-            {
-                "stage_id": 2,
-                "stage_name": "Proposal",
-                "deal_count": 8,
-                "total_value": 320000.0,
-                "avg_value": 40000.0,
-                "conversion_rate": 65.0,
-                "avg_duration_days": 7.8,
-                "deals_won": 5,
-                "deals_lost": 3,
-                "win_rate": 62.5
-            },
-            {
-                "stage_id": 3,
-                "stage_name": "Negotiation",
-                "deal_count": 5,
-                "total_value": 275000.0,
-                "avg_value": 55000.0,
-                "conversion_rate": 45.0,
-                "avg_duration_days": 10.5,
-                "deals_won": 3,
-                "deals_lost": 2,
-                "win_rate": 60.0
-            },
-            {
-                "stage_id": 4,
-                "stage_name": "Closed Won",
-                "deal_count": 20,
-                "total_value": 850000.0,
-                "avg_value": 42500.0,
-                "conversion_rate": 68.0,
-                "avg_duration_days": 3.2,
-                "deals_won": 20,
-                "deals_lost": 0,
-                "win_rate": 100.0
-            }
-        ],
-        "deals_by_owner": [
-            {"owner_id": 1, "owner_name": "John Doe", "deal_count": 24, "total_value": 125000.0},
-            {"owner_id": 2, "owner_name": "Jane Smith", "deal_count": 18, "total_value": 98000.0},
-            {"owner_id": 3, "owner_name": "Mike Johnson", "deal_count": 15, "total_value": 87000.0}
-        ],
-        "deals_by_team": [
-            {"team_id": 1, "team_name": "Sales Team", "deal_count": 35, "total_value": 210000.0},
-            {"team_id": 2, "team_name": "Enterprise Team", "deal_count": 22, "total_value": 100000.0}
-        ],
-        "velocity_metrics": {
-            "avg_time_to_close": 26.7,
-            "fastest_deal": 5.0,
-            "slowest_deal": 65.0,
-            "median_time": 22.0
-        },
+        "pipeline_analytics": pipeline_analytics,
         "summary": {
-            "total_deals": 48,
-            "total_value": 1895000.0,
-            "overall_conversion_rate": 63.25,
-            "avg_deal_size": 39479.17
+            "total_deals": total_deals,
+            "total_value": float(total_value),
+            "avg_deal_size": round(avg_deal_size, 2)
         }
     }
     
-    # Cache the result
-    await set_cached_analytics(cache_key, data, ttl=300)
     return data
 
 

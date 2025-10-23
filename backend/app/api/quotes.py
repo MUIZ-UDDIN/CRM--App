@@ -394,7 +394,7 @@ async def download_quote(
         ['Description', 'Amount'],
         [quote.title, f'${quote.amount:,.2f}'],
         ['', ''],
-        ['<b>Total Amount</b>', f'<b>${quote.amount:,.2f}</b>'],
+        ['Total Amount', f'${quote.amount:,.2f}'],
     ]
     
     amount_table = Table(amount_data, colWidths=[4*inch, 2*inch])
@@ -411,8 +411,9 @@ async def download_quote(
         ('GRID', (0, 0), (-1, -2), 1, colors.HexColor('#e5e7eb')),
         ('LINEABOVE', (0, -1), (-1, -1), 2, colors.HexColor('#1e40af')),
         ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, -1), (-1, -1), 12),
+        ('FONTSIZE', (0, -1), (-1, -1), 14),
         ('TOPPADDING', (0, -1), (-1, -1), 12),
+        ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#1e40af')),
     ]))
     
     elements.append(amount_table)
