@@ -56,12 +56,21 @@ export default function Analytics() {
   const fetchAllAnalytics = async () => {
     setLoading(true);
     try {
-      const filters = {
+      // Build filters object, only including defined values
+      const filters: any = {
         date_from: getDateFrom(dateRange),
         date_to: new Date().toISOString().split('T')[0],
-        user_id: selectedUser !== 'all' ? parseInt(selectedUser) : undefined,
-        team_id: selectedTeam !== 'all' ? parseInt(selectedTeam) : undefined,
-        pipeline_id: selectedPipeline !== 'all' ? parseInt(selectedPipeline) : undefined,
+      };
+      
+      // Only add filter if it's not 'all' and is a valid number
+      if (selectedUser !== 'all' && !isNaN(parseInt(selectedUser))) {
+        filters.user_id = parseInt(selectedUser);
+      }
+      if (selectedTeam !== 'all' && !isNaN(parseInt(selectedTeam))) {
+        filters.team_id = parseInt(selectedTeam);
+      }
+      if (selectedPipeline !== 'all' && !isNaN(parseInt(selectedPipeline))) {
+        filters.pipeline_id = parseInt(selectedPipeline);
       };
       
       // Fetch all analytics in parallel

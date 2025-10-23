@@ -182,6 +182,11 @@ export default function Quotes() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
+      if (response.status === 404) {
+        toast.error('Download feature is not yet available. Please contact support.');
+        return;
+      }
+      
       if (response.ok) {
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
@@ -194,11 +199,11 @@ export default function Quotes() {
         document.body.removeChild(a);
         toast.success('Quote downloaded successfully');
       } else {
-        toast.error('Download feature not yet implemented on server');
+        toast.error('Failed to download quote. Please try again.');
       }
     } catch (error) {
       console.error('Download error:', error);
-      toast.error('Download feature not yet implemented');
+      toast.error('Download feature is not yet available. Please contact support.');
     }
   };
 
