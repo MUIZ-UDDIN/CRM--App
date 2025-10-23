@@ -47,8 +47,7 @@ export default function Dashboard() {
     value: '',
     company: '',
     contact: '',
-    stage_id: 'qualification',
-    expectedCloseDate: ''
+    stage_id: 'qualification'
   });
 
   const stages = [
@@ -308,12 +307,11 @@ export default function Dashboard() {
         company: dealFormData.company,
         contact: dealFormData.contact,
         stage_id: dealFormData.stage_id,
-        pipeline_id: "1",
-        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined
+        pipeline_id: "1"
       });
       
       setDealFormData({
-        title: '', value: '', company: '', contact: '', stage_id: 'qualification', expectedCloseDate: ''
+        title: '', value: '', company: '', contact: '', stage_id: 'qualification'
       });
       setShowAddDealModal(false);
       toast.success('Deal created successfully!');
@@ -535,14 +533,6 @@ export default function Dashboard() {
                   <option key={stage.id} value={stage.id}>{stage.name}</option>
                 ))}
               </select>
-              <input
-                type="date"
-                name="expectedCloseDate"
-                placeholder="Expected Close Date"
-                value={dealFormData.expectedCloseDate}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
               
               <div className="flex justify-end space-x-3 pt-4">
                 <button
