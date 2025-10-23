@@ -192,7 +192,6 @@ export default function Dashboard() {
   const fetchActivities = async () => {
     try {
       const data = await activitiesService.getActivities();
-      console.log('Fetched activities:', data);
       setActivities(data);
       
       // Separate recent and upcoming activities
@@ -250,9 +249,6 @@ export default function Dashboard() {
           contact: activity.contact_name || activity.contact_id || 'No contact',
           priority: (activity.priority >= 3 ? 'high' : activity.priority >= 2 ? 'medium' : 'low') as 'high' | 'medium' | 'low'
         }));
-
-      console.log('Recent activities:', recent);
-      console.log('Upcoming activities:', upcoming);
       
       setRecentActivities(recent);
       setUpcomingActivities(upcoming);

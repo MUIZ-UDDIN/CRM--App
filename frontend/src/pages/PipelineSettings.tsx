@@ -112,8 +112,6 @@ export default function PipelineSettings() {
   };
 
   const handleAddStage = async () => {
-    console.log('handleAddStage called', { newStageName, currentPipeline, selectedPipeline });
-    
     if (!newStageName.trim()) {
       toast.error('Please enter a stage name');
       return;
@@ -125,7 +123,6 @@ export default function PipelineSettings() {
     }
 
     try {
-      console.log('Creating stage...');
       await pipelinesService.createStage(selectedPipeline, {
         name: newStageName,
         probability: newStageProbability,

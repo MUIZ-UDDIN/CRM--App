@@ -140,7 +140,6 @@ export default function Deals() {
     setLoading(true);
     try {
       const data = await dealsService.getDeals();
-      console.log('Fetched deals:', data);
       
       // Group deals by stage
       const grouped: Record<string, Deal[]> = {
@@ -151,7 +150,6 @@ export default function Deals() {
       };
       
       data.forEach((deal: Deal) => {
-        console.log('Processing deal:', deal.title, 'stage_id:', deal.stage_id);
         if (grouped[deal.stage_id]) {
           grouped[deal.stage_id].push(deal);
         } else {
@@ -159,7 +157,6 @@ export default function Deals() {
         }
       });
       
-      console.log('Grouped deals:', grouped);
       setDeals(grouped);
     } catch (error) {
       console.error('Error fetching deals:', error);
@@ -288,14 +285,10 @@ export default function Deals() {
   const onDragEnd = async (result: any) => {
     const { source, destination, draggableId } = result;
 
-    console.log('Drag ended:', { source, destination, draggableId });
-
     if (!destination) {
-      console.log('No destination - drag cancelled');
       return;
     }
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
-      console.log('Same position - no change');
       return;
     }
 

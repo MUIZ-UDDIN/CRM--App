@@ -72,8 +72,6 @@ export default function Files() {
   const fetchFiles = async () => {
     setLoading(true);
     try {
-      console.log('Fetching files and folders for folder:', currentFolderId || 'root');
-      
       // Fetch both files and folders for current folder
       const [filesData, foldersData] = await Promise.all([
         filesService.getFiles({
@@ -81,9 +79,6 @@ export default function Files() {
         }),
         filesService.getFolders(currentFolderId || undefined)
       ]);
-      
-      console.log('Fetched folders:', foldersData);
-      console.log('Fetched files:', filesData);
       
       // Combine files and folders, marking their type
       const allItems = [
@@ -98,7 +93,6 @@ export default function Files() {
         }))
       ];
       
-      console.log('Combined items:', allItems);
       setFiles(allItems);
     } catch (error) {
       console.error('Error fetching files:', error);
@@ -212,16 +206,10 @@ export default function Files() {
       formData.append('file', file);
       formData.append('category', fileForm.category);
       if (currentFolderId) {
-        console.log('Uploading to folder:', currentFolderId);
         formData.append('folder_id', currentFolderId);
-      } else {
-        console.log('Uploading to root (no folder)');
       }
       
       const uploadResult = await filesService.uploadFile(formData);
-      console.log('Upload result:', uploadResult);
-      console.log('Upload result folder_id:', uploadResult.folder_id);
-      console.log('Expected folder_id:', currentFolderId);
       
       if (currentFolderId && uploadResult.folder_id !== currentFolderId) {
         console.error('WARNING: Upload folder_id mismatch!', {
@@ -259,10 +247,7 @@ export default function Files() {
       
       // If we're inside a folder, set it as parent
       if (currentFolderId) {
-        console.log('Creating folder inside:', currentFolderId);
         folderData.parent_id = currentFolderId;
-      } else {
-        console.log('Creating folder in root');
       }
       
       await filesService.createFolder(folderData);
@@ -306,7 +291,6 @@ export default function Files() {
     e.dataTransfer.setData('itemId', file.id);
     e.dataTransfer.setData('itemType', file.type);
     e.dataTransfer.effectAllowed = 'move';
-    console.log('Dragging:', file.type, file.id, file.name);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -322,22 +306,17 @@ export default function Files() {
     const itemType = e.dataTransfer.getData('itemType');
     
     if (!itemId) {
-      console.log('No itemId in drag data');
       return;
     }
-
-    console.log(`Moving ${itemType}:`, itemId, 'to folder:', targetFolderId);
 
     try {
       if (itemType === 'file') {
         // Move file
-        const result = await filesService.updateFile(itemId, { folder_id: targetFolderId || undefined });
-        console.log('Move file result:', result);
+        await filesService.updateFile(itemId, { folder_id: targetFolderId || undefined });
         toast.success('File moved successfully');
       } else if (itemType === 'folder') {
         // Move folder
-        const result = await filesService.updateFolder(itemId, { parent_id: targetFolderId || undefined });
-        console.log('Move folder result:', result);
+        await filesService.updateFolder(itemId, { parent_id: targetFolderId || undefined });
         toast.success('Folder moved successfully');
       }
       
