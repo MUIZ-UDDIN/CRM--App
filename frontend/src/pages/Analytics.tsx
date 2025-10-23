@@ -47,6 +47,7 @@ export default function Analytics() {
   const [contactAnalytics, setContactAnalytics] = useState<any>(null);
   const [documentAnalytics, setDocumentAnalytics] = useState<any>(null);
   const [revenueAnalytics, setRevenueAnalytics] = useState<any>(null);
+  const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
   
   // Fetch analytics data from backend
   useEffect(() => {
@@ -74,7 +75,7 @@ export default function Analytics() {
       };
       
       // Fetch all analytics in parallel
-      const [pipeline, activity, email, call, contact, document, revenue] = await Promise.all([
+      const [pipeline, activity, email, call, contact, document, revenue, dashboard] = await Promise.all([
         analyticsService.getPipelineAnalytics(filters),
         analyticsService.getActivityAnalytics(filters),
         analyticsService.getEmailAnalytics(filters),
@@ -82,6 +83,7 @@ export default function Analytics() {
         analyticsService.getContactAnalytics(filters),
         analyticsService.getDocumentAnalytics(filters),
         analyticsService.getRevenueAnalytics(),
+        analyticsService.getDashboardAnalytics(),
       ]);
       
       setPipelineAnalytics(pipeline);
@@ -91,6 +93,7 @@ export default function Analytics() {
       setContactAnalytics(contact);
       setDocumentAnalytics(document);
       setRevenueAnalytics(revenue);
+      setDashboardKPIs(dashboard);
       
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -417,8 +420,12 @@ export default function Analytics() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">$328K</p>
-                <p className="text-sm text-green-600 mt-1">↑ 12.5%</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">
+                  ${dashboardKPIs?.kpis?.total_revenue ? (dashboardKPIs.kpis.total_revenue / 1000).toFixed(1) : '0'}K
+                </p>
+                <p className={`text-sm mt-1 ${dashboardKPIs?.kpis?.revenue_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {dashboardKPIs?.kpis?.revenue_growth >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.revenue_growth || 0)}%
+                </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
                 <ChartBarIcon className="h-6 w-6 text-green-600" />
@@ -429,8 +436,10 @@ export default function Analytics() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Deals Won</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">94</p>
-                <p className="text-sm text-green-600 mt-1">↑ 8.2%</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{dashboardKPIs?.kpis?.deals_won || 0}</p>
+                <p className={`text-sm mt-1 ${dashboardKPIs?.kpis?.deals_won_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {dashboardKPIs?.kpis?.deals_won_growth >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.deals_won_growth || 0)}%
+                </p>
               </div>
               <div className="p-3 bg-blue-100 rounded-lg">
                 <ChartPieIcon className="h-6 w-6 text-blue-600" />
@@ -441,8 +450,10 @@ export default function Analytics() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Win Rate</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">68%</p>
-                <p className="text-sm text-green-600 mt-1">↑ 3.1%</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{dashboardKPIs?.kpis?.win_rate || 0}%</p>
+                <p className={`text-sm mt-1 ${dashboardKPIs?.kpis?.win_rate_change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {dashboardKPIs?.kpis?.win_rate_change >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.win_rate_change || 0)}%
+                </p>
               </div>
               <div className="p-3 bg-purple-100 rounded-lg">
                 <FunnelIcon className="h-6 w-6 text-purple-600" />
@@ -453,8 +464,12 @@ export default function Analytics() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Deal Size</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">$3.5K</p>
-                <p className="text-sm text-red-600 mt-1">↓ 2.3%</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">
+                  ${dashboardKPIs?.kpis?.avg_deal_size ? (dashboardKPIs.kpis.avg_deal_size / 1000).toFixed(1) : '0'}K
+                </p>
+                <p className={`text-sm mt-1 ${dashboardKPIs?.kpis?.avg_deal_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {dashboardKPIs?.kpis?.avg_deal_growth >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.avg_deal_growth || 0)}%
+                </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-lg">
                 <DocumentChartBarIcon className="h-6 w-6 text-orange-600" />

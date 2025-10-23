@@ -383,11 +383,7 @@ async def download_quote(
     ]))
     
     elements.append(quote_table)
-    elements.append(Spacer(1, 20))
-    
-    # Quote title
-    elements.append(Paragraph(f"<b>{quote.title}</b>", heading_style))
-    elements.append(Spacer(1, 12))
+    elements.append(Spacer(1, 30))
     
     # Amount table
     amount_data = [

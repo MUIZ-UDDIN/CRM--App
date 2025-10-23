@@ -3,11 +3,20 @@ Analytics API endpoints with comprehensive data aggregation and caching
 """
 
 from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from typing import Optional, List
 from datetime import datetime, date, timedelta
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_, case
 import uuid
+import io
+import csv
+from reportlab.lib.pagesizes import letter, A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
+from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models.deals import Deal, Pipeline, PipelineStage, DealStatus
@@ -933,13 +942,244 @@ async def get_dashboard_analytics(
     pipeline_growth = ((total_pipeline - last_month_pipeline) / last_month_pipeline * 100) if last_month_pipeline > 0 else 0
     deal_growth = ((active_deals - last_month_deals) / last_month_deals * 100) if last_month_deals > 0 else 0
     
+    # Total Revenue (Won Deals)
+    revenue_query = db.query(func.sum(DealModel.value)).filter(
+        and_(
+            DealModel.is_deleted == False,
+            DealModel.status == DealStatus.WON
+        )
+    )
+    if not is_superuser:
+        revenue_query = revenue_query.filter(DealModel.owner_id == user_id)
+    total_revenue = revenue_query.scalar() or 0.0
+    
+    # Last month revenue for growth
+    last_month_revenue = db.query(func.sum(DealModel.value)).filter(
+        and_(
+            DealModel.is_deleted == False,
+            DealModel.status == DealStatus.WON,
+            func.date(DealModel.actual_close_date) >= last_month_start,
+            func.date(DealModel.actual_close_date) < month_start
+        )
+    )
+    if not is_superuser:
+        last_month_revenue = last_month_revenue.filter(DealModel.owner_id == user_id)
+    last_month_revenue_val = last_month_revenue.scalar() or 0.0
+    
+    revenue_growth = ((total_revenue - last_month_revenue_val) / last_month_revenue_val * 100) if last_month_revenue_val > 0 else 0
+    
+    # Average Deal Size
+    avg_deal_size = (total_revenue / won_deals) if won_deals > 0 else 0
+    
+    # Last month avg deal size
+    last_month_won = db.query(func.count(DealModel.id)).filter(
+        and_(
+            DealModel.is_deleted == False,
+            DealModel.status == DealStatus.WON,
+            func.date(DealModel.actual_close_date) >= last_month_start,
+            func.date(DealModel.actual_close_date) < month_start
+        )
+    )
+    if not is_superuser:
+        last_month_won = last_month_won.filter(DealModel.owner_id == user_id)
+    last_month_won_count = last_month_won.scalar() or 0
+    
+    last_month_avg = (last_month_revenue_val / last_month_won_count) if last_month_won_count > 0 else 0
+    avg_deal_growth = ((avg_deal_size - last_month_avg) / last_month_avg * 100) if last_month_avg > 0 else 0
+    
+    # Last month won deals for growth
+    last_month_won_deals = db.query(func.count(DealModel.id)).filter(
+        and_(
+            DealModel.is_deleted == False,
+            DealModel.status == DealStatus.WON,
+            func.date(DealModel.actual_close_date) >= last_month_start,
+            func.date(DealModel.actual_close_date) < month_start
+        )
+    )
+    if not is_superuser:
+        last_month_won_deals = last_month_won_deals.filter(DealModel.owner_id == user_id)
+    last_month_won_val = last_month_won_deals.scalar() or 0
+    
+    won_deals_growth = ((won_deals - last_month_won_val) / last_month_won_val * 100) if last_month_won_val > 0 else 0
+    
+    # Last month win rate
+    last_month_closed = db.query(func.count(DealModel.id)).filter(
+        and_(
+            DealModel.is_deleted == False,
+            or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST),
+            func.date(DealModel.actual_close_date) >= last_month_start,
+            func.date(DealModel.actual_close_date) < month_start
+        )
+    )
+    if not is_superuser:
+        last_month_closed = last_month_closed.filter(DealModel.owner_id == user_id)
+    last_month_closed_val = last_month_closed.scalar() or 0
+    
+    last_month_win_rate = (last_month_won_val / last_month_closed_val * 100) if last_month_closed_val > 0 else 0
+    win_rate_change = win_rate - last_month_win_rate
+    
     return {
         "kpis": {
+            "total_revenue": round(total_revenue, 2),
+            "revenue_growth": round(revenue_growth, 1),
+            "deals_won": won_deals,
+            "deals_won_growth": round(won_deals_growth, 1),
+            "win_rate": round(win_rate, 1),
+            "win_rate_change": round(win_rate_change, 1),
+            "avg_deal_size": round(avg_deal_size, 2),
+            "avg_deal_growth": round(avg_deal_growth, 1),
             "total_pipeline": round(total_pipeline, 2),
             "pipeline_growth": round(pipeline_growth, 1),
             "active_deals": active_deals,
             "deal_growth": round(deal_growth, 1),
-            "win_rate": round(win_rate, 1),
             "activities_today": activities_today
         }
     }
+
+
+@router.get("/export/csv")
+async def export_analytics_csv(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    pipeline_id: Optional[int] = Query(None),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Export analytics data to CSV"""
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Build filters
+    filters = [Deal.owner_id == owner_id, Deal.is_deleted == False]
+    if date_from:
+        filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        filters.append(Deal.created_at <= datetime.fromisoformat(date_to))
+    if pipeline_id:
+        filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
+    
+    # Get deals data
+    deals = db.query(Deal).filter(and_(*filters)).all()
+    
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write headers
+    writer.writerow(['Deal Title', 'Value', 'Status', 'Stage', 'Created Date', 'Close Date', 'Company'])
+    
+    # Write data
+    for deal in deals:
+        writer.writerow([
+            deal.title,
+            f'${deal.value:,.2f}',
+            deal.status.value if deal.status else 'N/A',
+            'N/A',  # Stage name would need a join
+            deal.created_at.strftime('%Y-%m-%d') if deal.created_at else 'N/A',
+            deal.actual_close_date.strftime('%Y-%m-%d') if deal.actual_close_date else 'N/A',
+            deal.company or 'N/A'
+        ])
+    
+    # Convert to bytes
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=analytics-{datetime.now().strftime('%Y%m%d')}.csv"
+        }
+    )
+
+
+@router.get("/export/pdf")
+async def export_analytics_pdf(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    pipeline_id: Optional[int] = Query(None),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Export analytics data to PDF"""
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Build filters
+    filters = [Deal.owner_id == owner_id, Deal.is_deleted == False]
+    if date_from:
+        filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        filters.append(Deal.created_at <= datetime.fromisoformat(date_to))
+    if pipeline_id:
+        filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
+    
+    # Get summary stats
+    total_deals = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
+    total_value = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0
+    won_deals = db.query(func.count(Deal.id)).filter(and_(*filters, Deal.status == DealStatus.WON)).scalar() or 0
+    won_value = db.query(func.sum(Deal.value)).filter(and_(*filters, Deal.status == DealStatus.WON)).scalar() or 0
+    
+    # Create PDF in memory
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    
+    elements = []
+    styles = getSampleStyleSheet()
+    
+    # Title
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1e40af'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    elements.append(Paragraph("Analytics Report", title_style))
+    elements.append(Spacer(1, 12))
+    
+    # Date range
+    date_text = f"Period: {date_from or 'All time'} to {date_to or 'Present'}"
+    elements.append(Paragraph(date_text, styles['Normal']))
+    elements.append(Spacer(1, 20))
+    
+    # Summary table
+    summary_data = [
+        ['Metric', 'Value'],
+        ['Total Deals', str(total_deals)],
+        ['Total Value', f'${total_value:,.2f}'],
+        ['Deals Won', str(won_deals)],
+        ['Won Value', f'${won_value:,.2f}'],
+        ['Win Rate', f'{(won_deals/total_deals*100):.1f}%' if total_deals > 0 else '0%'],
+        ['Avg Deal Size', f'${(total_value/total_deals):.2f}' if total_deals > 0 else '$0.00']
+    ]
+    
+    summary_table = Table(summary_data, colWidths=[3*inch, 3*inch])
+    summary_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+        ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#e5e7eb')),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+    ]))
+    
+    elements.append(summary_table)
+    elements.append(Spacer(1, 30))
+    
+    # Footer
+    footer_text = f"Generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}"
+    elements.append(Paragraph(footer_text, styles['Normal']))
+    
+    # Build PDF
+    doc.build(elements)
+    buffer.seek(0)
+    
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=analytics-{datetime.now().strftime('%Y%m%d')}.pdf"
+        }
+    )
