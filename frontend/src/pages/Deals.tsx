@@ -390,7 +390,8 @@ export default function Deals() {
         contact: dealFormData.contact,
         stage_id: stageUUID, // Use actual UUID
         pipeline_id: pipelineId, // Use actual pipeline UUID
-        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined
+        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
+        status: dealFormData.status
       });
       toast.success('Deal created successfully!');
       setShowAddDealModal(false);
@@ -442,6 +443,7 @@ export default function Deals() {
         value: parseFloat(dealFormData.value),
         company: dealFormData.company,
         contact: dealFormData.contact,
+        status: dealFormData.status
       });
       toast.success('Deal updated');
       setShowEditModal(false);
@@ -631,13 +633,26 @@ export default function Deals() {
                                     <UserIcon className="h-4 w-4 mr-2 text-gray-400" />
                                     <span>{deal.contact}</span>
                                   </div>
-                                  {deal.expected_close_date && getExpirationMessage(deal.expected_close_date) && (
-                                    <div className="mt-2">
+                                  <div className="mt-2 flex flex-wrap gap-2">
+                                    {/* Status Badge */}
+                                    <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
+                                      deal.status === 'won' ? 'bg-green-100 text-green-800' :
+                                      deal.status === 'lost' ? 'bg-red-100 text-red-800' :
+                                      deal.status === 'abandoned' ? 'bg-gray-100 text-gray-800' :
+                                      'bg-blue-100 text-blue-800'
+                                    }`}>
+                                      {deal.status === 'won' ? 'Won' :
+                                       deal.status === 'lost' ? 'Lost' :
+                                       deal.status === 'abandoned' ? 'Abandoned' :
+                                       'Open'}
+                                    </span>
+                                    {/* Expiration Badge */}
+                                    {deal.expected_close_date && getExpirationMessage(deal.expected_close_date) && (
                                       <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${getExpirationMessage(deal.expected_close_date)?.color}`}>
                                         {getExpirationMessage(deal.expected_close_date)?.text}
                                       </span>
-                                    </div>
-                                  )}
+                                    )}
+                                  </div>
                                   <div className="mt-2 pt-2 border-t border-gray-200">
                                     <span className="font-semibold text-gray-900">
                                       {formatCurrency(deal.value)}
@@ -774,10 +789,10 @@ export default function Deals() {
                   <option value="abandoned">Abandoned</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {dealFormData.status === 'won' && '✅ This deal will count towards revenue'}
-                  {dealFormData.status === 'lost' && '❌ This deal will be marked as lost'}
-                  {dealFormData.status === 'open' && '🔄 This deal is active in the pipeline'}
-                  {dealFormData.status === 'abandoned' && '⏸️ This deal has been abandoned'}
+                  {dealFormData.status === 'won' && 'This deal will count towards revenue'}
+                  {dealFormData.status === 'lost' && 'This deal will be marked as lost'}
+                  {dealFormData.status === 'open' && 'This deal is active in the pipeline'}
+                  {dealFormData.status === 'abandoned' && 'This deal has been abandoned'}
                 </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -860,10 +875,10 @@ export default function Deals() {
                   <option value="abandoned">Abandoned</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  {dealFormData.status === 'won' && '✅ This deal will count towards revenue'}
-                  {dealFormData.status === 'lost' && '❌ This deal will be marked as lost'}
-                  {dealFormData.status === 'open' && '🔄 This deal is active in the pipeline'}
-                  {dealFormData.status === 'abandoned' && '⏸️ This deal has been abandoned'}
+                  {dealFormData.status === 'won' && 'This deal will count towards revenue'}
+                  {dealFormData.status === 'lost' && 'This deal will be marked as lost'}
+                  {dealFormData.status === 'open' && 'This deal is active in the pipeline'}
+                  {dealFormData.status === 'abandoned' && 'This deal has been abandoned'}
                 </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
