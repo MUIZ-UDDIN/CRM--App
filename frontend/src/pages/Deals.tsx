@@ -195,6 +195,7 @@ export default function Deals() {
       company: deal.company || '',
       contact: deal.contact || '',
       stage_id: deal.stage_id,
+      expectedCloseDate: ''
     });
     setShowEditModal(true);
   };
