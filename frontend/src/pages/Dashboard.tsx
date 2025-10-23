@@ -305,6 +305,15 @@ export default function Dashboard() {
     e.preventDefault();
     
     try {
+      // Validate that title and company don't contain HTML/scripts
+      const titleSanitized = sanitizeInput(dealFormData.title);
+      const companySanitized = sanitizeInput(dealFormData.company);
+      
+      if (dealFormData.title !== titleSanitized || dealFormData.company !== companySanitized) {
+        toast.error('Cannot create deal: HTML tags and scripts are not allowed in title or company fields');
+        return;
+      }
+
       // Validate positive number
       const dealValue = parseFloat(dealFormData.value);
       if (dealValue <= 0 || isNaN(dealValue)) {
@@ -533,8 +542,8 @@ export default function Dashboard() {
 
       {/* Add Deal Modal */}
       {showAddDealModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" onClick={handleCloseAddDealModal}>
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Deal</h3>
               <button onClick={handleCloseAddDealModal} className="text-gray-400 hover:text-gray-600 transition-colors duration-200">
