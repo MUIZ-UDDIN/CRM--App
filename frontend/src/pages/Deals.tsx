@@ -114,14 +114,10 @@ export default function Deals() {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         
-        console.log('Fetching pipelines from:', `${API_BASE_URL}/api/pipelines`);
-        
         // First, fetch all pipelines to get the default pipeline UUID
         const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
-        
-        console.log('Pipelines response status:', pipelinesResponse.status);
         
         if (!pipelinesResponse.ok) {
           console.error('Failed to fetch pipelines:', pipelinesResponse.status, pipelinesResponse.statusText);
@@ -129,7 +125,6 @@ export default function Deals() {
         }
         
         const pipelines = await pipelinesResponse.json();
-        console.log('Fetched pipelines:', pipelines);
         
         if (pipelines.length === 0) {
           console.error('No pipelines found in database');
@@ -138,7 +133,6 @@ export default function Deals() {
         
         // Use the first pipeline's UUID
         const defaultPipelineId = pipelines[0].id;
-        console.log('Using pipeline ID:', defaultPipelineId);
         setPipelineId(defaultPipelineId); // Store for later use
         
         // Fetch stages from the default pipeline using its UUID
@@ -146,11 +140,8 @@ export default function Deals() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        console.log('Stages response status:', stagesResponse.status);
-        
         if (stagesResponse.ok) {
           const stages = await stagesResponse.json();
-          console.log('Fetched stages:', stages);
           
           if (stages.length === 0) {
             console.warn('No stages found in pipeline. Please create stages in Pipeline Settings.');
@@ -183,12 +174,7 @@ export default function Deals() {
               color: colorScheme.color,
               textColor: colorScheme.textColor
             });
-            
-            console.log(`Mapped stage: "${stage.name}" -> "${normalizedName}" -> ${stage.id}`);
           });
-          
-          console.log('Final stage mapping:', mapping);
-          console.log('Dynamic stages:', dynamicStagesArray);
           
           setStageMapping(mapping);
           setDynamicStages(dynamicStagesArray);
@@ -275,7 +261,6 @@ export default function Deals() {
         // If not found, check if stage_id is already a normalized name (old format)
         if (!normalizedStageName && grouped[deal.stage_id]) {
           normalizedStageName = deal.stage_id;
-          console.log(`Deal "${deal.title}" has old format stage_id: "${deal.stage_id}"`);
         }
         
         if (normalizedStageName && grouped[normalizedStageName]) {
@@ -287,7 +272,6 @@ export default function Deals() {
         }
       });
       
-      console.log('Grouped deals:', grouped);
       setDeals(grouped);
     } catch (error) {
       console.error('Error fetching deals:', error);
@@ -386,9 +370,6 @@ export default function Deals() {
       // Convert stage name to UUID
       const stageUUID = stageMapping[dealFormData.stage_id];
       if (!stageUUID) {
-        console.error('Stage mapping:', stageMapping);
-        console.error('Selected stage_id:', dealFormData.stage_id);
-        console.error('Available stages:', Object.keys(stageMapping));
         toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
         return;
       }
