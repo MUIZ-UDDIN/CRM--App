@@ -4,6 +4,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import * as dealsService from '../services/dealsService';
 import ActionButtons from '../components/common/ActionButtons';
+import SearchableContactSelect from '../components/common/SearchableContactSelect';
 import { 
   PlusIcon, 
   XMarkIcon,
@@ -37,6 +38,8 @@ export default function Deals() {
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -172,18 +175,40 @@ export default function Deals() {
     }
   };
 
+  // Sanitize input to prevent script injection
+  const sanitizeInput = (input: string): string => {
+    // Remove HTML tags and script content
+    return input
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .trim();
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Enforce 255 character limit for text fields
-    if ((name === 'title' || name === 'company') && value.length > 255) {
-      toast.error(`${name === 'title' ? 'Deal Title' : 'Company'} cannot exceed 255 characters`);
-      return;
+    // Sanitize text inputs
+    let sanitizedValue = value;
+    if (name === 'title' || name === 'company') {
+      sanitizedValue = sanitizeInput(value);
+      
+      // Enforce 255 character limit for text fields
+      if (sanitizedValue.length > 255) {
+        toast.error(`${name === 'title' ? 'Deal Title' : 'Company'} cannot exceed 255 characters`);
+        return;
+      }
+      
+      // Check if sanitization removed content (potential script injection attempt)
+      if (value !== sanitizedValue && value.length > 0) {
+        toast.error('Invalid characters detected. HTML and scripts are not allowed.');
+      }
     }
     
     setDealFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: sanitizedValue
     }));
   };
 
@@ -272,26 +297,39 @@ export default function Deals() {
       });
       toast.success('Deal updated');
       setShowEditModal(false);
+      resetDealForm();
+      setSelectedDeal(null);
       fetchDeals();
     } catch (error) {
       toast.error('Failed to update deal');
     }
   };
 
-  const handleDelete = async (deal: Deal) => {
-    if (!confirm(`Delete "${deal.title}"?`)) return;
+  const handleDelete = (deal: Deal) => {
+    setDealToDelete(deal);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!dealToDelete) return;
     try {
-      await dealsService.deleteDeal(deal.id);
-      toast.success('Deal deleted');
+      await dealsService.deleteDeal(dealToDelete.id);
+      toast.success('Deal deleted successfully');
+      setShowDeleteModal(false);
+      setDealToDelete(null);
       fetchDeals();
-    } catch (error: any) {
-      console.error('Delete error:', error);
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to delete deal');
+    } catch (error) {
+      toast.error('Failed to delete deal');
     }
   };
 
-  const getTotalValue = (stageDeals: Deal[]) => {
-    return stageDeals.reduce((total, deal) => total + deal.value, 0);
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setDealToDelete(null);
+  };
+
+  const getTotalValue = (deals: Deal[]) => {
+    return deals.reduce((sum, deal) => sum + deal.value, 0);
   };
 
   const formatCurrency = (value: number) => {
@@ -525,19 +563,12 @@ export default function Deals() {
                 />
                 <p className="text-xs text-gray-400 mt-1">{dealFormData.company.length}/255</p>
               </div>
-              <select
-                name="contact"
+              <SearchableContactSelect
+                contacts={contacts}
                 value={dealFormData.contact}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Contact Person</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name} ({contact.email})
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setDealFormData(prev => ({ ...prev, contact: value }))}
+                placeholder="Search and select contact..."
+              />
               <select
                 name="stage_id"
                 value={dealFormData.stage_id}
@@ -620,19 +651,12 @@ export default function Deals() {
                 onChange={handleInputChange}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <select
-                name="contact"
+              <SearchableContactSelect
+                contacts={contacts}
                 value={dealFormData.contact}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Contact Person</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name} ({contact.email})
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setDealFormData(prev => ({ ...prev, contact: value }))}
+                placeholder="Search and select contact..."
+              />
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseEditModal}
@@ -683,6 +707,42 @@ export default function Deals() {
                 <label className="text-sm font-medium text-gray-500">Stage</label>
                 <p className="text-gray-900 capitalize">{selectedDeal.stage_id.replace('-', ' ')}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && dealToDelete && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete <span className="font-semibold">"{dealToDelete.title}"</span>?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete
+              </button>
             </div>
           </div>
         </div>

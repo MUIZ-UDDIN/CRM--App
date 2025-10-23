@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import BackendStatus from '../components/common/BackendStatus';
+import SearchableContactSelect from '../components/common/SearchableContactSelect';
 import toast from 'react-hot-toast';
 import { 
   CurrencyDollarIcon, 
@@ -326,24 +327,49 @@ export default function Dashboard() {
       });
       setShowAddDealModal(false);
       toast.success('Deal created successfully!');
+      
+      // Redirect to deals page
+      navigate('/deals');
     } catch (error) {
       console.error('Error creating deal:', error);
       toast.error('Failed to create deal');
     }
   };
 
+  // Sanitize input to prevent script injection
+  const sanitizeInput = (input: string): string => {
+    // Remove HTML tags and script content
+    return input
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/javascript:/gi, '')
+      .replace(/on\w+\s*=/gi, '')
+      .trim();
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Enforce 255 character limit for text fields
-    if ((name === 'title' || name === 'company') && value.length > 255) {
-      toast.error(`${name === 'title' ? 'Deal Title' : 'Company'} cannot exceed 255 characters`);
-      return;
+    // Sanitize text inputs
+    let sanitizedValue = value;
+    if (name === 'title' || name === 'company') {
+      sanitizedValue = sanitizeInput(value);
+      
+      // Enforce 255 character limit for text fields
+      if (sanitizedValue.length > 255) {
+        toast.error(`${name === 'title' ? 'Deal Title' : 'Company'} cannot exceed 255 characters`);
+        return;
+      }
+      
+      // Check if sanitization removed content (potential script injection attempt)
+      if (value !== sanitizedValue && value.length > 0) {
+        toast.error('Invalid characters detected. HTML and scripts are not allowed.');
+      }
     }
     
     setDealFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: sanitizedValue
     }));
   };
 
@@ -558,19 +584,12 @@ export default function Dashboard() {
                 />
                 <p className="text-xs text-gray-400 mt-1">{dealFormData.company.length}/255</p>
               </div>
-              <select
-                name="contact"
+              <SearchableContactSelect
+                contacts={contacts}
                 value={dealFormData.contact}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Contact Person</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name} ({contact.email})
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setDealFormData(prev => ({ ...prev, contact: value }))}
+                placeholder="Search and select contact..."
+              />
               <select
                 name="stage_id"
                 value={dealFormData.stage_id}
