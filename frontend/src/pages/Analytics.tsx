@@ -173,115 +173,107 @@ export default function Analytics() {
     color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
   })) || [];
 
-  const activityData = [
-    { day: 'Mon', calls: 24, emails: 45, meetings: 8 },
-    { day: 'Tue', calls: 28, emails: 52, meetings: 12 },
-    { day: 'Wed', calls: 32, emails: 48, meetings: 10 },
-    { day: 'Thu', calls: 26, emails: 55, meetings: 15 },
-    { day: 'Fri', calls: 30, emails: 50, meetings: 11 },
-  ];
+  // Activity data from API - show zeros if no data
+  const activityData = activityAnalytics?.activities_by_user?.length > 0 
+    ? activityAnalytics.activities_by_user.slice(0, 5).map((item: any) => ({
+        day: item.user_name || 'User',
+        calls: item.calls || 0,
+        emails: item.emails || 0,
+        meetings: item.meetings || 0
+      }))
+    : [];
 
-  const leadSourceData = [
-    { name: 'Website', value: 35, color: '#3B82F6' },
-    { name: 'Referral', value: 25, color: '#10B981' },
-    { name: 'LinkedIn', value: 20, color: '#0EA5E9' },
-    { name: 'Cold Email', value: 15, color: '#8B5CF6' },
-    { name: 'Other', value: 5, color: '#6B7280' },
-  ];
+  // Lead source data from API
+  const leadSourceData = contactAnalytics?.contacts_by_source?.map((item: any, index: number) => ({
+    name: item.source || 'Unknown',
+    value: item.count || 0,
+    color: ['#3B82F6', '#10B981', '#0EA5E9', '#8B5CF6', '#6B7280'][index % 5]
+  })) || [];
 
-  const conversionData = [
-    { stage: 'Lead', count: 100, rate: 100 },
-    { stage: 'Qualified', count: 75, rate: 75 },
-    { stage: 'Proposal', count: 50, rate: 50 },
-    { stage: 'Negotiation', count: 30, rate: 30 },
-    { stage: 'Won', count: 20, rate: 20 },
-  ];
+  // Conversion funnel from pipeline data
+  const conversionData = pipelineAnalytics?.stage_analytics?.map((stage: any, index: number, arr: any[]) => ({
+    stage: stage.stage_name,
+    count: stage.deal_count || 0,
+    rate: arr[0]?.deal_count ? Math.round((stage.deal_count / arr[0].deal_count) * 100) : 0
+  })) || [];
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
-  // Pipeline Analytics Data
-  const pipelineConversionData = [
-    { stage: 'Qualification', conversion: 75, avgDuration: 5, deals: 8 },
-    { stage: 'Proposal', conversion: 64, avgDuration: 7, deals: 5 },
-    { stage: 'Negotiation', conversion: 60, avgDuration: 10, deals: 3 },
-    { stage: 'Closed Won', conversion: 68, avgDuration: 3, deals: 12 },
-  ];
+  // Pipeline Analytics Data from API
+  const pipelineConversionData = pipelineAnalytics?.stage_analytics?.map((stage: any) => ({
+    stage: stage.stage_name,
+    conversion: stage.conversion_rate || 0,
+    avgDuration: stage.avg_duration || 0,
+    deals: stage.deal_count || 0
+  })) || [];
 
-  const dealsByOwnerData = [
-    { owner: 'John Doe', deals: 24, value: 125000 },
-    { owner: 'Jane Smith', deals: 18, value: 98000 },
-    { owner: 'Mike Johnson', deals: 15, value: 87000 },
-    { owner: 'Sarah Wilson', deals: 12, value: 65000 },
-  ];
+  // Deals by owner from API
+  const dealsByOwnerData = pipelineAnalytics?.deals_by_owner?.map((item: any) => ({
+    owner: item.owner_name || 'Unknown',
+    deals: item.deal_count || 0,
+    value: item.total_value || 0
+  })) || [];
 
-  // Activity Analytics Data
-  const activityCompletionData = [
-    { type: 'Calls', completed: 145, overdue: 12 },
-    { type: 'Meetings', completed: 89, overdue: 5 },
-    { type: 'Emails', completed: 234, overdue: 8 },
-    { type: 'Tasks', completed: 167, overdue: 15 },
-  ];
+  // Activity completion data from API
+  const activityCompletionData = activityAnalytics?.activity_distribution?.map((item: any) => ({
+    type: item.activity_type || 'Activity',
+    completed: item.completed || 0,
+    overdue: item.overdue || 0
+  })) || [];
 
-  const activityByUserData = [
-    { user: 'John Doe', calls: 45, meetings: 28, emails: 89, tasks: 56 },
-    { user: 'Jane Smith', calls: 38, meetings: 25, emails: 67, tasks: 42 },
-    { user: 'Mike Johnson', calls: 32, meetings: 18, emails: 45, tasks: 38 },
-    { user: 'Sarah Wilson', calls: 30, meetings: 18, emails: 33, tasks: 31 },
-  ];
+  // Activity by user from API
+  const activityByUserData = activityAnalytics?.activities_by_user?.map((item: any) => ({
+    user: item.user_name || 'Unknown',
+    calls: item.calls || 0,
+    meetings: item.meetings || 0,
+    emails: item.emails || 0,
+    tasks: item.tasks || 0
+  })) || [];
 
-  // Email & Call Analytics Data
-  const emailMetricsData = [
-    { metric: 'Sent', count: 1250 },
-    { metric: 'Opens', count: 875 },
-    { metric: 'Clicks', count: 342 },
-    { metric: 'Bounces', count: 23 },
-  ];
+  // Email metrics from API
+  const emailMetricsData = emailAnalytics?.email_summary ? [
+    { metric: 'Sent', count: emailAnalytics.email_summary.total_sent || 0 },
+    { metric: 'Opens', count: emailAnalytics.email_summary.total_opened || 0 },
+    { metric: 'Clicks', count: emailAnalytics.email_summary.total_clicked || 0 },
+    { metric: 'Bounces', count: emailAnalytics.email_summary.total_bounced || 0 },
+  ] : [];
 
-  const callMetricsData = [
-    { day: 'Mon', answered: 32, missed: 8, avgDuration: 12.5 },
-    { day: 'Tue', answered: 28, missed: 5, avgDuration: 14.2 },
-    { day: 'Wed', answered: 35, missed: 7, avgDuration: 11.8 },
-    { day: 'Thu', answered: 30, missed: 6, avgDuration: 13.5 },
-    { day: 'Fri', answered: 25, missed: 4, avgDuration: 10.9 },
-  ];
+  // Call metrics from API
+  const callMetricsData = callAnalytics?.daily_calls?.map((item: any) => ({
+    day: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' }),
+    answered: item.answered || 0,
+    missed: item.missed || 0,
+    avgDuration: item.avg_duration || 0
+  })) || [];
 
-  // Lead Analytics Data
-  const leadsByStatusData = [
-    { status: 'New', count: 45, color: '#3B82F6' },
-    { status: 'Contacted', count: 32, color: '#8B5CF6' },
-    { status: 'Qualified', count: 28, color: '#10B981' },
-    { status: 'Unqualified', count: 12, color: '#EF4444' },
-  ];
+  // Contact status data from API
+  const leadsByStatusData = contactAnalytics?.contacts_by_status?.map((item: any, index: number) => ({
+    status: item.status || 'Unknown',
+    count: item.count || 0,
+    color: ['#3B82F6', '#8B5CF6', '#10B981', '#EF4444'][index % 4]
+  })) || [];
 
-  const leadScoringData = [
-    { score: '0-20', count: 15 },
-    { score: '21-40', count: 28 },
-    { score: '41-60', count: 42 },
-    { score: '61-80', count: 35 },
-    { score: '81-100', count: 18 },
-  ];
+  // Lead scoring from API - placeholder for now
+  const leadScoringData = contactAnalytics?.lead_scoring || [];
 
-  const conversionBySourceData = [
-    { source: 'Website', leads: 120, converted: 24, rate: 20 },
-    { source: 'Referral', leads: 85, converted: 28, rate: 33 },
-    { source: 'LinkedIn', leads: 95, converted: 19, rate: 20 },
-    { source: 'Cold Email', leads: 150, converted: 18, rate: 12 },
-  ];
+  // Conversion by source from API
+  const conversionBySourceData = contactAnalytics?.conversion_by_source?.map((item: any) => ({
+    source: item.source || 'Unknown',
+    leads: item.total_leads || 0,
+    converted: item.converted || 0,
+    rate: item.conversion_rate || 0
+  })) || [];
 
-  // Document Analytics Data
-  const documentStatsData = [
-    { status: 'Signed', count: 45, color: '#10B981' },
-    { status: 'Pending', count: 23, color: '#F59E0B' },
-    { status: 'Viewed', count: 12, color: '#3B82F6' },
-    { status: 'Expired', count: 5, color: '#EF4444' },
-  ];
+  // Document stats from API
+  const documentStatsData = documentAnalytics?.document_summary ? [
+    { status: 'Signed', count: documentAnalytics.document_summary.signed || 0, color: '#10B981' },
+    { status: 'Pending', count: documentAnalytics.document_summary.pending || 0, color: '#F59E0B' },
+    { status: 'Viewed', count: documentAnalytics.document_summary.viewed || 0, color: '#3B82F6' },
+    { status: 'Expired', count: documentAnalytics.document_summary.expired || 0, color: '#EF4444' },
+  ] : [];
 
-  const timeToSignatureData = [
-    { range: '< 1 day', count: 18 },
-    { range: '1-3 days', count: 25 },
-    { range: '4-7 days', count: 15 },
-    { range: '> 7 days', count: 8 },
-  ];
+  // Time to signature from API
+  const timeToSignatureData = documentAnalytics?.time_to_signature || [];
 
   const handleViewPipeline = () => {
     setShowPipelineModal(true);
