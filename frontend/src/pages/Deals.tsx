@@ -90,12 +90,7 @@ export default function Deals() {
     }
   };
 
-  const [deals, setDeals] = useState<Record<string, Deal[]>>({
-    qualification: [],
-    proposal: [],
-    negotiation: [],
-    'closed-won': []
-  });
+  const [deals, setDeals] = useState<Record<string, Deal[]>>({});
   const [contacts, setContacts] = useState<any[]>([]);
   const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps hardcoded names to UUIDs
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
@@ -198,6 +193,13 @@ export default function Deals() {
           setStageMapping(mapping);
           setDynamicStages(dynamicStagesArray);
           
+          // Initialize deals state with dynamic stages
+          const initialDeals: Record<string, Deal[]> = {};
+          dynamicStagesArray.forEach(stage => {
+            initialDeals[stage.id] = [];
+          });
+          setDeals(initialDeals);
+          
           // Set default stage_id to the first stage if not already set
           if (dynamicStagesArray.length > 0 && dealFormData.stage_id === 'qualification') {
             setDealFormData(prev => ({ ...prev, stage_id: dynamicStagesArray[0].id }));
@@ -243,40 +245,46 @@ export default function Deals() {
   }, [searchParams]);
 
   useEffect(() => {
-    fetchDeals();
-  }, []);
+    // Only fetch deals after stage mapping is loaded
+    if (Object.keys(stageMapping).length > 0) {
+      fetchDeals();
+    }
+  }, [stageMapping]);
 
   const fetchDeals = async () => {
     setLoading(true);
     try {
       const data = await dealsService.getDeals();
       
-      // Group deals by stage
-      const grouped: Record<string, Deal[]> = {
-        qualification: [],
-        proposal: [],
-        negotiation: [],
-        'closed-won': []
-      };
+      // Create a reverse mapping from UUID to normalized name
+      const uuidToName: Record<string, string> = {};
+      Object.entries(stageMapping).forEach(([name, uuid]) => {
+        uuidToName[uuid] = name;
+      });
       
+      // Initialize grouped object with all stages
+      const grouped: Record<string, Deal[]> = {};
+      Object.keys(stageMapping).forEach(stageName => {
+        grouped[stageName] = [];
+      });
+      
+      // Group deals by stage (convert UUID to normalized name)
       data.forEach((deal: Deal) => {
-        if (grouped[deal.stage_id]) {
-          grouped[deal.stage_id].push(deal);
+        const normalizedStageName = uuidToName[deal.stage_id];
+        if (normalizedStageName && grouped[normalizedStageName]) {
+          grouped[normalizedStageName].push(deal);
         } else {
           console.warn('Unknown stage_id:', deal.stage_id, 'for deal:', deal.title);
+          console.warn('Available stages:', Object.keys(grouped));
+          console.warn('UUID to name mapping:', uuidToName);
         }
       });
       
+      console.log('Grouped deals:', grouped);
       setDeals(grouped);
     } catch (error) {
       console.error('Error fetching deals:', error);
       toast.error('Failed to load deals');
-      setDeals({
-        qualification: [],
-        proposal: [],
-        negotiation: [],
-        'closed-won': []
-      });
     } finally {
       setLoading(false);
     }
