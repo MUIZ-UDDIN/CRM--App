@@ -3,12 +3,20 @@ Quotes API endpoints
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime, date
 import uuid
+import io
+from reportlab.lib.pagesizes import letter
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+from reportlab.lib.enums import TA_CENTER, TA_RIGHT
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
@@ -302,3 +310,136 @@ async def delete_quote(
     db.commit()
     
     return {"message": "Quote deleted successfully"}
+
+
+@router.get("/{quote_id}/download")
+async def download_quote(
+    quote_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Download quote as PDF"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    quote = db.query(QuoteModel).filter(
+        and_(
+            QuoteModel.id == uuid.UUID(quote_id),
+            QuoteModel.owner_id == user_id,
+            QuoteModel.is_deleted == False
+        )
+    ).first()
+    
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Create PDF in memory
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=18)
+    
+    # Container for the 'Flowable' objects
+    elements = []
+    
+    # Define styles
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=colors.HexColor('#1e40af'),
+        spaceAfter=30,
+        alignment=TA_CENTER
+    )
+    
+    heading_style = ParagraphStyle(
+        'CustomHeading',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=colors.HexColor('#1e40af'),
+        spaceAfter=12,
+    )
+    
+    # Add title
+    elements.append(Paragraph("QUOTATION", title_style))
+    elements.append(Spacer(1, 12))
+    
+    # Quote details table
+    quote_data = [
+        ['Quote Number:', quote.quote_number],
+        ['Date:', quote.created_at.strftime('%B %d, %Y')],
+        ['Valid Until:', quote.valid_until.strftime('%B %d, %Y') if quote.valid_until else 'N/A'],
+        ['Status:', quote.status.value.upper()],
+    ]
+    
+    quote_table = Table(quote_data, colWidths=[2*inch, 4*inch])
+    quote_table.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 0), (1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#374151')),
+        ('TEXTCOLOR', (1, 0), (1, -1), colors.HexColor('#6b7280')),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    
+    elements.append(quote_table)
+    elements.append(Spacer(1, 20))
+    
+    # Quote title
+    elements.append(Paragraph(f"<b>{quote.title}</b>", heading_style))
+    elements.append(Spacer(1, 12))
+    
+    # Amount table
+    amount_data = [
+        ['Description', 'Amount'],
+        [quote.title, f'${quote.amount:,.2f}'],
+        ['', ''],
+        ['<b>Total Amount</b>', f'<b>${quote.amount:,.2f}</b>'],
+    ]
+    
+    amount_table = Table(amount_data, colWidths=[4*inch, 2*inch])
+    amount_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 12),
+        ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+        ('TOPPADDING', (0, 0), (-1, 0), 12),
+        ('BACKGROUND', (0, 1), (-1, -2), colors.white),
+        ('GRID', (0, 0), (-1, -2), 1, colors.HexColor('#e5e7eb')),
+        ('LINEABOVE', (0, -1), (-1, -1), 2, colors.HexColor('#1e40af')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, -1), (-1, -1), 12),
+        ('TOPPADDING', (0, -1), (-1, -1), 12),
+    ]))
+    
+    elements.append(amount_table)
+    elements.append(Spacer(1, 30))
+    
+    # Footer
+    footer_text = f"<i>Generated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}</i>"
+    footer_style = ParagraphStyle(
+        'Footer',
+        parent=styles['Normal'],
+        fontSize=8,
+        textColor=colors.HexColor('#9ca3af'),
+        alignment=TA_CENTER
+    )
+    elements.append(Paragraph(footer_text, footer_style))
+    
+    # Build PDF
+    doc.build(elements)
+    
+    # Get the value of the BytesIO buffer
+    buffer.seek(0)
+    
+    # Return as streaming response
+    return StreamingResponse(
+        buffer,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={quote.quote_number}.pdf"
+        }
+    )
