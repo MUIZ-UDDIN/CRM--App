@@ -33,6 +33,9 @@ export default function Analytics() {
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('sales');
   const [dateRange, setDateRange] = useState('last30days');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [selectedUser, setSelectedUser] = useState('all');
   const [selectedPipeline, setSelectedPipeline] = useState('all');
   const [users, setUsers] = useState<any[]>([]);
@@ -93,7 +96,7 @@ export default function Analytics() {
       // Build filters object, only including defined values
       const filters: any = {
         date_from: getDateFrom(dateRange),
-        date_to: new Date().toISOString().split('T')[0],
+        date_to: getDateTo(),
       };
       
       // Only add filter if it's not 'all' and is a valid number
@@ -134,6 +137,9 @@ export default function Analytics() {
   };
   
   const getDateFrom = (range: string) => {
+    if (range === 'custom' && customDateFrom) {
+      return customDateFrom;
+    }
     const today = new Date();
     switch (range) {
       case 'last7days':
@@ -146,6 +152,31 @@ export default function Analytics() {
         return `${today.getFullYear()}-01-01`;
       default:
         return new Date(today.setDate(today.getDate() - 30)).toISOString().split('T')[0];
+    }
+  };
+
+  const getDateTo = () => {
+    if (dateRange === 'custom' && customDateTo) {
+      return customDateTo;
+    }
+    return new Date().toISOString().split('T')[0];
+  };
+
+  const handleDateRangeChange = (value: string) => {
+    setDateRange(value);
+    if (value === 'custom') {
+      setShowCustomDatePicker(true);
+    } else {
+      setShowCustomDatePicker(false);
+    }
+  };
+
+  const applyCustomDateRange = () => {
+    if (customDateFrom && customDateTo) {
+      setShowCustomDatePicker(false);
+      fetchAllAnalytics();
+    } else {
+      toast.error('Please select both start and end dates');
     }
   };
 
@@ -384,7 +415,7 @@ export default function Analytics() {
                 <CalendarIcon className="h-5 w-5 text-gray-400" />
                 <select
                   value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value)}
+                  onChange={(e) => handleDateRangeChange(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
                 >
                   <option value="last7days">Last 7 days</option>
@@ -393,6 +424,47 @@ export default function Analytics() {
                   <option value="thisyear">This year</option>
                   <option value="custom">Custom Range</option>
                 </select>
+                {showCustomDatePicker && (
+                  <div className="absolute z-50 mt-2 p-4 bg-white border border-gray-300 rounded-lg shadow-lg">
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                        <input
+                          type="date"
+                          value={customDateFrom}
+                          onChange={(e) => setCustomDateFrom(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                        <input
+                          type="date"
+                          value={customDateTo}
+                          onChange={(e) => setCustomDateTo(e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={applyCustomDateRange}
+                          className="flex-1 px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 text-sm"
+                        >
+                          Apply
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowCustomDatePicker(false);
+                            setDateRange('last30days');
+                          }}
+                          className="flex-1 px-3 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 text-sm"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <select
@@ -606,198 +678,10 @@ export default function Analytics() {
                     innerRadius={60}
                     outerRadius={80}
                     fill="#8884d8"
-                    paddingAngle={5}
                     dataKey="value"
                     label
                   >
-                    {leadSourceData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Conversion Funnel */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Conversion Funnel</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={conversionData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis type="number" stroke="#6B7280" />
-                  <YAxis dataKey="stage" type="category" stroke="#6B7280" />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Pipeline Analytics - Conversion Rates & Duration */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Pipeline Conversion Rates</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={pipelineConversionData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="stage" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="conversion" fill="#10B981" name="Conversion %" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Avg Deal Duration by Stage</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={pipelineConversionData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="stage" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="avgDuration" fill="#3B82F6" name="Days" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Deals by Owner/Team */}
-        <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Deals by Owner</h3>
-          </div>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={dealsByOwnerData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="owner" stroke="#6B7280" />
-                <YAxis stroke="#6B7280" />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="deals" fill="#8B5CF6" name="Deals" />
-                <Bar dataKey="value" fill="#10B981" name="Value ($)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-
-        {/* Activity Analytics - Completed vs Overdue */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Activity Completion Status</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={activityCompletionData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="type" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="completed" fill="#10B981" name="Completed" />
-                  <Bar dataKey="overdue" fill="#EF4444" name="Overdue" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Activities by User</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={activityByUserData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="user" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="calls" fill="#10B981" name="Calls" />
-                  <Bar dataKey="meetings" fill="#3B82F6" name="Meetings" />
-                  <Bar dataKey="emails" fill="#8B5CF6" name="Emails" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Email & Call Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Email Metrics</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={emailMetricsData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="metric" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Bar dataKey="count" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Call Statistics</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={callMetricsData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="day" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="answered" fill="#10B981" name="Answered" />
-                  <Bar dataKey="missed" fill="#EF4444" name="Missed" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Lead Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Leads by Status</h3>
-            </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={leadsByStatusData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="count"
-                    label
-                  >
-                    {leadsByStatusData.map((entry, index) => (
+                    {leadSourceData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
