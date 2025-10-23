@@ -147,6 +147,7 @@ export default function Quotes() {
   };
 
   const handleEdit = (quote: Quote) => {
+    resetQuoteForm(); // Reset form first
     setSelectedQuote(quote);
     setQuoteForm({
       title: quote.title,
@@ -171,9 +172,33 @@ export default function Quotes() {
     }
   };
 
-  const handleDownload = (quote: Quote) => {
-    toast.success(`Downloading ${quote.quote_number}...`);
-    // Implement PDF download logic
+  const handleDownload = async (quote: Quote) => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${API_BASE_URL}/api/quotes/${quote.id}/download`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${quote.quote_number}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        toast.success('Quote downloaded successfully');
+      } else {
+        toast.error('Download feature not yet implemented on server');
+      }
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error('Download feature not yet implemented');
+    }
   };
 
   // Get today's date in YYYY-MM-DD format
@@ -182,10 +207,52 @@ export default function Quotes() {
     return today.toISOString().split('T')[0];
   };
 
+  // Check if input contains HTML tags or scripts
+  const containsHTMLOrScript = (input: string): boolean => {
+    const htmlPattern = /<[^>]*>/g;
+    const scriptPattern = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+    return htmlPattern.test(input) || scriptPattern.test(input);
+  };
+
+  // Get days until expiry or expired message
+  const getExpiryMessage = (validUntil: string) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const validDate = new Date(validUntil);
+    validDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = validDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) {
+      return { text: `Expired ${Math.abs(diffDays)} day${Math.abs(diffDays) !== 1 ? 's' : ''} ago`, color: 'text-red-600 bg-red-50' };
+    } else if (diffDays === 0) {
+      return { text: 'Expires today', color: 'text-orange-600 bg-orange-50' };
+    } else if (diffDays === 1) {
+      return { text: 'Expires tomorrow', color: 'text-yellow-600 bg-yellow-50' };
+    } else if (diffDays <= 7) {
+      return { text: `${diffDays} days left`, color: 'text-yellow-600 bg-yellow-50' };
+    } else {
+      return { text: `Valid until ${validDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`, color: 'text-green-600 bg-green-50' };
+    }
+  };
+
   const handleCreate = async () => {
     // Validate mandatory fields
     if (!quoteForm.title.trim()) {
       toast.error('Quote Title is required');
+      return;
+    }
+
+    // Check character limit
+    if (quoteForm.title.length > 255) {
+      toast.error('Quote Title cannot exceed 255 characters');
+      return;
+    }
+
+    // Check for HTML/script tags
+    if (containsHTMLOrScript(quoteForm.title)) {
+      toast.error('Quote Title cannot contain HTML or script tags');
       return;
     }
 
@@ -258,6 +325,18 @@ export default function Quotes() {
     // Validate mandatory fields
     if (!quoteForm.title.trim()) {
       toast.error('Quote Title is required');
+      return;
+    }
+
+    // Check character limit
+    if (quoteForm.title.length > 255) {
+      toast.error('Quote Title cannot exceed 255 characters');
+      return;
+    }
+
+    // Check for HTML/script tags
+    if (containsHTMLOrScript(quoteForm.title)) {
+      toast.error('Quote Title cannot contain HTML or script tags');
       return;
     }
 
@@ -473,6 +552,9 @@ export default function Quotes() {
                       <div>
                         <p className="text-xs text-gray-500">Valid Until</p>
                         <p className="text-sm font-medium text-gray-900">{formatDate(quote.valid_until)}</p>
+                        <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full mt-1 ${getExpiryMessage(quote.valid_until).color}`}>
+                          {getExpiryMessage(quote.valid_until).text}
+                        </span>
                       </div>
                     </div>
 
@@ -491,6 +573,16 @@ export default function Quotes() {
 
                   {/* Actions */}
                   <div className="flex lg:flex-col items-center gap-2 flex-shrink-0">
+                    {quote.status === 'draft' && (
+                      <div className="flex gap-2 mb-2">
+                        <button
+                          onClick={() => handleStatusChange(quote, 'sent')}
+                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    )}
                     {quote.status === 'sent' && (
                       <div className="flex gap-2 mb-2">
                         <button
@@ -548,10 +640,21 @@ export default function Quotes() {
                   type="text"
                   placeholder="Enter quote title"
                   value={quoteForm.title}
-                  onChange={(e) => setQuoteForm({...quoteForm, title: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (containsHTMLOrScript(value)) {
+                      toast.error('HTML or script tags are not allowed');
+                      return;
+                    }
+                    setQuoteForm({...quoteForm, title: value});
+                  }}
+                  maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  {quoteForm.title.length}/255 characters
+                </p>
               </div>
 
               <div>
@@ -637,32 +740,84 @@ export default function Quotes() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Quote Title"
-                value={quoteForm.title}
-                onChange={(e) => setQuoteForm({...quoteForm, title: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <input
-                type="number"
-                placeholder="Amount"
-                value={quoteForm.amount}
-                onChange={(e) => setQuoteForm({...quoteForm, amount: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={quoteForm.client_id}
-                onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Client</option>
-                {contacts.map((contact) => (
-                  <option key={contact.id} value={contact.id}>
-                    {contact.first_name} {contact.last_name} ({contact.email})
-                  </option>
-                ))}
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Quote Title <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter quote title"
+                  value={quoteForm.title}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (containsHTMLOrScript(value)) {
+                      toast.error('HTML or script tags are not allowed');
+                      return;
+                    }
+                    setQuoteForm({...quoteForm, title: value});
+                  }}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {quoteForm.title.length}/255 characters
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="Enter amount"
+                  value={quoteForm.amount}
+                  onChange={(e) => setQuoteForm({...quoteForm, amount: e.target.value})}
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                      e.preventDefault();
+                    }
+                  }}
+                  min="0.01"
+                  step="0.01"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Client
+                </label>
+                <select
+                  value={quoteForm.client_id}
+                  onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">Select Client (Optional)</option>
+                  {contacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.first_name} {contact.last_name} ({contact.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Valid Until <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={quoteForm.valid_until}
+                  onChange={(e) => setQuoteForm({...quoteForm, valid_until: e.target.value})}
+                  min={getTodayDate()}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                  onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
+                  required
+                />
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseEditModal}
