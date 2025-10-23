@@ -19,9 +19,11 @@ interface Deal {
   value: number;
   company?: string;
   contact?: string;
+  contact_id?: string;
   stage_id: string;
   pipeline_id: string;
   expected_close_date?: string;
+  status?: string;
 }
 
 interface Stage {
@@ -46,7 +48,8 @@ export default function Deals() {
     company: '',
     contact: '',
     stage_id: 'qualification',
-    expectedCloseDate: ''
+    expectedCloseDate: '',
+    status: 'open'
   });
 
   // Get today's date in YYYY-MM-DD format for min date
@@ -337,7 +340,8 @@ export default function Deals() {
       company: '',
       contact: '',
       stage_id: 'qualification',
-      expectedCloseDate: ''
+      expectedCloseDate: '',
+      status: 'open'
     });
   };
 
@@ -396,7 +400,8 @@ export default function Deals() {
         company: '',
         contact: '',
         stage_id: 'qualification',
-        expectedCloseDate: ''
+        expectedCloseDate: '',
+        status: 'open'
       });
       fetchDeals();
     } catch (error) {
@@ -415,9 +420,10 @@ export default function Deals() {
       title: deal.title,
       value: deal.value.toString(),
       company: deal.company || '',
-      contact: deal.contact || '',
+      contact: deal.contact_id || '',
       stage_id: deal.stage_id,
-      expectedCloseDate: ''
+      expectedCloseDate: deal.expected_close_date ? new Date(deal.expected_close_date).toISOString().split('T')[0] : '',
+      status: deal.status || 'open'
     });
     setShowEditModal(true);
   };
@@ -754,6 +760,26 @@ export default function Deals() {
                   </p>
                 )}
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Deal Status</label>
+                <select
+                  name="status"
+                  value={dealFormData.status}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="open">Open</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                  <option value="abandoned">Abandoned</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {dealFormData.status === 'won' && '✅ This deal will count towards revenue'}
+                  {dealFormData.status === 'lost' && '❌ This deal will be marked as lost'}
+                  {dealFormData.status === 'open' && '🔄 This deal is active in the pipeline'}
+                  {dealFormData.status === 'abandoned' && '⏸️ This deal has been abandoned'}
+                </p>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -820,6 +846,26 @@ export default function Deals() {
                 onChange={(value) => setDealFormData(prev => ({ ...prev, contact: value }))}
                 placeholder="Search and select contact..."
               />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Deal Status</label>
+                <select
+                  name="status"
+                  value={dealFormData.status}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="open">Open</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                  <option value="abandoned">Abandoned</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {dealFormData.status === 'won' && '✅ This deal will count towards revenue'}
+                  {dealFormData.status === 'lost' && '❌ This deal will be marked as lost'}
+                  {dealFormData.status === 'open' && '🔄 This deal is active in the pipeline'}
+                  {dealFormData.status === 'abandoned' && '⏸️ This deal has been abandoned'}
+                </p>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseEditModal}

@@ -547,7 +547,7 @@ export default function Analytics() {
                     fill="#8884d8"
                     dataKey="value"
                   >
-                    {pipelineData.map((entry, index) => (
+                    {pipelineData.map((entry: any, index: number) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
