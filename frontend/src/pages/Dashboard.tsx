@@ -134,18 +134,31 @@ export default function Dashboard() {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         
+        console.log('[Dashboard] Fetching pipelines from:', `${API_BASE_URL}/api/pipelines`);
+        
         // First, fetch all pipelines to get the default pipeline UUID
         const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
-        if (!pipelinesResponse.ok) return;
+        console.log('[Dashboard] Pipelines response status:', pipelinesResponse.status);
+        
+        if (!pipelinesResponse.ok) {
+          console.error('[Dashboard] Failed to fetch pipelines:', pipelinesResponse.status);
+          return;
+        }
         
         const pipelines = await pipelinesResponse.json();
-        if (pipelines.length === 0) return;
+        console.log('[Dashboard] Fetched pipelines:', pipelines);
+        
+        if (pipelines.length === 0) {
+          console.error('[Dashboard] No pipelines found');
+          return;
+        }
         
         // Use the first pipeline's UUID
         const defaultPipelineId = pipelines[0].id;
+        console.log('[Dashboard] Using pipeline ID:', defaultPipelineId);
         setPipelineId(defaultPipelineId);
         
         // Fetch stages from the default pipeline
@@ -153,17 +166,25 @@ export default function Dashboard() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
+        console.log('[Dashboard] Stages response status:', stagesResponse.status);
+        
         if (stagesResponse.ok) {
           const stages = await stagesResponse.json();
+          console.log('[Dashboard] Fetched stages:', stages);
+          
           const mapping: Record<string, string> = {};
           stages.forEach((stage: any) => {
             const normalizedName = stage.name.toLowerCase().replace(/\s+/g, '-');
             mapping[normalizedName] = stage.id;
+            console.log(`[Dashboard] Mapped: "${stage.name}" -> "${normalizedName}" -> ${stage.id}`);
           });
+          console.log('[Dashboard] Final stage mapping:', mapping);
           setStageMapping(mapping);
+        } else {
+          console.error('[Dashboard] Failed to fetch stages:', stagesResponse.status);
         }
       } catch (error) {
-        console.error('Error fetching stages:', error);
+        console.error('[Dashboard] Error fetching stages:', error);
       }
     };
     fetchStages();

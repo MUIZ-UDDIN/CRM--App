@@ -114,24 +114,31 @@ export default function Deals() {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         
+        console.log('Fetching pipelines from:', `${API_BASE_URL}/api/pipelines`);
+        
         // First, fetch all pipelines to get the default pipeline UUID
         const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
+        console.log('Pipelines response status:', pipelinesResponse.status);
+        
         if (!pipelinesResponse.ok) {
-          console.error('Failed to fetch pipelines');
+          console.error('Failed to fetch pipelines:', pipelinesResponse.status, pipelinesResponse.statusText);
           return;
         }
         
         const pipelines = await pipelinesResponse.json();
+        console.log('Fetched pipelines:', pipelines);
+        
         if (pipelines.length === 0) {
-          console.error('No pipelines found');
+          console.error('No pipelines found in database');
           return;
         }
         
         // Use the first pipeline's UUID
         const defaultPipelineId = pipelines[0].id;
+        console.log('Using pipeline ID:', defaultPipelineId);
         setPipelineId(defaultPipelineId); // Store for later use
         
         // Fetch stages from the default pipeline using its UUID
@@ -139,16 +146,24 @@ export default function Deals() {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
+        console.log('Stages response status:', stagesResponse.status);
+        
         if (stagesResponse.ok) {
           const stages = await stagesResponse.json();
+          console.log('Fetched stages:', stages);
+          
           // Create mapping from stage names to UUIDs
           const mapping: Record<string, string> = {};
           stages.forEach((stage: any) => {
             // Map based on stage name (case-insensitive)
             const normalizedName = stage.name.toLowerCase().replace(/\s+/g, '-');
             mapping[normalizedName] = stage.id;
+            console.log(`Mapped stage: "${stage.name}" -> "${normalizedName}" -> ${stage.id}`);
           });
+          console.log('Final stage mapping:', mapping);
           setStageMapping(mapping);
+        } else {
+          console.error('Failed to fetch stages:', stagesResponse.status, stagesResponse.statusText);
         }
       } catch (error) {
         console.error('Error fetching stages:', error);
