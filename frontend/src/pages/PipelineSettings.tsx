@@ -127,8 +127,20 @@ export default function PipelineSettings() {
   };
 
   const handleAddStage = async () => {
+    // Validate stage name
     if (!newStageName.trim()) {
-      toast.error('Please enter a stage name');
+      toast.error('Stage Name is required');
+      return;
+    }
+    
+    // Validate probability
+    if (newStageProbability === null || newStageProbability === undefined || isNaN(newStageProbability)) {
+      toast.error('Win Probability is required');
+      return;
+    }
+
+    if (newStageProbability < 0 || newStageProbability > 100) {
+      toast.error('Win Probability must be between 0% to 100%');
       return;
     }
     
@@ -147,17 +159,34 @@ export default function PipelineSettings() {
       });
       toast.success('Stage added successfully');
       setShowAddStageModal(false);
-      setNewStageName('');
-      setNewStageProbability(50);
+      resetStageForm();
       fetchPipelineStages(selectedPipeline);
     } catch (error: any) {
       console.error('Add stage error:', error);
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to add stage');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to add stage';
+      toast.error(errorMessage);
     }
   };
 
   const handleEditStage = async () => {
     if (!editingStage || !currentPipeline) return;
+
+    // Validate stage name
+    if (!editingStage.name.trim()) {
+      toast.error('Stage Name is required');
+      return;
+    }
+
+    // Validate probability
+    if (editingStage.probability === null || editingStage.probability === undefined || isNaN(editingStage.probability)) {
+      toast.error('Win Probability is required');
+      return;
+    }
+
+    if (editingStage.probability < 0 || editingStage.probability > 100) {
+      toast.error('Win Probability must be between 0% to 100%');
+      return;
+    }
 
     try {
       await pipelinesService.updateStage(editingStage.id, {
@@ -170,8 +199,9 @@ export default function PipelineSettings() {
       setShowEditStageModal(false);
       setEditingStage(null);
       fetchPipelineStages(selectedPipeline);
-    } catch (error) {
-      toast.error('Failed to update stage');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update stage';
+      toast.error(errorMessage);
     }
   };
 
@@ -339,7 +369,7 @@ export default function PipelineSettings() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Stage Name
+                  Stage Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -347,20 +377,33 @@ export default function PipelineSettings() {
                   onChange={(e) => setNewStageName(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   placeholder="e.g., Demo Scheduled"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Win Probability (%)
+                  Win Probability (%) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   max="100"
                   value={newStageProbability}
-                  onChange={(e) => setNewStageProbability(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (e.target.value === '' || (value >= 0 && value <= 100)) {
+                      setNewStageProbability(value || 0);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="0-100"
+                  required
                 />
               </div>
 
@@ -390,7 +433,7 @@ export default function PipelineSettings() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Stage</h3>
               <button
-                onClick={() => setShowEditStageModal(false)}
+                onClick={handleCloseEditStageModal}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <XMarkIcon className="h-5 w-5" />
@@ -400,33 +443,46 @@ export default function PipelineSettings() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Stage Name
+                  Stage Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={editingStage.name}
                   onChange={(e) => setEditingStage({ ...editingStage, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Win Probability (%)
+                  Win Probability (%) <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
                   min="0"
                   max="100"
                   value={editingStage.probability}
-                  onChange={(e) => setEditingStage({ ...editingStage, probability: parseInt(e.target.value) })}
+                  onChange={(e) => {
+                    const value = parseInt(e.target.value);
+                    if (e.target.value === '' || (value >= 0 && value <= 100)) {
+                      setEditingStage({ ...editingStage, probability: value || 0 });
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === '-' || e.key === 'e' || e.key === 'E' || e.key === '+') {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="0-100"
+                  required
                 />
               </div>
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowEditStageModal(false)}
+                  onClick={handleCloseEditStageModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
