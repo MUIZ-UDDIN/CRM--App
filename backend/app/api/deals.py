@@ -198,7 +198,7 @@ def create_deal(
         db.rollback()
         print(f"Error creating deal: {e}")
         print(traceback.format_exc())
-        raise HTTPException(status_code=400, detail=f"Failed to create deal: {str(e)}")
+        raise HTTPException(status_code=400, detail="Failed to create deal. Please check your input and try again.")
 
 
 @router.get("/{deal_id}")

@@ -220,7 +220,8 @@ async def delete_own_account(
         return {"message": "Account permanently deleted"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete account: {str(e)}")
+        print(f"Error deleting account: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete account. Please try again.")
 
 
 @router.delete("/{user_id}")

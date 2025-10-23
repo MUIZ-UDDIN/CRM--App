@@ -145,7 +145,8 @@ async def upload_file(
         
         file_size = file_path.stat().st_size
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to save file: {str(e)}")
+        print(f"Error saving file: {e}")
+        raise HTTPException(status_code=500, detail="Failed to save file. Please try again.")
     
     # Create database record
     # Handle folder_id - convert to UUID if valid, otherwise None

@@ -177,6 +177,13 @@ export default function Deals() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
+    
+    // Enforce 255 character limit for text fields
+    if ((name === 'title' || name === 'company') && value.length > 255) {
+      toast.error(`${name === 'title' ? 'Deal Title' : 'Company'} cannot exceed 255 characters`);
+      return;
+    }
+    
     setDealFormData(prev => ({
       ...prev,
       [name]: value
@@ -463,15 +470,19 @@ export default function Deals() {
               </button>
             </div>
             <form onSubmit={handleAddDeal} className="space-y-4">
-              <input
-                type="text"
-                name="title"
-                placeholder="Deal Title"
-                value={dealFormData.title}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="title"
+                  placeholder="Deal Title"
+                  value={dealFormData.title}
+                  onChange={handleInputChange}
+                  required
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-400 mt-1">{dealFormData.title.length}/255</p>
+              </div>
               <input
                 type="number"
                 name="value"
@@ -488,14 +499,18 @@ export default function Deals() {
                 step="0.01"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="text"
-                name="company"
-                placeholder="Company"
-                value={dealFormData.company}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  name="company"
+                  placeholder="Company"
+                  value={dealFormData.company}
+                  onChange={handleInputChange}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <p className="text-xs text-gray-400 mt-1">{dealFormData.company.length}/255</p>
+              </div>
               <select
                 name="contact"
                 value={dealFormData.contact}

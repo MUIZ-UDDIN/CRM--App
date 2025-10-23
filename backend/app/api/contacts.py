@@ -117,7 +117,8 @@ async def create_contact(
         return db_contact
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to create contact: {str(e)}")
+        print(f"Error creating contact: {e}")
+        raise HTTPException(status_code=500, detail="Failed to create contact. Please check your input and try again.")
 
 @router.get("/{contact_id}", response_model=Contact)
 async def get_contact(
@@ -178,7 +179,8 @@ async def update_contact(
         return contact
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to update contact: {str(e)}")
+        print(f"Error updating contact: {e}")
+        raise HTTPException(status_code=500, detail="Failed to update contact. Please check your input and try again.")
 
 @router.patch("/{contact_id}", response_model=Contact)
 async def patch_contact(
@@ -214,7 +216,8 @@ async def delete_contact(
         return {"message": "Contact deleted successfully"}
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"Failed to delete contact: {str(e)}")
+        print(f"Error deleting contact: {e}")
+        raise HTTPException(status_code=500, detail="Failed to delete contact. Please try again.")
 
 @router.get("/stats/summary")
 async def get_contacts_stats(
@@ -343,7 +346,8 @@ async def upload_csv_contacts(
         
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Failed to process CSV file: {str(e)}")
+        print(f"Error processing CSV file: {e}")
+        raise HTTPException(status_code=400, detail="Failed to process CSV file. Please check the file format and try again.")
 
 @router.post("/upload-excel")
 async def upload_excel_contacts(
@@ -445,6 +449,7 @@ async def upload_excel_contacts(
         
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=400, detail=f"Failed to process Excel file: {str(e)}")
+        print(f"Error processing Excel file: {e}")
+        raise HTTPException(status_code=400, detail="Failed to process Excel file. Please check the file format and try again.")
 
 
