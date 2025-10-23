@@ -175,7 +175,21 @@ export default function Deals() {
     }
   };
 
-  // Sanitize input to prevent script injection
+  // Check if input contains HTML tags or scripts
+  const containsHTMLOrScript = (input: string): boolean => {
+    // Check for any HTML tags, script tags, or event handlers
+    const htmlPattern = /<[^>]*>/g;
+    const scriptPattern = /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi;
+    const jsPattern = /javascript:/gi;
+    const eventPattern = /on\w+\s*=/gi;
+    
+    return htmlPattern.test(input) || 
+           scriptPattern.test(input) || 
+           jsPattern.test(input) || 
+           eventPattern.test(input);
+  };
+
+  // Sanitize input to prevent script injection (only used for display, not validation)
   const sanitizeInput = (input: string): string => {
     // Remove HTML tags and script content
     return input
@@ -189,26 +203,24 @@ export default function Deals() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Sanitize text inputs
-    let sanitizedValue = value;
+    // For text inputs, don't allow HTML at all
     if (name === 'title' || name === 'company') {
-      sanitizedValue = sanitizeInput(value);
-      
       // Enforce 255 character limit for text fields
-      if (sanitizedValue.length > 255) {
+      if (value.length > 255) {
         toast.error(`${name === 'title' ? 'Deal Title' : 'Company'} cannot exceed 255 characters`);
         return;
       }
       
-      // Check if sanitization removed content (potential script injection attempt)
-      if (value !== sanitizedValue && value.length > 0) {
-        toast.error('Invalid characters detected. HTML and scripts are not allowed.');
+      // Check if input contains HTML/scripts
+      if (containsHTMLOrScript(value)) {
+        toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+        return; // Don't update the state with invalid input
       }
     }
     
     setDealFormData(prev => ({
       ...prev,
-      [name]: sanitizedValue
+      [name]: value
     }));
   };
 
@@ -237,11 +249,8 @@ export default function Deals() {
     e.preventDefault();
     try {
       // Validate that title and company don't contain HTML/scripts
-      const titleSanitized = sanitizeInput(dealFormData.title);
-      const companySanitized = sanitizeInput(dealFormData.company);
-      
-      if (dealFormData.title !== titleSanitized || dealFormData.company !== companySanitized) {
-        toast.error('Cannot create deal: HTML tags and scripts are not allowed in title or company fields');
+      if (containsHTMLOrScript(dealFormData.title) || containsHTMLOrScript(dealFormData.company)) {
+        toast.error('Cannot create deal: HTML tags and scripts are not allowed. Please use plain text only.');
         return;
       }
 
@@ -299,11 +308,8 @@ export default function Deals() {
     if (!selectedDeal) return;
     try {
       // Validate that title and company don't contain HTML/scripts
-      const titleSanitized = sanitizeInput(dealFormData.title);
-      const companySanitized = sanitizeInput(dealFormData.company);
-      
-      if (dealFormData.title !== titleSanitized || dealFormData.company !== companySanitized) {
-        toast.error('Cannot update deal: HTML tags and scripts are not allowed in title or company fields');
+      if (containsHTMLOrScript(dealFormData.title) || containsHTMLOrScript(dealFormData.company)) {
+        toast.error('Cannot update deal: HTML tags and scripts are not allowed. Please use plain text only.');
         return;
       }
 
@@ -531,7 +537,12 @@ export default function Deals() {
 
       {/* Add Deal Modal */}
       {showAddDealModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" onClick={handleCloseAddModal}>
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          onClick={handleCloseAddModal}
+          onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
+          style={{ isolation: 'isolate' }}
+        >
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Deal</h3>
@@ -636,7 +647,12 @@ export default function Deals() {
 
       {/* Edit Deal Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" onClick={handleCloseEditModal}>
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          onClick={handleCloseEditModal}
+          onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
+          style={{ isolation: 'isolate' }}
+        >
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Deal</h3>
@@ -696,7 +712,12 @@ export default function Deals() {
 
       {/* View Deal Modal */}
       {showViewModal && selectedDeal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" onClick={() => setShowViewModal(false)}>
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          onClick={() => setShowViewModal(false)}
+          onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
+          style={{ isolation: 'isolate' }}
+        >
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Deal Details</h3>
@@ -732,7 +753,12 @@ export default function Deals() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && dealToDelete && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" onClick={cancelDelete}>
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4" 
+          onClick={cancelDelete}
+          onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
+          style={{ isolation: 'isolate' }}
+        >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Confirm Deletion</h3>
