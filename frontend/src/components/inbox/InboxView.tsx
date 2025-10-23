@@ -50,70 +50,8 @@ const InboxView: React.FC<InboxViewProps> = ({ activeTab }) => {
         const data = await response.json();
         setMessages(data);
       } else {
-        // Mock data for development
-        const mockData: Message[] = [
-          {
-            id: '1',
-            message_type: 'sms',
-            direction: 'inbound',
-            status: 'delivered',
-            from_address: '+1234567890',
-            to_address: '+0987654321',
-            body: 'Hi, I am interested in your services. Can you call me?',
-            sent_at: new Date().toISOString()
-          },
-          {
-            id: '2',
-            message_type: 'email',
-            direction: 'outbound',
-            status: 'sent',
-            from_address: 'you@sunstonecrm.com',
-            to_address: 'client@example.com',
-            subject: 'Follow up on your inquiry',
-            body: 'Thank you for your interest in our services. I will be calling you shortly.',
-            sent_at: new Date(Date.now() - 3600000).toISOString()
-          },
-          {
-            id: '3',
-            message_type: 'voice',
-            direction: 'outbound',
-            status: 'completed',
-            from_address: '+0987654321',
-            to_address: '+1234567890',
-            body: 'Outbound call to discuss services',
-            duration: 180, // 3 minutes
-            recording_url: 'https://api.twilio.com/recordings/RE12345678',
-            sent_at: new Date(Date.now() - 1800000).toISOString()
-          },
-          {
-            id: '4',
-            message_type: 'voice',
-            direction: 'inbound',
-            status: 'missed',
-            from_address: '+1555123456',
-            to_address: '+0987654321',
-            body: 'Missed call from potential client',
-            duration: 0,
-            sent_at: new Date(Date.now() - 7200000).toISOString()
-          },
-          {
-            id: '5',
-            message_type: 'sms',
-            direction: 'outbound',
-            status: 'delivered',
-            from_address: '+0987654321',
-            to_address: '+1555123456',
-            body: 'Hi! I saw you called. What can I help you with?',
-            sent_at: new Date(Date.now() - 6000000).toISOString()
-          }
-        ];
-        
-        // Filter messages based on activeTab
-        if (activeTab === 'all') {
-          setMessages(mockData);
-        } else {
-          setMessages(mockData.filter(msg => msg.message_type === activeTab));
-        }
+        // No messages available
+        setMessages([]);
       }
     } catch (error) {
       console.error('Error fetching messages:', error);

@@ -180,7 +180,6 @@ export default function Analytics() {
     }
   };
 
-  // Mock data for charts
   // Revenue data from API
   const revenueData = revenueAnalytics?.monthly_revenue?.map((item: any) => ({
     month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
@@ -796,23 +795,23 @@ export default function Analytics() {
             </div>
             
             <div className="space-y-6">
-              {/* Mock Pipeline Data */}
+              {/* Pipeline Data from API */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-blue-900">Qualification</h4>
-                  <p className="text-2xl font-bold text-blue-600">$45,000</p>
-                  <p className="text-sm text-blue-700">8 deals</p>
-                </div>
-                <div className="bg-yellow-50 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-yellow-900">Proposal</h4>
-                  <p className="text-2xl font-bold text-yellow-600">$78,000</p>
-                  <p className="text-sm text-yellow-700">5 deals</p>
-                </div>
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="text-sm font-medium text-green-900">Negotiation</h4>
-                  <p className="text-2xl font-bold text-green-600">$123,000</p>
-                  <p className="text-sm text-green-700">3 deals</p>
-                </div>
+                {pipelineAnalytics?.stage_analytics?.slice(0, 3).map((stage: any, index: number) => (
+                  <div key={stage.stage_name} className={`p-4 rounded-lg ${
+                    index === 0 ? 'bg-blue-50' : index === 1 ? 'bg-yellow-50' : 'bg-green-50'
+                  }`}>
+                    <h4 className={`text-sm font-medium ${
+                      index === 0 ? 'text-blue-900' : index === 1 ? 'text-yellow-900' : 'text-green-900'
+                    }`}>{stage.stage_name}</h4>
+                    <p className={`text-2xl font-bold ${
+                      index === 0 ? 'text-blue-600' : index === 1 ? 'text-yellow-600' : 'text-green-600'
+                    }`}>${(stage.total_value || 0).toLocaleString()}</p>
+                    <p className={`text-sm ${
+                      index === 0 ? 'text-blue-700' : index === 1 ? 'text-yellow-700' : 'text-green-700'
+                    }`}>{stage.deal_count || 0} deals</p>
+                  </div>
+                ))}
               </div>
               
               <div className="border-t pt-4">
@@ -820,19 +819,19 @@ export default function Analytics() {
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">87%</p>
+                      <p className="text-2xl font-bold text-gray-900">{dashboardKPIs?.kpis?.win_rate || 0}%</p>
                       <p className="text-sm text-gray-600">Win Rate</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">45</p>
+                      <p className="text-2xl font-bold text-gray-900">{pipelineAnalytics?.avg_deal_duration || 0}</p>
                       <p className="text-sm text-gray-600">Avg. Days</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">$246K</p>
+                      <p className="text-2xl font-bold text-gray-900">${((dashboardKPIs?.kpis?.total_pipeline || 0) / 1000).toFixed(0)}K</p>
                       <p className="text-sm text-gray-600">Total Pipeline</p>
                     </div>
                     <div>
-                      <p className="text-2xl font-bold text-gray-900">16</p>
+                      <p className="text-2xl font-bold text-gray-900">{dashboardKPIs?.kpis?.active_deals || 0}</p>
                       <p className="text-sm text-gray-600">Active Deals</p>
                     </div>
                   </div>

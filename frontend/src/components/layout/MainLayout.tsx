@@ -172,14 +172,8 @@ export default function MainLayout() {
 
   // unreadCount is now fetched from API
 
-  // Mock search suggestions data
-  const searchSuggestions = [
-    { id: 1, title: 'John Smith', type: 'Contact', description: 'TechCorp - CTO' },
-    { id: 2, title: 'Enterprise Software License', type: 'Deal', description: '$50,000 - TechCorp' },
-    { id: 3, title: 'Product Demo', type: 'Activity', description: 'Meeting with Sarah Johnson' },
-    { id: 4, title: 'TechCorp_Proposal_v2.pdf', type: 'File', description: 'Proposal document' },
-    { id: 5, title: 'Marketing Consulting', type: 'Quote', description: '$25,000 - Marketing Inc' },
-  ];
+  // Search suggestions will be fetched from API when implemented
+  const searchSuggestions: any[] = [];
 
   const filteredSuggestions = searchQuery.length > 1 
     ? searchSuggestions.filter(item => 
