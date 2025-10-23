@@ -181,30 +181,34 @@ export default function Analytics() {
   };
 
   // Revenue data from API
-  const revenueData = revenueAnalytics?.monthly_revenue?.map((item: any) => ({
-    month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
-    revenue: item.revenue,
-    deals: item.deal_count,
-    target: item.revenue * 1.1 // 10% above actual as target
-  })) || [
-    { month: 'Jan', revenue: 0, deals: 0, target: 0 },
-    { month: 'Feb', revenue: 0, deals: 0, target: 0 },
-    { month: 'Mar', revenue: 0, deals: 0, target: 0 },
-    { month: 'Apr', revenue: 0, deals: 0, target: 0 },
-    { month: 'May', revenue: 0, deals: 0, target: 0 },
-    { month: 'Jun', revenue: 0, deals: 0, target: 0 },
-  ];
+  const revenueData = Array.isArray(revenueAnalytics?.monthly_revenue)
+    ? revenueAnalytics.monthly_revenue.map((item: any) => ({
+        month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
+        revenue: item.revenue,
+        deals: item.deal_count,
+        target: item.revenue * 1.1 // 10% above actual as target
+      }))
+    : [
+        { month: 'Jan', revenue: 0, deals: 0, target: 0 },
+        { month: 'Feb', revenue: 0, deals: 0, target: 0 },
+        { month: 'Mar', revenue: 0, deals: 0, target: 0 },
+        { month: 'Apr', revenue: 0, deals: 0, target: 0 },
+        { month: 'May', revenue: 0, deals: 0, target: 0 },
+        { month: 'Jun', revenue: 0, deals: 0, target: 0 },
+      ];
 
   // Pipeline data from API
-  const pipelineData = pipelineAnalytics?.stage_analytics?.map((stage: any, index: number) => ({
-    name: stage.stage_name,
-    value: stage.total_value,
-    deals: stage.deal_count,
-    color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
-  })) || [];
+  const pipelineData = Array.isArray(pipelineAnalytics?.stage_analytics)
+    ? pipelineAnalytics.stage_analytics.map((stage: any, index: number) => ({
+        name: stage.stage_name,
+        value: stage.total_value,
+        deals: stage.deal_count,
+        color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
+      }))
+    : [];
 
   // Activity data from API - show zeros if no data
-  const activityData = activityAnalytics?.activities_by_user?.length > 0 
+  const activityData = Array.isArray(activityAnalytics?.activities_by_user) && activityAnalytics.activities_by_user.length > 0 
     ? activityAnalytics.activities_by_user.slice(0, 5).map((item: any) => ({
         day: item.user_name || 'User',
         calls: item.calls || 0,
@@ -214,51 +218,63 @@ export default function Analytics() {
     : [];
 
   // Lead source data from API
-  const leadSourceData = contactAnalytics?.contacts_by_source?.map((item: any, index: number) => ({
-    name: item.source || 'Unknown',
-    value: item.count || 0,
-    color: ['#3B82F6', '#10B981', '#0EA5E9', '#8B5CF6', '#6B7280'][index % 5]
-  })) || [];
+  const leadSourceData = Array.isArray(contactAnalytics?.contacts_by_source)
+    ? contactAnalytics.contacts_by_source.map((item: any, index: number) => ({
+        name: item.source || 'Unknown',
+        value: item.count || 0,
+        color: ['#3B82F6', '#10B981', '#0EA5E9', '#8B5CF6', '#6B7280'][index % 5]
+      }))
+    : [];
 
   // Conversion funnel from pipeline data
-  const conversionData = pipelineAnalytics?.stage_analytics?.map((stage: any, index: number, arr: any[]) => ({
-    stage: stage.stage_name,
-    count: stage.deal_count || 0,
-    rate: arr[0]?.deal_count ? Math.round((stage.deal_count / arr[0].deal_count) * 100) : 0
-  })) || [];
+  const conversionData = Array.isArray(pipelineAnalytics?.stage_analytics)
+    ? pipelineAnalytics.stage_analytics.map((stage: any, index: number, arr: any[]) => ({
+        stage: stage.stage_name,
+        count: stage.deal_count || 0,
+        rate: arr[0]?.deal_count ? Math.round((stage.deal_count / arr[0].deal_count) * 100) : 0
+      }))
+    : [];
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   // Pipeline Analytics Data from API
-  const pipelineConversionData = pipelineAnalytics?.stage_analytics?.map((stage: any) => ({
-    stage: stage.stage_name,
-    conversion: stage.conversion_rate || 0,
-    avgDuration: stage.avg_duration || 0,
-    deals: stage.deal_count || 0
-  })) || [];
+  const pipelineConversionData = Array.isArray(pipelineAnalytics?.stage_analytics)
+    ? pipelineAnalytics.stage_analytics.map((stage: any) => ({
+        stage: stage.stage_name,
+        conversion: stage.conversion_rate || 0,
+        avgDuration: stage.avg_duration || 0,
+        deals: stage.deal_count || 0
+      }))
+    : [];
 
   // Deals by owner from API
-  const dealsByOwnerData = pipelineAnalytics?.deals_by_owner?.map((item: any) => ({
-    owner: item.owner_name || 'Unknown',
-    deals: item.deal_count || 0,
-    value: item.total_value || 0
-  })) || [];
+  const dealsByOwnerData = Array.isArray(pipelineAnalytics?.deals_by_owner)
+    ? pipelineAnalytics.deals_by_owner.map((item: any) => ({
+        owner: item.owner_name || 'Unknown',
+        deals: item.deal_count || 0,
+        value: item.total_value || 0
+      }))
+    : [];
 
   // Activity completion data from API
-  const activityCompletionData = activityAnalytics?.activity_distribution?.map((item: any) => ({
-    type: item.activity_type || 'Activity',
-    completed: item.completed || 0,
-    overdue: item.overdue || 0
-  })) || [];
+  const activityCompletionData = Array.isArray(activityAnalytics?.activity_distribution)
+    ? activityAnalytics.activity_distribution.map((item: any) => ({
+        type: item.activity_type || 'Activity',
+        completed: item.completed || 0,
+        overdue: item.overdue || 0
+      }))
+    : [];
 
   // Activity by user from API
-  const activityByUserData = activityAnalytics?.activities_by_user?.map((item: any) => ({
-    user: item.user_name || 'Unknown',
-    calls: item.calls || 0,
-    meetings: item.meetings || 0,
-    emails: item.emails || 0,
-    tasks: item.tasks || 0
-  })) || [];
+  const activityByUserData = Array.isArray(activityAnalytics?.activities_by_user)
+    ? activityAnalytics.activities_by_user.map((item: any) => ({
+        user: item.user_name || 'Unknown',
+        calls: item.calls || 0,
+        meetings: item.meetings || 0,
+        emails: item.emails || 0,
+        tasks: item.tasks || 0
+      }))
+    : [];
 
   // Email metrics from API
   const emailMetricsData = emailAnalytics?.email_summary ? [
@@ -269,30 +285,36 @@ export default function Analytics() {
   ] : [];
 
   // Call metrics from API
-  const callMetricsData = callAnalytics?.daily_calls?.map((item: any) => ({
-    day: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' }),
-    answered: item.answered || 0,
-    missed: item.missed || 0,
-    avgDuration: item.avg_duration || 0
-  })) || [];
+  const callMetricsData = Array.isArray(callAnalytics?.daily_calls)
+    ? callAnalytics.daily_calls.map((item: any) => ({
+        day: new Date(item.date).toLocaleDateString('en-US', { weekday: 'short' }),
+        answered: item.answered || 0,
+        missed: item.missed || 0,
+        avgDuration: item.avg_duration || 0
+      }))
+    : [];
 
   // Contact status data from API
-  const leadsByStatusData = contactAnalytics?.contacts_by_status?.map((item: any, index: number) => ({
-    status: item.status || 'Unknown',
-    count: item.count || 0,
-    color: ['#3B82F6', '#8B5CF6', '#10B981', '#EF4444'][index % 4]
-  })) || [];
+  const leadsByStatusData = Array.isArray(contactAnalytics?.contacts_by_status)
+    ? contactAnalytics.contacts_by_status.map((item: any, index: number) => ({
+        status: item.status || 'Unknown',
+        count: item.count || 0,
+        color: ['#3B82F6', '#8B5CF6', '#10B981', '#EF4444'][index % 4]
+      }))
+    : [];
 
   // Lead scoring from API - placeholder for now
-  const leadScoringData = contactAnalytics?.lead_scoring || [];
+  const leadScoringData = Array.isArray(contactAnalytics?.lead_scoring) ? contactAnalytics.lead_scoring : [];
 
   // Conversion by source from API
-  const conversionBySourceData = contactAnalytics?.conversion_by_source?.map((item: any) => ({
-    source: item.source || 'Unknown',
-    leads: item.total_leads || 0,
-    converted: item.converted || 0,
-    rate: item.conversion_rate || 0
-  })) || [];
+  const conversionBySourceData = Array.isArray(contactAnalytics?.conversion_by_source)
+    ? contactAnalytics.conversion_by_source.map((item: any) => ({
+        source: item.source || 'Unknown',
+        leads: item.total_leads || 0,
+        converted: item.converted || 0,
+        rate: item.conversion_rate || 0
+      }))
+    : [];
 
   // Document stats from API
   const documentStatsData = documentAnalytics?.document_summary ? [
@@ -303,7 +325,7 @@ export default function Analytics() {
   ] : [];
 
   // Time to signature from API
-  const timeToSignatureData = documentAnalytics?.time_to_signature || [];
+  const timeToSignatureData = Array.isArray(documentAnalytics?.time_to_signature) ? documentAnalytics.time_to_signature : [];
 
   const handleViewPipeline = () => {
     setShowPipelineModal(true);
