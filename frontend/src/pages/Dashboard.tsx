@@ -46,7 +46,7 @@ export default function Dashboard() {
     value: '',
     company: '',
     contact: '',
-    stage: 'qualification',
+    stage_id: 'qualification',
     expectedCloseDate: ''
   });
 
@@ -279,13 +279,13 @@ export default function Dashboard() {
         value: parseFloat(dealFormData.value) || 0,
         company: dealFormData.company,
         contact: dealFormData.contact,
-        stage_id: dealFormData.stage,
+        stage_id: dealFormData.stage_id,
         pipeline_id: "1",
         expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined
       });
       
       setDealFormData({
-        title: '', value: '', company: '', contact: '', stage: 'qualification', expectedCloseDate: ''
+        title: '', value: '', company: '', contact: '', stage_id: 'qualification', expectedCloseDate: ''
       });
       setShowAddDealModal(false);
       toast.success('Deal created successfully!');
@@ -475,12 +475,12 @@ export default function Dashboard() {
                 <input type="text" name="contact" id="contact" value={dealFormData.contact} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500" placeholder="Enter contact person" />
               </div>
               <div>
-                <label htmlFor="stage" className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
-                <select name="stage" id="stage" value={dealFormData.stage} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                <label htmlFor="stage_id" className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+                <select name="stage_id" id="stage_id" value={dealFormData.stage_id} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
                   <option value="qualification">Qualification</option>
                   <option value="proposal">Proposal</option>
                   <option value="negotiation">Negotiation</option>
-                  <option value="closing">Closing</option>
+                  <option value="closed-won">Closed Won</option>
                 </select>
               </div>
               <div>
