@@ -437,7 +437,7 @@ export default function Deals() {
               >
                 <option value="">Select Contact Person</option>
                 {contacts.map((contact) => (
-                  <option key={contact.id} value={`${contact.first_name} ${contact.last_name}`}>
+                  <option key={contact.id} value={contact.id}>
                     {contact.first_name} {contact.last_name} ({contact.email})
                   </option>
                 ))}
@@ -515,7 +515,7 @@ export default function Deals() {
               >
                 <option value="">Select Contact Person</option>
                 {contacts.map((contact) => (
-                  <option key={contact.id} value={`${contact.first_name} ${contact.last_name}`}>
+                  <option key={contact.id} value={contact.id}>
                     {contact.first_name} {contact.last_name} ({contact.email})
                   </option>
                 ))}
