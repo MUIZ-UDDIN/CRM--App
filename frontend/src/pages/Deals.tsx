@@ -99,13 +99,18 @@ export default function Deals() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps hardcoded names to UUIDs
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
+  const [dynamicStages, setDynamicStages] = useState<Stage[]>([]); // Dynamic stages from backend
 
-  const stages: Stage[] = [
+  // Fallback hardcoded stages (used if backend stages not loaded)
+  const fallbackStages: Stage[] = [
     { id: 'qualification', name: 'Qualification', color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
     { id: 'proposal', name: 'Proposal', color: 'bg-yellow-50 border-yellow-200', textColor: 'text-yellow-700' },
     { id: 'negotiation', name: 'Negotiation', color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
     { id: 'closed-won', name: 'Closed Won', color: 'bg-green-50 border-green-200', textColor: 'text-green-700' }
   ];
+
+  // Use dynamic stages if available, otherwise use fallback
+  const stages = dynamicStages.length > 0 ? dynamicStages : fallbackStages;
 
   // Fetch pipeline stages to get UUID mapping
   useEffect(() => {
@@ -152,16 +157,51 @@ export default function Deals() {
           const stages = await stagesResponse.json();
           console.log('Fetched stages:', stages);
           
+          if (stages.length === 0) {
+            console.warn('No stages found in pipeline. Please create stages in Pipeline Settings.');
+            toast.error('No stages found. Please create stages in Pipeline Settings first.');
+            return;
+          }
+          
           // Create mapping from stage names to UUIDs
           const mapping: Record<string, string> = {};
-          stages.forEach((stage: any) => {
+          const dynamicStagesArray: Stage[] = [];
+          const colors = [
+            { color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
+            { color: 'bg-yellow-50 border-yellow-200', textColor: 'text-yellow-700' },
+            { color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
+            { color: 'bg-green-50 border-green-200', textColor: 'text-green-700' },
+            { color: 'bg-purple-50 border-purple-200', textColor: 'text-purple-700' },
+            { color: 'bg-pink-50 border-pink-200', textColor: 'text-pink-700' },
+          ];
+          
+          stages.forEach((stage: any, index: number) => {
             // Map based on stage name (case-insensitive)
             const normalizedName = stage.name.toLowerCase().replace(/\s+/g, '-');
             mapping[normalizedName] = stage.id;
+            
+            // Create dynamic stage object
+            const colorScheme = colors[index % colors.length];
+            dynamicStagesArray.push({
+              id: normalizedName,
+              name: stage.name,
+              color: colorScheme.color,
+              textColor: colorScheme.textColor
+            });
+            
             console.log(`Mapped stage: "${stage.name}" -> "${normalizedName}" -> ${stage.id}`);
           });
+          
           console.log('Final stage mapping:', mapping);
+          console.log('Dynamic stages:', dynamicStagesArray);
+          
           setStageMapping(mapping);
+          setDynamicStages(dynamicStagesArray);
+          
+          // Set default stage_id to the first stage if not already set
+          if (dynamicStagesArray.length > 0 && dealFormData.stage_id === 'qualification') {
+            setDealFormData(prev => ({ ...prev, stage_id: dynamicStagesArray[0].id }));
+          }
         } else {
           console.error('Failed to fetch stages:', stagesResponse.status, stagesResponse.statusText);
         }
