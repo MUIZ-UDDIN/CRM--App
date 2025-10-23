@@ -98,6 +98,7 @@ export default function Deals() {
   });
   const [contacts, setContacts] = useState<any[]>([]);
   const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps hardcoded names to UUIDs
+  const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
 
   const stages: Stage[] = [
     { id: 'qualification', name: 'Qualification', color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
@@ -131,6 +132,7 @@ export default function Deals() {
         
         // Use the first pipeline's UUID
         const defaultPipelineId = pipelines[0].id;
+        setPipelineId(defaultPipelineId); // Store for later use
         
         // Fetch stages from the default pipeline using its UUID
         const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
@@ -311,13 +313,25 @@ export default function Deals() {
         return;
       }
 
+      // Convert stage name to UUID
+      const stageUUID = stageMapping[dealFormData.stage_id];
+      if (!stageUUID) {
+        toast.error('Invalid stage selected');
+        return;
+      }
+
+      if (!pipelineId) {
+        toast.error('Pipeline not loaded. Please refresh the page.');
+        return;
+      }
+
       await dealsService.createDeal({
         title: dealFormData.title,
         value: dealValue,
         company: dealFormData.company,
         contact: dealFormData.contact,
-        stage_id: dealFormData.stage_id,
-        pipeline_id: '1', // Default pipeline
+        stage_id: stageUUID, // Use actual UUID
+        pipeline_id: pipelineId, // Use actual pipeline UUID
         expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined
       });
       toast.success('Deal created successfully!');

@@ -43,6 +43,8 @@ export default function Dashboard() {
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [contacts, setContacts] = useState<any[]>([]);
+  const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps stage names to UUIDs
+  const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -124,6 +126,48 @@ export default function Dashboard() {
       icon: CalendarIcon,
     },
   ];
+
+  // Fetch pipeline stages to get UUID mapping
+  useEffect(() => {
+    const fetchStages = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        
+        // First, fetch all pipelines to get the default pipeline UUID
+        const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!pipelinesResponse.ok) return;
+        
+        const pipelines = await pipelinesResponse.json();
+        if (pipelines.length === 0) return;
+        
+        // Use the first pipeline's UUID
+        const defaultPipelineId = pipelines[0].id;
+        setPipelineId(defaultPipelineId);
+        
+        // Fetch stages from the default pipeline
+        const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (stagesResponse.ok) {
+          const stages = await stagesResponse.json();
+          const mapping: Record<string, string> = {};
+          stages.forEach((stage: any) => {
+            const normalizedName = stage.name.toLowerCase().replace(/\s+/g, '-');
+            mapping[normalizedName] = stage.id;
+          });
+          setStageMapping(mapping);
+        }
+      } catch (error) {
+        console.error('Error fetching stages:', error);
+      }
+    };
+    fetchStages();
+  }, []);
 
   // Fetch activities, dashboard data, user info, and contacts on component mount
   useEffect(() => {
@@ -318,13 +362,25 @@ export default function Dashboard() {
         return;
       }
 
+      // Convert stage name to UUID
+      const stageUUID = stageMapping[dealFormData.stage_id];
+      if (!stageUUID) {
+        toast.error('Invalid stage selected');
+        return;
+      }
+
+      if (!pipelineId) {
+        toast.error('Pipeline not loaded. Please refresh the page.');
+        return;
+      }
+
       await dealsService.createDeal({
         title: dealFormData.title,
         value: dealValue || 0,
         company: dealFormData.company,
         contact: dealFormData.contact,
-        stage_id: dealFormData.stage_id,
-        pipeline_id: "1",
+        stage_id: stageUUID, // Use actual UUID
+        pipeline_id: pipelineId, // Use actual pipeline UUID
         expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined
       });
       
