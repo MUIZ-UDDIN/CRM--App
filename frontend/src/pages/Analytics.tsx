@@ -76,10 +76,13 @@ export default function Analytics() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Fetch analytics data from backend
+  // Fetch analytics data from backend - don't auto-fetch on custom date changes
   useEffect(() => {
-    fetchAllAnalytics();
-  }, [dateRange, selectedUser, selectedPipeline, customDateFrom, customDateTo]);
+    // Only fetch if not in custom date mode, or if custom dates are applied
+    if (dateRange !== 'custom' || (customDateFrom && customDateTo)) {
+      fetchAllAnalytics();
+    }
+  }, [dateRange, selectedUser, selectedPipeline]);
 
   const fetchUsersAndPipelines = async () => {
     try {
@@ -212,19 +215,20 @@ export default function Analytics() {
 
   const applyCustomDateRange = () => {
     if (customDateFrom && customDateTo) {
-      if (customDateFrom > customDateTo) {
+      if (new Date(customDateFrom) > new Date(customDateTo)) {
         toast.error('Start date cannot be after end date');
         return;
       }
       setShowCustomDatePicker(false);
-      // Data will be fetched automatically by useEffect
+      // Manually trigger fetch when Apply is clicked
+      fetchAllAnalytics();
     } else {
       toast.error('Please select both start and end dates');
     }
   };
 
-  // Revenue data from API
-  const revenueData = Array.isArray(revenueAnalytics?.monthly_revenue)
+  // Revenue data from API - always show chart even with no data
+  const revenueData = Array.isArray(revenueAnalytics?.monthly_revenue) && revenueAnalytics.monthly_revenue.length > 0
     ? revenueAnalytics.monthly_revenue.map((item: any) => ({
         month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
         revenue: item.revenue,
@@ -240,15 +244,15 @@ export default function Analytics() {
         { month: 'Jun', revenue: 0, deals: 0, target: 0 },
       ];
 
-  // Pipeline data from API
-  const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics)
+  // Pipeline data from API - show empty state if no data
+  const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0
     ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => ({
         name: stage.stage_name,
         value: stage.total_value,
         deals: stage.deal_count,
         color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
       }))
-    : [];
+    : [{ name: 'No Data', value: 0, deals: 0, color: '#E5E7EB' }];
 
   // Activity data from API - show zeros if no data
   const activityData = Array.isArray(activityAnalytics?.activities_by_user) && activityAnalytics.activities_by_user.length > 0 
@@ -258,16 +262,22 @@ export default function Analytics() {
         emails: item.emails || 0,
         meetings: item.meetings || 0
       }))
-    : [];
+    : [
+        { day: 'Mon', calls: 0, emails: 0, meetings: 0 },
+        { day: 'Tue', calls: 0, emails: 0, meetings: 0 },
+        { day: 'Wed', calls: 0, emails: 0, meetings: 0 },
+        { day: 'Thu', calls: 0, emails: 0, meetings: 0 },
+        { day: 'Fri', calls: 0, emails: 0, meetings: 0 },
+      ];
 
   // Lead source data from API
-  const leadSourceData = Array.isArray(contactAnalytics?.contacts_by_source)
+  const leadSourceData = Array.isArray(contactAnalytics?.contacts_by_source) && contactAnalytics.contacts_by_source.length > 0
     ? contactAnalytics.contacts_by_source.map((item: any, index: number) => ({
         name: item.source || 'Unknown',
         value: item.count || 0,
         color: ['#3B82F6', '#10B981', '#0EA5E9', '#8B5CF6', '#6B7280'][index % 5]
       }))
-    : [];
+    : [{ name: 'No Data', value: 0, color: '#E5E7EB' }];
 
   // Conversion funnel from pipeline data
   const conversionData = Array.isArray(pipelineAnalytics?.pipeline_analytics)
