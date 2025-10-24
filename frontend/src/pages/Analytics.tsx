@@ -40,6 +40,10 @@ export default function Analytics() {
   const [selectedPipeline, setSelectedPipeline] = useState('all');
   const [users, setUsers] = useState<any[]>([]);
   const [pipelines, setPipelines] = useState<any[]>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [pipelineSearch, setPipelineSearch] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showPipelineDropdown, setShowPipelineDropdown] = useState(false);
   
   // State for API data
   const [loading, setLoading] = useState(false);
@@ -55,6 +59,21 @@ export default function Analytics() {
   // Fetch users and pipelines on mount
   useEffect(() => {
     fetchUsersAndPipelines();
+  }, []);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-dropdown-container')) {
+        setShowUserDropdown(false);
+      }
+      if (!target.closest('.pipeline-dropdown-container')) {
+        setShowPipelineDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // Fetch analytics data from backend
@@ -362,9 +381,31 @@ export default function Analytics() {
     setShowReportModal(true);
   };
 
-  const handleGenerateReport = () => {
-    toast.success(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report generated successfully!`);
-    setShowReportModal(false);
+  const handleGenerateReport = async () => {
+    try {
+      // Build filters for the report
+      const reportFilters: any = {
+        date_from: getDateFrom(dateRange),
+        date_to: getDateTo(),
+        report_type: reportType
+      };
+      
+      if (selectedUser !== 'all') {
+        reportFilters.user_id = selectedUser;
+      }
+      if (selectedPipeline !== 'all') {
+        reportFilters.pipeline_id = selectedPipeline;
+      }
+      
+      // Call the export PDF endpoint
+      await handleExportToPDF();
+      
+      toast.success(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report generated successfully!`);
+      setShowReportModal(false);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      toast.error('Failed to generate report');
+    }
   };
 
   const handleExportData = (format: string) => {
@@ -522,31 +563,95 @@ export default function Analytics() {
                 )}
               </div>
               
-              <select
-                value={selectedUser}
-                onChange={(e) => setSelectedUser(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
-              >
-                <option value="all">All Users</option>
-                {users.map(user => (
-                  <option key={user.id} value={user.id}>
-                    {user.first_name} {user.last_name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative user-dropdown-container">
+                <input
+                  type="text"
+                  value={userSearch || (selectedUser === 'all' ? 'All Users' : users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || '')}
+                  onChange={(e) => {
+                    setUserSearch(e.target.value);
+                    setShowUserDropdown(true);
+                  }}
+                  onFocus={() => setShowUserDropdown(true)}
+                  placeholder="Search users..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
+                />
+                {showUserDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <button
+                      onClick={() => {
+                        setSelectedUser('all');
+                        setUserSearch('');
+                        setShowUserDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b"
+                    >
+                      All Users
+                    </button>
+                    {users
+                      .filter(user => 
+                        `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearch.toLowerCase())
+                      )
+                      .map(user => (
+                        <button
+                          key={user.id}
+                          onClick={() => {
+                            setSelectedUser(user.id);
+                            setUserSearch('');
+                            setShowUserDropdown(false);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
+                        >
+                          {user.first_name} {user.last_name}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
               
-              <select
-                value={selectedPipeline}
-                onChange={(e) => setSelectedPipeline(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
-              >
-                <option value="all">All Pipelines</option>
-                {pipelines.map(pipeline => (
-                  <option key={pipeline.id} value={pipeline.id}>
-                    {pipeline.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative pipeline-dropdown-container">
+                <input
+                  type="text"
+                  value={pipelineSearch || (selectedPipeline === 'all' ? 'All Pipelines' : pipelines.find(p => p.id === selectedPipeline)?.name || '')}
+                  onChange={(e) => {
+                    setPipelineSearch(e.target.value);
+                    setShowPipelineDropdown(true);
+                  }}
+                  onFocus={() => setShowPipelineDropdown(true)}
+                  placeholder="Search pipelines..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
+                />
+                {showPipelineDropdown && (
+                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    <button
+                      onClick={() => {
+                        setSelectedPipeline('all');
+                        setPipelineSearch('');
+                        setShowPipelineDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b"
+                    >
+                      All Pipelines
+                    </button>
+                    {pipelines
+                      .filter(pipeline => 
+                        pipeline.name.toLowerCase().includes(pipelineSearch.toLowerCase())
+                      )
+                      .map(pipeline => (
+                        <button
+                          key={pipeline.id}
+                          onClick={() => {
+                            setSelectedPipeline(pipeline.id);
+                            setPipelineSearch('');
+                            setShowPipelineDropdown(false);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
+                        >
+                          {pipeline.name}
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex flex-wrap gap-2">
               <button
