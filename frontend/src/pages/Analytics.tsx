@@ -150,12 +150,6 @@ export default function Analytics() {
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
       
-      // Debug: Check what data we're getting
-      console.log('📊 Chart Data Check:');
-      console.log('Revenue Data:', revenue?.monthly_revenue);
-      console.log('Pipeline Stages:', pipeline?.pipeline_analytics);
-      console.log('Activity Data:', activity?.activities_by_user);
-      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics data');

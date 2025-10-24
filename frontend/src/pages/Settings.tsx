@@ -115,7 +115,7 @@ export default function Settings() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Sales Rep' });
+  const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Regular User' });
   const [companyForm, setCompanyForm] = useState(() => {
     // Load company settings from localStorage on mount
     const saved = localStorage.getItem('companySettings');
@@ -164,15 +164,17 @@ export default function Settings() {
           password: 'ChangeMe123!',
           first_name: firstName,
           last_name: lastNameParts.join(' ') || 'User',
+          role: teamForm.role,  // Send the selected role
         }),
       });
       if (response.ok) {
-        toast.success('Team member added. Default password: ChangeMe123!');
+        toast.success(`Team member added with role: ${teamForm.role}. Default password: ChangeMe123!`);
         setShowAddTeamModal(false);
-        setTeamForm({ name: '', email: '', role: 'Sales Rep' });
+        setTeamForm({ name: '', email: '', role: 'Regular User' });  // Reset to Regular User default
         fetchTeamMembers();
       } else {
-        toast.error('Failed to add team member');
+        const errorData = await response.json();
+        toast.error(errorData.detail || 'Failed to add team member');
       }
     } catch (error) {
       console.error('Error adding team member:', error);
@@ -679,9 +681,11 @@ export default function Settings() {
                 onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
+                <option value="Super Admin">Super Admin</option>
                 <option value="Admin">Admin</option>
                 <option value="Sales Manager">Sales Manager</option>
                 <option value="Sales Rep">Sales Rep</option>
+                <option value="Regular User">Regular User</option>
                 <option value="Support">Support</option>
               </select>
               <div className="flex justify-end space-x-3 pt-4">
@@ -733,9 +737,11 @@ export default function Settings() {
                 onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               >
+                <option value="Super Admin">Super Admin</option>
                 <option value="Admin">Admin</option>
                 <option value="Sales Manager">Sales Manager</option>
                 <option value="Sales Rep">Sales Rep</option>
+                <option value="Regular User">Regular User</option>
                 <option value="Support">Support</option>
               </select>
               <div className="flex justify-end space-x-3 pt-4">

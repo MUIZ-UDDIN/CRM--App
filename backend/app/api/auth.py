@@ -35,6 +35,7 @@ class RegisterRequest(BaseModel):
     password: str
     first_name: str
     last_name: str
+    role: Optional[str] = "Regular User"  # Allow role to be specified, defaults to Regular User
 
 
 class LoginResponse(BaseModel):
@@ -109,8 +110,12 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
-    # Assign role based on email (first admin@sunstonecrm.com becomes Super Admin)
-    role = "Super Admin" if request.email == "admin@sunstonecrm.com" else "Regular User"
+    # Assign role - use provided role or default to Regular User
+    # Special case: admin@sunstonecrm.com always gets Super Admin
+    if request.email == "admin@sunstonecrm.com":
+        role = "Super Admin"
+    else:
+        role = request.role  # Use the role provided in the request
     
     # Create new user
     new_user = UserModel(
