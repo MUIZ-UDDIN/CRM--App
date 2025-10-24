@@ -4,10 +4,11 @@ Authentication API endpoints
 
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import HTTPBearer
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, validator
 from sqlalchemy.orm import Session
 from typing import Optional
 from datetime import datetime
+import re
 
 from ..core.security import (
     authenticate_user,
@@ -24,6 +25,17 @@ router = APIRouter()
 security = HTTPBearer()
 
 
+def sanitize_input(value: str) -> str:
+    """Remove script tags and sanitize input"""
+    if not value:
+        return value
+    # Remove script tags
+    value = re.sub(r'<script[^>]*>.*?</script>', '', value, flags=re.IGNORECASE | re.DOTALL)
+    # Remove other potentially dangerous tags
+    value = re.sub(r'<[^>]+>', '', value)
+    return value.strip()
+
+
 # Pydantic models
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -36,6 +48,19 @@ class RegisterRequest(BaseModel):
     first_name: str
     last_name: str
     role: Optional[str] = "Regular User"  # Allow role to be specified, defaults to Regular User
+    
+    @validator('first_name', 'last_name')
+    def validate_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Name cannot be empty')
+        if len(v) > 255:
+            raise ValueError('Name cannot exceed 255 characters')
+        # Check for script tags
+        if re.search(r'<script[^>]*>.*?</script>', v, re.IGNORECASE | re.DOTALL):
+            raise ValueError('Invalid characters in name')
+        if re.search(r'<[^>]+>', v):
+            raise ValueError('HTML tags are not allowed in name')
+        return sanitize_input(v)
 
 
 class LoginResponse(BaseModel):
@@ -96,18 +121,25 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/register", response_model=LoginResponse)
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register new user endpoint"""
-    # Validate password strength
-    validate_password_strength(request.password)
-    
-    # Check if user already exists (only active users)
-    existing_user = db.query(UserModel).filter(
-        UserModel.email == request.email,
-        UserModel.is_deleted == False
-    ).first()
-    if existing_user:
+    try:
+        # Validate password strength
+        validate_password_strength(request.password)
+        
+        # Check if user already exists (only active users)
+        existing_user = db.query(UserModel).filter(
+            UserModel.email == request.email,
+            UserModel.is_deleted == False
+        ).first()
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"A user with email '{request.email}' is already registered. Please use a different email address."
+            )
+    except ValueError as e:
+        # Catch validation errors from pydantic validators
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail=str(e)
         )
     
     # Assign role - use provided role or default to Regular User

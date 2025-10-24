@@ -152,6 +152,30 @@ export default function Settings() {
   ];
 
   const handleAddTeamMember = async () => {
+    // Validate inputs
+    if (!teamForm.name.trim()) {
+      toast.error('Please enter a name for the team member');
+      return;
+    }
+    if (!teamForm.email.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+    if (!teamForm.role) {
+      toast.error('Please select a role');
+      return;
+    }
+    if (teamForm.name.length > 255) {
+      toast.error('Name cannot exceed 255 characters');
+      return;
+    }
+    
+    // Check for script tags
+    if (/<script[^>]*>.*?<\/script>/gi.test(teamForm.name)) {
+      toast.error('Invalid characters in name. Script tags are not allowed.');
+      return;
+    }
+    
     try {
       const [firstName, ...lastNameParts] = teamForm.name.split(' ');
       const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
@@ -174,11 +198,22 @@ export default function Settings() {
         fetchTeamMembers();
       } else {
         const errorData = await response.json();
-        toast.error(errorData.detail || 'Failed to add team member');
+        // User-friendly error messages
+        if (errorData.detail?.includes('already registered')) {
+          toast.error(`A user with email '${teamForm.email}' is already registered. Please use a different email address.`);
+        } else if (errorData.detail?.includes('exceed 255')) {
+          toast.error('Name is too long. Please use a shorter name (max 255 characters).');
+        } else if (errorData.detail?.includes('Script') || errorData.detail?.includes('HTML')) {
+          toast.error('Invalid characters in name. Please remove any special characters or tags.');
+        } else if (errorData.detail?.includes('empty')) {
+          toast.error('Name cannot be empty. Please enter a valid name.');
+        } else {
+          toast.error(errorData.detail || 'Failed to add team member. Please check your inputs and try again.');
+        }
       }
     } catch (error) {
       console.error('Error adding team member:', error);
-      toast.error('Failed to add team member');
+      toast.error('Failed to add team member. Please check your connection and try again.');
     }
   };
 
@@ -188,13 +223,61 @@ export default function Settings() {
     setShowEditTeamModal(true);
   };
 
-  const handleUpdateTeamMember = () => {
+  const handleUpdateTeamMember = async () => {
     if (!selectedMember) return;
-    setTeamMembers(teamMembers.map(m => 
-      m.id === selectedMember.id ? { ...m, ...teamForm } : m
-    ));
-    setShowEditTeamModal(false);
-    toast.success('Team member updated');
+    
+    // Validate inputs
+    if (!teamForm.name.trim()) {
+      toast.error('Please enter a name');
+      return;
+    }
+    if (!teamForm.email.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+    if (teamForm.name.length > 255) {
+      toast.error('Name cannot exceed 255 characters');
+      return;
+    }
+    
+    // Check for script tags
+    if (/<script[^>]*>.*?<\/script>/gi.test(teamForm.name)) {
+      toast.error('Invalid characters in name. Script tags are not allowed.');
+      return;
+    }
+    
+    try {
+      const [firstName, ...lastNameParts] = teamForm.name.split(' ');
+      const response = await fetch(`${API_BASE_URL}/api/users/${selectedMember.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastNameParts.join(' ') || 'User',
+          email: teamForm.email,
+          role: teamForm.role,
+        }),
+      });
+      
+      if (response.ok) {
+        toast.success('Team member updated successfully');
+        setShowEditTeamModal(false);
+        fetchTeamMembers();
+      } else {
+        const errorData = await response.json();
+        if (errorData.detail?.includes('already')) {
+          toast.error(`Email '${teamForm.email}' is already in use by another user`);
+        } else {
+          toast.error(errorData.detail || 'Failed to update team member');
+        }
+      }
+    } catch (error) {
+      console.error('Error updating team member:', error);
+      toast.error('Failed to update team member. Please try again.');
+    }
   };
 
   const handleDeleteTeamMember = async (member: TeamMember) => {
@@ -662,32 +745,51 @@ export default function Settings() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Name"
-                value={teamForm.name}
-                onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={teamForm.email}
-                onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={teamForm.role}
-                onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="Super Admin">Super Admin</option>
-                <option value="Admin">Admin</option>
-                <option value="Sales Manager">Sales Manager</option>
-                <option value="Sales Rep">Sales Rep</option>
-                <option value="Regular User">Regular User</option>
-                <option value="Support">Support</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter full name"
+                  value={teamForm.name}
+                  onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={teamForm.email}
+                  onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={teamForm.role}
+                  onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                >
+                  <option value="Super Admin">Super Admin</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Sales Manager">Sales Manager</option>
+                  <option value="Sales Rep">Sales Rep</option>
+                  <option value="Regular User">Regular User</option>
+                  <option value="Support">Support</option>
+                </select>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowAddTeamModal(false)}
@@ -718,32 +820,51 @@ export default function Settings() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Name"
-                value={teamForm.name}
-                onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={teamForm.email}
-                onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={teamForm.role}
-                onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="Super Admin">Super Admin</option>
-                <option value="Admin">Admin</option>
-                <option value="Sales Manager">Sales Manager</option>
-                <option value="Sales Rep">Sales Rep</option>
-                <option value="Regular User">Regular User</option>
-                <option value="Support">Support</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter full name"
+                  value={teamForm.name}
+                  onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="email"
+                  placeholder="Enter email address"
+                  value={teamForm.email}
+                  onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={teamForm.role}
+                  onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                >
+                  <option value="Super Admin">Super Admin</option>
+                  <option value="Admin">Admin</option>
+                  <option value="Sales Manager">Sales Manager</option>
+                  <option value="Sales Rep">Sales Rep</option>
+                  <option value="Regular User">Regular User</option>
+                  <option value="Support">Support</option>
+                </select>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowEditTeamModal(false)}

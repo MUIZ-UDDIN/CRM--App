@@ -37,6 +37,8 @@ class UserResponse(BaseModel):
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+    role: Optional[str] = None
     phone: Optional[str] = None
     title: Optional[str] = None
     department: Optional[str] = None
@@ -222,6 +224,59 @@ async def delete_own_account(
         db.rollback()
         print(f"Error deleting account: {e}")
         raise HTTPException(status_code=500, detail="Failed to delete account. Please try again.")
+
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: str,
+    user_update: UserUpdate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update a user - Admin only"""
+    # Check if current user is admin
+    if current_user.get("role") not in ["Admin", "Super Admin"]:
+        raise HTTPException(status_code=403, detail="Only admins can update users")
+    
+    user = db.query(UserModel).filter(
+        UserModel.id == user_id,
+        UserModel.is_deleted == False
+    ).first()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Update user fields
+    if user_update.first_name is not None:
+        user.first_name = user_update.first_name
+    if user_update.last_name is not None:
+        user.last_name = user_update.last_name
+    if user_update.email is not None:
+        # Check if email is already taken by another user
+        existing = db.query(UserModel).filter(
+            UserModel.email == user_update.email,
+            UserModel.id != user_id,
+            UserModel.is_deleted == False
+        ).first()
+        if existing:
+            raise HTTPException(status_code=400, detail="Email already in use")
+        user.email = user_update.email
+    if user_update.role is not None:
+        user.role = user_update.role
+    
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(user)
+    
+    return UserResponse(
+        id=str(user.id),
+        email=user.email,
+        first_name=user.first_name,
+        last_name=user.last_name,
+        role=user.role,
+        team_id=str(user.team_id) if user.team_id else None,
+        is_active=user.is_active
+    )
 
 
 @router.delete("/{user_id}")
