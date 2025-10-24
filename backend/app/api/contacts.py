@@ -124,7 +124,14 @@ async def create_contact(
     except Exception as e:
         db.rollback()
         print(f"Error creating contact: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to create contact: {str(e)}")
+        
+        # Check if it's a duplicate email error
+        error_str = str(e)
+        if "duplicate key value violates unique constraint" in error_str and "ix_contacts_email" in error_str:
+            raise HTTPException(status_code=400, detail=f"A contact with email '{contact.email}' already exists")
+        
+        # Generic error
+        raise HTTPException(status_code=500, detail="Failed to create contact. Please check your input and try again.")
 
 @router.get("/{contact_id}", response_model=Contact)
 async def get_contact(

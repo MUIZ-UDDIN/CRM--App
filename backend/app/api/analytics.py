@@ -1019,10 +1019,10 @@ async def get_dashboard_analytics(
     prev_win_rate = (prev_won_deals / prev_total_closed * 100) if prev_total_closed > 0 else 0
     win_rate_change = win_rate - prev_win_rate
     
-    # Total Pipeline (all active deals - not won or lost)
+    # Total Pipeline (all open deals - not won or lost)
     pipeline_filters = [
         DealModel.is_deleted == False,
-        DealModel.status == DealStatus.ACTIVE
+        DealModel.status == DealStatus.OPEN
     ]
     if filter_user_id:
         pipeline_filters.append(DealModel.owner_id == filter_user_id)
@@ -1036,7 +1036,7 @@ async def get_dashboard_analytics(
     # Previous period pipeline
     prev_pipeline_filters = [
         DealModel.is_deleted == False,
-        DealModel.status == DealStatus.ACTIVE,
+        DealModel.status == DealStatus.OPEN,
         func.date(DealModel.created_at) >= prev_period_start,
         func.date(DealModel.created_at) <= prev_period_end
     ]
