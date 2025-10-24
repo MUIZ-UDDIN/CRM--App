@@ -241,6 +241,7 @@ export default function Settings() {
         toast.success(`Team member added with role: ${teamForm.role}. Default password: ChangeMe123!`);
         setShowAddTeamModal(false);
         setTeamForm({ name: '', email: '', role: 'Regular User' });  // Reset to Regular User default
+        setRoleSearchTerm('');  // Clear search term
         fetchTeamMembers();
       } else {
         try {
@@ -315,6 +316,7 @@ export default function Settings() {
       if (response.ok) {
         toast.success('Team member updated successfully');
         setShowEditTeamModal(false);
+        setRoleSearchTerm('');  // Clear search term
         fetchTeamMembers();
       } else {
         try {
@@ -808,7 +810,21 @@ export default function Settings() {
                   type="text"
                   placeholder="Enter full name"
                   value={teamForm.name}
-                  onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setTeamForm({...teamForm, name: value});
+                    } else {
+                      toast.error('HTML tags are not allowed in name');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed in name');
+                    }
+                  }}
                   maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
@@ -848,8 +864,8 @@ export default function Settings() {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search and select role..."
-                    value={roleSearchTerm || teamForm.role}
+                    placeholder={teamForm.role || "Search and select role..."}
+                    value={roleSearchTerm}
                     onChange={(e) => {
                       setRoleSearchTerm(e.target.value);
                       setShowRoleDropdown(true);
@@ -914,7 +930,11 @@ export default function Settings() {
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowAddTeamModal(false)}
+                  onClick={() => {
+                    setShowAddTeamModal(false);
+                    setTeamForm({ name: '', email: '', role: 'Regular User' });
+                    setRoleSearchTerm('');
+                  }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
@@ -950,7 +970,21 @@ export default function Settings() {
                   type="text"
                   placeholder="Enter full name"
                   value={teamForm.name}
-                  onChange={(e) => setTeamForm({...teamForm, name: e.target.value})}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setTeamForm({...teamForm, name: value});
+                    } else {
+                      toast.error('HTML tags are not allowed in name');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed in name');
+                    }
+                  }}
                   maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
@@ -990,8 +1024,8 @@ export default function Settings() {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search and select role..."
-                    value={roleSearchTerm || teamForm.role}
+                    placeholder={teamForm.role || "Search and select role..."}
+                    value={roleSearchTerm}
                     onChange={(e) => {
                       setRoleSearchTerm(e.target.value);
                       setShowRoleDropdown(true);
@@ -1056,7 +1090,10 @@ export default function Settings() {
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowEditTeamModal(false)}
+                  onClick={() => {
+                    setShowEditTeamModal(false);
+                    setRoleSearchTerm('');
+                  }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
