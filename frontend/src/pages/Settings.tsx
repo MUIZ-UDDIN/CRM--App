@@ -480,6 +480,24 @@ export default function Settings() {
       toast.error('Please fill in all Twilio credentials');
       return;
     }
+
+    // Validate Account SID format (starts with AC and 32 chars)
+    if (!twilioForm.accountSid.startsWith('AC') || twilioForm.accountSid.length !== 34) {
+      toast.error('Invalid Twilio Account SID format (should start with AC and be 34 characters)');
+      return;
+    }
+
+    // Validate Auth Token (32 characters)
+    if (twilioForm.authToken.length !== 32) {
+      toast.error('Invalid Twilio Auth Token format (should be 32 characters)');
+      return;
+    }
+
+    // Validate phone number format
+    if (!/^\+[1-9]\d{1,14}$/.test(twilioForm.phoneNumber)) {
+      toast.error('Invalid phone number format (should be in E.164 format, e.g., +1234567890)');
+      return;
+    }
     
     // Save to localStorage
     localStorage.setItem('twilioConfig', JSON.stringify(twilioForm));
@@ -498,6 +516,29 @@ export default function Settings() {
       toast.error('Please fill in all Gmail credentials');
       return;
     }
+
+    // Validate email format
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(gmailForm.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    // Validate Gmail email
+    if (!gmailForm.email.toLowerCase().endsWith('@gmail.com')) {
+      toast.error('Please enter a valid Gmail address');
+      return;
+    }
+
+    // Validate app password format (16 characters, no spaces)
+    if (gmailForm.appPassword.length !== 16) {
+      toast.error('Gmail App Password must be exactly 16 characters');
+      return;
+    }
+
+    if (/\s/.test(gmailForm.appPassword)) {
+      toast.error('Gmail App Password should not contain spaces');
+      return;
+    }
     
     // Save to localStorage
     localStorage.setItem('gmailConfig', JSON.stringify(gmailForm));
@@ -512,16 +553,45 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
-    if (!securityForm.currentPassword || !securityForm.newPassword) {
+    if (!securityForm.currentPassword || !securityForm.newPassword || !securityForm.confirmPassword) {
       toast.error('Please fill in all password fields');
       return;
     }
+
+    // Check if current and new password are the same
+    if (securityForm.currentPassword === securityForm.newPassword) {
+      toast.error('New password must be different from current password');
+      return;
+    }
+
     if (securityForm.newPassword !== securityForm.confirmPassword) {
       toast.error('New passwords do not match');
       return;
     }
+
+    // Comprehensive password validation
     if (securityForm.newPassword.length < 8) {
-      toast.error('Password must be at least 8 characters');
+      toast.error('Password must be at least 8 characters long');
+      return;
+    }
+    if (securityForm.newPassword.length > 128) {
+      toast.error('Password cannot exceed 128 characters');
+      return;
+    }
+    if (!/[A-Z]/.test(securityForm.newPassword)) {
+      toast.error('Password must contain at least one uppercase letter');
+      return;
+    }
+    if (!/[a-z]/.test(securityForm.newPassword)) {
+      toast.error('Password must contain at least one lowercase letter');
+      return;
+    }
+    if (!/[0-9]/.test(securityForm.newPassword)) {
+      toast.error('Password must contain at least one number');
+      return;
+    }
+    if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(securityForm.newPassword)) {
+      toast.error('Password must contain at least one special character');
       return;
     }
 
@@ -772,6 +842,9 @@ export default function Settings() {
                       onChange={(e) => setSecurityForm({...securityForm, newPassword: e.target.value})}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
+                    <div className="text-xs text-gray-500 mt-1">
+                      Must be 8-128 characters with uppercase, lowercase, number, and special character
+                    </div>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
