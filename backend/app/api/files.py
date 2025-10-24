@@ -64,6 +64,7 @@ class FileCreate(BaseModel):
 class FileUpdate(BaseModel):
     name: Optional[str] = None
     category: Optional[str] = None
+    description: Optional[str] = None
     tags: Optional[List[str]] = None
     status: Optional[str] = None
     folder_id: Optional[str] = None

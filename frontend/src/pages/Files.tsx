@@ -52,6 +52,7 @@ export default function Files() {
   const [fileForm, setFileForm] = useState({
     name: '',
     category: '',
+    description: '',
     tags: '',
     status: 'active',
   });
@@ -120,6 +121,7 @@ export default function Files() {
     setFileForm({
       name: '',
       category: '',
+      description: '',
       tags: '',
       status: 'active',
     });
@@ -131,6 +133,7 @@ export default function Files() {
     setFileForm({
       name: '',
       category: '',
+      description: '',
       tags: '',
       status: 'active',
     });
@@ -141,7 +144,8 @@ export default function Files() {
     setSelectedFile(file);
     setFileForm({
       name: file.name,
-      category: file.description || file.category || '',
+      category: file.category || '',
+      description: file.description || '',
       tags: file.tags?.join(', ') || '',
       status: file.status || 'active',
     });
@@ -259,6 +263,7 @@ export default function Files() {
       setFileForm({
         name: '',
         category: '',
+        description: '',
         tags: '',
         status: 'active',
       });
@@ -290,10 +295,39 @@ export default function Files() {
       return;
     }
 
+    // Check for HTML/script tags in name
+    if (/<[^>]*>/gi.test(fileForm.name)) {
+      toast.error('HTML tags and script tags are not allowed in name');
+      return;
+    }
+
+    // Check name length
+    if (fileForm.name.length > 255) {
+      toast.error('Name cannot exceed 255 characters');
+      return;
+    }
+
+    // Check for HTML/script tags in description
+    if (fileForm.description && /<[^>]*>/gi.test(fileForm.description)) {
+      toast.error('HTML tags and script tags are not allowed in description');
+      return;
+    }
+
+    // Check description word count (100 words limit)
+    if (fileForm.description) {
+      const wordCount = fileForm.description.trim().split(/\s+/).length;
+      if (wordCount > 100) {
+        toast.error(`Description cannot exceed 100 words. Current: ${wordCount} words`);
+        return;
+      }
+    }
+
     try {
       const folderData: any = {
-        name: fileForm.name,
-        description: fileForm.category,
+        name: fileForm.name.trim(),
+        description: fileForm.description.trim() || undefined,
+        status: fileForm.status,
+        tags: fileForm.tags ? fileForm.tags.split(',').map(t => t.trim()).filter(t => t) : [],
       };
       
       // If we're inside a folder, set it as parent
@@ -303,17 +337,12 @@ export default function Files() {
       
       await filesService.createFolder(folderData);
       toast.success('Folder created successfully');
-      setShowCreateFolderModal(false);
-      setFileForm({
-        name: '',
-        category: '',
-        tags: '',
-        status: 'active',
-      });
+      handleCloseCreateFolderModal();
       fetchFiles();
     } catch (error: any) {
       console.error('Create folder error:', error);
-      toast.error(error?.response?.data?.detail || 'Failed to create folder');
+      const errorMessage = error?.response?.data?.detail || 'Failed to create folder';
+      toast.error(errorMessage);
     }
   };
 
@@ -339,21 +368,25 @@ export default function Files() {
     }
 
     // Check for HTML/script tags in description
-    if (fileForm.category && /<[^>]*>/gi.test(fileForm.category)) {
+    if (fileForm.description && /<[^>]*>/gi.test(fileForm.description)) {
       toast.error('HTML tags and script tags are not allowed in description');
       return;
     }
 
-    // Check description length
-    if (fileForm.category && fileForm.category.length > 1000) {
-      toast.error('Description cannot exceed 1000 characters');
-      return;
+    // Check description word count (100 words limit)
+    if (fileForm.description) {
+      const wordCount = fileForm.description.trim().split(/\s+/).length;
+      if (wordCount > 100) {
+        toast.error(`Description cannot exceed 100 words. Current: ${wordCount} words`);
+        return;
+      }
     }
 
     try {
       const updateData: any = {
         name: fileForm.name.trim(),
-        description: fileForm.category.trim() || undefined,
+        category: fileForm.category.trim() || undefined,
+        description: fileForm.description.trim() || undefined,
         tags: fileForm.tags.split(',').map(t => t.trim()).filter(t => t),
         status: fileForm.status,
       };
@@ -770,12 +803,12 @@ export default function Files() {
                   Description
                 </label>
                 <textarea
-                  placeholder="Enter description (optional)"
-                  value={fileForm.category}
+                  placeholder="Enter description (optional, max 100 words)"
+                  value={fileForm.description}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (!/<[^>]*>/gi.test(value)) {
-                      setFileForm({...fileForm, category: value});
+                      setFileForm({...fileForm, description: value});
                     } else {
                       toast.error('HTML tags are not allowed');
                     }
@@ -787,12 +820,11 @@ export default function Files() {
                       toast.error('HTML tags are not allowed');
                     }
                   }}
-                  maxLength={1000}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   rows={3}
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  {fileForm.category.length}/1000 characters
+                  {fileForm.description.trim().split(/\s+/).filter(w => w).length}/100 words
                 </div>
               </div>
               <div>
@@ -870,17 +902,38 @@ export default function Files() {
                   {fileForm.name.length}/255 characters
                 </div>
               </div>
+              {selectedFile?.type === 'file' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={fileForm.category}
+                    onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="">Select Category</option>
+                    <option value="Sales">Sales</option>
+                    <option value="Legal">Legal</option>
+                    <option value="Marketing">Marketing</option>
+                    <option value="Support">Support</option>
+                    <option value="Finance">Finance</option>
+                    <option value="HR">HR</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description
                 </label>
                 <textarea
-                  placeholder="Enter description (optional)"
-                  value={fileForm.category}
+                  placeholder="Enter description (optional, max 100 words)"
+                  value={fileForm.description}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (!/<[^>]*>/gi.test(value)) {
-                      setFileForm({...fileForm, category: value});
+                      setFileForm({...fileForm, description: value});
                     } else {
                       toast.error('HTML tags are not allowed');
                     }
@@ -892,12 +945,11 @@ export default function Files() {
                       toast.error('HTML tags are not allowed');
                     }
                   }}
-                  maxLength={1000}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   rows={3}
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  {fileForm.category.length}/1000 characters
+                  {fileForm.description.trim().split(/\s+/).filter(w => w).length}/100 words
                 </div>
               </div>
               <div>
