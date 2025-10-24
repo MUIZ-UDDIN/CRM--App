@@ -319,11 +319,11 @@ export default function Workflows() {
               <div key={workflow.id} className="bg-white rounded-lg shadow p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   {/* Workflow Info */}
-                  <div className="flex-1 min-w-0">
+                  <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900">{workflow.name}</h3>
-                        <p className="text-sm text-gray-600 mt-1">{workflow.description}</p>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <h3 className="text-lg font-semibold text-gray-900 break-words">{workflow.name}</h3>
+                        <p className="text-sm text-gray-600 mt-1 break-words overflow-wrap-anywhere line-clamp-2">{workflow.description}</p>
                       </div>
                       <span className={`ml-3 inline-flex px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
                         workflow.status === 'active' ? 'bg-green-100 text-green-800' :
@@ -463,10 +463,14 @@ export default function Workflows() {
                   required
                 >
                   <option value="contact_created">Contact Created</option>
+                  <option value="deal_created">Deal Created</option>
                   <option value="deal_stage_changed">Deal Stage Changed</option>
+                  <option value="deal_won">Deal Won</option>
+                  <option value="deal_lost">Deal Lost</option>
                   <option value="activity_completed">Activity Completed</option>
                   <option value="email_opened">Email Opened</option>
-                  <option value="form_submitted">Form Submitted</option>
+                  <option value="document_signed">Document Signed</option>
+                  <option value="scheduled">Scheduled (Time-based)</option>
                 </select>
               </div>
               <div>
@@ -573,10 +577,14 @@ export default function Workflows() {
                   required
                 >
                   <option value="contact_created">Contact Created</option>
+                  <option value="deal_created">Deal Created</option>
                   <option value="deal_stage_changed">Deal Stage Changed</option>
+                  <option value="deal_won">Deal Won</option>
+                  <option value="deal_lost">Deal Lost</option>
                   <option value="activity_completed">Activity Completed</option>
                   <option value="email_opened">Email Opened</option>
-                  <option value="form_submitted">Form Submitted</option>
+                  <option value="document_signed">Document Signed</option>
+                  <option value="scheduled">Scheduled (Time-based)</option>
                 </select>
               </div>
               <div>
