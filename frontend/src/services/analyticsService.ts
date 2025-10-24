@@ -84,8 +84,15 @@ export const getCustomAnalytics = async (params?: CustomAnalyticsParams) => {
 };
 
 // Dashboard Analytics
-export const getDashboardAnalytics = async () => {
-  const response = await apiClient.get('/analytics/dashboard');
+export const getDashboardAnalytics = async (filters?: AnalyticsFilters) => {
+  const params = new URLSearchParams();
+  if (filters) {
+    if (filters.date_from) params.append('date_from', filters.date_from);
+    if (filters.date_to) params.append('date_to', filters.date_to);
+    if (filters.user_id) params.append('user_id', String(filters.user_id));
+    if (filters.pipeline_id) params.append('pipeline_id', String(filters.pipeline_id));
+  }
+  const response = await apiClient.get(`/analytics/dashboard?${params.toString()}`);
   return response.data;
 };
 

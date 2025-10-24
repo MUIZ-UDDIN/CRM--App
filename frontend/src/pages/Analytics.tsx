@@ -116,7 +116,7 @@ export default function Analytics() {
         analyticsService.getContactAnalytics(filters),
         analyticsService.getDocumentAnalytics(filters),
         analyticsService.getRevenueAnalytics(),
-        analyticsService.getDashboardAnalytics(),
+        analyticsService.getDashboardAnalytics(filters), // Now passing filters to dashboard
       ]);
       
       setPipelineAnalytics(pipeline);

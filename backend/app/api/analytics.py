@@ -888,34 +888,67 @@ async def get_custom_analytics(
 
 @router.get("/dashboard")
 async def get_dashboard_analytics(
+    date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    pipeline_id: Optional[str] = Query(None, description="Filter by pipeline ID"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get overall dashboard analytics with real-time data"""
+    """Get overall dashboard analytics with real-time data and filters"""
     from datetime import datetime, timedelta
     from sqlalchemy import func, and_, or_
     from ..models.deals import Deal as DealModel, DealStatus
     from ..models.contacts import Contact as ContactModel
     from ..models.activities import Activity as ActivityModel, ActivityStatus
     
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
-    today = datetime.utcnow().date()
-    month_start = datetime.utcnow().replace(day=1).date()
-    last_month_start = (datetime.utcnow().replace(day=1) - timedelta(days=1)).replace(day=1).date()
-    
-    # Check if user is superuser - show all deals, otherwise filter by owner
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     is_superuser = current_user.get("is_superuser", False)
     
-    # Total Pipeline Value
-    pipeline_query = db.query(func.sum(DealModel.value)).filter(
+    # Parse dates
+    today = datetime.utcnow().date()
+    date_from_obj = datetime.fromisoformat(date_from).date() if date_from else None
+    date_to_obj = datetime.fromisoformat(date_to).date() if date_to else None
+    
+    # For growth calculation, use previous period of same length
+    if date_from_obj and date_to_obj:
+        period_length = (date_to_obj - date_from_obj).days
+        prev_period_end = date_from_obj - timedelta(days=1)
+        prev_period_start = prev_period_end - timedelta(days=period_length)
+    else:
+        # Default to month comparison
+        month_start = datetime.utcnow().replace(day=1).date()
+        last_month_start = (datetime.utcnow().replace(day=1) - timedelta(days=1)).replace(day=1).date()
+        prev_period_start = last_month_start
+        prev_period_end = month_start - timedelta(days=1)
+    
+    # Build base filters
+    filter_user_id = uuid.UUID(user_id) if user_id else None
+    
+    # Helper to add common filters
+    def add_deal_filters(query, include_date=True, include_user=True):
+        filters = [DealModel.is_deleted == False]
+        if include_date and date_from_obj:
+            filters.append(func.date(DealModel.created_at) >= date_from_obj)
+        if include_date and date_to_obj:
+            filters.append(func.date(DealModel.created_at) <= date_to_obj)
+        if include_user and filter_user_id:
+            filters.append(DealModel.owner_id == filter_user_id)
+        elif include_user and not is_superuser:
+            filters.append(DealModel.owner_id == owner_id)
+        if pipeline_id:
+            filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
+        return query.filter(and_(*filters))
+    
+    # Total Pipeline Value (active deals)
+    pipeline_query = db.query(func.sum(DealModel.value))
+    pipeline_query = add_deal_filters(pipeline_query, include_date=False)
+    pipeline_query = pipeline_query.filter(
         and_(
-            DealModel.is_deleted == False,
             DealModel.status != DealStatus.LOST,
             DealModel.status != DealStatus.WON
         )
     )
-    if not is_superuser:
-        pipeline_query = pipeline_query.filter(DealModel.owner_id == user_id)
     total_pipeline = pipeline_query.scalar() or 0.0
     
     # Active Deals Count
@@ -987,81 +1020,73 @@ async def get_dashboard_analytics(
     pipeline_growth = ((total_pipeline - last_month_pipeline) / last_month_pipeline * 100) if last_month_pipeline > 0 else 0
     deal_growth = ((active_deals - last_month_deals) / last_month_deals * 100) if last_month_deals > 0 else 0
     
-    # Total Revenue (Won Deals)
-    revenue_query = db.query(func.sum(DealModel.value)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            DealModel.status == DealStatus.WON
-        )
-    )
-    if not is_superuser:
-        revenue_query = revenue_query.filter(DealModel.owner_id == user_id)
+    # Total Revenue (Won Deals) - with date filters
+    revenue_filters = [
+        DealModel.is_deleted == False,
+        DealModel.status == DealStatus.WON
+    ]
+    if date_from_obj:
+        revenue_filters.append(func.date(DealModel.actual_close_date) >= date_from_obj)
+    if date_to_obj:
+        revenue_filters.append(func.date(DealModel.actual_close_date) <= date_to_obj)
+    if filter_user_id:
+        revenue_filters.append(DealModel.owner_id == filter_user_id)
+    elif not is_superuser:
+        revenue_filters.append(DealModel.owner_id == owner_id)
+    if pipeline_id:
+        revenue_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
+    
+    revenue_query = db.query(func.sum(DealModel.value)).filter(and_(*revenue_filters))
     total_revenue = revenue_query.scalar() or 0.0
     
-    # Last month revenue for growth
-    last_month_revenue = db.query(func.sum(DealModel.value)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            DealModel.status == DealStatus.WON,
-            func.date(DealModel.actual_close_date) >= last_month_start,
-            func.date(DealModel.actual_close_date) < month_start
-        )
-    )
-    if not is_superuser:
-        last_month_revenue = last_month_revenue.filter(DealModel.owner_id == user_id)
-    last_month_revenue_val = last_month_revenue.scalar() or 0.0
+    # Won deals count with filters
+    won_deals_query = db.query(func.count(DealModel.id)).filter(and_(*revenue_filters))
+    won_deals = won_deals_query.scalar() or 0
     
-    revenue_growth = ((total_revenue - last_month_revenue_val) / last_month_revenue_val * 100) if last_month_revenue_val > 0 else 0
+    # Previous period revenue for growth calculation
+    prev_revenue_filters = [
+        DealModel.is_deleted == False,
+        DealModel.status == DealStatus.WON,
+        func.date(DealModel.actual_close_date) >= prev_period_start,
+        func.date(DealModel.actual_close_date) <= prev_period_end
+    ]
+    if filter_user_id:
+        prev_revenue_filters.append(DealModel.owner_id == filter_user_id)
+    elif not is_superuser:
+        prev_revenue_filters.append(DealModel.owner_id == owner_id)
+    if pipeline_id:
+        prev_revenue_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
+    
+    prev_revenue_query = db.query(func.sum(DealModel.value)).filter(and_(*prev_revenue_filters))
+    prev_revenue_val = prev_revenue_query.scalar() or 0.0
+    
+    revenue_growth = ((total_revenue - prev_revenue_val) / prev_revenue_val * 100) if prev_revenue_val > 0 else 0
     
     # Average Deal Size
     avg_deal_size = (total_revenue / won_deals) if won_deals > 0 else 0
     
-    # Last month avg deal size
-    last_month_won = db.query(func.count(DealModel.id)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            DealModel.status == DealStatus.WON,
-            func.date(DealModel.actual_close_date) >= last_month_start,
-            func.date(DealModel.actual_close_date) < month_start
-        )
-    )
-    if not is_superuser:
-        last_month_won = last_month_won.filter(DealModel.owner_id == user_id)
-    last_month_won_count = last_month_won.scalar() or 0
+    # Previous period won deals for growth
+    prev_won_deals_query = db.query(func.count(DealModel.id)).filter(and_(*prev_revenue_filters))
+    prev_won_deals = prev_won_deals_query.scalar() or 0
     
-    last_month_avg = (last_month_revenue_val / last_month_won_count) if last_month_won_count > 0 else 0
-    avg_deal_growth = ((avg_deal_size - last_month_avg) / last_month_avg * 100) if last_month_avg > 0 else 0
+    won_deals_growth = ((won_deals - prev_won_deals) / prev_won_deals * 100) if prev_won_deals > 0 else 0
     
-    # Last month won deals for growth
-    last_month_won_deals = db.query(func.count(DealModel.id)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            DealModel.status == DealStatus.WON,
-            func.date(DealModel.actual_close_date) >= last_month_start,
-            func.date(DealModel.actual_close_date) < month_start
-        )
-    )
-    if not is_superuser:
-        last_month_won_deals = last_month_won_deals.filter(DealModel.owner_id == user_id)
-    last_month_won_val = last_month_won_deals.scalar() or 0
+    # Previous period avg deal size
+    prev_avg_deal_size = (prev_revenue_val / prev_won_deals) if prev_won_deals > 0 else 0
+    avg_deal_growth = ((avg_deal_size - prev_avg_deal_size) / prev_avg_deal_size * 100) if prev_avg_deal_size > 0 else 0
     
-    won_deals_growth = ((won_deals - last_month_won_val) / last_month_won_val * 100) if last_month_won_val > 0 else 0
+    # Win Rate (won vs total closed in current period)
+    closed_filters = revenue_filters.copy()
+    closed_filters[1] = or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST)
+    total_closed = db.query(func.count(DealModel.id)).filter(and_(*closed_filters)).scalar() or 0
+    win_rate = (won_deals / total_closed * 100) if total_closed > 0 else 0
     
-    # Last month win rate
-    last_month_closed = db.query(func.count(DealModel.id)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST),
-            func.date(DealModel.actual_close_date) >= last_month_start,
-            func.date(DealModel.actual_close_date) < month_start
-        )
-    )
-    if not is_superuser:
-        last_month_closed = last_month_closed.filter(DealModel.owner_id == user_id)
-    last_month_closed_val = last_month_closed.scalar() or 0
-    
-    last_month_win_rate = (last_month_won_val / last_month_closed_val * 100) if last_month_closed_val > 0 else 0
-    win_rate_change = win_rate - last_month_win_rate
+    # Previous period win rate
+    prev_closed_filters = prev_revenue_filters.copy()
+    prev_closed_filters[1] = or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST)
+    prev_total_closed = db.query(func.count(DealModel.id)).filter(and_(*prev_closed_filters)).scalar() or 0
+    prev_win_rate = (prev_won_deals / prev_total_closed * 100) if prev_total_closed > 0 else 0
+    win_rate_change = win_rate - prev_win_rate
     
     return {
         "kpis": {
