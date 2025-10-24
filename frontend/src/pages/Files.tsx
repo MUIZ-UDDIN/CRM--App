@@ -21,6 +21,7 @@ interface FileItem {
   type: 'file' | 'folder';
   size?: number;
   category?: string;
+  description?: string;
   tags?: string[];
   status?: string;
   contact?: string;
@@ -108,11 +109,39 @@ export default function Files() {
     setShowViewModal(true);
   };
 
+  const handleCloseViewModal = () => {
+    setShowViewModal(false);
+    setSelectedFile(null);
+  };
+
+  const handleCloseCreateFolderModal = () => {
+    setShowCreateFolderModal(false);
+    // Clear form data
+    setFileForm({
+      name: '',
+      category: '',
+      tags: '',
+      status: 'active',
+    });
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    // Clear form data
+    setFileForm({
+      name: '',
+      category: '',
+      tags: '',
+      status: 'active',
+    });
+    setSelectedFile(null);
+  };
+
   const handleEdit = (file: FileItem) => {
     setSelectedFile(file);
     setFileForm({
       name: file.name,
-      category: file.category || '',
+      category: file.description || file.category || '',
       tags: file.tags?.join(', ') || '',
       status: file.status || 'active',
     });
