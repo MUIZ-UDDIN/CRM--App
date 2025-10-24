@@ -51,9 +51,9 @@ async def set_cached_analytics(key: str, data: dict, ttl: int = 300):
 async def get_pipeline_analytics(
     date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
     date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
-    user_id: Optional[int] = Query(None, description="Filter by user ID"),
-    team_id: Optional[int] = Query(None, description="Filter by team ID"),
-    pipeline_id: Optional[int] = Query(None, description="Filter by pipeline ID"),
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    team_id: Optional[str] = Query(None, description="Filter by team ID"),
+    pipeline_id: Optional[str] = Query(None, description="Filter by pipeline ID"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -127,8 +127,8 @@ async def get_pipeline_analytics(
 async def get_activity_analytics(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    user_id: Optional[int] = Query(None),
-    team_id: Optional[int] = Query(None),
+    user_id: Optional[str] = Query(None),
+    team_id: Optional[str] = Query(None),
     activity_type: Optional[str] = Query(None, description="Filter by activity type"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -801,9 +801,9 @@ async def get_custom_analytics(
     metrics: Optional[str] = Query(None, description="Comma-separated list of metrics"),
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    user_id: Optional[int] = Query(None),
-    team_id: Optional[int] = Query(None),
-    pipeline_id: Optional[int] = Query(None),
+    user_id: Optional[str] = Query(None),
+    team_id: Optional[str] = Query(None),
+    pipeline_id: Optional[str] = Query(None),
     group_by: Optional[str] = Query(None, description="Group results by: day, week, month, user, team"),
     current_user: dict = Depends(get_current_active_user)
 ):
@@ -1091,7 +1091,7 @@ async def get_dashboard_analytics(
 async def export_analytics_csv(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    pipeline_id: Optional[int] = Query(None),
+    pipeline_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -1145,7 +1145,7 @@ async def export_analytics_csv(
 async def export_analytics_pdf(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    pipeline_id: Optional[int] = Query(None),
+    pipeline_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
