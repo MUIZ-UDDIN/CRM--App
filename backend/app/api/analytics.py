@@ -910,6 +910,16 @@ async def get_dashboard_analytics(
     date_from_obj = datetime.fromisoformat(date_from).date() if date_from else None
     date_to_obj = datetime.fromisoformat(date_to).date() if date_to else None
     
+    # Debug logging
+    print(f"=== Dashboard Analytics Filters ===")
+    print(f"Date From: {date_from} -> {date_from_obj}")
+    print(f"Date To: {date_to} -> {date_to_obj}")
+    print(f"User ID Filter: {user_id}")
+    print(f"Pipeline ID Filter: {pipeline_id}")
+    print(f"Current User: {owner_id}")
+    print(f"Is Superuser: {is_superuser}")
+    print(f"===================================")
+    
     # For growth calculation, use previous period of same length
     if date_from_obj and date_to_obj:
         period_length = (date_to_obj - date_from_obj).days
@@ -1021,14 +1031,15 @@ async def get_dashboard_analytics(
     deal_growth = ((active_deals - last_month_deals) / last_month_deals * 100) if last_month_deals > 0 else 0
     
     # Total Revenue (Won Deals) - with date filters
+    # Use created_at for filtering since actual_close_date may be NULL
     revenue_filters = [
         DealModel.is_deleted == False,
         DealModel.status == DealStatus.WON
     ]
     if date_from_obj:
-        revenue_filters.append(func.date(DealModel.actual_close_date) >= date_from_obj)
+        revenue_filters.append(func.date(DealModel.created_at) >= date_from_obj)
     if date_to_obj:
-        revenue_filters.append(func.date(DealModel.actual_close_date) <= date_to_obj)
+        revenue_filters.append(func.date(DealModel.created_at) <= date_to_obj)
     if filter_user_id:
         revenue_filters.append(DealModel.owner_id == filter_user_id)
     elif not is_superuser:
@@ -1047,8 +1058,8 @@ async def get_dashboard_analytics(
     prev_revenue_filters = [
         DealModel.is_deleted == False,
         DealModel.status == DealStatus.WON,
-        func.date(DealModel.actual_close_date) >= prev_period_start,
-        func.date(DealModel.actual_close_date) <= prev_period_end
+        func.date(DealModel.created_at) >= prev_period_start,
+        func.date(DealModel.created_at) <= prev_period_end
     ]
     if filter_user_id:
         prev_revenue_filters.append(DealModel.owner_id == filter_user_id)

@@ -129,15 +129,13 @@ export default function Analytics() {
       setDashboardKPIs(dashboard);
       
       // Debug logging
-      console.log('Analytics Data Loaded:', {
-        dateRange,
-        customDateFrom,
-        customDateTo,
-        filters,
-        pipelineData: pipeline,
-        activityData: activity,
-        dashboardData: dashboard
-      });
+      console.log('=== Analytics Data Loaded ===');
+      console.log('Date Range:', dateRange);
+      console.log('Custom Dates:', { from: customDateFrom, to: customDateTo });
+      console.log('Filters Sent to API:', filters);
+      console.log('Dashboard KPIs:', dashboard?.kpis);
+      console.log('Pipeline Data:', pipeline);
+      console.log('=============================');
       
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -151,18 +149,29 @@ export default function Analytics() {
     if (range === 'custom' && customDateFrom) {
       return customDateFrom;
     }
-    const today = new Date();
     switch (range) {
-      case 'last7days':
-        return new Date(today.setDate(today.getDate() - 7)).toISOString().split('T')[0];
-      case 'last30days':
-        return new Date(today.setDate(today.getDate() - 30)).toISOString().split('T')[0];
-      case 'last90days':
-        return new Date(today.setDate(today.getDate() - 90)).toISOString().split('T')[0];
+      case 'last7days': {
+        const date = new Date();
+        date.setDate(date.getDate() - 7);
+        return date.toISOString().split('T')[0];
+      }
+      case 'last30days': {
+        const date = new Date();
+        date.setDate(date.getDate() - 30);
+        return date.toISOString().split('T')[0];
+      }
+      case 'last90days': {
+        const date = new Date();
+        date.setDate(date.getDate() - 90);
+        return date.toISOString().split('T')[0];
+      }
       case 'thisyear':
-        return `${today.getFullYear()}-01-01`;
-      default:
-        return new Date(today.setDate(today.getDate() - 30)).toISOString().split('T')[0];
+        return `${new Date().getFullYear()}-01-01`;
+      default: {
+        const date = new Date();
+        date.setDate(date.getDate() - 30);
+        return date.toISOString().split('T')[0];
+      }
     }
   };
 
