@@ -147,14 +147,11 @@ export default function Analytics() {
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
       
-      // Debug logging
-      console.log('=== Analytics Data Loaded ===');
-      console.log('Date Range:', dateRange);
-      console.log('Custom Dates:', { from: customDateFrom, to: customDateTo });
-      console.log('Filters Sent to API:', filters);
-      console.log('Dashboard KPIs:', dashboard?.kpis);
-      console.log('Pipeline Data:', pipeline);
-      console.log('=============================');
+      // Debug: Check what data we're getting
+      console.log('📊 Chart Data Check:');
+      console.log('Revenue Data:', revenue?.monthly_revenue);
+      console.log('Pipeline Stages:', pipeline?.pipeline_analytics);
+      console.log('Activity Data:', activity?.activities_by_user);
       
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -244,8 +241,8 @@ export default function Analytics() {
       ];
 
   // Pipeline data from API
-  const pipelineData = Array.isArray(pipelineAnalytics?.stage_analytics)
-    ? pipelineAnalytics.stage_analytics.map((stage: any, index: number) => ({
+  const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics)
+    ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => ({
         name: stage.stage_name,
         value: stage.total_value,
         deals: stage.deal_count,
@@ -273,8 +270,8 @@ export default function Analytics() {
     : [];
 
   // Conversion funnel from pipeline data
-  const conversionData = Array.isArray(pipelineAnalytics?.stage_analytics)
-    ? pipelineAnalytics.stage_analytics.map((stage: any, index: number, arr: any[]) => ({
+  const conversionData = Array.isArray(pipelineAnalytics?.pipeline_analytics)
+    ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number, arr: any[]) => ({
         stage: stage.stage_name,
         count: stage.deal_count || 0,
         rate: arr[0]?.deal_count ? Math.round((stage.deal_count / arr[0].deal_count) * 100) : 0
@@ -284,8 +281,8 @@ export default function Analytics() {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
   // Pipeline Analytics Data from API
-  const pipelineConversionData = Array.isArray(pipelineAnalytics?.stage_analytics)
-    ? pipelineAnalytics.stage_analytics.map((stage: any) => ({
+  const pipelineConversionData = Array.isArray(pipelineAnalytics?.pipeline_analytics)
+    ? pipelineAnalytics.pipeline_analytics.map((stage: any) => ({
         stage: stage.stage_name,
         conversion: stage.conversion_rate || 0,
         avgDuration: stage.avg_duration || 0,
@@ -566,12 +563,15 @@ export default function Analytics() {
               <div className="relative user-dropdown-container">
                 <input
                   type="text"
-                  value={userSearch || (selectedUser === 'all' ? 'All Users' : users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || '')}
+                  value={showUserDropdown ? userSearch : (selectedUser === 'all' ? 'All Users' : users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || '')}
                   onChange={(e) => {
                     setUserSearch(e.target.value);
-                    setShowUserDropdown(true);
+                    if (!showUserDropdown) setShowUserDropdown(true);
                   }}
-                  onFocus={() => setShowUserDropdown(true)}
+                  onFocus={() => {
+                    setShowUserDropdown(true);
+                    setUserSearch('');
+                  }}
                   placeholder="Search users..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
                 />
@@ -611,12 +611,15 @@ export default function Analytics() {
               <div className="relative pipeline-dropdown-container">
                 <input
                   type="text"
-                  value={pipelineSearch || (selectedPipeline === 'all' ? 'All Pipelines' : pipelines.find(p => p.id === selectedPipeline)?.name || '')}
+                  value={showPipelineDropdown ? pipelineSearch : (selectedPipeline === 'all' ? 'All Pipelines' : pipelines.find(p => p.id === selectedPipeline)?.name || '')}
                   onChange={(e) => {
                     setPipelineSearch(e.target.value);
-                    setShowPipelineDropdown(true);
+                    if (!showPipelineDropdown) setShowPipelineDropdown(true);
                   }}
-                  onFocus={() => setShowPipelineDropdown(true)}
+                  onFocus={() => {
+                    setShowPipelineDropdown(true);
+                    setPipelineSearch('');
+                  }}
                   placeholder="Search pipelines..."
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
                 />
@@ -958,7 +961,7 @@ export default function Analytics() {
             <div className="space-y-6">
               {/* Pipeline Data from API */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {pipelineAnalytics?.stage_analytics?.slice(0, 3).map((stage: any, index: number) => (
+                {pipelineAnalytics?.pipeline_analytics?.slice(0, 3).map((stage: any, index: number) => (
                   <div key={stage.stage_name} className={`p-4 rounded-lg ${
                     index === 0 ? 'bg-blue-50' : index === 1 ? 'bg-yellow-50' : 'bg-green-50'
                   }`}>
