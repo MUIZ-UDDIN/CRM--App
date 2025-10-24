@@ -252,15 +252,17 @@ async def update_user(
     if user_update.last_name is not None:
         user.last_name = user_update.last_name
     if user_update.email is not None:
-        # Check if email is already taken by another user
+        # Normalize email to lowercase
+        email_lower = user_update.email.lower()
+        # Check if email is already taken by another user (case-insensitive)
         existing = db.query(UserModel).filter(
-            UserModel.email == user_update.email,
+            UserModel.email.ilike(email_lower),
             UserModel.id != user_id,
             UserModel.is_deleted == False
         ).first()
         if existing:
             raise HTTPException(status_code=400, detail="Email already in use")
-        user.email = user_update.email
+        user.email = email_lower
     if user_update.role is not None:
         user.role = user_update.role
     

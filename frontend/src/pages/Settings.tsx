@@ -40,6 +40,7 @@ export default function Settings() {
   const [newRoleName, setNewRoleName] = useState('');
   const [customRoles, setCustomRoles] = useState<string[]>([]);
   const [roleSearchTerm, setRoleSearchTerm] = useState('');
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const { token, user } = useAuth();
@@ -215,9 +216,9 @@ export default function Settings() {
       return;
     }
     
-    // Check for script tags
-    if (/<script[^>]*>.*?<\/script>/gi.test(teamForm.name)) {
-      toast.error('Invalid characters in name. Script tags are not allowed.');
+    // Check for any HTML tags or script tags
+    if (/<[^>]+>/gi.test(teamForm.name)) {
+      toast.error('Invalid characters in name. HTML tags and script tags are not allowed.');
       return;
     }
     
@@ -289,9 +290,9 @@ export default function Settings() {
       return;
     }
     
-    // Check for script tags
-    if (/<script[^>]*>.*?<\/script>/gi.test(teamForm.name)) {
-      toast.error('Invalid characters in name. Script tags are not allowed.');
+    // Check for any HTML tags or script tags
+    if (/<[^>]+>/gi.test(teamForm.name)) {
+      toast.error('Invalid characters in name. HTML tags and script tags are not allowed.');
       return;
     }
     
@@ -812,6 +813,9 @@ export default function Settings() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {teamForm.name.length}/255 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -841,46 +845,69 @@ export default function Settings() {
                     </button>
                   )}
                 </div>
-                <div className="space-y-2">
+                <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search roles..."
-                    value={roleSearchTerm}
-                    onChange={(e) => setRoleSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
-                  />
-                  <select
-                    value={teamForm.role}
-                    onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                    placeholder="Search and select role..."
+                    value={roleSearchTerm || teamForm.role}
+                    onChange={(e) => {
+                      setRoleSearchTerm(e.target.value);
+                      setShowRoleDropdown(true);
+                    }}
+                    onFocus={() => setShowRoleDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowRoleDropdown(false), 200)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     required
-                  >
-                    {defaultRoles
-                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
-                      .map(role => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    {customRoles
-                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
-                      .map(role => (
-                        <option key={role} value={role}>{role} (Custom)</option>
-                      ))}
-                  </select>
-                  {isSuperAdmin && customRoles.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {customRoles.map(role => (
-                        <span key={role} className="inline-flex items-center px-2 py-1 bg-gray-100 text-xs rounded">
-                          {role}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCustomRole(role)}
-                            className="ml-1 text-red-600 hover:text-red-800 font-bold"
-                            title="Delete custom role"
+                  />
+                  {showRoleDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {defaultRoles
+                        .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                        .map(role => (
+                          <div
+                            key={role}
+                            onClick={() => {
+                              setTeamForm({...teamForm, role});
+                              setRoleSearchTerm('');
+                              setShowRoleDropdown(false);
+                            }}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                            <span>{role}</span>
+                          </div>
+                        ))}
+                      {customRoles
+                        .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                        .map(role => (
+                          <div
+                            key={role}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between group"
+                          >
+                            <span
+                              onClick={() => {
+                                setTeamForm({...teamForm, role});
+                                setRoleSearchTerm('');
+                                setShowRoleDropdown(false);
+                              }}
+                              className="flex-1"
+                            >
+                              {role} <span className="text-xs text-gray-500">(Custom)</span>
+                            </span>
+                            {isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCustomRole(role);
+                                }}
+                                className="ml-2 text-red-600 hover:text-red-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Delete role"
+                              >
+                                <XMarkIcon className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   )}
                 </div>
@@ -928,6 +955,9 @@ export default function Settings() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {teamForm.name.length}/255 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -957,46 +987,69 @@ export default function Settings() {
                     </button>
                   )}
                 </div>
-                <div className="space-y-2">
+                <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search roles..."
-                    value={roleSearchTerm}
-                    onChange={(e) => setRoleSearchTerm(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
-                  />
-                  <select
-                    value={teamForm.role}
-                    onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                    placeholder="Search and select role..."
+                    value={roleSearchTerm || teamForm.role}
+                    onChange={(e) => {
+                      setRoleSearchTerm(e.target.value);
+                      setShowRoleDropdown(true);
+                    }}
+                    onFocus={() => setShowRoleDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowRoleDropdown(false), 200)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     required
-                  >
-                    {defaultRoles
-                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
-                      .map(role => (
-                        <option key={role} value={role}>{role}</option>
-                      ))}
-                    {customRoles
-                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
-                      .map(role => (
-                        <option key={role} value={role}>{role} (Custom)</option>
-                      ))}
-                  </select>
-                  {isSuperAdmin && customRoles.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {customRoles.map(role => (
-                        <span key={role} className="inline-flex items-center px-2 py-1 bg-gray-100 text-xs rounded">
-                          {role}
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCustomRole(role)}
-                            className="ml-1 text-red-600 hover:text-red-800 font-bold"
-                            title="Delete custom role"
+                  />
+                  {showRoleDropdown && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {defaultRoles
+                        .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                        .map(role => (
+                          <div
+                            key={role}
+                            onClick={() => {
+                              setTeamForm({...teamForm, role});
+                              setRoleSearchTerm('');
+                              setShowRoleDropdown(false);
+                            }}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between"
                           >
-                            ×
-                          </button>
-                        </span>
-                      ))}
+                            <span>{role}</span>
+                          </div>
+                        ))}
+                      {customRoles
+                        .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                        .map(role => (
+                          <div
+                            key={role}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between group"
+                          >
+                            <span
+                              onClick={() => {
+                                setTeamForm({...teamForm, role});
+                                setRoleSearchTerm('');
+                                setShowRoleDropdown(false);
+                              }}
+                              className="flex-1"
+                            >
+                              {role} <span className="text-xs text-gray-500">(Custom)</span>
+                            </span>
+                            {isSuperAdmin && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteCustomRole(role);
+                                }}
+                                className="ml-2 text-red-600 hover:text-red-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                                title="Delete role"
+                              >
+                                <XMarkIcon className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
+                        ))}
                     </div>
                   )}
                 </div>
