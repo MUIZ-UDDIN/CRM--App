@@ -189,21 +189,23 @@ async def get_activity_analytics(
     # Activities by user
     activities_by_user_query = db.query(
         Activity.owner_id,
-        User.full_name,
+        User.first_name,
+        User.last_name,
         func.count(case((Activity.type == 'call', 1))).label('calls'),
         func.count(case((Activity.type == 'email', 1))).label('emails'),
         func.count(case((Activity.type == 'meeting', 1))).label('meetings'),
         func.count(case((Activity.type == 'task', 1))).label('tasks'),
         func.count(Activity.id).label('total'),
         func.count(case((Activity.status == 'completed', 1))).label('completed')
-    ).join(User, Activity.owner_id == User.id).filter(and_(*filters)).group_by(Activity.owner_id, User.full_name).all()
+    ).join(User, Activity.owner_id == User.id).filter(and_(*filters)).group_by(Activity.owner_id, User.first_name, User.last_name).all()
     
     activities_by_user = []
     for row in activities_by_user_query:
         completion_rate = round((row.completed / row.total * 100) if row.total > 0 else 0, 1)
+        full_name = f"{row.first_name} {row.last_name}".strip()
         activities_by_user.append({
             "user_id": str(row.owner_id),
-            "user_name": row.full_name,
+            "user_name": full_name,
             "calls": row.calls,
             "emails": row.emails,
             "meetings": row.meetings,
