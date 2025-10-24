@@ -246,12 +246,19 @@ export default function Workflows() {
     }
   };
 
-  const filteredWorkflows = workflows.filter(workflow => 
-    workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workflow.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workflow.trigger.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workflow.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredWorkflows = workflows.filter(workflow => {
+    const query = searchQuery.toLowerCase().trim();
+    
+    // For status search, use exact match to avoid "active" matching "inactive"
+    const statusMatch = workflow.status.toLowerCase() === query;
+    
+    // For other fields, use includes
+    const nameMatch = workflow.name.toLowerCase().includes(query);
+    const descMatch = workflow.description.toLowerCase().includes(query);
+    const triggerMatch = workflow.trigger.toLowerCase().includes(query);
+    
+    return nameMatch || descMatch || triggerMatch || statusMatch;
+  });
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Never';
@@ -610,21 +617,21 @@ export default function Workflows() {
       {/* View Workflow Modal */}
       {showViewModal && selectedWorkflow && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4 sticky top-0 bg-white pb-3 border-b">
+          <div className="relative mx-auto border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between p-5 bg-white border-b sticky top-0 z-10">
               <h3 className="text-lg font-medium text-gray-900">Workflow Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="p-5 overflow-y-auto space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
-                <p className="text-gray-900 break-words">{selectedWorkflow.name}</p>
+                <p className="text-gray-900 break-words overflow-wrap-anywhere">{selectedWorkflow.name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Description</label>
-                <p className="text-gray-900 whitespace-pre-wrap break-words">{selectedWorkflow.description || 'No description'}</p>
+                <p className="text-gray-900 whitespace-pre-wrap break-words overflow-wrap-anywhere max-w-full">{selectedWorkflow.description || 'No description'}</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
