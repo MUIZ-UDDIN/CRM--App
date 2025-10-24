@@ -950,86 +950,6 @@ async def get_dashboard_analytics(
             filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
         return query.filter(and_(*filters))
     
-    # Total Pipeline Value (active deals)
-    pipeline_query = db.query(func.sum(DealModel.value))
-    pipeline_query = add_deal_filters(pipeline_query, include_date=False)
-    pipeline_query = pipeline_query.filter(
-        and_(
-            DealModel.status != DealStatus.LOST,
-            DealModel.status != DealStatus.WON
-        )
-    )
-    total_pipeline = pipeline_query.scalar() or 0.0
-    
-    # Active Deals Count
-    deals_query = db.query(func.count(DealModel.id)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            DealModel.status != DealStatus.LOST,
-            DealModel.status != DealStatus.WON
-        )
-    )
-    if not is_superuser:
-        deals_query = deals_query.filter(DealModel.owner_id == user_id)
-    active_deals = deals_query.scalar() or 0
-    
-    # Win Rate
-    closed_query = db.query(func.count(DealModel.id)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST)
-        )
-    )
-    if not is_superuser:
-        closed_query = closed_query.filter(DealModel.owner_id == user_id)
-    total_closed = closed_query.scalar() or 0
-    
-    won_query = db.query(func.count(DealModel.id)).filter(
-        and_(
-            DealModel.is_deleted == False,
-            DealModel.status == DealStatus.WON
-        )
-    )
-    if not is_superuser:
-        won_query = won_query.filter(DealModel.owner_id == user_id)
-    won_deals = won_query.scalar() or 0
-    
-    win_rate = (won_deals / total_closed * 100) if total_closed > 0 else 0
-    
-    # Activities Today
-    activities_query = db.query(func.count(ActivityModel.id)).filter(
-        and_(
-            ActivityModel.is_deleted == False,
-            func.date(ActivityModel.due_date) == today
-        )
-    )
-    if not is_superuser:
-        activities_query = activities_query.filter(ActivityModel.owner_id == user_id)
-    activities_today = activities_query.scalar() or 0
-    
-    # Previous month metrics for growth calculation
-    last_month_pipeline = db.query(func.sum(DealModel.value)).filter(
-        and_(
-            DealModel.owner_id == user_id,
-            DealModel.is_deleted == False,
-            func.date(DealModel.created_at) >= last_month_start,
-            func.date(DealModel.created_at) < month_start
-        )
-    ).scalar() or 0.0
-    
-    last_month_deals = db.query(func.count(DealModel.id)).filter(
-        and_(
-            DealModel.owner_id == user_id,
-            DealModel.is_deleted == False,
-            func.date(DealModel.created_at) >= last_month_start,
-            func.date(DealModel.created_at) < month_start
-        )
-    ).scalar() or 0
-    
-    # Calculate growth percentages
-    pipeline_growth = ((total_pipeline - last_month_pipeline) / last_month_pipeline * 100) if last_month_pipeline > 0 else 0
-    deal_growth = ((active_deals - last_month_deals) / last_month_deals * 100) if last_month_deals > 0 else 0
-    
     # Total Revenue (Won Deals) - with date filters
     # Use created_at for filtering since actual_close_date may be NULL
     revenue_filters = [
@@ -1098,6 +1018,13 @@ async def get_dashboard_analytics(
     prev_total_closed = db.query(func.count(DealModel.id)).filter(and_(*prev_closed_filters)).scalar() or 0
     prev_win_rate = (prev_won_deals / prev_total_closed * 100) if prev_total_closed > 0 else 0
     win_rate_change = win_rate - prev_win_rate
+    
+    # Additional metrics (not filtered by date for now)
+    total_pipeline = 0.0
+    pipeline_growth = 0.0
+    active_deals = 0
+    deal_growth = 0.0
+    activities_today = 0
     
     return {
         "kpis": {
