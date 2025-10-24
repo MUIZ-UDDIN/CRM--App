@@ -85,6 +85,12 @@ export default function Workflows() {
   };
 
   const handleToggleStatus = async (workflow: Workflow) => {
+    // Check if workflow has actions before activating
+    if (workflow.status !== 'active' && workflow.actions_count === 0) {
+      toast.error('Cannot activate workflow without actions. Please add actions first.');
+      return;
+    }
+
     const newStatus = workflow.status === 'active' ? 'paused' : 'active';
     try {
       await workflowsService.toggleWorkflow(workflow.id, newStatus === 'active');
@@ -92,13 +98,33 @@ export default function Workflows() {
       fetchWorkflows();
     } catch (error: any) {
       console.error('Toggle error:', error);
-      toast.error(error?.response?.data?.detail || 'Failed to update workflow status');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update workflow status';
+      toast.error(errorMessage);
     }
   };
 
   const handleCreate = async () => {
+    // Validate workflow name
     if (!workflowForm.name.trim()) {
       toast.error('Please enter a workflow name');
+      return;
+    }
+
+    // Check for HTML/script tags
+    if (/<[^>]*>/gi.test(workflowForm.name)) {
+      toast.error('HTML tags and script tags are not allowed in workflow name');
+      return;
+    }
+
+    // Check name length
+    if (workflowForm.name.length > 255) {
+      toast.error('Workflow name cannot exceed 255 characters');
+      return;
+    }
+
+    // Check description length
+    if (workflowForm.description.length > 1000) {
+      toast.error('Description cannot exceed 1000 characters');
       return;
     }
 
@@ -126,6 +152,31 @@ export default function Workflows() {
 
   const handleUpdate = async () => {
     if (!selectedWorkflow) return;
+
+    // Validate workflow name
+    if (!workflowForm.name.trim()) {
+      toast.error('Please enter a workflow name');
+      return;
+    }
+
+    // Check for HTML/script tags
+    if (/<[^>]*>/gi.test(workflowForm.name)) {
+      toast.error('HTML tags and script tags are not allowed in workflow name');
+      return;
+    }
+
+    // Check name length
+    if (workflowForm.name.length > 255) {
+      toast.error('Workflow name cannot exceed 255 characters');
+      return;
+    }
+
+    // Check description length
+    if (workflowForm.description.length > 1000) {
+      toast.error('Description cannot exceed 1000 characters');
+      return;
+    }
+
     try {
       await workflowsService.updateWorkflow(selectedWorkflow.id, {
         name: workflowForm.name,
@@ -293,31 +344,70 @@ export default function Workflows() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Workflow Name"
-                value={workflowForm.name}
-                onChange={(e) => setWorkflowForm({...workflowForm, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <textarea
-                placeholder="Description"
-                value={workflowForm.description}
-                onChange={(e) => setWorkflowForm({...workflowForm, description: e.target.value})}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={workflowForm.trigger}
-                onChange={(e) => setWorkflowForm({...workflowForm, trigger: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="contact_created">Contact Created</option>
-                <option value="deal_stage_changed">Deal Stage Changed</option>
-                <option value="activity_completed">Activity Completed</option>
-                <option value="email_opened">Email Opened</option>
-                <option value="form_submitted">Form Submitted</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Workflow Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter workflow name"
+                  value={workflowForm.name}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setWorkflowForm({...workflowForm, name: value});
+                    } else {
+                      toast.error('HTML tags are not allowed in workflow name');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed in workflow name');
+                    }
+                  }}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {workflowForm.name.length}/255 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Enter description (optional)"
+                  value={workflowForm.description}
+                  onChange={(e) => setWorkflowForm({...workflowForm, description: e.target.value})}
+                  rows={3}
+                  maxLength={1000}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {workflowForm.description.length}/1000 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Trigger <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={workflowForm.trigger}
+                  onChange={(e) => setWorkflowForm({...workflowForm, trigger: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                >
+                  <option value="contact_created">Contact Created</option>
+                  <option value="deal_stage_changed">Deal Stage Changed</option>
+                  <option value="activity_completed">Activity Completed</option>
+                  <option value="email_opened">Email Opened</option>
+                  <option value="form_submitted">Form Submitted</option>
+                </select>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -348,31 +438,70 @@ export default function Workflows() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Workflow Name"
-                value={workflowForm.name}
-                onChange={(e) => setWorkflowForm({...workflowForm, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <textarea
-                placeholder="Description"
-                value={workflowForm.description}
-                onChange={(e) => setWorkflowForm({...workflowForm, description: e.target.value})}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={workflowForm.trigger}
-                onChange={(e) => setWorkflowForm({...workflowForm, trigger: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="contact_created">Contact Created</option>
-                <option value="deal_stage_changed">Deal Stage Changed</option>
-                <option value="activity_completed">Activity Completed</option>
-                <option value="email_opened">Email Opened</option>
-                <option value="form_submitted">Form Submitted</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Workflow Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter workflow name"
+                  value={workflowForm.name}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setWorkflowForm({...workflowForm, name: value});
+                    } else {
+                      toast.error('HTML tags are not allowed in workflow name');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed in workflow name');
+                    }
+                  }}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {workflowForm.name.length}/255 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Enter description (optional)"
+                  value={workflowForm.description}
+                  onChange={(e) => setWorkflowForm({...workflowForm, description: e.target.value})}
+                  rows={3}
+                  maxLength={1000}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {workflowForm.description.length}/1000 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Trigger <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={workflowForm.trigger}
+                  onChange={(e) => setWorkflowForm({...workflowForm, trigger: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                >
+                  <option value="contact_created">Contact Created</option>
+                  <option value="deal_stage_changed">Deal Stage Changed</option>
+                  <option value="activity_completed">Activity Completed</option>
+                  <option value="email_opened">Email Opened</option>
+                  <option value="form_submitted">Form Submitted</option>
+                </select>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowEditModal(false)}
