@@ -95,6 +95,18 @@ async def create_workflow(
     """Create a new workflow"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
+    # Check for duplicate workflow name
+    existing_workflow = db.query(Workflow).filter(
+        and_(
+            Workflow.owner_id == user_id,
+            Workflow.name.ilike(workflow_data.name.strip()),
+            Workflow.is_deleted == False
+        )
+    ).first()
+    
+    if existing_workflow:
+        raise HTTPException(status_code=400, detail="A workflow with this name already exists")
+    
     # Handle both trigger and trigger_type (frontend sends trigger_type)
     trigger_value = workflow_data.trigger_type or workflow_data.trigger or "manual"
     
@@ -187,6 +199,20 @@ async def update_workflow(
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
     
+    # Check for duplicate workflow name (excluding current workflow)
+    if workflow_data.name:
+        existing_workflow = db.query(Workflow).filter(
+            and_(
+                Workflow.owner_id == user_id,
+                Workflow.id != uuid.UUID(workflow_id),
+                Workflow.name.ilike(workflow_data.name.strip()),
+                Workflow.is_deleted == False
+            )
+        ).first()
+        
+        if existing_workflow:
+            raise HTTPException(status_code=400, detail="A workflow with this name already exists")
+    
     if workflow_data.name:
         workflow.name = workflow_data.name
     if workflow_data.description is not None:
@@ -252,7 +278,7 @@ async def toggle_workflow(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Toggle workflow status between active and paused"""
+    """Toggle workflow status between active and inactive"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
     workflow = db.query(Workflow).filter(
@@ -267,10 +293,11 @@ async def toggle_workflow(
         raise HTTPException(status_code=404, detail="Workflow not found")
     
     if workflow.status == WorkflowStatus.ACTIVE:
-        workflow.status = WorkflowStatus.PAUSED
+        workflow.status = WorkflowStatus.INACTIVE
     else:
         workflow.status = WorkflowStatus.ACTIVE
     
     db.commit()
+    db.refresh(workflow)
     
-    return {"message": f"Workflow {workflow.status.value}"}
+    return {"message": f"Workflow {workflow.status.value}", "status": workflow.status.value}

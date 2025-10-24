@@ -67,7 +67,7 @@ export const deleteWorkflow = async (id: string) => {
 
 // Activate/Deactivate workflow
 export const toggleWorkflow = async (id: string, isActive: boolean) => {
-  const response = await apiClient.patch(`/workflows/${id}/toggle`, { is_active: isActive });
+  const response = await apiClient.post(`/workflows/${id}/toggle`, { is_active: isActive });
   return response.data;
 };
 
