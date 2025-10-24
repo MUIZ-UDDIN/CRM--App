@@ -28,6 +28,14 @@ class ApiService {
     try {
       const response = await fetch(`${this.baseURL}${endpoint}`, config);
       
+      // Handle 401 Unauthorized - redirect to login
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+        throw new Error('Session expired');
+      }
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);

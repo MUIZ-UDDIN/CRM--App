@@ -22,6 +22,19 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Handle 401 errors - redirect to login
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
 export interface File {
   id: string;
   name: string;
@@ -93,7 +106,7 @@ export const updateFile = async (id: string, data: Partial<File>) => {
 };
 
 // Update folder
-export const updateFolder = async (id: string, data: { parent_id?: string }) => {
+export const updateFolder = async (id: string, data: { name?: string; description?: string; parent_id?: string; status?: string }) => {
   const response = await apiClient.patch(`/files/folders/${id}`, data);
   return response.data;
 };

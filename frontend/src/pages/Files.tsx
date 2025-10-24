@@ -234,15 +234,40 @@ export default function Files() {
   };
 
   const handleCreateFolder = async () => {
+    // Validate folder name
     if (!fileForm.name.trim()) {
       toast.error('Please enter a folder name');
       return;
     }
 
+    // Check for HTML/script tags in name
+    if (/<[^>]*>/gi.test(fileForm.name)) {
+      toast.error('HTML tags and script tags are not allowed in folder name');
+      return;
+    }
+
+    // Check name length
+    if (fileForm.name.length > 255) {
+      toast.error('Folder name cannot exceed 255 characters');
+      return;
+    }
+
+    // Check for HTML/script tags in description
+    if (fileForm.category && /<[^>]*>/gi.test(fileForm.category)) {
+      toast.error('HTML tags and script tags are not allowed in description');
+      return;
+    }
+
+    // Check description length
+    if (fileForm.category && fileForm.category.length > 1000) {
+      toast.error('Description cannot exceed 1000 characters');
+      return;
+    }
+
     try {
       const folderData: any = {
-        name: fileForm.name,
-        description: fileForm.category,
+        name: fileForm.name.trim(),
+        description: fileForm.category.trim() || undefined,
       };
       
       // If we're inside a folder, set it as parent
@@ -268,21 +293,56 @@ export default function Files() {
 
   const handleUpdate = async () => {
     if (!selectedFile) return;
+
+    // Validate name
+    if (!fileForm.name.trim()) {
+      toast.error('Please enter a name');
+      return;
+    }
+
+    // Check for HTML/script tags in name
+    if (/<[^>]*>/gi.test(fileForm.name)) {
+      toast.error('HTML tags and script tags are not allowed in name');
+      return;
+    }
+
+    // Check name length
+    if (fileForm.name.length > 255) {
+      toast.error('Name cannot exceed 255 characters');
+      return;
+    }
+
+    // Check for HTML/script tags in description
+    if (fileForm.category && /<[^>]*>/gi.test(fileForm.category)) {
+      toast.error('HTML tags and script tags are not allowed in description');
+      return;
+    }
+
+    // Check description length
+    if (fileForm.category && fileForm.category.length > 1000) {
+      toast.error('Description cannot exceed 1000 characters');
+      return;
+    }
+
     try {
       const updateData: any = {
-        name: fileForm.name,
-        category: fileForm.category,
+        name: fileForm.name.trim(),
+        description: fileForm.category.trim() || undefined,
         tags: fileForm.tags.split(',').map(t => t.trim()).filter(t => t),
         status: fileForm.status,
       };
       
-      await filesService.updateFile(selectedFile.id, updateData);
+      if (selectedFile.type === 'folder') {
+        await filesService.updateFolder(selectedFile.id, updateData);
+      } else {
+        await filesService.updateFile(selectedFile.id, updateData);
+      }
       toast.success('Updated successfully');
       setShowEditModal(false);
       fetchFiles();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Update error:', error);
-      toast.error('Failed to update');
+      toast.error(error?.response?.data?.detail || 'Failed to update');
     }
   };
 
@@ -645,20 +705,67 @@ export default function Files() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Folder Name"
-                value={fileForm.name}
-                onChange={(e) => setFileForm({...fileForm, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <textarea
-                placeholder="Description (optional)"
-                value={fileForm.category}
-                onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                rows={3}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Folder Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter folder name"
+                  value={fileForm.name}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setFileForm({...fileForm, name: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {fileForm.name.length}/255 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Enter description (optional)"
+                  value={fileForm.category}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setFileForm({...fileForm, category: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={1000}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  rows={3}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {fileForm.category.length}/1000 characters
+                </div>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowCreateFolderModal(false)}
@@ -689,23 +796,67 @@ export default function Files() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Name"
-                value={fileForm.name}
-                onChange={(e) => setFileForm({...fileForm, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={fileForm.category}
-                onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Category</option>
-                <option value="Sales">Sales</option>
-                <option value="Legal">Legal</option>
-                <option value="Marketing">Marketing</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter name"
+                  value={fileForm.name}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setFileForm({...fileForm, name: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={255}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {fileForm.name.length}/255 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Enter description (optional)"
+                  value={fileForm.category}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setFileForm({...fileForm, category: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={1000}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  rows={3}
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {fileForm.category.length}/1000 characters
+                </div>
+              </div>
               <input
                 type="text"
                 placeholder="Tags (comma separated)"
