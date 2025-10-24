@@ -150,6 +150,15 @@ export default function Workflows() {
       return;
     }
 
+    // Check for duplicate workflow name
+    const duplicateWorkflow = workflows.find(
+      w => w.name.toLowerCase().trim() === workflowForm.name.toLowerCase().trim()
+    );
+    if (duplicateWorkflow) {
+      toast.error('A workflow with this name already exists. Please use a different name.');
+      return;
+    }
+
     // Check for HTML/script tags
     if (/<[^>]*>/gi.test(workflowForm.name)) {
       toast.error('HTML tags and script tags are not allowed in workflow name');
@@ -193,6 +202,16 @@ export default function Workflows() {
       return;
     }
 
+    // Check for duplicate workflow name (excluding current workflow)
+    const duplicateWorkflow = workflows.find(
+      w => w.id !== selectedWorkflow.id && 
+      w.name.toLowerCase().trim() === workflowForm.name.toLowerCase().trim()
+    );
+    if (duplicateWorkflow) {
+      toast.error('A workflow with this name already exists. Please use a different name.');
+      return;
+    }
+
     // Check for HTML/script tags
     if (/<[^>]*>/gi.test(workflowForm.name)) {
       toast.error('HTML tags and script tags are not allowed in workflow name');
@@ -230,7 +249,8 @@ export default function Workflows() {
   const filteredWorkflows = workflows.filter(workflow => 
     workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     workflow.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    workflow.trigger.toLowerCase().includes(searchQuery.toLowerCase())
+    workflow.trigger.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    workflow.status.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const formatDate = (dateString?: string) => {
@@ -442,6 +462,22 @@ export default function Workflows() {
                   <option value="form_submitted">Form Submitted</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  value={workflowForm.status}
+                  onChange={(e) => setWorkflowForm({...workflowForm, status: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="inactive">Inactive</option>
+                  <option value="active">Active</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Set to Active to start executing this workflow automatically
+                </p>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseAddModal}
@@ -536,6 +572,22 @@ export default function Workflows() {
                   <option value="form_submitted">Form Submitted</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select
+                  value={workflowForm.status}
+                  onChange={(e) => setWorkflowForm({...workflowForm, status: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="inactive">Inactive</option>
+                  <option value="active">Active</option>
+                </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  Set to Active to start executing this workflow automatically
+                </p>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseEditModal}
@@ -558,45 +610,56 @@ export default function Workflows() {
       {/* View Workflow Modal */}
       {showViewModal && selectedWorkflow && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
+          <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4 sticky top-0 bg-white pb-3 border-b">
               <h3 className="text-lg font-medium text-gray-900">Workflow Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
-                <p className="text-gray-900">{selectedWorkflow.name}</p>
+                <p className="text-gray-900 break-words">{selectedWorkflow.name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Description</label>
-                <p className="text-gray-900">{selectedWorkflow.description}</p>
+                <p className="text-gray-900 whitespace-pre-wrap break-words">{selectedWorkflow.description || 'No description'}</p>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Trigger</label>
-                <p className="text-gray-900">{selectedWorkflow.trigger}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Trigger</label>
+                  <p className="text-gray-900">{selectedWorkflow.trigger}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Status</label>
+                  <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
+                    selectedWorkflow.status === 'active' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {selectedWorkflow.status === 'active' ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Status</label>
-                <p className="text-gray-900 capitalize">{selectedWorkflow.status}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Actions Count</label>
+                  <p className="text-gray-900">{selectedWorkflow.actions_count}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Total Executions</label>
+                  <p className="text-gray-900">{selectedWorkflow.executions_count}</p>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Actions Count</label>
-                <p className="text-gray-900">{selectedWorkflow.actions_count}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Total Executions</label>
-                <p className="text-gray-900">{selectedWorkflow.executions_count}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Last Run</label>
-                <p className="text-gray-900">{formatDate(selectedWorkflow.last_run)}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Created</label>
-                <p className="text-gray-900">{formatDate(selectedWorkflow.created_at)}</p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Last Run</label>
+                  <p className="text-gray-900">{formatDate(selectedWorkflow.last_run)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Created</label>
+                  <p className="text-gray-900">{formatDate(selectedWorkflow.created_at)}</p>
+                </div>
               </div>
             </div>
           </div>
