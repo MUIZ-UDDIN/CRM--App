@@ -59,9 +59,6 @@ export default function Files() {
   const [categories, setCategories] = useState<string[]>([
     'Sales', 'Legal', 'Marketing', 'Support', 'Finance', 'HR', 'Other'
   ]);
-  const [showCategoryModal, setShowCategoryModal] = useState(false);
-  const [newCategory, setNewCategory] = useState('');
-  const [categorySearch, setCategorySearch] = useState('');
 
   // Check for action query parameter
   useEffect(() => {
@@ -296,20 +293,6 @@ export default function Files() {
   };
 
   // Category management functions
-  const handleAddCategory = () => {
-    if (!newCategory.trim()) {
-      toast.error('Please enter a category name');
-      return;
-    }
-    if (categories.includes(newCategory.trim())) {
-      toast.error('Category already exists');
-      return;
-    }
-    setCategories([...categories, newCategory.trim()]);
-    setNewCategory('');
-    toast.success('Category added successfully');
-  };
-
   const handleDeleteCategory = (category: string) => {
     if (categories.length <= 1) {
       toast.error('Cannot delete the last category');
@@ -318,10 +301,6 @@ export default function Files() {
     setCategories(categories.filter(c => c !== category));
     toast.success('Category deleted successfully');
   };
-
-  const filteredCategories = categories.filter(cat => 
-    cat.toLowerCase().includes(categorySearch.toLowerCase())
-  );
 
   const handleCreateFolder = async () => {
     if (!fileForm.name.trim()) {
@@ -347,13 +326,10 @@ export default function Files() {
       return;
     }
 
-    // Check description word count (100 words limit)
-    if (fileForm.description) {
-      const wordCount = fileForm.description.trim().split(/\s+/).length;
-      if (wordCount > 100) {
-        toast.error(`Description cannot exceed 100 words. Current: ${wordCount} words`);
-        return;
-      }
+    // Check description character limit (500 characters)
+    if (fileForm.description && fileForm.description.length > 500) {
+      toast.error(`Description cannot exceed 500 characters. Current: ${fileForm.description.length} characters`);
+      return;
     }
 
     try {
@@ -407,23 +383,24 @@ export default function Files() {
       return;
     }
 
-    // Check description word count (100 words limit)
-    if (fileForm.description) {
-      const wordCount = fileForm.description.trim().split(/\s+/).length;
-      if (wordCount > 100) {
-        toast.error(`Description cannot exceed 100 words. Current: ${wordCount} words`);
-        return;
-      }
+    // Check description character limit (500 characters)
+    if (fileForm.description && fileForm.description.length > 500) {
+      toast.error(`Description cannot exceed 500 characters. Current: ${fileForm.description.length} characters`);
+      return;
     }
 
     try {
       const updateData: any = {
         name: fileForm.name.trim(),
-        category: fileForm.category.trim() || undefined,
         description: fileForm.description.trim() || undefined,
         tags: fileForm.tags.split(',').map(t => t.trim()).filter(t => t),
         status: fileForm.status,
       };
+      
+      // Add category only for files
+      if (selectedFile.type === 'file') {
+        updateData.category = fileForm.category.trim() || undefined;
+      }
       
       // Use correct service method based on type
       if (selectedFile.type === 'folder') {
@@ -837,7 +814,7 @@ export default function Files() {
                   Description
                 </label>
                 <textarea
-                  placeholder="Enter description (optional, max 100 words)"
+                  placeholder="Enter description (optional, max 500 characters)"
                   value={fileForm.description}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -854,11 +831,12 @@ export default function Files() {
                       toast.error('HTML tags are not allowed');
                     }
                   }}
+                  maxLength={500}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   rows={3}
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  {fileForm.description.trim().split(/\s+/).filter(w => w).length}/100 words
+                  {fileForm.description.length}/500 characters
                 </div>
               </div>
               <div>
@@ -938,43 +916,48 @@ export default function Files() {
               </div>
               {selectedFile?.type === 'file' && (
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="block text-sm font-medium text-gray-700">
-                      Category
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setShowCategoryModal(true)}
-                      className="text-xs text-primary-600 hover:text-primary-700"
-                    >
-                      Manage Categories
-                    </button>
-                  </div>
-                  <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Category
+                  </label>
+                  <div className="relative">
                     <input
                       type="text"
-                      placeholder="Search or type category..."
-                      value={categorySearch}
-                      onChange={(e) => setCategorySearch(e.target.value)}
+                      list="category-list"
+                      placeholder="Type or select category (press Enter to add new)"
+                      value={fileForm.category}
+                      onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter' && categorySearch && !categories.includes(categorySearch)) {
-                          setCategories([...categories, categorySearch]);
-                          setFileForm({...fileForm, category: categorySearch});
-                          setCategorySearch('');
+                        if (e.key === 'Enter' && fileForm.category && !categories.includes(fileForm.category)) {
+                          e.preventDefault();
+                          setCategories([...categories, fileForm.category]);
+                          toast.success('Category added');
                         }
                       }}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     />
-                    <select
-                      value={fileForm.category}
-                      onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    >
-                      <option value="">Select Category</option>
-                      {filteredCategories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
+                    <datalist id="category-list">
+                      {categories.map(cat => (
+                        <option key={cat} value={cat} />
                       ))}
-                    </select>
+                    </datalist>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {categories.map((cat) => (
+                      <span
+                        key={cat}
+                        className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200"
+                      >
+                        {cat}
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(cat)}
+                          className="text-red-600 hover:text-red-700"
+                          title="Delete category"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}
@@ -983,7 +966,7 @@ export default function Files() {
                   Description
                 </label>
                 <textarea
-                  placeholder="Enter description (optional, max 100 words)"
+                  placeholder="Enter description (optional, max 500 characters)"
                   value={fileForm.description}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -1000,11 +983,12 @@ export default function Files() {
                       toast.error('HTML tags are not allowed');
                     }
                   }}
+                  maxLength={500}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   rows={3}
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  {fileForm.description.trim().split(/\s+/).filter(w => w).length}/100 words
+                  {fileForm.description.length}/500 characters
                 </div>
               </div>
               <div>
@@ -1122,80 +1106,6 @@ export default function Files() {
         </div>
       )}
 
-      {/* Category Management Modal */}
-      {showCategoryModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Manage Categories</h3>
-              <button onClick={() => setShowCategoryModal(false)} className="text-gray-400 hover:text-gray-600">
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="space-y-4">
-              {/* Add New Category */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Add New Category
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Enter category name"
-                    value={newCategory}
-                    onChange={(e) => setNewCategory(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleAddCategory();
-                      }
-                    }}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  />
-                  <button
-                    onClick={handleAddCategory}
-                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
-                  >
-                    Add
-                  </button>
-                </div>
-              </div>
-
-              {/* Category List */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Existing Categories
-                </label>
-                <div className="max-h-64 overflow-y-auto space-y-2">
-                  {categories.map((category) => (
-                    <div
-                      key={category}
-                      className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100"
-                    >
-                      <span className="text-sm text-gray-700">{category}</span>
-                      <button
-                        onClick={() => handleDeleteCategory(category)}
-                        className="text-red-600 hover:text-red-700 text-sm"
-                        title="Delete category"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="flex justify-end pt-4">
-                <button
-                  onClick={() => setShowCategoryModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
-                >
-                  Done
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
