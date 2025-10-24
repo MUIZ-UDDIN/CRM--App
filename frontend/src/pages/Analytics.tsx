@@ -749,7 +749,7 @@ export default function Analytics() {
             <h3 className="text-lg font-medium text-gray-900">Revenue Trend</h3>
           </div>
           <div className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={300} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
               <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -777,7 +777,7 @@ export default function Analytics() {
               <h3 className="text-lg font-medium text-gray-900">Pipeline by Stage</h3>
             </div>
             <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <PieChart>
                   <Pie
                     data={pipelineData}
@@ -805,7 +805,7 @@ export default function Analytics() {
               <h3 className="text-lg font-medium text-gray-900">Weekly Activities</h3>
             </div>
             <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <BarChart data={activityData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="day" stroke="#6B7280" />
@@ -829,7 +829,7 @@ export default function Analytics() {
               <h3 className="text-lg font-medium text-gray-900">Lead Sources</h3>
             </div>
             <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`leadsource-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <PieChart>
                   <Pie
                     data={leadSourceData}
@@ -857,7 +857,7 @@ export default function Analytics() {
               <h3 className="text-lg font-medium text-gray-900">Lead Scoring Distribution (AI)</h3>
             </div>
             <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`leadscoring-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <BarChart data={leadScoringData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="score" stroke="#6B7280" />
@@ -876,7 +876,7 @@ export default function Analytics() {
             <h3 className="text-lg font-medium text-gray-900">Conversion Rates by Lead Source</h3>
           </div>
           <div className="p-6">
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={300} key={`conversion-${dateRange}-${selectedUser}-${selectedPipeline}`}>
               <BarChart data={conversionBySourceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="source" stroke="#6B7280" />
@@ -898,7 +898,7 @@ export default function Analytics() {
               <h3 className="text-lg font-medium text-gray-900">Document Status</h3>
             </div>
             <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`docstats-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <PieChart>
                   <Pie
                     data={documentStatsData}
@@ -925,7 +925,7 @@ export default function Analytics() {
               <h3 className="text-lg font-medium text-gray-900">Time to Signature</h3>
             </div>
             <div className="p-6">
-              <ResponsiveContainer width="100%" height={300}>
+              <ResponsiveContainer width="100%" height={300} key={`timetosig-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <BarChart data={timeToSignatureData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                   <XAxis dataKey="range" stroke="#6B7280" />
