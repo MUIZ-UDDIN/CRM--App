@@ -268,10 +268,76 @@ export default function Settings() {
     }
   };
 
+  const handleOpenAddModal = () => {
+    setTeamForm({ name: '', email: '', role: 'Regular User' });
+    setRoleSearchTerm('');
+    setShowAddTeamModal(true);
+  };
+
   const handleEditTeamMember = (member: TeamMember) => {
     setSelectedMember(member);
     setTeamForm({ name: member.name, email: member.email, role: member.role });
+    setRoleSearchTerm('');
     setShowEditTeamModal(true);
+  };
+
+  const handleSaveCompanySettings = () => {
+    // Validate company name
+    if (!companyForm.name.trim()) {
+      toast.error('Company name is required');
+      return;
+    }
+    if (companyForm.name.length > 255) {
+      toast.error('Company name cannot exceed 255 characters');
+      return;
+    }
+
+    // Validate email if provided
+    if (companyForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(companyForm.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    // Validate phone if provided
+    if (companyForm.phone && !/^\+?[\d\s\-()]+$/.test(companyForm.phone)) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+
+    // Validate ZIP code if provided
+    if (companyForm.zip && !/^[\d\-\s]+$/.test(companyForm.zip)) {
+      toast.error('Please enter a valid ZIP code');
+      return;
+    }
+
+    // Check field lengths
+    if (companyForm.email.length > 255) {
+      toast.error('Email cannot exceed 255 characters');
+      return;
+    }
+    if (companyForm.phone.length > 50) {
+      toast.error('Phone number cannot exceed 50 characters');
+      return;
+    }
+    if (companyForm.address.length > 255) {
+      toast.error('Address cannot exceed 255 characters');
+      return;
+    }
+    if (companyForm.city.length > 100) {
+      toast.error('City cannot exceed 100 characters');
+      return;
+    }
+    if (companyForm.state.length > 100) {
+      toast.error('State cannot exceed 100 characters');
+      return;
+    }
+    if (companyForm.zip.length > 20) {
+      toast.error('ZIP code cannot exceed 20 characters');
+      return;
+    }
+
+    localStorage.setItem('companySettings', JSON.stringify(companyForm));
+    toast.success('Company settings saved successfully');
   };
 
   const handleUpdateTeamMember = async () => {
@@ -527,7 +593,7 @@ export default function Settings() {
               <h2 className="text-lg font-medium text-gray-900">Team Members</h2>
               {isSuperAdmin && (
                 <button
-                  onClick={() => setShowAddTeamModal(true)}
+                  onClick={handleOpenAddModal}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto justify-center"
                 >
                   <PlusIcon className="h-4 w-4 mr-2" />
@@ -577,13 +643,20 @@ export default function Settings() {
             <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Company Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={companyForm.name}
                   onChange={(e) => setCompanyForm({...companyForm, name: e.target.value})}
+                  maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {companyForm.name.length}/255 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
@@ -591,8 +664,12 @@ export default function Settings() {
                   type="email"
                   value={companyForm.email}
                   onChange={(e) => setCompanyForm({...companyForm, email: e.target.value})}
+                  maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {companyForm.email.length}/255 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
@@ -600,8 +677,12 @@ export default function Settings() {
                   type="tel"
                   value={companyForm.phone}
                   onChange={(e) => setCompanyForm({...companyForm, phone: e.target.value})}
+                  maxLength={50}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {companyForm.phone.length}/50 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
@@ -609,8 +690,12 @@ export default function Settings() {
                   type="text"
                   value={companyForm.address}
                   onChange={(e) => setCompanyForm({...companyForm, address: e.target.value})}
+                  maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {companyForm.address.length}/255 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
@@ -618,8 +703,12 @@ export default function Settings() {
                   type="text"
                   value={companyForm.city}
                   onChange={(e) => setCompanyForm({...companyForm, city: e.target.value})}
+                  maxLength={100}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {companyForm.city.length}/100 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
@@ -627,8 +716,12 @@ export default function Settings() {
                   type="text"
                   value={companyForm.state}
                   onChange={(e) => setCompanyForm({...companyForm, state: e.target.value})}
+                  maxLength={100}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {companyForm.state.length}/100 characters
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
@@ -636,16 +729,17 @@ export default function Settings() {
                   type="text"
                   value={companyForm.zip}
                   onChange={(e) => setCompanyForm({...companyForm, zip: e.target.value})}
+                  maxLength={20}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  {companyForm.zip.length}/20 characters
+                </div>
               </div>
             </div>
             <div className="mt-6 flex justify-end">
               <button
-                onClick={() => {
-                  localStorage.setItem('companySettings', JSON.stringify(companyForm));
-                  toast.success('Company settings saved successfully');
-                }}
+                onClick={handleSaveCompanySettings}
                 className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
               >
                 Save Changes
@@ -815,14 +909,14 @@ export default function Settings() {
                     if (!/<[^>]*>/gi.test(value)) {
                       setTeamForm({...teamForm, name: value});
                     } else {
-                      toast.error('HTML tags are not allowed in name');
+                      toast.error('Please enter a valid name');
                     }
                   }}
                   onPaste={(e) => {
                     const pastedText = e.clipboardData.getData('text');
                     if (/<[^>]*>/gi.test(pastedText)) {
                       e.preventDefault();
-                      toast.error('HTML tags are not allowed in name');
+                      toast.error('Please enter a valid name');
                     }
                   }}
                   maxLength={255}

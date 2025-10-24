@@ -85,10 +85,15 @@ def get_sync_session():
     """
     Get sync database session for migrations and admin tasks
     """
+    from fastapi import HTTPException
     session = SessionLocal()
     try:
         yield session
         session.commit()
+    except HTTPException:
+        # Don't log HTTPExceptions as errors - they're expected validation errors
+        session.rollback()
+        raise
     except Exception as e:
         session.rollback()
         logger.error(f"Sync database session error: {e}")
