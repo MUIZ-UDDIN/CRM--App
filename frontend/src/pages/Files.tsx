@@ -970,14 +970,30 @@ export default function Files() {
                   <p className="text-gray-900">{formatFileSize(selectedFile.size)}</p>
                 </div>
               )}
-              <div>
-                <label className="text-sm font-medium text-gray-500">Category</label>
-                <p className="text-gray-900">{selectedFile.category || 'N/A'}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Status</label>
-                <p className="text-gray-900 capitalize">{selectedFile.status}</p>
-              </div>
+              {selectedFile.description && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Description</label>
+                  <p className="text-gray-900">{selectedFile.description}</p>
+                </div>
+              )}
+              {selectedFile.category && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Category</label>
+                  <p className="text-gray-900">{selectedFile.category}</p>
+                </div>
+              )}
+              {selectedFile.status && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Status</label>
+                  <p className="text-gray-900 capitalize">{selectedFile.status}</p>
+                </div>
+              )}
+              {selectedFile.tags && selectedFile.tags.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Tags</label>
+                  <p className="text-gray-900">{selectedFile.tags.join(', ')}</p>
+                </div>
+              )}
               {selectedFile.contact && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Contact</label>

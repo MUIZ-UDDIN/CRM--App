@@ -41,6 +41,8 @@ class FolderResponse(BaseModel):
     id: str
     name: str
     description: Optional[str]
+    status: Optional[str] = 'active'
+    tags: List[str] = []
     parent_id: Optional[str] = None
     created_at: str
     
@@ -68,6 +70,8 @@ class FileUpdate(BaseModel):
 class FolderCreate(BaseModel):
     name: str
     description: Optional[str] = None
+    status: Optional[str] = 'active'
+    tags: List[str] = []
     parent_id: Optional[str] = None
 
 
@@ -306,6 +310,8 @@ async def create_folder(
     new_folder = Folder(
         name=folder_data.name,
         description=folder_data.description,
+        status=folder_data.status,
+        tags=folder_data.tags,
         parent_id=parent_uuid,
         owner_id=user_id
     )
@@ -318,6 +324,8 @@ async def create_folder(
         id=str(new_folder.id),
         name=new_folder.name,
         description=new_folder.description,
+        status=new_folder.status,
+        tags=new_folder.tags or [],
         parent_id=str(new_folder.parent_id) if new_folder.parent_id else None,
         created_at=new_folder.created_at.isoformat() if new_folder.created_at else None
     )
@@ -359,6 +367,10 @@ async def update_folder(
         folder.name = folder_update['name']
     if 'description' in folder_update:
         folder.description = folder_update['description']
+    if 'status' in folder_update:
+        folder.status = folder_update['status']
+    if 'tags' in folder_update:
+        folder.tags = folder_update['tags']
     
     folder.updated_at = datetime.utcnow()
     
@@ -369,6 +381,8 @@ async def update_folder(
         id=str(folder.id),
         name=folder.name,
         description=folder.description,
+        status=folder.status,
+        tags=folder.tags or [],
         parent_id=str(folder.parent_id) if folder.parent_id else None,
         created_at=folder.created_at.isoformat() if folder.created_at else None
     )

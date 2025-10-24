@@ -35,6 +35,7 @@ class File(BaseModel):
     
     # Metadata
     description = Column(Text)
+    status = Column(String(50), default='active')  # active, inactive, archived
     version = Column(Integer, default=1)
     custom_fields = Column(JSONB)
     
@@ -58,6 +59,8 @@ class Folder(BaseModel):
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     
     # Metadata
+    status = Column(String(50), default='active')  # active, inactive, archived
+    tags = Column(ARRAY(String), default=[])
     color = Column(String(50))  # For UI customization
     icon = Column(String(50))
     custom_fields = Column(JSONB)
