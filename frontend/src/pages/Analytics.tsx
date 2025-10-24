@@ -60,7 +60,7 @@ export default function Analytics() {
   // Fetch analytics data from backend
   useEffect(() => {
     fetchAllAnalytics();
-  }, [dateRange, selectedUser, selectedPipeline]);
+  }, [dateRange, selectedUser, selectedPipeline, customDateFrom, customDateTo]);
 
   const fetchUsersAndPipelines = async () => {
     try {
@@ -128,6 +128,17 @@ export default function Analytics() {
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
       
+      // Debug logging
+      console.log('Analytics Data Loaded:', {
+        dateRange,
+        customDateFrom,
+        customDateTo,
+        filters,
+        pipelineData: pipeline,
+        activityData: activity,
+        dashboardData: dashboard
+      });
+      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics data');
@@ -168,13 +179,20 @@ export default function Analytics() {
       setShowCustomDatePicker(true);
     } else {
       setShowCustomDatePicker(false);
+      // Reset custom dates when switching away from custom
+      setCustomDateFrom('');
+      setCustomDateTo('');
     }
   };
 
   const applyCustomDateRange = () => {
     if (customDateFrom && customDateTo) {
+      if (customDateFrom > customDateTo) {
+        toast.error('Start date cannot be after end date');
+        return;
+      }
       setShowCustomDatePicker(false);
-      fetchAllAnalytics();
+      // Data will be fetched automatically by useEffect
     } else {
       toast.error('Please select both start and end dates');
     }
@@ -450,21 +468,28 @@ export default function Analytics() {
                     <div className="space-y-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
-                        <input
-                          type="date"
-                          value={customDateFrom}
-                          onChange={(e) => setCustomDateFrom(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
+                        <div className="relative">
+                          <input
+                            type="date"
+                            value={customDateFrom}
+                            onChange={(e) => setCustomDateFrom(e.target.value)}
+                            onClick={(e) => e.currentTarget.showPicker()}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                          />
+                        </div>
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
-                        <input
-                          type="date"
-                          value={customDateTo}
-                          onChange={(e) => setCustomDateTo(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
+                        <div className="relative">
+                          <input
+                            type="date"
+                            value={customDateTo}
+                            onChange={(e) => setCustomDateTo(e.target.value)}
+                            onClick={(e) => e.currentTarget.showPicker()}
+                            min={customDateFrom || undefined}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                          />
+                        </div>
                       </div>
                       <div className="flex gap-2">
                         <button
