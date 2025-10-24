@@ -370,7 +370,7 @@ async def get_user_analytics(current_user: dict = Depends(get_current_active_use
 async def get_email_analytics(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    user_id: Optional[int] = Query(None),
+    user_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get email analytics with open/click/bounce stats
@@ -497,7 +497,7 @@ async def get_email_analytics(
 async def get_call_analytics(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
-    user_id: Optional[int] = Query(None),
+    user_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get call analytics with durations, answered/missed stats
