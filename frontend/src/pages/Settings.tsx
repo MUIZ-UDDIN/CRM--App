@@ -36,6 +36,9 @@ export default function Settings() {
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [showAddRoleModal, setShowAddRoleModal] = useState(false);
+  const [newRoleName, setNewRoleName] = useState('');
+  const [customRoles, setCustomRoles] = useState<string[]>([]);
   
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const { token, user } = useAuth();
@@ -43,6 +46,17 @@ export default function Settings() {
   
   // Check if current user is super admin
   const isSuperAdmin = user?.role === 'Super Admin' || user?.role === 'Admin';
+  
+  // Default roles
+  const defaultRoles = ['Super Admin', 'Admin', 'Sales Manager', 'Sales Rep', 'Regular User', 'Support'];
+
+  useEffect(() => {
+    // Load custom roles from localStorage
+    const savedRoles = localStorage.getItem('customRoles');
+    if (savedRoles) {
+      setCustomRoles(JSON.parse(savedRoles));
+    }
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'team') {
@@ -142,6 +156,26 @@ export default function Settings() {
     confirmPassword: '',
     twoFactorEnabled: false,
   });
+
+  const handleAddCustomRole = () => {
+    if (!newRoleName.trim()) {
+      toast.error('Please enter a role name');
+      return;
+    }
+    
+    const allRoles = [...defaultRoles, ...customRoles];
+    if (allRoles.includes(newRoleName.trim())) {
+      toast.error('This role already exists');
+      return;
+    }
+    
+    const updatedRoles = [...customRoles, newRoleName.trim()];
+    setCustomRoles(updatedRoles);
+    localStorage.setItem('customRoles', JSON.stringify(updatedRoles));
+    toast.success(`Role "${newRoleName.trim()}" added successfully`);
+    setNewRoleName('');
+    setShowAddRoleModal(false);
+  };
 
   const tabs = [
     { id: 'team' as TabType, name: 'Team', icon: UserGroupIcon },
@@ -267,16 +301,21 @@ export default function Settings() {
         setShowEditTeamModal(false);
         fetchTeamMembers();
       } else {
-        const errorData = await response.json();
-        if (errorData.detail?.includes('already')) {
-          toast.error(`Email '${teamForm.email}' is already in use by another user`);
-        } else {
-          toast.error(errorData.detail || 'Failed to update team member');
+        try {
+          const errorData = await response.json();
+          if (errorData.detail?.includes('already') || errorData.detail?.includes('in use')) {
+            toast.error(`Email '${teamForm.email}' is already in use by another user`);
+          } else {
+            toast.error(errorData.detail || 'Failed to update team member');
+          }
+        } catch (parseError) {
+          // If response is not JSON (500 error with HTML)
+          toast.error('Failed to update team member. Please try again.');
         }
       }
     } catch (error) {
       console.error('Error updating team member:', error);
-      toast.error('Failed to update team member. Please try again.');
+      toast.error('Failed to update team member. Please check your connection and try again.');
     }
   };
 
@@ -773,21 +812,33 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Role <span className="text-red-500">*</span>
+                  </label>
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddRoleModal(true)}
+                      className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      + Add New Role
+                    </button>
+                  )}
+                </div>
                 <select
                   value={teamForm.role}
                   onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Sales Manager">Sales Manager</option>
-                  <option value="Sales Rep">Sales Rep</option>
-                  <option value="Regular User">Regular User</option>
-                  <option value="Support">Support</option>
+                  {defaultRoles.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                  {customRoles.length > 0 && <option disabled>──────────</option>}
+                  {customRoles.map(role => (
+                    <option key={role} value={role}>{role} (Custom)</option>
+                  ))}
                 </select>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -848,21 +899,33 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Role <span className="text-red-500">*</span>
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Role <span className="text-red-500">*</span>
+                  </label>
+                  {isSuperAdmin && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAddRoleModal(true)}
+                      className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      + Add New Role
+                    </button>
+                  )}
+                </div>
                 <select
                   value={teamForm.role}
                   onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 >
-                  <option value="Super Admin">Super Admin</option>
-                  <option value="Admin">Admin</option>
-                  <option value="Sales Manager">Sales Manager</option>
-                  <option value="Sales Rep">Sales Rep</option>
-                  <option value="Regular User">Regular User</option>
-                  <option value="Support">Support</option>
+                  {defaultRoles.map(role => (
+                    <option key={role} value={role}>{role}</option>
+                  ))}
+                  {customRoles.length > 0 && <option disabled>──────────</option>}
+                  {customRoles.map(role => (
+                    <option key={role} value={role}>{role} (Custom)</option>
+                  ))}
                 </select>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -877,6 +940,49 @@ export default function Settings() {
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
                   Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Custom Role Modal */}
+      {showAddRoleModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Add Custom Role</h3>
+              <button onClick={() => { setShowAddRoleModal(false); setNewRoleName(''); }} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Role Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g., Marketing Manager"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddCustomRole()}
+                />
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => { setShowAddRoleModal(false); setNewRoleName(''); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddCustomRole}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Add Role
                 </button>
               </div>
             </div>

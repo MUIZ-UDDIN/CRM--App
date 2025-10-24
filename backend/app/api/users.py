@@ -275,7 +275,8 @@ async def update_user(
         last_name=user.last_name,
         role=user.role,
         team_id=str(user.team_id) if user.team_id else None,
-        is_active=user.is_active
+        is_active=user.is_active,
+        created_at=user.created_at
     )
 
 
