@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as filesService from '../services/filesService';
 import ActionButtons from '../components/common/ActionButtons';
+import SearchableCategorySelect from '../components/common/SearchableCategorySelect';
 import { 
   FolderIcon, 
   DocumentIcon,
@@ -59,8 +60,6 @@ export default function Files() {
   const [categories, setCategories] = useState<string[]>([
     'Sales', 'Legal', 'Marketing', 'Support', 'Finance', 'HR', 'Other'
   ]);
-  const [categorySearch, setCategorySearch] = useState('');
-  const [newCategoryName, setNewCategoryName] = useState('');
 
   // Check for action query parameter
   useEffect(() => {
@@ -295,36 +294,13 @@ export default function Files() {
   };
 
   // Category management functions
-  const handleAddNewCategory = () => {
-    if (!newCategoryName.trim()) {
-      toast.error('Please enter a category name');
-      return;
-    }
-    if (categories.includes(newCategoryName.trim())) {
-      toast.error('Category already exists');
-      return;
-    }
-    setCategories([...categories, newCategoryName.trim()]);
-    setFileForm({...fileForm, category: newCategoryName.trim()});
-    setNewCategoryName('');
-    toast.success('Category added successfully');
+  const handleAddCategory = (category: string) => {
+    setCategories([...categories, category]);
   };
 
   const handleDeleteCategory = (category: string) => {
-    if (categories.length <= 1) {
-      toast.error('Cannot delete the last category');
-      return;
-    }
     setCategories(categories.filter(c => c !== category));
-    if (fileForm.category === category) {
-      setFileForm({...fileForm, category: ''});
-    }
-    toast.success('Category deleted successfully');
   };
-
-  const filteredCategories = categories.filter(cat =>
-    cat.toLowerCase().includes(categorySearch.toLowerCase())
-  );
 
   const handleCreateFolder = async () => {
     if (!fileForm.name.trim()) {
@@ -943,75 +919,13 @@ export default function Files() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category
                   </label>
-                  {/* Search Box */}
-                  <input
-                    type="text"
-                    placeholder="Search categories..."
-                    value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
-                    className="w-full px-3 py-2 mb-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  <SearchableCategorySelect
+                    categories={categories}
+                    value={fileForm.category}
+                    onChange={(value) => setFileForm({...fileForm, category: value})}
+                    onAddCategory={handleAddCategory}
+                    onDeleteCategory={handleDeleteCategory}
                   />
-                  {/* Dropdown with categories */}
-                  <div className="border border-gray-300 rounded-lg max-h-48 overflow-y-auto mb-2">
-                    {filteredCategories.length > 0 ? (
-                      filteredCategories.map((cat) => (
-                        <div
-                          key={cat}
-                          className="flex items-center justify-between p-2 hover:bg-gray-50 border-b border-gray-100 last:border-b-0 cursor-pointer"
-                          onClick={() => setFileForm({...fileForm, category: cat})}
-                        >
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name="category"
-                              checked={fileForm.category === cat}
-                              onChange={() => setFileForm({...fileForm, category: cat})}
-                              className="text-primary-600"
-                            />
-                            <span className="text-sm text-gray-700">{cat}</span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteCategory(cat);
-                            }}
-                            className="text-red-600 hover:text-red-700 text-sm px-2"
-                            title="Delete category"
-                          >
-                            Delete
-                          </button>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-3 text-sm text-gray-500 text-center">
-                        No categories found
-                      </div>
-                    )}
-                  </div>
-                  {/* Add New Category Button */}
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="New category name"
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddNewCategory();
-                        }
-                      }}
-                      className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddNewCategory}
-                      className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 whitespace-nowrap"
-                    >
-                      Add New Category
-                    </button>
-                  </div>
                 </div>
               )}
               <div>
