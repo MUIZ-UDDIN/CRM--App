@@ -39,6 +39,7 @@ export default function Settings() {
   const [showAddRoleModal, setShowAddRoleModal] = useState(false);
   const [newRoleName, setNewRoleName] = useState('');
   const [customRoles, setCustomRoles] = useState<string[]>([]);
+  const [roleSearchTerm, setRoleSearchTerm] = useState('');
   
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const { token, user } = useAuth();
@@ -177,6 +178,16 @@ export default function Settings() {
     setShowAddRoleModal(false);
   };
 
+  const handleDeleteCustomRole = (roleToDelete: string) => {
+    if (!confirm(`Delete custom role "${roleToDelete}"? Users with this role will keep it, but it won't be available for new assignments.`)) {
+      return;
+    }
+    const updatedRoles = customRoles.filter(role => role !== roleToDelete);
+    setCustomRoles(updatedRoles);
+    localStorage.setItem('customRoles', JSON.stringify(updatedRoles));
+    toast.success(`Role "${roleToDelete}" deleted successfully`);
+  };
+
   const tabs = [
     { id: 'team' as TabType, name: 'Team', icon: UserGroupIcon },
     { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
@@ -231,18 +242,22 @@ export default function Settings() {
         setTeamForm({ name: '', email: '', role: 'Regular User' });  // Reset to Regular User default
         fetchTeamMembers();
       } else {
-        const errorData = await response.json();
-        // User-friendly error messages
-        if (errorData.detail?.includes('already registered')) {
-          toast.error(`A user with email '${teamForm.email}' is already registered. Please use a different email address.`);
-        } else if (errorData.detail?.includes('exceed 255')) {
-          toast.error('Name is too long. Please use a shorter name (max 255 characters).');
-        } else if (errorData.detail?.includes('Script') || errorData.detail?.includes('HTML')) {
-          toast.error('Invalid characters in name. Please remove any special characters or tags.');
-        } else if (errorData.detail?.includes('empty')) {
-          toast.error('Name cannot be empty. Please enter a valid name.');
-        } else {
-          toast.error(errorData.detail || 'Failed to add team member. Please check your inputs and try again.');
+        try {
+          const errorData = await response.json();
+          // User-friendly error messages
+          if (errorData.detail?.includes('already registered')) {
+            toast.error(`This email is already registered. Please use a different email address.`);
+          } else if (errorData.detail?.includes('exceed 255')) {
+            toast.error('Name is too long. Please use a shorter name (max 255 characters).');
+          } else if (errorData.detail?.includes('Script') || errorData.detail?.includes('HTML') || errorData.detail?.includes('tags')) {
+            toast.error('Invalid characters in name. Please remove any special characters or tags.');
+          } else if (errorData.detail?.includes('empty')) {
+            toast.error('Name cannot be empty. Please enter a valid name.');
+          } else {
+            toast.error(errorData.detail || 'Failed to add team member. Please check your inputs and try again.');
+          }
+        } catch (parseError) {
+          toast.error('Failed to add team member. Please try again.');
         }
       }
     } catch (error) {
@@ -826,20 +841,49 @@ export default function Settings() {
                     </button>
                   )}
                 </div>
-                <select
-                  value={teamForm.role}
-                  onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  required
-                >
-                  {defaultRoles.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                  {customRoles.length > 0 && <option disabled>──────────</option>}
-                  {customRoles.map(role => (
-                    <option key={role} value={role}>{role} (Custom)</option>
-                  ))}
-                </select>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Search roles..."
+                    value={roleSearchTerm}
+                    onChange={(e) => setRoleSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
+                  />
+                  <select
+                    value={teamForm.role}
+                    onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  >
+                    {defaultRoles
+                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                      .map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    {customRoles
+                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                      .map(role => (
+                        <option key={role} value={role}>{role} (Custom)</option>
+                      ))}
+                  </select>
+                  {isSuperAdmin && customRoles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {customRoles.map(role => (
+                        <span key={role} className="inline-flex items-center px-2 py-1 bg-gray-100 text-xs rounded">
+                          {role}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCustomRole(role)}
+                            className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                            title="Delete custom role"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -913,20 +957,49 @@ export default function Settings() {
                     </button>
                   )}
                 </div>
-                <select
-                  value={teamForm.role}
-                  onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  required
-                >
-                  {defaultRoles.map(role => (
-                    <option key={role} value={role}>{role}</option>
-                  ))}
-                  {customRoles.length > 0 && <option disabled>──────────</option>}
-                  {customRoles.map(role => (
-                    <option key={role} value={role}>{role} (Custom)</option>
-                  ))}
-                </select>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    placeholder="Search roles..."
+                    value={roleSearchTerm}
+                    onChange={(e) => setRoleSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
+                  />
+                  <select
+                    value={teamForm.role}
+                    onChange={(e) => setTeamForm({...teamForm, role: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  >
+                    {defaultRoles
+                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                      .map(role => (
+                        <option key={role} value={role}>{role}</option>
+                      ))}
+                    {customRoles
+                      .filter(role => role.toLowerCase().includes(roleSearchTerm.toLowerCase()))
+                      .map(role => (
+                        <option key={role} value={role}>{role} (Custom)</option>
+                      ))}
+                  </select>
+                  {isSuperAdmin && customRoles.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {customRoles.map(role => (
+                        <span key={role} className="inline-flex items-center px-2 py-1 bg-gray-100 text-xs rounded">
+                          {role}
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteCustomRole(role)}
+                            className="ml-1 text-red-600 hover:text-red-800 font-bold"
+                            title="Delete custom role"
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button

@@ -122,19 +122,25 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register new user endpoint"""
     try:
+        # Normalize email to lowercase
+        email_lower = request.email.lower()
+        
         # Validate password strength
         validate_password_strength(request.password)
         
-        # Check if user already exists (only active users)
+        # Check if user already exists (case-insensitive, only active users)
         existing_user = db.query(UserModel).filter(
-            UserModel.email == request.email,
+            UserModel.email.ilike(email_lower),
             UserModel.is_deleted == False
         ).first()
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A user with email '{request.email}' is already registered. Please use a different email address."
+                detail=f"A user with email '{email_lower}' is already registered. Please use a different email address."
             )
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
     except ValueError as e:
         # Catch validation errors from pydantic validators
         raise HTTPException(
@@ -144,14 +150,14 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     
     # Assign role - use provided role or default to Regular User
     # Special case: admin@sunstonecrm.com always gets Super Admin
-    if request.email == "admin@sunstonecrm.com":
+    if email_lower == "admin@sunstonecrm.com":
         role = "Super Admin"
     else:
         role = request.role  # Use the role provided in the request
     
-    # Create new user
+    # Create new user with lowercase email
     new_user = UserModel(
-        email=request.email,
+        email=email_lower,
         hashed_password=get_password_hash(request.password),
         first_name=request.first_name,
         last_name=request.last_name,
