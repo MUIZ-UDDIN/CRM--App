@@ -27,6 +27,8 @@ class FileResponse(BaseModel):
     file_type: Optional[str]
     size: Optional[int]
     category: Optional[str]
+    description: Optional[str] = None
+    status: Optional[str] = 'active'
     tags: List[str] = []
     url: Optional[str]
     folder_id: Optional[str] = None
@@ -288,6 +290,8 @@ async def get_folders(
             id=str(folder.id),
             name=folder.name,
             description=folder.description,
+            status=folder.status if hasattr(folder, 'status') else 'active',
+            tags=folder.tags if hasattr(folder, 'tags') and folder.tags else [],
             parent_id=str(folder.parent_id) if folder.parent_id else None,
             created_at=folder.created_at.isoformat() if folder.created_at else None
         )
