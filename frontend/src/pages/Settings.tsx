@@ -159,6 +159,46 @@ export default function Settings() {
     twoFactorEnabled: false,
   });
 
+  const [billingForm, setBillingForm] = useState(() => {
+    const saved = localStorage.getItem('billingSettings');
+    if (saved) {
+      return JSON.parse(saved);
+    }
+    return {
+      plan: 'Professional',
+      billingCycle: 'monthly',
+      cardNumber: '',
+      cardExpiry: '',
+      cardCVC: '',
+      cardholderName: '',
+    };
+  });
+
+  const [showUpdatePaymentModal, setShowUpdatePaymentModal] = useState(false);
+
+  // Calculate next billing date (30 days from now)
+  const getNextBillingDate = () => {
+    const saved = localStorage.getItem('billingSettings');
+    if (saved) {
+      const billing = JSON.parse(saved);
+      if (billing.nextBillingDate) {
+        return new Date(billing.nextBillingDate).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        });
+      }
+    }
+    // Default: 30 days from now
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 30);
+    return nextDate.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
   const handleAddCustomRole = () => {
     if (!newRoleName.trim()) {
       toast.error('Please enter a role name');
@@ -481,15 +521,31 @@ export default function Settings() {
       return;
     }
 
-    // Validate Account SID format (starts with AC and 32 chars)
+    // Validate Account SID format (starts with AC and 34 chars, alphanumeric)
     if (!twilioForm.accountSid.startsWith('AC') || twilioForm.accountSid.length !== 34) {
       toast.error('Invalid Twilio Account SID format (should start with AC and be 34 characters)');
       return;
     }
 
-    // Validate Auth Token (32 characters)
+    if (!/^AC[a-zA-Z0-9]{32}$/.test(twilioForm.accountSid)) {
+      toast.error('Twilio Account SID should only contain letters and numbers');
+      return;
+    }
+
+    // Validate Auth Token (32 characters, alphanumeric)
     if (twilioForm.authToken.length !== 32) {
       toast.error('Invalid Twilio Auth Token format (should be 32 characters)');
+      return;
+    }
+
+    if (!/^[a-zA-Z0-9]{32}$/.test(twilioForm.authToken)) {
+      toast.error('Twilio Auth Token should only contain letters and numbers');
+      return;
+    }
+
+    // Check for simple patterns
+    if (/^(.)\1+$/.test(twilioForm.authToken) || /^(12345678901234567890123456789012|00000000000000000000000000000000)$/.test(twilioForm.authToken)) {
+      toast.error('Twilio Auth Token appears to be invalid. Please use a valid token from Twilio');
       return;
     }
 
@@ -529,14 +585,27 @@ export default function Settings() {
       return;
     }
 
-    // Validate app password format (16 characters, no spaces)
+    // Validate email has proper username (at least 3 characters before @)
+    const emailParts = gmailForm.email.split('@');
+    if (emailParts[0].length < 3) {
+      toast.error('Gmail address must have at least 3 characters before @gmail.com');
+      return;
+    }
+
+    // Validate app password format (16 characters, no spaces, alphanumeric only)
     if (gmailForm.appPassword.length !== 16) {
       toast.error('Gmail App Password must be exactly 16 characters');
       return;
     }
 
-    if (/\s/.test(gmailForm.appPassword)) {
-      toast.error('Gmail App Password should not contain spaces');
+    if (!/^[a-zA-Z0-9]+$/.test(gmailForm.appPassword)) {
+      toast.error('Gmail App Password should only contain letters and numbers (no spaces or special characters)');
+      return;
+    }
+
+    // Check if it's not a simple pattern like all same digits
+    if (/^(\d)\1+$/.test(gmailForm.appPassword) || /^(1234567891234567|0000000000000000|1111111111111111)$/.test(gmailForm.appPassword)) {
+      toast.error('Gmail App Password appears to be invalid. Please use a valid App Password from Google');
       return;
     }
     
@@ -550,6 +619,56 @@ export default function Settings() {
     
     setShowGmailModal(false);
     toast.success('Gmail connected successfully!');
+  };
+
+  const handleUpdatePayment = () => {
+    // Validate card number (16 digits)
+    if (!/^\d{16}$/.test(billingForm.cardNumber.replace(/\s/g, ''))) {
+      toast.error('Please enter a valid 16-digit card number');
+      return;
+    }
+
+    // Validate expiry (MM/YY format)
+    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(billingForm.cardExpiry)) {
+      toast.error('Please enter expiry in MM/YY format');
+      return;
+    }
+
+    // Check if expiry date is in the future
+    const [month, year] = billingForm.cardExpiry.split('/');
+    const expiryDate = new Date(2000 + parseInt(year), parseInt(month) - 1);
+    const today = new Date();
+    if (expiryDate < today) {
+      toast.error('Card expiry date must be in the future');
+      return;
+    }
+
+    // Validate CVC (3-4 digits)
+    if (!/^\d{3,4}$/.test(billingForm.cardCVC)) {
+      toast.error('Please enter a valid 3 or 4-digit CVC');
+      return;
+    }
+
+    // Validate cardholder name
+    if (!billingForm.cardholderName.trim()) {
+      toast.error('Please enter cardholder name');
+      return;
+    }
+
+    // Calculate next billing date (30 days from now)
+    const nextDate = new Date();
+    nextDate.setDate(nextDate.getDate() + 30);
+
+    // Save billing info
+    const billingData = {
+      ...billingForm,
+      nextBillingDate: nextDate.toISOString(),
+      lastUpdated: new Date().toISOString(),
+    };
+    localStorage.setItem('billingSettings', JSON.stringify(billingData));
+    setBillingForm(billingData);
+    setShowUpdatePaymentModal(false);
+    toast.success('Payment method updated successfully');
   };
 
   const handleChangePassword = async () => {
@@ -890,8 +1009,8 @@ export default function Settings() {
               <div className="border border-gray-200 rounded-lg p-6">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Professional Plan</h3>
-                    <p className="text-sm text-gray-600 mt-1">Billed monthly</p>
+                    <h3 className="text-lg font-semibold text-gray-900">{billingForm.plan} Plan</h3>
+                    <p className="text-sm text-gray-600 mt-1">Billed {billingForm.billingCycle}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-gray-900">$99</p>
@@ -899,21 +1018,40 @@ export default function Settings() {
                   </div>
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-600">Next billing date: February 15, 2024</p>
+                  <p className="text-sm text-gray-600">Next billing date: {getNextBillingDate()}</p>
                 </div>
               </div>
               <div>
                 <h3 className="text-sm font-medium text-gray-900 mb-4">Payment Method</h3>
-                <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-                  <div className="flex items-center">
-                    <CreditCardIcon className="h-8 w-8 text-gray-400 mr-3" />
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">•••• •••• •••• 4242</p>
-                      <p className="text-sm text-gray-600">Expires 12/2025</p>
+                {billingForm.cardNumber ? (
+                  <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <CreditCardIcon className="h-8 w-8 text-gray-400 mr-3" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">
+                          •••• •••• •••• {billingForm.cardNumber.slice(-4)}
+                        </p>
+                        <p className="text-sm text-gray-600">Expires {billingForm.cardExpiry}</p>
+                      </div>
                     </div>
+                    <button 
+                      onClick={() => setShowUpdatePaymentModal(true)}
+                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                    >
+                      Update
+                    </button>
                   </div>
-                  <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">Update</button>
-                </div>
+                ) : (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <p className="text-sm text-gray-600 mb-3">No payment method on file</p>
+                    <button 
+                      onClick={() => setShowUpdatePaymentModal(true)}
+                      className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                    >
+                      Add Payment Method
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -1442,6 +1580,112 @@ export default function Settings() {
                   Connect Gmail
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Update Payment Method Modal */}
+      {showUpdatePaymentModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Update Payment Method</h3>
+              <button onClick={() => setShowUpdatePaymentModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Cardholder Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  value={billingForm.cardholderName}
+                  onChange={(e) => setBillingForm({...billingForm, cardholderName: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Card Number <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="1234 5678 9012 3456"
+                  value={billingForm.cardNumber}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\s/g, '');
+                    if (/^\d{0,16}$/.test(value)) {
+                      setBillingForm({...billingForm, cardNumber: value});
+                    }
+                  }}
+                  maxLength={16}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {billingForm.cardNumber.length}/16 digits
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expiry (MM/YY) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="12/25"
+                    value={billingForm.cardExpiry}
+                    onChange={(e) => {
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length >= 2) {
+                        value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                      }
+                      setBillingForm({...billingForm, cardExpiry: value});
+                    }}
+                    maxLength={5}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    CVC <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="123"
+                    value={billingForm.cardCVC}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 4) {
+                        setBillingForm({...billingForm, cardCVC: value});
+                      }
+                    }}
+                    maxLength={4}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end space-x-3 pt-4 mt-4 border-t">
+              <button
+                onClick={() => setShowUpdatePaymentModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleUpdatePayment}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+              >
+                Save Payment Method
+              </button>
             </div>
           </div>
         </div>
