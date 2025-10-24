@@ -1019,12 +1019,55 @@ async def get_dashboard_analytics(
     prev_win_rate = (prev_won_deals / prev_total_closed * 100) if prev_total_closed > 0 else 0
     win_rate_change = win_rate - prev_win_rate
     
-    # Additional metrics (not filtered by date for now)
-    total_pipeline = 0.0
-    pipeline_growth = 0.0
-    active_deals = 0
-    deal_growth = 0.0
-    activities_today = 0
+    # Total Pipeline (all active deals - not won or lost)
+    pipeline_filters = [
+        DealModel.is_deleted == False,
+        DealModel.status == DealStatus.ACTIVE
+    ]
+    if filter_user_id:
+        pipeline_filters.append(DealModel.owner_id == filter_user_id)
+    elif not is_superuser:
+        pipeline_filters.append(DealModel.owner_id == owner_id)
+    if pipeline_id:
+        pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
+    
+    total_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*pipeline_filters)).scalar() or 0.0
+    
+    # Previous period pipeline
+    prev_pipeline_filters = [
+        DealModel.is_deleted == False,
+        DealModel.status == DealStatus.ACTIVE,
+        func.date(DealModel.created_at) >= prev_period_start,
+        func.date(DealModel.created_at) <= prev_period_end
+    ]
+    if filter_user_id:
+        prev_pipeline_filters.append(DealModel.owner_id == filter_user_id)
+    elif not is_superuser:
+        prev_pipeline_filters.append(DealModel.owner_id == owner_id)
+    if pipeline_id:
+        prev_pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
+    
+    prev_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*prev_pipeline_filters)).scalar() or 0.0
+    pipeline_growth = ((total_pipeline - prev_pipeline) / prev_pipeline * 100) if prev_pipeline > 0 else 0
+    
+    # Active Deals Count
+    active_deals = db.query(func.count(DealModel.id)).filter(and_(*pipeline_filters)).scalar() or 0
+    
+    # Previous period active deals
+    prev_active_deals = db.query(func.count(DealModel.id)).filter(and_(*prev_pipeline_filters)).scalar() or 0
+    deal_growth = ((active_deals - prev_active_deals) / prev_active_deals * 100) if prev_active_deals > 0 else 0
+    
+    # Activities Today
+    activity_filters = [
+        ActivityModel.is_deleted == False,
+        func.date(ActivityModel.due_date) == today
+    ]
+    if filter_user_id:
+        activity_filters.append(ActivityModel.owner_id == filter_user_id)
+    elif not is_superuser:
+        activity_filters.append(ActivityModel.owner_id == owner_id)
+    
+    activities_today = db.query(func.count(ActivityModel.id)).filter(and_(*activity_filters)).scalar() or 0
     
     return {
         "kpis": {

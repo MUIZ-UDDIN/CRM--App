@@ -23,7 +23,7 @@ class ContactBase(BaseModel):
     type: Optional[str] = None
 
 class ContactCreate(ContactBase):
-    pass
+    owner_id: Optional[str] = None
 
 class ContactUpdate(BaseModel):
     first_name: Optional[str] = None
@@ -101,13 +101,19 @@ async def create_contact(
         raise HTTPException(status_code=400, detail="Contact with this email already exists")
     
     try:
-        user_id = current_user["id"]
-        if isinstance(user_id, str):
-            user_id = uuid.UUID(user_id)
+        # Use provided owner_id or default to current user
+        if contact.owner_id:
+            owner_id = uuid.UUID(contact.owner_id)
+        else:
+            user_id = current_user["id"]
+            owner_id = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        
+        # Create contact dict without owner_id to avoid duplication
+        contact_data = contact.dict(exclude={'owner_id'})
         
         db_contact = ContactModel(
-            **contact.dict(),
-            owner_id=user_id,
+            **contact_data,
+            owner_id=owner_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
@@ -118,7 +124,7 @@ async def create_contact(
     except Exception as e:
         db.rollback()
         print(f"Error creating contact: {e}")
-        raise HTTPException(status_code=500, detail="Failed to create contact. Please check your input and try again.")
+        raise HTTPException(status_code=500, detail=f"Failed to create contact: {str(e)}")
 
 @router.get("/{contact_id}", response_model=Contact)
 async def get_contact(
