@@ -16,7 +16,7 @@ interface Workflow {
   name: string;
   description: string;
   trigger: string;
-  status: 'active' | 'paused' | 'draft';
+  status: 'active' | 'inactive';
   actions_count: number;
   executions_count: number;
   last_run?: string;
@@ -27,6 +27,8 @@ export default function Workflows() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
@@ -35,7 +37,7 @@ export default function Workflows() {
     name: '',
     description: '',
     trigger: 'contact_created',
-    status: 'draft',
+    status: 'inactive',
   });
 
   useEffect(() => {
@@ -56,6 +58,32 @@ export default function Workflows() {
     }
   };
 
+  const clearForm = () => {
+    setWorkflowForm({
+      name: '',
+      description: '',
+      trigger: 'contact_created',
+      status: 'inactive',
+    });
+  };
+
+  const handleOpenAddModal = () => {
+    clearForm();
+    setSelectedWorkflow(null);
+    setShowAddModal(true);
+  };
+
+  const handleCloseAddModal = () => {
+    setShowAddModal(false);
+    clearForm();
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    clearForm();
+    setSelectedWorkflow(null);
+  };
+
   const handleView = (workflow: Workflow) => {
     setSelectedWorkflow(workflow);
     setShowViewModal(true);
@@ -72,11 +100,18 @@ export default function Workflows() {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (workflow: Workflow) => {
-    if (!confirm(`Delete workflow "${workflow.name}"?`)) return;
+  const handleDelete = (workflow: Workflow) => {
+    setWorkflowToDelete(workflow);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!workflowToDelete) return;
     try {
-      await workflowsService.deleteWorkflow(workflow.id);
-      toast.success('Workflow deleted');
+      await workflowsService.deleteWorkflow(workflowToDelete.id);
+      toast.success('Workflow deleted successfully');
+      setShowDeleteModal(false);
+      setWorkflowToDelete(null);
       fetchWorkflows();
     } catch (error: any) {
       console.error('Delete error:', error);
@@ -84,17 +119,22 @@ export default function Workflows() {
     }
   };
 
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setWorkflowToDelete(null);
+  };
+
   const handleToggleStatus = async (workflow: Workflow) => {
     // Check if workflow has actions before activating
-    if (workflow.status !== 'active' && workflow.actions_count === 0) {
+    if (workflow.status === 'inactive' && workflow.actions_count === 0) {
       toast.error('Cannot activate workflow without actions. Please add actions first.');
       return;
     }
 
-    const newStatus = workflow.status === 'active' ? 'paused' : 'active';
+    const newStatus = workflow.status === 'active' ? 'inactive' : 'active';
     try {
       await workflowsService.toggleWorkflow(workflow.id, newStatus === 'active');
-      toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'paused'}`);
+      toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
       fetchWorkflows();
     } catch (error: any) {
       console.error('Toggle error:', error);
@@ -136,13 +176,7 @@ export default function Workflows() {
         is_active: workflowForm.status === 'active',
       });
       toast.success('Workflow created successfully');
-      setShowAddModal(false);
-      setWorkflowForm({
-        name: '',
-        description: '',
-        trigger: 'contact_created',
-        status: 'draft',
-      });
+      handleCloseAddModal();
       fetchWorkflows();
     } catch (error: any) {
       console.error('Create error:', error);
@@ -185,7 +219,7 @@ export default function Workflows() {
         is_active: workflowForm.status === 'active',
       });
       toast.success('Workflow updated successfully');
-      setShowEditModal(false);
+      handleCloseEditModal();
       fetchWorkflows();
     } catch (error: any) {
       console.error('Update error:', error);
@@ -223,7 +257,7 @@ export default function Workflows() {
               </p>
             </div>
             <button
-              onClick={() => setShowAddModal(true)}
+              onClick={handleOpenAddModal}
               className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
             >
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -266,10 +300,9 @@ export default function Workflows() {
                       </div>
                       <span className={`ml-3 inline-flex px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
                         workflow.status === 'active' ? 'bg-green-100 text-green-800' :
-                        workflow.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {workflow.status}
+                        {workflow.status === 'active' ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                     
@@ -295,21 +328,22 @@ export default function Workflows() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {workflow.status !== 'draft' && (
+                    {workflow.status === 'active' && (
                       <button
                         onClick={() => handleToggleStatus(workflow)}
-                        className={`p-2 rounded-lg transition-colors ${
-                          workflow.status === 'active'
-                            ? 'text-yellow-600 hover:bg-yellow-50'
-                            : 'text-green-600 hover:bg-green-50'
-                        }`}
-                        title={workflow.status === 'active' ? 'Pause' : 'Start'}
+                        className="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50"
+                        title="Deactivate"
                       >
-                        {workflow.status === 'active' ? (
-                          <PauseIcon className="h-5 w-5" />
-                        ) : (
-                          <PlayIcon className="h-5 w-5" />
-                        )}
+                        <PauseIcon className="h-5 w-5" />
+                      </button>
+                    )}
+                    {workflow.status === 'inactive' && workflow.actions_count > 0 && (
+                      <button
+                        onClick={() => handleToggleStatus(workflow)}
+                        className="p-2 rounded-lg transition-colors text-green-600 hover:bg-green-50"
+                        title="Activate"
+                      >
+                        <PlayIcon className="h-5 w-5" />
                       </button>
                     )}
                     <ActionButtons
@@ -339,7 +373,7 @@ export default function Workflows() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Create Workflow</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -410,7 +444,7 @@ export default function Workflows() {
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowAddModal(false)}
+                  onClick={handleCloseAddModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
@@ -433,7 +467,7 @@ export default function Workflows() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Workflow</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
@@ -504,7 +538,7 @@ export default function Workflows() {
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowEditModal(false)}
+                  onClick={handleCloseEditModal}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
@@ -563,6 +597,44 @@ export default function Workflows() {
               <div>
                 <label className="text-sm font-medium text-gray-500">Created</label>
                 <p className="text-gray-900">{formatDate(selectedWorkflow.created_at)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && workflowToDelete && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-red-900">Delete Workflow</h3>
+              <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-sm text-red-800">
+                  Are you sure you want to delete the workflow <strong>"{workflowToDelete.name}"</strong>?
+                </p>
+                <p className="text-sm text-red-600 mt-2">
+                  This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+                >
+                  Yes, Delete
+                </button>
               </div>
             </div>
           </div>

@@ -191,7 +191,14 @@ async def update_workflow(
         workflow.name = workflow_data.name
     if workflow_data.description is not None:
         workflow.description = workflow_data.description
-    if workflow_data.status:
+    if workflow_data.trigger_type:
+        try:
+            workflow.trigger_type = WorkflowTrigger(workflow_data.trigger_type)
+        except ValueError:
+            pass
+    if workflow_data.is_active is not None:
+        workflow.status = WorkflowStatus.ACTIVE if workflow_data.is_active else WorkflowStatus.INACTIVE
+    elif workflow_data.status:
         try:
             workflow.status = WorkflowStatus(workflow_data.status)
         except ValueError:

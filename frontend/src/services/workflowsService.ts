@@ -55,7 +55,7 @@ export const createWorkflow = async (data: Partial<Workflow>) => {
 
 // Update workflow
 export const updateWorkflow = async (id: string, data: Partial<Workflow>) => {
-  const response = await apiClient.patch(`/workflows/${id}`, data);
+  const response = await apiClient.put(`/workflows/${id}`, data);
   return response.data;
 };
 
