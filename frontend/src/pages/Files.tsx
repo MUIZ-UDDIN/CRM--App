@@ -56,6 +56,12 @@ export default function Files() {
     tags: '',
     status: 'active',
   });
+  const [categories, setCategories] = useState<string[]>([
+    'Sales', 'Legal', 'Marketing', 'Support', 'Finance', 'HR', 'Other'
+  ]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategory, setNewCategory] = useState('');
+  const [categorySearch, setCategorySearch] = useState('');
 
   // Check for action query parameter
   useEffect(() => {
@@ -288,6 +294,34 @@ export default function Files() {
       toast.error(errorMessage);
     }
   };
+
+  // Category management functions
+  const handleAddCategory = () => {
+    if (!newCategory.trim()) {
+      toast.error('Please enter a category name');
+      return;
+    }
+    if (categories.includes(newCategory.trim())) {
+      toast.error('Category already exists');
+      return;
+    }
+    setCategories([...categories, newCategory.trim()]);
+    setNewCategory('');
+    toast.success('Category added successfully');
+  };
+
+  const handleDeleteCategory = (category: string) => {
+    if (categories.length <= 1) {
+      toast.error('Cannot delete the last category');
+      return;
+    }
+    setCategories(categories.filter(c => c !== category));
+    toast.success('Category deleted successfully');
+  };
+
+  const filteredCategories = categories.filter(cat => 
+    cat.toLowerCase().includes(categorySearch.toLowerCase())
+  );
 
   const handleCreateFolder = async () => {
     if (!fileForm.name.trim()) {
@@ -688,7 +722,7 @@ export default function Files() {
                     onView={() => handleView(file)}
                     onEdit={() => handleEdit(file)}
                     onDelete={() => handleDelete(file)}
-                    showView={file.type === 'file'}
+                    showView={true}
                   />
                 </div>
               </div>
@@ -904,23 +938,44 @@ export default function Files() {
               </div>
               {selectedFile?.type === 'file' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={fileForm.category}
-                    onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  >
-                    <option value="">Select Category</option>
-                    <option value="Sales">Sales</option>
-                    <option value="Legal">Legal</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Support">Support</option>
-                    <option value="Finance">Finance</option>
-                    <option value="HR">HR</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Category
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryModal(true)}
+                      className="text-xs text-primary-600 hover:text-primary-700"
+                    >
+                      Manage Categories
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    <input
+                      type="text"
+                      placeholder="Search or type category..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && categorySearch && !categories.includes(categorySearch)) {
+                          setCategories([...categories, categorySearch]);
+                          setFileForm({...fileForm, category: categorySearch});
+                          setCategorySearch('');
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    />
+                    <select
+                      value={fileForm.category}
+                      onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    >
+                      <option value="">Select Category</option>
+                      {filteredCategories.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               )}
               <div>
@@ -1061,6 +1116,81 @@ export default function Files() {
               <div>
                 <label className="text-sm font-medium text-gray-500">Created</label>
                 <p className="text-gray-900">{formatDate(selectedFile.created_at)}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Category Management Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Manage Categories</h3>
+              <button onClick={() => setShowCategoryModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              {/* Add New Category */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Add New Category
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Enter category name"
+                    value={newCategory}
+                    onChange={(e) => setNewCategory(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAddCategory();
+                      }
+                    }}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <button
+                    onClick={handleAddCategory}
+                    className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              {/* Category List */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Existing Categories
+                </label>
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {categories.map((category) => (
+                    <div
+                      key={category}
+                      className="flex items-center justify-between p-2 bg-gray-50 rounded-lg hover:bg-gray-100"
+                    >
+                      <span className="text-sm text-gray-700">{category}</span>
+                      <button
+                        onClick={() => handleDeleteCategory(category)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                        title="Delete category"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end pt-4">
+                <button
+                  onClick={() => setShowCategoryModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Done
+                </button>
               </div>
             </div>
           </div>
