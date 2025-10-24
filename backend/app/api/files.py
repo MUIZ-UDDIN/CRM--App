@@ -253,6 +253,8 @@ async def update_file(
         file_type=file.file_type,
         size=file.size,
         category=file.category,
+        description=file.description,
+        status=file.status if hasattr(file, 'status') else 'active',
         tags=file.tags or [],
         url=file.url,
         folder_id=str(file.folder_id) if file.folder_id else None,

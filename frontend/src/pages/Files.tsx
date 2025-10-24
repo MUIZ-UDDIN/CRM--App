@@ -919,45 +919,66 @@ export default function Files() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Category
                   </label>
-                  <div className="relative">
-                    <input
-                      type="text"
-                      list="category-list"
-                      placeholder="Type or select category (press Enter to add new)"
-                      value={fileForm.category}
-                      onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && fileForm.category && !categories.includes(fileForm.category)) {
-                          e.preventDefault();
-                          setCategories([...categories, fileForm.category]);
-                          toast.success('Category added');
-                        }
-                      }}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    />
-                    <datalist id="category-list">
-                      {categories.map(cat => (
-                        <option key={cat} value={cat} />
-                      ))}
-                    </datalist>
-                  </div>
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="border border-gray-300 rounded-lg p-3 space-y-2 max-h-48 overflow-y-auto">
                     {categories.map((cat) => (
-                      <span
+                      <div
                         key={cat}
-                        className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded hover:bg-gray-200"
+                        className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
+                        onClick={() => setFileForm({...fileForm, category: cat})}
                       >
-                        {cat}
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name="category"
+                            checked={fileForm.category === cat}
+                            onChange={() => setFileForm({...fileForm, category: cat})}
+                            className="text-primary-600"
+                          />
+                          <span className="text-sm text-gray-700">{cat}</span>
+                        </div>
                         <button
                           type="button"
-                          onClick={() => handleDeleteCategory(cat)}
-                          className="text-red-600 hover:text-red-700"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteCategory(cat);
+                          }}
+                          className="text-red-600 hover:text-red-700 text-sm px-2"
                           title="Delete category"
                         >
-                          ×
+                          Delete
                         </button>
-                      </span>
+                      </div>
                     ))}
+                    <div className="flex gap-2 pt-2 border-t border-gray-200">
+                      <input
+                        type="text"
+                        placeholder="Add new category"
+                        value={fileForm.category && !categories.includes(fileForm.category) ? fileForm.category : ''}
+                        onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && fileForm.category && !categories.includes(fileForm.category)) {
+                            e.preventDefault();
+                            setCategories([...categories, fileForm.category]);
+                            toast.success('Category added');
+                          }
+                        }}
+                        className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (fileForm.category && !categories.includes(fileForm.category)) {
+                            setCategories([...categories, fileForm.category]);
+                            toast.success('Category added');
+                          } else {
+                            toast.error('Please enter a new category name');
+                          }
+                        }}
+                        className="px-3 py-1.5 text-sm font-medium text-white bg-primary-600 rounded hover:bg-primary-700"
+                      >
+                        Add
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
