@@ -185,6 +185,30 @@ def create_deal(
         db.commit()
         db.refresh(new_deal)
         
+        # Trigger workflows for deal_created
+        try:
+            from ..services.workflow_executor import WorkflowExecutor
+            from ..models.workflows import WorkflowTrigger
+            
+            executor = WorkflowExecutor(db)
+            trigger_data = {
+                "deal_id": str(new_deal.id),
+                "deal_title": new_deal.title,
+                "deal_value": new_deal.value,
+                "contact_id": str(new_deal.contact_id) if new_deal.contact_id else None,
+                "owner_id": str(new_deal.owner_id)
+            }
+            # Run workflows asynchronously (non-blocking)
+            import asyncio
+            asyncio.create_task(executor.trigger_workflows(
+                WorkflowTrigger.DEAL_CREATED,
+                trigger_data,
+                user_id
+            ))
+        except Exception as workflow_error:
+            # Don't fail the deal creation if workflows fail
+            print(f"Workflow trigger error: {workflow_error}")
+        
         # Map stage name to frontend format
         stage_name_map = {
             'Qualification': 'qualification',

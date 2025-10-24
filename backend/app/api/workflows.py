@@ -301,3 +301,87 @@ async def toggle_workflow(
     db.refresh(workflow)
     
     return {"message": f"Workflow {workflow.status.value}", "status": workflow.status.value}
+
+
+@router.post("/{workflow_id}/execute")
+async def execute_workflow_manually(
+    workflow_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Manually execute a workflow for testing"""
+    from app.services.workflow_executor import WorkflowExecutor
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Verify workflow belongs to user
+    workflow = db.query(Workflow).filter(
+        and_(
+            Workflow.id == uuid.UUID(workflow_id),
+            Workflow.owner_id == user_id,
+            Workflow.is_deleted == False
+        )
+    ).first()
+    
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    try:
+        executor = WorkflowExecutor(db)
+        execution = await executor.execute_workflow_manually(
+            workflow_id=uuid.UUID(workflow_id),
+            trigger_data={"manual_execution": True, "user_id": str(user_id)}
+        )
+        
+        return {
+            "message": "Workflow executed",
+            "execution_id": str(execution.id),
+            "status": execution.status,
+            "success_count": execution.success_count,
+            "failure_count": execution.failure_count,
+            "duration_seconds": execution.duration_seconds
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Execution failed: {str(e)}")
+
+
+@router.get("/{workflow_id}/executions")
+async def get_workflow_executions(
+    workflow_id: str,
+    limit: int = 50,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get execution history for a workflow"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Verify workflow belongs to user
+    workflow = db.query(Workflow).filter(
+        and_(
+            Workflow.id == uuid.UUID(workflow_id),
+            Workflow.owner_id == user_id,
+            Workflow.is_deleted == False
+        )
+    ).first()
+    
+    if not workflow:
+        raise HTTPException(status_code=404, detail="Workflow not found")
+    
+    executions = db.query(WorkflowExecution).filter(
+        WorkflowExecution.workflow_id == uuid.UUID(workflow_id)
+    ).order_by(desc(WorkflowExecution.started_at)).limit(limit).all()
+    
+    return [
+        {
+            "id": str(execution.id),
+            "status": execution.status,
+            "started_at": execution.started_at.isoformat() if execution.started_at else None,
+            "completed_at": execution.completed_at.isoformat() if execution.completed_at else None,
+            "duration_seconds": execution.duration_seconds,
+            "success_count": execution.success_count,
+            "failure_count": execution.failure_count,
+            "error_message": execution.error_message,
+            "trigger_data": execution.trigger_data
+        }
+        for execution in executions
+    ]
