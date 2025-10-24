@@ -25,6 +25,7 @@ from ..models.emails import Email
 from ..models.calls import Call
 from ..models.contacts import Contact
 from ..models.documents import Document
+from ..models.users import User
 import json
 
 router = APIRouter()
@@ -143,15 +144,85 @@ async def get_activity_analytics(
     """
     
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    is_superuser = current_user.get("is_superuser", False)
     
-    filters = [Activity.owner_id == owner_id, Activity.is_deleted == False]
+    # Base filters
+    filters = [Activity.is_deleted == False]
+    if not is_superuser:
+        filters.append(Activity.owner_id == owner_id)
     if date_from:
         filters.append(Activity.created_at >= datetime.fromisoformat(date_from))
     if date_to:
         filters.append(Activity.created_at <= datetime.fromisoformat(date_to))
+    if user_id:
+        filters.append(Activity.owner_id == uuid.UUID(user_id))
+    if activity_type:
+        filters.append(Activity.type == activity_type)
     
+    # Total activities
     total_activities = db.query(func.count(Activity.id)).filter(and_(*filters)).scalar() or 0
     completed_activities = db.query(func.count(Activity.id)).filter(and_(*filters, Activity.status == 'completed')).scalar() or 0
+    overdue_activities = db.query(func.count(Activity.id)).filter(
+        and_(*filters, Activity.status != 'completed', Activity.due_date < datetime.utcnow())
+    ).scalar() or 0
+    
+    # Activity analytics by type
+    activity_types = ['call', 'email', 'meeting', 'task']
+    activity_analytics = []
+    for act_type in activity_types:
+        type_filters = filters + [Activity.type == act_type]
+        total = db.query(func.count(Activity.id)).filter(and_(*type_filters)).scalar() or 0
+        completed = db.query(func.count(Activity.id)).filter(and_(*type_filters, Activity.status == 'completed')).scalar() or 0
+        overdue = db.query(func.count(Activity.id)).filter(
+            and_(*type_filters, Activity.status != 'completed', Activity.due_date < datetime.utcnow())
+        ).scalar() or 0
+        
+        activity_analytics.append({
+            "activity_type": act_type,
+            "total_count": total,
+            "completed_count": completed,
+            "overdue_count": overdue,
+            "pending_count": total - completed - overdue,
+            "completion_rate": round((completed / total * 100) if total > 0 else 0, 1)
+        })
+    
+    # Activities by user
+    activities_by_user_query = db.query(
+        Activity.owner_id,
+        User.full_name,
+        func.count(case((Activity.type == 'call', 1))).label('calls'),
+        func.count(case((Activity.type == 'email', 1))).label('emails'),
+        func.count(case((Activity.type == 'meeting', 1))).label('meetings'),
+        func.count(case((Activity.type == 'task', 1))).label('tasks'),
+        func.count(Activity.id).label('total'),
+        func.count(case((Activity.status == 'completed', 1))).label('completed')
+    ).join(User, Activity.owner_id == User.id).filter(and_(*filters)).group_by(Activity.owner_id, User.full_name).all()
+    
+    activities_by_user = []
+    for row in activities_by_user_query:
+        completion_rate = round((row.completed / row.total * 100) if row.total > 0 else 0, 1)
+        activities_by_user.append({
+            "user_id": str(row.owner_id),
+            "user_name": row.full_name,
+            "calls": row.calls,
+            "emails": row.emails,
+            "meetings": row.meetings,
+            "tasks": row.tasks,
+            "total": row.total,
+            "completion_rate": completion_rate
+        })
+    
+    # Activity distribution by day
+    activity_by_day = db.query(
+        func.extract('dow', Activity.created_at).label('day_of_week'),
+        func.count(Activity.id).label('count')
+    ).filter(and_(*filters)).group_by('day_of_week').all()
+    
+    day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+    by_day = []
+    for day_num in range(7):
+        count = next((row.count for row in activity_by_day if int(row.day_of_week) == day_num), 0)
+        by_day.append({"day": day_names[day_num], "count": count})
     
     data = {
         "filters": {
@@ -161,94 +232,16 @@ async def get_activity_analytics(
             "team_id": team_id,
             "activity_type": activity_type
         },
-        "activity_analytics": [
-            {
-                "activity_type": "call",
-                "total_count": 145,
-                "completed_count": 133,
-                "overdue_count": 12,
-                "pending_count": 0,
-                "completion_rate": 91.7,
-                "avg_duration_minutes": 12.5
-            },
-            {
-                "activity_type": "email",
-                "total_count": 234,
-                "completed_count": 226,
-                "overdue_count": 8,
-                "pending_count": 0,
-                "completion_rate": 96.6,
-                "avg_duration_minutes": 5.2
-            },
-            {
-                "activity_type": "meeting",
-                "total_count": 89,
-                "completed_count": 84,
-                "overdue_count": 5,
-                "pending_count": 0,
-                "completion_rate": 94.4,
-                "avg_duration_minutes": 45.0
-            },
-            {
-                "activity_type": "task",
-                "total_count": 167,
-                "completed_count": 152,
-                "overdue_count": 15,
-                "pending_count": 0,
-                "completion_rate": 91.0,
-                "avg_duration_minutes": 30.0
-            }
-        ],
-        "activities_by_user": [
-            {
-                "user_id": 1,
-                "user_name": "John Doe",
-                "calls": 45,
-                "emails": 89,
-                "meetings": 28,
-                "tasks": 56,
-                "total": 218,
-                "completion_rate": 93.5
-            },
-            {
-                "user_id": 2,
-                "user_name": "Jane Smith",
-                "calls": 38,
-                "emails": 67,
-                "meetings": 25,
-                "tasks": 42,
-                "total": 172,
-                "completion_rate": 91.2
-            },
-            {
-                "user_id": 3,
-                "user_name": "Mike Johnson",
-                "calls": 32,
-                "emails": 45,
-                "meetings": 18,
-                "tasks": 38,
-                "total": 133,
-                "completion_rate": 88.7
-            }
-        ],
+        "activity_analytics": activity_analytics,
+        "activities_by_user": activities_by_user,
         "activity_distribution": {
-            "by_day": [
-                {"day": "Monday", "count": 135},
-                {"day": "Tuesday", "count": 142},
-                {"day": "Wednesday", "count": 128},
-                {"day": "Thursday", "count": 156},
-                {"day": "Friday", "count": 120}
-            ],
-            "by_hour": [
-                {"hour": "09:00", "count": 0},
-                {"hour": "10:00", "count": 0}
-            ]
+            "by_day": by_day
         },
         "summary": {
             "total_activities": total_activities,
             "total_completed": completed_activities,
-            "total_overdue": 0,
-            "total_pending": total_activities - completed_activities,
+            "total_overdue": overdue_activities,
+            "total_pending": total_activities - completed_activities - overdue_activities,
             "overall_completion_rate": round((completed_activities / total_activities * 100) if total_activities > 0 else 0, 2)
         }
     }
