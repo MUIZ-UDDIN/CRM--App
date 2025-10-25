@@ -72,6 +72,11 @@ async def lifespan(app: FastAPI):
     try:
         await init_db()
         await init_redis()
+        
+        # Start workflow scheduler
+        from app.services.workflow_scheduler import start_scheduler
+        start_scheduler()
+        logger.info("✅ Workflow scheduler started")
     except Exception as e:
         logger.warning(f"Some services failed to initialize: {e}")
     logger.info("Sales CRM API started successfully!")
@@ -80,6 +85,12 @@ async def lifespan(app: FastAPI):
     
     # Shutdown
     logger.info("Shutting down Sales CRM API...")
+    try:
+        from app.services.workflow_scheduler import stop_scheduler
+        stop_scheduler()
+        logger.info("Workflow scheduler stopped")
+    except Exception as e:
+        logger.warning(f"Error stopping scheduler: {e}")
 
 
 # Create FastAPI application

@@ -552,3 +552,68 @@ async def delete_file(
     db.commit()
     
     return {"message": "File deleted successfully"}
+
+
+@router.post("/webhook/document-signed")
+async def document_signed_webhook(
+    document_data: dict,
+    db: Session = Depends(get_db)
+):
+    """Webhook endpoint for document signature events (e.g., from DocuSign, HelloSign)"""
+    try:
+        document_id = document_data.get("document_id")
+        signer_email = document_data.get("signer_email")
+        contact_id = document_data.get("contact_id")
+        owner_id = document_data.get("owner_id")
+        
+        print(f"📄 Document signed webhook received: {document_data}")
+        
+        # Trigger workflow for document_signed
+        try:
+            from app.services.workflow_executor import WorkflowExecutor
+            from app.models.workflows import WorkflowTrigger
+            from app.core.database import SessionLocal
+            import asyncio
+            import threading
+            
+            def run_workflow():
+                workflow_db = SessionLocal()
+                try:
+                    print(f"🔥 Starting workflow trigger for document_signed")
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    executor = WorkflowExecutor(workflow_db)
+                    trigger_data = {
+                        "document_id": document_id,
+                        "document_name": document_data.get("document_name", "Unknown"),
+                        "signer_email": signer_email,
+                        "contact_id": contact_id,
+                        "owner_id": owner_id,
+                        "signed_at": document_data.get("signed_at", datetime.utcnow().isoformat())
+                    }
+                    print(f"🔥 Trigger data: {trigger_data}")
+                    result = loop.run_until_complete(executor.trigger_workflows(
+                        WorkflowTrigger.DOCUMENT_SIGNED,
+                        trigger_data,
+                        owner_id
+                    ))
+                    print(f"🔥 Workflow trigger completed, executions: {len(result) if result else 0}")
+                    loop.close()
+                except Exception as e:
+                    print(f"❌ Workflow execution error: {e}")
+                    import traceback
+                    traceback.print_exc()
+                finally:
+                    workflow_db.close()
+            
+            thread = threading.Thread(target=run_workflow, daemon=True)
+            thread.start()
+            print(f"🔥 Workflow thread started for document_signed")
+        except Exception as workflow_error:
+            print(f"❌ Workflow trigger error: {workflow_error}")
+        
+        return {"status": "ok", "message": "Document signature processed"}
+        
+    except Exception as e:
+        print(f"Error processing document signature: {e}")
+        return {"status": "error", "message": str(e)}

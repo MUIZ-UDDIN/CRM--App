@@ -358,3 +358,81 @@ async def get_email_stats(
         "sent": sent,
         "drafts": drafts
     }
+
+
+@router.post("/track/open/{email_id}")
+async def track_email_open(
+    email_id: str,
+    db: Session = Depends(get_db)
+):
+    """Track email open event (called when tracking pixel loads)"""
+    try:
+        email = db.query(EmailModel).filter(
+            EmailModel.id == uuid.UUID(email_id),
+            EmailModel.is_deleted == False
+        ).first()
+        
+        if not email:
+            # Don't raise error for tracking - just return success
+            return {"status": "ok"}
+        
+        # Update email read status
+        if not email.read_at:
+            email.read_at = datetime.utcnow()
+        
+        # Increment open count if field exists
+        if hasattr(email, 'open_count'):
+            email.open_count = (email.open_count or 0) + 1
+        
+        db.commit()
+        db.refresh(email)
+        
+        # Trigger workflow for email_opened
+        try:
+            from app.services.workflow_executor import WorkflowExecutor
+            from app.models.workflows import WorkflowTrigger
+            from app.core.database import SessionLocal
+            import asyncio
+            import threading
+            
+            def run_workflow():
+                workflow_db = SessionLocal()
+                try:
+                    print(f"🔥 Starting workflow trigger for email_opened")
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    executor = WorkflowExecutor(workflow_db)
+                    trigger_data = {
+                        "email_id": str(email.id),
+                        "email_subject": email.subject,
+                        "to_email": email.to_email,
+                        "contact_id": str(email.contact_id) if email.contact_id else None,
+                        "owner_id": str(email.owner_id)
+                    }
+                    print(f"🔥 Trigger data: {trigger_data}")
+                    result = loop.run_until_complete(executor.trigger_workflows(
+                        WorkflowTrigger.EMAIL_OPENED,
+                        trigger_data,
+                        str(email.owner_id)
+                    ))
+                    print(f"🔥 Workflow trigger completed, executions: {len(result) if result else 0}")
+                    loop.close()
+                except Exception as e:
+                    print(f"❌ Workflow execution error: {e}")
+                    import traceback
+                    traceback.print_exc()
+                finally:
+                    workflow_db.close()
+            
+            thread = threading.Thread(target=run_workflow, daemon=True)
+            thread.start()
+            print(f"🔥 Workflow thread started for email_opened")
+        except Exception as workflow_error:
+            print(f"❌ Workflow trigger error: {workflow_error}")
+        
+        return {"status": "ok", "message": "Email open tracked"}
+        
+    except Exception as e:
+        print(f"Error tracking email open: {e}")
+        # Don't raise error for tracking
+        return {"status": "ok"}
