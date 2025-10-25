@@ -49,6 +49,8 @@ const navigation: NavItem[] = [
       { name: 'Contacts', href: '/contacts' },
       { name: 'Email', href: '/inbox' },
       { name: 'SMS', href: '/sms' },
+      { name: 'SMS Templates', href: '/sms-templates' },
+      { name: 'SMS Analytics', href: '/sms-analytics' },
       { name: 'Calls', href: '/calls' },
     ]
   },
@@ -60,6 +62,7 @@ const navigation: NavItem[] = [
       { name: 'Files', href: '/files' },
       { name: 'Workflows', href: '/workflows' },
       { name: 'Settings', href: '/settings' },
+      { name: 'Twilio Settings', href: '/twilio-settings' },
     ]
   },
 ];

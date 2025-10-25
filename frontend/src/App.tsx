@@ -21,6 +21,10 @@ import PipelineSettings from './pages/PipelineSettings';
 import Workflows from './pages/Workflows';
 import Inbox from './pages/Inbox';
 import SMS from './pages/SMS';
+import SMSEnhanced from './pages/SMSEnhanced';
+import SMSTemplates from './pages/SMSTemplates';
+import SMSAnalytics from './pages/SMSAnalytics';
+import TwilioSettings from './pages/TwilioSettings';
 import Calls from './pages/Calls';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -75,7 +79,10 @@ function App() {
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="inbox" element={<Inbox />} />
-                <Route path="sms" element={<SMS />} />
+                <Route path="sms" element={<SMSEnhanced />} />
+                <Route path="sms-templates" element={<SMSTemplates />} />
+                <Route path="sms-analytics" element={<SMSAnalytics />} />
+                <Route path="twilio-settings" element={<TwilioSettings />} />
                 <Route path="calls" element={<Calls />} />
               </Route>
 
