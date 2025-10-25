@@ -41,7 +41,7 @@ export default function SMSTemplates() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/templates`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/templates`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -63,7 +63,7 @@ export default function SMSTemplates() {
     e.preventDefault();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/templates`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/templates`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -90,7 +90,7 @@ export default function SMSTemplates() {
     if (!confirm('Are you sure you want to delete this template?')) return;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/templates/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/templates/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,

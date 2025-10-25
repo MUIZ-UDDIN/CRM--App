@@ -54,7 +54,7 @@ export default function ScheduledSMS() {
 
   const fetchScheduledMessages = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/scheduled`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/scheduled`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -88,7 +88,7 @@ export default function ScheduledSMS() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/templates`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/templates`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -112,7 +112,7 @@ export default function ScheduledSMS() {
     const scheduledAt = new Date(`${formData.scheduled_date}T${formData.scheduled_time}`).toISOString();
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/scheduled`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/scheduled`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

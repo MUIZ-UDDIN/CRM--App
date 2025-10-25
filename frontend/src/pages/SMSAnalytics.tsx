@@ -37,7 +37,7 @@ export default function SMSAnalytics() {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/analytics?days=${days}`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/analytics?days=${days}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },

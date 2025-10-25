@@ -289,6 +289,7 @@ app.include_router(
 if sms_enhanced_router:
     app.include_router(
         sms_enhanced_router,
+        prefix="/api",
         dependencies=[Depends(get_current_user)]
     )
     logger.info("✅ SMS Enhanced routes registered")
@@ -298,6 +299,7 @@ else:
 if twilio_sync_router:
     app.include_router(
         twilio_sync_router,
+        prefix="/api",
         dependencies=[Depends(get_current_user)]
     )
     logger.info("✅ Twilio Sync routes registered")

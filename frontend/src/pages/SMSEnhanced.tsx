@@ -112,7 +112,7 @@ export default function SMSEnhanced() {
 
   const fetchTemplates = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/templates`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/templates`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -126,7 +126,7 @@ export default function SMSEnhanced() {
 
   const fetchPhoneNumbers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/phone-numbers`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/phone-numbers`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -145,7 +145,7 @@ export default function SMSEnhanced() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/send`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/send`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -180,7 +180,7 @@ export default function SMSEnhanced() {
         const contact = contacts.find(c => c.id === contactId);
         if (!contact?.phone) return Promise.resolve();
 
-        return fetch(`${API_BASE_URL}/sms/send`, {
+        return fetch(`${API_BASE_URL}/api/sms/send`, {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,

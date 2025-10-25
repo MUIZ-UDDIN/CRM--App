@@ -130,7 +130,7 @@ export default function TwilioSettings() {
 
   const fetchCRMPhoneNumbers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/phone-numbers`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/phone-numbers`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -147,7 +147,7 @@ export default function TwilioSettings() {
 
   const fetchSyncStatus = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/twilio/sync/status`, {
+      const response = await fetch(`${API_BASE_URL}/api/twilio/sync/status`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -165,7 +165,7 @@ export default function TwilioSettings() {
   const handleSyncPhoneNumbers = async () => {
     setSyncing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/twilio/sync/phone-numbers`, {
+      const response = await fetch(`${API_BASE_URL}/api/twilio/sync/phone-numbers`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -191,7 +191,7 @@ export default function TwilioSettings() {
   const handleFullSync = async () => {
     setSyncing(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/twilio/sync/full`, {
+      const response = await fetch(`${API_BASE_URL}/api/twilio/sync/full`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -217,7 +217,7 @@ export default function TwilioSettings() {
 
   const toggleRotation = async (numberId: string, enabled: boolean) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/sms/phone-numbers/${numberId}/rotation?enabled=${enabled}`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/phone-numbers/${numberId}/rotation?enabled=${enabled}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
