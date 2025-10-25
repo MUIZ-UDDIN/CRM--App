@@ -60,7 +60,6 @@ const navigation: NavItem[] = [
       { name: 'Files', href: '/files' },
       { name: 'Workflows', href: '/workflows' },
       { name: 'Settings', href: '/settings' },
-      { name: 'Twilio Settings', href: '/twilio-settings' },
     ]
   },
 ];

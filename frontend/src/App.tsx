@@ -25,7 +25,6 @@ import SMSEnhanced from './pages/SMSEnhanced';
 import SMSTemplates from './pages/SMSTemplates';
 import SMSAnalytics from './pages/SMSAnalytics';
 import ScheduledSMS from './pages/ScheduledSMS';
-import TwilioSettings from './pages/TwilioSettings';
 import Calls from './pages/Calls';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -84,7 +83,6 @@ function App() {
                 <Route path="sms-templates" element={<SMSTemplates />} />
                 <Route path="sms-analytics" element={<SMSAnalytics />} />
                 <Route path="sms-scheduled" element={<ScheduledSMS />} />
-                <Route path="twilio-settings" element={<TwilioSettings />} />
                 <Route path="calls" element={<Calls />} />
               </Route>
 
