@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ClockIcon, PlusIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { ClockIcon, PlusIcon, TrashIcon, CalendarIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -27,6 +28,7 @@ interface SMSTemplate {
 }
 
 export default function ScheduledSMS() {
+  const navigate = useNavigate();
   const [scheduledMessages, setScheduledMessages] = useState<ScheduledSMS[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
@@ -208,6 +210,12 @@ export default function ScheduledSMS() {
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
           <div className="py-6 flex items-center justify-between">
             <div className="flex items-center space-x-3">
+              <button
+                onClick={() => navigate('/sms')}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <ArrowLeftIcon className="w-6 h-6 text-gray-600" />
+              </button>
               <ClockIcon className="w-8 h-8 text-primary-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">Scheduled SMS</h1>
