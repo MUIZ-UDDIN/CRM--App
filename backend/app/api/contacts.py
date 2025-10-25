@@ -126,14 +126,17 @@ async def create_contact(
         try:
             from app.services.workflow_executor import WorkflowExecutor
             from app.models.workflows import WorkflowTrigger
+            from app.core.database import SessionLocal
             import asyncio
             import threading
             
             def run_workflow():
+                # Create new DB session for this thread
+                workflow_db = SessionLocal()
                 try:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
-                    executor = WorkflowExecutor(db)
+                    executor = WorkflowExecutor(workflow_db)
                     trigger_data = {
                         "contact_id": str(db_contact.id),
                         "contact_name": f"{db_contact.first_name} {db_contact.last_name}",
@@ -149,6 +152,8 @@ async def create_contact(
                     loop.close()
                 except Exception as e:
                     print(f"Workflow execution error: {e}")
+                finally:
+                    workflow_db.close()
             
             # Run in background thread
             thread = threading.Thread(target=run_workflow, daemon=True)
@@ -208,6 +213,7 @@ async def update_contact(
     
     update_data = contact_update.dict(exclude_unset=True)
     if "email" in update_data:
+        # Check for duplicate email (excluding soft-deleted contacts)
         existing_contact = db.query(ContactModel).filter(
             and_(
                 ContactModel.email == update_data["email"],

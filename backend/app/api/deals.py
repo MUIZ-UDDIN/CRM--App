@@ -189,14 +189,17 @@ def create_deal(
         try:
             from ..services.workflow_executor import WorkflowExecutor
             from ..models.workflows import WorkflowTrigger
+            from ..core.database import SessionLocal
             import asyncio
             import threading
             
             def run_workflow():
+                # Create new DB session for this thread
+                workflow_db = SessionLocal()
                 try:
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
-                    executor = WorkflowExecutor(db)
+                    executor = WorkflowExecutor(workflow_db)
                     trigger_data = {
                         "deal_id": str(new_deal.id),
                         "deal_title": new_deal.title,
@@ -212,6 +215,8 @@ def create_deal(
                     loop.close()
                 except Exception as e:
                     print(f"Workflow execution error: {e}")
+                finally:
+                    workflow_db.close()
             
             # Run in background thread
             thread = threading.Thread(target=run_workflow, daemon=True)
@@ -340,6 +345,7 @@ def update_deal(
     try:
         from app.services.workflow_executor import WorkflowExecutor
         from app.models.workflows import WorkflowTrigger
+        from app.core.database import SessionLocal
         import asyncio
         import threading
         
@@ -354,10 +360,12 @@ def update_deal(
         }
         
         def run_workflow(trigger_type, data):
+            # Create new DB session for this thread
+            workflow_db = SessionLocal()
             try:
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
-                executor = WorkflowExecutor(db)
+                executor = WorkflowExecutor(workflow_db)
                 loop.run_until_complete(executor.trigger_workflows(
                     trigger_type,
                     data,
@@ -366,6 +374,8 @@ def update_deal(
                 loop.close()
             except Exception as e:
                 print(f"Workflow execution error: {e}")
+            finally:
+                workflow_db.close()
         
         # Trigger DEAL_WON if status changed to WON
         if old_status != DealStatus.WON and deal.status == DealStatus.WON:
