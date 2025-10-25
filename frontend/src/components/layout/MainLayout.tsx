@@ -49,9 +49,6 @@ const navigation: NavItem[] = [
       { name: 'Contacts', href: '/contacts' },
       { name: 'Email', href: '/inbox' },
       { name: 'SMS', href: '/sms' },
-      { name: 'SMS Templates', href: '/sms-templates' },
-      { name: 'SMS Analytics', href: '/sms-analytics' },
-      { name: 'Scheduled SMS', href: '/sms-scheduled' },
       { name: 'Calls', href: '/calls' },
     ]
   },

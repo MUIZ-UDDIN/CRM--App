@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, DocumentDuplicateIcon, SparklesIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { DocumentDuplicateIcon, PlusIcon, TrashIcon, SparklesIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -15,6 +16,7 @@ interface SMSTemplate {
 }
 
 export default function SMSTemplates() {
+  const navigate = useNavigate();
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -159,6 +161,12 @@ export default function SMSTemplates() {
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
           <div className="py-6 flex items-center justify-between">
             <div className="flex items-center space-x-3">
+              <button
+                onClick={() => navigate('/sms')}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <ArrowLeftIcon className="w-6 h-6 text-gray-600" />
+              </button>
               <DocumentDuplicateIcon className="w-8 h-8 text-primary-600" />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">SMS Templates</h1>

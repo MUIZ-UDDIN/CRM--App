@@ -243,20 +243,35 @@ export default function SMSEnhanced() {
               </h1>
               <p className="mt-1 text-sm text-gray-500">Send and receive text messages with AI-powered features</p>
             </div>
-            <div className="flex space-x-3">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => navigate('/sms-templates')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
+                Templates
+              </button>
+              <button
+                onClick={() => navigate('/sms-analytics')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <SparklesIcon className="h-4 w-4 mr-1" />
+                Analytics
+              </button>
+              <button
+                onClick={() => navigate('/sms-scheduled')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <ClockIcon className="h-4 w-4 mr-1" />
+                Scheduled
+              </button>
+              <div className="border-l border-gray-300 mx-2"></div>
               <button
                 onClick={() => setShowBulkModal(true)}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
               >
                 <UserGroupIcon className="h-4 w-4 mr-2" />
                 Bulk SMS
-              </button>
-              <button
-                onClick={() => navigate('/sms-scheduled')}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
-              >
-                <ClockIcon className="h-4 w-4 mr-2" />
-                Schedule
               </button>
               <button
                 onClick={() => setShowComposeModal(true)}
