@@ -120,6 +120,31 @@ async def create_contact(
         db.add(db_contact)
         db.commit()
         db.refresh(db_contact)
+        
+        # Trigger workflows for contact_created
+        try:
+            from app.services.workflow_executor import WorkflowExecutor
+            from app.models.workflows import WorkflowTrigger
+            
+            executor = WorkflowExecutor(db)
+            trigger_data = {
+                "contact_id": str(db_contact.id),
+                "contact_name": f"{db_contact.first_name} {db_contact.last_name}",
+                "contact_email": db_contact.email,
+                "contact_company": db_contact.company,
+                "owner_id": str(db_contact.owner_id)
+            }
+            # Run workflows asynchronously (non-blocking)
+            import asyncio
+            asyncio.create_task(executor.trigger_workflows(
+                WorkflowTrigger.CONTACT_CREATED,
+                trigger_data,
+                owner_id
+            ))
+        except Exception as workflow_error:
+            # Don't fail the contact creation if workflows fail
+            print(f"Workflow trigger error: {workflow_error}")
+        
         return db_contact
     except Exception as e:
         db.rollback()

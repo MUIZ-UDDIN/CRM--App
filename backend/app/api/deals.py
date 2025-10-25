@@ -293,6 +293,10 @@ def update_deal(
     if not deal:
         raise HTTPException(status_code=404, detail="Deal not found")
     
+    # Track status changes for workflow triggers
+    old_status = deal.status
+    old_stage_id = deal.stage_id
+    
     # Update fields
     for field, value in deal_data.items():
         if field == 'contact':
@@ -320,6 +324,53 @@ def update_deal(
     
     db.commit()
     db.refresh(deal)
+    
+    # Trigger workflows based on status/stage changes
+    try:
+        from app.services.workflow_executor import WorkflowExecutor
+        from app.models.workflows import WorkflowTrigger
+        
+        executor = WorkflowExecutor(db)
+        trigger_data = {
+            "deal_id": str(deal.id),
+            "deal_title": deal.title,
+            "deal_value": deal.value,
+            "contact_id": str(deal.contact_id) if deal.contact_id else None,
+            "owner_id": str(deal.owner_id),
+            "old_status": old_status.value if old_status else None,
+            "new_status": deal.status.value if deal.status else None
+        }
+        
+        import asyncio
+        
+        # Trigger DEAL_WON if status changed to WON
+        if old_status != DealStatus.WON and deal.status == DealStatus.WON:
+            asyncio.create_task(executor.trigger_workflows(
+                WorkflowTrigger.DEAL_WON,
+                trigger_data,
+                user_id
+            ))
+        
+        # Trigger DEAL_LOST if status changed to LOST
+        if old_status != DealStatus.LOST and deal.status == DealStatus.LOST:
+            asyncio.create_task(executor.trigger_workflows(
+                WorkflowTrigger.DEAL_LOST,
+                trigger_data,
+                user_id
+            ))
+        
+        # Trigger DEAL_STAGE_CHANGED if stage changed
+        if old_stage_id != deal.stage_id:
+            trigger_data["old_stage_id"] = str(old_stage_id) if old_stage_id else None
+            trigger_data["new_stage_id"] = str(deal.stage_id) if deal.stage_id else None
+            asyncio.create_task(executor.trigger_workflows(
+                WorkflowTrigger.DEAL_STAGE_CHANGED,
+                trigger_data,
+                user_id
+            ))
+    except Exception as workflow_error:
+        # Don't fail the deal update if workflows fail
+        print(f"Workflow trigger error: {workflow_error}")
     
     # Map stage name to frontend format
     stage_name_map = {

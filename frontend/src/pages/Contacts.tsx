@@ -59,19 +59,42 @@ export default function Contacts() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const resetContactForm = () => {
-    setContactForm({
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone: '',
-      company: '',
-      title: '',
-      type: 'Marketing Qualified Lead',
-      status: 'new',
-      source: '',
-      owner_id: ''
-    });
+  const resetContactForm = async () => {
+    // Get current user ID for default owner
+    try {
+      const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/users/me', {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      const userData = await response.json();
+      setContactForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        company: '',
+        title: '',
+        type: 'Marketing Qualified Lead',
+        status: 'new',
+        source: '',
+        owner_id: userData.id
+      });
+    } catch (error) {
+      console.error('Failed to fetch current user:', error);
+      setContactForm({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        company: '',
+        title: '',
+        type: 'Marketing Qualified Lead',
+        status: 'new',
+        source: '',
+        owner_id: ''
+      });
+    }
   };
 
   const handleCloseAddModal = () => {
@@ -84,8 +107,26 @@ export default function Contacts() {
     resetContactForm();
   };
   
-  // Fetch users for owner dropdown
+  // Fetch current user and users for owner dropdown
   useEffect(() => {
+    const fetchCurrentUser = async () => {
+      try {
+        const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/users/me', {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        const userData = await response.json();
+        // Set default owner_id to current user
+        setContactForm(prev => ({
+          ...prev,
+          owner_id: userData.id
+        }));
+      } catch (error) {
+        console.error('Failed to fetch current user:', error);
+      }
+    };
+    
     const fetchUsers = async () => {
       try {
         const response = await fetch((import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api/users', {
@@ -103,6 +144,8 @@ export default function Contacts() {
         console.error('Failed to fetch users:', error);
       }
     };
+    
+    fetchCurrentUser();
     fetchUsers();
   }, []);
   
@@ -174,7 +217,7 @@ export default function Contacts() {
       type: contact.type || 'Lead',
       status: contact.status || 'new',
       source: contact.source || '',
-      owner_id: contact.owner_id || 'current'
+      owner_id: contact.owner_id || ''
     });
     setShowEditModal(true);
   };
@@ -207,24 +250,20 @@ export default function Contacts() {
   // Handle create contact
   const handleCreate = async () => {
     try {
+      // Validate owner_id is set
+      if (!contactForm.owner_id) {
+        toast.error('Please select an owner');
+        return;
+      }
+      
       await contactsService.createContact(contactForm);
       toast.success('Contact created');
       setShowAddModal(false);
-      setContactForm({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-        company: '',
-        title: '',
-        type: 'Lead',
-        status: 'new',
-        source: '',
-        owner_id: 'current'
-      });
+      await resetContactForm();
       fetchContacts();
-    } catch (error) {
-      toast.error('Failed to create contact');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.detail || 'Failed to create contact';
+      toast.error(errorMessage);
     }
   };
   
