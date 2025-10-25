@@ -63,6 +63,20 @@ except Exception as e:
     logger.error(f"❌ Failed to import workflows router: {e}")
     workflows_router = None
 
+try:
+    from app.api.sms_enhanced import router as sms_enhanced_router
+    logger.info("✅ SMS Enhanced router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import SMS Enhanced router: {e}")
+    sms_enhanced_router = None
+
+try:
+    from app.api.twilio_sync import router as twilio_sync_router
+    logger.info("✅ Twilio Sync router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import Twilio Sync router: {e}")
+    twilio_sync_router = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -271,6 +285,24 @@ app.include_router(
     tags=["Quotes"],
     dependencies=[Depends(get_current_user)]
 )
+
+if sms_enhanced_router:
+    app.include_router(
+        sms_enhanced_router,
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ SMS Enhanced routes registered")
+else:
+    logger.warning("⚠️ SMS Enhanced router not loaded - skipping registration")
+
+if twilio_sync_router:
+    app.include_router(
+        twilio_sync_router,
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Twilio Sync routes registered")
+else:
+    logger.warning("⚠️ Twilio Sync router not loaded - skipping registration")
 
 
 if __name__ == "__main__":
