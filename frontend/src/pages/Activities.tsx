@@ -73,12 +73,14 @@ export default function Activities() {
       
       const data = await activitiesService.getActivities(params);
       
-      // Check for overdue activities and update status
+      // Check for overdue activities (client-side display only)
+      // Note: Activities don't auto-execute - they need manual completion
       const now = new Date();
       const updatedData = data.map((activity: Activity) => {
         if (activity.status === 'pending' && activity.due_date) {
           const dueDate = new Date(activity.due_date);
           if (dueDate < now) {
+            // Mark as overdue for display purposes
             return { ...activity, status: 'overdue' };
           }
         }
@@ -428,8 +430,9 @@ export default function Activities() {
               <input
                 type="number"
                 placeholder="Duration (minutes)"
-                value={activityForm.duration_minutes}
-                onChange={(e) => setActivityForm({...activityForm, duration_minutes: parseInt(e.target.value)})}
+                value={activityForm.duration_minutes || ''}
+                onChange={(e) => setActivityForm({...activityForm, duration_minutes: parseInt(e.target.value) || 0})}
+                min="0"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <select

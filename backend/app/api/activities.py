@@ -297,13 +297,60 @@ def complete_activity(
         activity.status = ActivityStatus.PENDING
         activity.completed_at = None
         message = "Activity marked as pending"
+        trigger_workflow = False
     else:
         activity.status = ActivityStatus.COMPLETED
         activity.completed_at = datetime.now()
         message = "Activity marked as completed"
+        trigger_workflow = True
     
     db.commit()
     db.refresh(activity)
+    
+    # Trigger workflow for activity_completed
+    if trigger_workflow:
+        try:
+            from app.services.workflow_executor import WorkflowExecutor
+            from app.models.workflows import WorkflowTrigger
+            from app.core.database import SessionLocal
+            import asyncio
+            import threading
+            
+            def run_workflow():
+                workflow_db = SessionLocal()
+                try:
+                    print(f"🔥 Starting workflow trigger for activity_completed")
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    executor = WorkflowExecutor(workflow_db)
+                    trigger_data = {
+                        "activity_id": str(activity.id),
+                        "activity_type": activity.type.value if activity.type else None,
+                        "activity_subject": activity.subject,
+                        "contact_id": str(activity.contact_id) if activity.contact_id else None,
+                        "deal_id": str(activity.deal_id) if activity.deal_id else None,
+                        "owner_id": str(activity.owner_id)
+                    }
+                    print(f"🔥 Trigger data: {trigger_data}")
+                    result = loop.run_until_complete(executor.trigger_workflows(
+                        WorkflowTrigger.ACTIVITY_COMPLETED,
+                        trigger_data,
+                        current_user["id"]
+                    ))
+                    print(f"🔥 Workflow trigger completed, executions: {len(result) if result else 0}")
+                    loop.close()
+                except Exception as e:
+                    print(f"❌ Workflow execution error: {e}")
+                    import traceback
+                    traceback.print_exc()
+                finally:
+                    workflow_db.close()
+            
+            thread = threading.Thread(target=run_workflow, daemon=True)
+            thread.start()
+            print(f"🔥 Workflow thread started for activity_completed")
+        except Exception as workflow_error:
+            print(f"❌ Workflow trigger error: {workflow_error}")
     
     return {
         "id": str(activity.id),
