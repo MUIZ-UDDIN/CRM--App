@@ -650,3 +650,126 @@ async def toggle_rotation(
     db.commit()
     
     return {"success": True, "rotation_enabled": enabled}
+
+
+# Scheduled SMS Models
+class ScheduledSMSCreate(BaseModel):
+    to: str
+    body: str
+    contact_id: Optional[str] = None
+    template_id: Optional[str] = None
+    scheduled_at: datetime
+
+
+class ScheduledSMSResponse(BaseModel):
+    id: str
+    to_address: str
+    body: str
+    scheduled_at: datetime
+    is_sent: bool
+    is_cancelled: bool
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+@router.post("/scheduled", response_model=ScheduledSMSResponse)
+async def create_scheduled_sms(
+    request: ScheduledSMSCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Schedule an SMS to be sent later"""
+    from app.models.scheduled_sms import ScheduledSMS
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Validate scheduled time is in the future
+    if request.scheduled_at <= datetime.utcnow():
+        raise HTTPException(status_code=400, detail="Scheduled time must be in the future")
+    
+    scheduled_sms = ScheduledSMS(
+        user_id=user_id,
+        contact_id=uuid.UUID(request.contact_id) if request.contact_id else None,
+        to_address=request.to,
+        body=request.body,
+        template_id=uuid.UUID(request.template_id) if request.template_id else None,
+        scheduled_at=request.scheduled_at
+    )
+    
+    db.add(scheduled_sms)
+    db.commit()
+    db.refresh(scheduled_sms)
+    
+    return ScheduledSMSResponse(
+        id=str(scheduled_sms.id),
+        to_address=scheduled_sms.to_address,
+        body=scheduled_sms.body,
+        scheduled_at=scheduled_sms.scheduled_at,
+        is_sent=scheduled_sms.is_sent,
+        is_cancelled=scheduled_sms.is_cancelled,
+        created_at=scheduled_sms.created_at
+    )
+
+
+@router.get("/scheduled", response_model=List[ScheduledSMSResponse])
+async def get_scheduled_sms(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get all scheduled SMS"""
+    from app.models.scheduled_sms import ScheduledSMS
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    scheduled = db.query(ScheduledSMS).filter(
+        and_(
+            ScheduledSMS.user_id == user_id,
+            ScheduledSMS.is_sent == False,
+            ScheduledSMS.is_cancelled == False
+        )
+    ).order_by(ScheduledSMS.scheduled_at).all()
+    
+    return [
+        ScheduledSMSResponse(
+            id=str(s.id),
+            to_address=s.to_address,
+            body=s.body,
+            scheduled_at=s.scheduled_at,
+            is_sent=s.is_sent,
+            is_cancelled=s.is_cancelled,
+            created_at=s.created_at
+        )
+        for s in scheduled
+    ]
+
+
+@router.delete("/scheduled/{scheduled_id}")
+async def cancel_scheduled_sms(
+    scheduled_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Cancel a scheduled SMS"""
+    from app.models.scheduled_sms import ScheduledSMS
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    scheduled = db.query(ScheduledSMS).filter(
+        and_(
+            ScheduledSMS.id == uuid.UUID(scheduled_id),
+            ScheduledSMS.user_id == user_id
+        )
+    ).first()
+    
+    if not scheduled:
+        raise HTTPException(status_code=404, detail="Scheduled SMS not found")
+    
+    if scheduled.is_sent:
+        raise HTTPException(status_code=400, detail="SMS already sent")
+    
+    scheduled.is_cancelled = True
+    db.commit()
+    
+    return {"success": True, "message": "Scheduled SMS cancelled"}
