@@ -72,7 +72,20 @@ export default function Activities() {
       if (filterStatus !== 'all') params.status = filterStatus;
       
       const data = await activitiesService.getActivities(params);
-      setActivities(data);
+      
+      // Check for overdue activities and update status
+      const now = new Date();
+      const updatedData = data.map((activity: Activity) => {
+        if (activity.status === 'pending' && activity.due_date) {
+          const dueDate = new Date(activity.due_date);
+          if (dueDate < now) {
+            return { ...activity, status: 'overdue' };
+          }
+        }
+        return activity;
+      });
+      
+      setActivities(updatedData);
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to load activities');
@@ -398,14 +411,19 @@ export default function Activities() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
-                  type="datetime-local"
-                  value={activityForm.due_date}
-                  onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">Select date and time (time is optional, defaults to 00:00)</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <input
+                    type="datetime-local"
+                    value={activityForm.due_date}
+                    onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
+                    min={new Date().toISOString().slice(0, 16)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                  />
+                  <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Select future date and time (past dates not allowed)</p>
               </div>
               <input
                 type="number"
@@ -478,14 +496,19 @@ export default function Activities() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
-                <input
-                  type="date"
-                  value={activityForm.due_date}
-                  onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-                <p className="text-xs text-gray-500 mt-1">Select due date</p>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
+                <div className="relative">
+                  <input
+                    type="datetime-local"
+                    value={activityForm.due_date}
+                    onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
+                    min={new Date().toISOString().slice(0, 16)}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                  />
+                  <CalendarIcon className="absolute right-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Select future date and time (past dates not allowed)</p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
