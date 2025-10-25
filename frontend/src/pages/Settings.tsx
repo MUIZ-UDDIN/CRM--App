@@ -70,19 +70,8 @@ export default function Settings() {
         setCompanyForm(JSON.parse(savedCompany));
       }
     } else if (activeTab === 'integrations') {
-      // Check if Twilio is connected
-      const savedTwilio = localStorage.getItem('twilioConfig');
-      const savedGmail = localStorage.getItem('gmailConfig');
-      
-      setIntegrations(integrations.map(i => {
-        if (i.name === 'Twilio' && savedTwilio) {
-          return { ...i, status: 'connected' };
-        }
-        if (i.name === 'Gmail' && savedGmail) {
-          return { ...i, status: 'connected' };
-        }
-        return i;
-      }));
+      // Check Twilio connection from backend
+      checkTwilioConnection();
     }
   }, [activeTab]);
 
@@ -110,6 +99,30 @@ export default function Settings() {
     }
   };
 
+  const checkTwilioConnection = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // If we get data back, Twilio is connected
+        setIntegrations(integrations.map(i =>
+          i.name === 'Twilio' ? { ...i, status: 'connected' } : i
+        ));
+      } else {
+        // No settings found, disconnected
+        setIntegrations(integrations.map(i =>
+          i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
+        ));
+      }
+    } catch (error) {
+      console.error('Error checking Twilio connection:', error);
+    }
+  };
+
   const [integrations, setIntegrations] = useState<Integration[]>([
     { id: '1', name: 'Twilio', description: 'SMS, Voice calls, and messaging', status: 'disconnected', icon: '📱' },
     { id: '2', name: 'Gmail', description: 'Sync emails and calendar', status: 'disconnected', icon: '📧' },
@@ -118,8 +131,7 @@ export default function Settings() {
   const [showTwilioModal, setShowTwilioModal] = useState(false);
   const [twilioForm, setTwilioForm] = useState({
     accountSid: '',
-    authToken: '',
-    phoneNumber: ''
+    authToken: ''
   });
   
   const [showGmailModal, setShowGmailModal] = useState(false);
@@ -515,8 +527,8 @@ export default function Settings() {
     toast.success(`${integration.name} ${integration.status === 'connected' ? 'disconnected' : 'connected'}`);
   };
   
-  const handleSaveTwilio = () => {
-    if (!twilioForm.accountSid || !twilioForm.authToken || !twilioForm.phoneNumber) {
+  const handleSaveTwilio = async () => {
+    if (!twilioForm.accountSid || !twilioForm.authToken) {
       toast.error('Please fill in all Twilio credentials');
       return;
     }
@@ -543,28 +555,44 @@ export default function Settings() {
       return;
     }
 
-    // Check for simple patterns
-    if (/^(.)\1+$/.test(twilioForm.authToken) || /^(12345678901234567890123456789012|00000000000000000000000000000000)$/.test(twilioForm.authToken)) {
-      toast.error('Twilio Auth Token appears to be invalid. Please use a valid token from Twilio');
-      return;
-    }
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          account_sid: twilioForm.accountSid,
+          auth_token: twilioForm.authToken
+        })
+      });
 
-    // Validate phone number format
-    if (!/^\+[1-9]\d{1,14}$/.test(twilioForm.phoneNumber)) {
-      toast.error('Invalid phone number format (should be in E.164 format, e.g., +1234567890)');
-      return;
+      if (response.ok) {
+        // Update integration status
+        setIntegrations(integrations.map(i =>
+          i.name === 'Twilio' ? { ...i, status: 'connected' } : i
+        ));
+        
+        setShowTwilioModal(false);
+        toast.success('Twilio connected successfully!');
+        
+        // Optionally sync phone numbers
+        toast.loading('Syncing phone numbers...');
+        await fetch(`${API_BASE_URL}/twilio/sync/phone-numbers`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        toast.dismiss();
+        toast.success('Phone numbers synced!');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to connect Twilio');
+      }
+    } catch (error) {
+      console.error('Error saving Twilio settings:', error);
+      toast.error('Failed to connect Twilio');
     }
-    
-    // Save to localStorage
-    localStorage.setItem('twilioConfig', JSON.stringify(twilioForm));
-    
-    // Update integration status
-    setIntegrations(integrations.map(i =>
-      i.name === 'Twilio' ? { ...i, status: 'connected' } : i
-    ));
-    
-    setShowTwilioModal(false);
-    toast.success('Twilio connected successfully!');
   };
   
   const handleSaveGmail = () => {
@@ -1489,22 +1517,13 @@ export default function Settings() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                <input
-                  type="tel"
-                  placeholder="+1234567890"
-                  value={twilioForm.phoneNumber}
-                  onChange={(e) => setTwilioForm({...twilioForm, phoneNumber: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">
                   <strong>Note:</strong> Get your Twilio credentials from{' '}
                   <a href="https://console.twilio.com" target="_blank" rel="noopener noreferrer" className="underline">
                     console.twilio.com
                   </a>
+                  . Your phone numbers will be automatically synced after connecting.
                 </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
