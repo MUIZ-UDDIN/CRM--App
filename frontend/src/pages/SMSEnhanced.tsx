@@ -368,7 +368,7 @@ export default function SMSEnhanced() {
             <div className="space-y-4">
               {/* Template Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center">
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
                   <DocumentDuplicateIcon className="w-4 h-4 mr-1" />
                   Use Template (Optional)
                 </label>
