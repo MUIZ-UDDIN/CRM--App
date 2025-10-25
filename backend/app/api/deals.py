@@ -363,17 +363,22 @@ def update_deal(
             # Create new DB session for this thread
             workflow_db = SessionLocal()
             try:
+                print(f"🔥 Starting workflow trigger for {trigger_type.value}")
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
                 executor = WorkflowExecutor(workflow_db)
-                loop.run_until_complete(executor.trigger_workflows(
+                print(f"🔥 Trigger data: {data}")
+                result = loop.run_until_complete(executor.trigger_workflows(
                     trigger_type,
                     data,
                     user_id
                 ))
+                print(f"🔥 Workflow trigger completed, executions: {len(result) if result else 0}")
                 loop.close()
             except Exception as e:
-                print(f"Workflow execution error: {e}")
+                print(f"❌ Workflow execution error: {e}")
+                import traceback
+                traceback.print_exc()
             finally:
                 workflow_db.close()
         
