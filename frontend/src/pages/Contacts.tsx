@@ -272,14 +272,21 @@ export default function Contacts() {
     if (!selectedContact) return;
     
     try {
+      // Validate owner_id is set
+      if (!contactForm.owner_id) {
+        toast.error('Please select an owner');
+        return;
+      }
+      
       // Remove empty source field to avoid enum validation errors
-      const { source, owner_id, ...updateData } = contactForm;
+      const { source, ...updateData } = contactForm;
       await contactsService.updateContact(selectedContact.id, updateData);
       toast.success('Contact updated');
       setShowEditModal(false);
       fetchContacts();
-    } catch (error) {
-      toast.error('Failed to update contact');
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.detail || 'Failed to update contact';
+      toast.error(errorMessage);
     }
   };
   

@@ -34,6 +34,7 @@ class ContactUpdate(BaseModel):
     title: Optional[str] = None
     type: Optional[str] = None
     status: Optional[str] = None
+    owner_id: Optional[str] = None
 
 class Contact(ContactBase):
     id: uuid.UUID
@@ -125,22 +126,33 @@ async def create_contact(
         try:
             from app.services.workflow_executor import WorkflowExecutor
             from app.models.workflows import WorkflowTrigger
-            
-            executor = WorkflowExecutor(db)
-            trigger_data = {
-                "contact_id": str(db_contact.id),
-                "contact_name": f"{db_contact.first_name} {db_contact.last_name}",
-                "contact_email": db_contact.email,
-                "contact_company": db_contact.company,
-                "owner_id": str(db_contact.owner_id)
-            }
-            # Run workflows asynchronously (non-blocking)
             import asyncio
-            asyncio.create_task(executor.trigger_workflows(
-                WorkflowTrigger.CONTACT_CREATED,
-                trigger_data,
-                owner_id
-            ))
+            import threading
+            
+            def run_workflow():
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    executor = WorkflowExecutor(db)
+                    trigger_data = {
+                        "contact_id": str(db_contact.id),
+                        "contact_name": f"{db_contact.first_name} {db_contact.last_name}",
+                        "contact_email": db_contact.email,
+                        "contact_company": db_contact.company,
+                        "owner_id": str(db_contact.owner_id)
+                    }
+                    loop.run_until_complete(executor.trigger_workflows(
+                        WorkflowTrigger.CONTACT_CREATED,
+                        trigger_data,
+                        owner_id
+                    ))
+                    loop.close()
+                except Exception as e:
+                    print(f"Workflow execution error: {e}")
+            
+            # Run in background thread
+            thread = threading.Thread(target=run_workflow, daemon=True)
+            thread.start()
         except Exception as workflow_error:
             # Don't fail the contact creation if workflows fail
             print(f"Workflow trigger error: {workflow_error}")
@@ -209,7 +221,11 @@ async def update_contact(
     
     try:
         for field, value in update_data.items():
-            setattr(contact, field, value)
+            if field == 'owner_id' and value:
+                # Convert owner_id string to UUID
+                setattr(contact, field, uuid.UUID(value))
+            else:
+                setattr(contact, field, value)
         contact.updated_at = datetime.utcnow()
         
         db.commit()

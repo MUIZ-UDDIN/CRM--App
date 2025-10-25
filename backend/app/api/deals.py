@@ -189,22 +189,33 @@ def create_deal(
         try:
             from ..services.workflow_executor import WorkflowExecutor
             from ..models.workflows import WorkflowTrigger
-            
-            executor = WorkflowExecutor(db)
-            trigger_data = {
-                "deal_id": str(new_deal.id),
-                "deal_title": new_deal.title,
-                "deal_value": new_deal.value,
-                "contact_id": str(new_deal.contact_id) if new_deal.contact_id else None,
-                "owner_id": str(new_deal.owner_id)
-            }
-            # Run workflows asynchronously (non-blocking)
             import asyncio
-            asyncio.create_task(executor.trigger_workflows(
-                WorkflowTrigger.DEAL_CREATED,
-                trigger_data,
-                user_id
-            ))
+            import threading
+            
+            def run_workflow():
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    executor = WorkflowExecutor(db)
+                    trigger_data = {
+                        "deal_id": str(new_deal.id),
+                        "deal_title": new_deal.title,
+                        "deal_value": new_deal.value,
+                        "contact_id": str(new_deal.contact_id) if new_deal.contact_id else None,
+                        "owner_id": str(new_deal.owner_id)
+                    }
+                    loop.run_until_complete(executor.trigger_workflows(
+                        WorkflowTrigger.DEAL_CREATED,
+                        trigger_data,
+                        user_id
+                    ))
+                    loop.close()
+                except Exception as e:
+                    print(f"Workflow execution error: {e}")
+            
+            # Run in background thread
+            thread = threading.Thread(target=run_workflow, daemon=True)
+            thread.start()
         except Exception as workflow_error:
             # Don't fail the deal creation if workflows fail
             print(f"Workflow trigger error: {workflow_error}")
@@ -329,8 +340,9 @@ def update_deal(
     try:
         from app.services.workflow_executor import WorkflowExecutor
         from app.models.workflows import WorkflowTrigger
+        import asyncio
+        import threading
         
-        executor = WorkflowExecutor(db)
         trigger_data = {
             "deal_id": str(deal.id),
             "deal_title": deal.title,
@@ -341,33 +353,37 @@ def update_deal(
             "new_status": deal.status.value if deal.status else None
         }
         
-        import asyncio
+        def run_workflow(trigger_type, data):
+            try:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                executor = WorkflowExecutor(db)
+                loop.run_until_complete(executor.trigger_workflows(
+                    trigger_type,
+                    data,
+                    user_id
+                ))
+                loop.close()
+            except Exception as e:
+                print(f"Workflow execution error: {e}")
         
         # Trigger DEAL_WON if status changed to WON
         if old_status != DealStatus.WON and deal.status == DealStatus.WON:
-            asyncio.create_task(executor.trigger_workflows(
-                WorkflowTrigger.DEAL_WON,
-                trigger_data,
-                user_id
-            ))
+            thread = threading.Thread(target=run_workflow, args=(WorkflowTrigger.DEAL_WON, trigger_data.copy()), daemon=True)
+            thread.start()
         
         # Trigger DEAL_LOST if status changed to LOST
         if old_status != DealStatus.LOST and deal.status == DealStatus.LOST:
-            asyncio.create_task(executor.trigger_workflows(
-                WorkflowTrigger.DEAL_LOST,
-                trigger_data,
-                user_id
-            ))
+            thread = threading.Thread(target=run_workflow, args=(WorkflowTrigger.DEAL_LOST, trigger_data.copy()), daemon=True)
+            thread.start()
         
         # Trigger DEAL_STAGE_CHANGED if stage changed
         if old_stage_id != deal.stage_id:
-            trigger_data["old_stage_id"] = str(old_stage_id) if old_stage_id else None
-            trigger_data["new_stage_id"] = str(deal.stage_id) if deal.stage_id else None
-            asyncio.create_task(executor.trigger_workflows(
-                WorkflowTrigger.DEAL_STAGE_CHANGED,
-                trigger_data,
-                user_id
-            ))
+            stage_data = trigger_data.copy()
+            stage_data["old_stage_id"] = str(old_stage_id) if old_stage_id else None
+            stage_data["new_stage_id"] = str(deal.stage_id) if deal.stage_id else None
+            thread = threading.Thread(target=run_workflow, args=(WorkflowTrigger.DEAL_STAGE_CHANGED, stage_data), daemon=True)
+            thread.start()
     except Exception as workflow_error:
         # Don't fail the deal update if workflows fail
         print(f"Workflow trigger error: {workflow_error}")
