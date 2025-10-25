@@ -51,6 +51,7 @@ const navigation: NavItem[] = [
       { name: 'SMS', href: '/sms' },
       { name: 'SMS Templates', href: '/sms-templates' },
       { name: 'SMS Analytics', href: '/sms-analytics' },
+      { name: 'Scheduled SMS', href: '/sms-scheduled' },
       { name: 'Calls', href: '/calls' },
     ]
   },

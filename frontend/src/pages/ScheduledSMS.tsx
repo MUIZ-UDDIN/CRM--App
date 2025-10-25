@@ -1,0 +1,396 @@
+import React, { useState, useEffect } from 'react';
+import { ClockIcon, PlusIcon, TrashIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
+import toast from 'react-hot-toast';
+
+interface Contact {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone?: string;
+}
+
+interface ScheduledSMS {
+  id: string;
+  to_address: string;
+  body: string;
+  scheduled_at: string;
+  is_sent: boolean;
+  is_cancelled: boolean;
+  created_at: string;
+}
+
+interface SMSTemplate {
+  id: string;
+  name: string;
+  body: string;
+}
+
+export default function ScheduledSMS() {
+  const [scheduledMessages, setScheduledMessages] = useState<ScheduledSMS[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [templates, setTemplates] = useState<SMSTemplate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const { token } = useAuth();
+  const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+  const [formData, setFormData] = useState({
+    contact_id: '',
+    to: '',
+    body: '',
+    template_id: '',
+    scheduled_date: '',
+    scheduled_time: ''
+  });
+
+  useEffect(() => {
+    fetchScheduledMessages();
+    fetchContacts();
+    fetchTemplates();
+  }, []);
+
+  const fetchScheduledMessages = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sms/scheduled`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setScheduledMessages(data);
+      }
+    } catch (error) {
+      console.error('Error fetching scheduled messages:', error);
+      toast.error('Failed to load scheduled messages');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/contacts/`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setContacts(data.filter((c: Contact) => c.phone));
+      }
+    } catch (error) {
+      console.error('Error fetching contacts:', error);
+    }
+  };
+
+  const fetchTemplates = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/sms/templates`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setTemplates(data);
+      }
+    } catch (error) {
+      console.error('Error fetching templates:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!formData.to || !formData.body || !formData.scheduled_date || !formData.scheduled_time) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    // Combine date and time into ISO format
+    const scheduledAt = new Date(`${formData.scheduled_date}T${formData.scheduled_time}`).toISOString();
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/sms/scheduled`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          to: formData.to,
+          body: formData.body,
+          contact_id: formData.contact_id || null,
+          template_id: formData.template_id || null,
+          scheduled_at: scheduledAt
+        })
+      });
+
+      if (response.ok) {
+        toast.success('SMS scheduled successfully!');
+        setShowModal(false);
+        resetForm();
+        fetchScheduledMessages();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to schedule SMS');
+      }
+    } catch (error) {
+      console.error('Error scheduling SMS:', error);
+      toast.error('Failed to schedule SMS');
+    }
+  };
+
+  const handleCancel = async (id: string) => {
+    if (!confirm('Are you sure you want to cancel this scheduled message?')) return;
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/sms/scheduled/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        toast.success('Scheduled message cancelled');
+        fetchScheduledMessages();
+      } else {
+        toast.error('Failed to cancel message');
+      }
+    } catch (error) {
+      console.error('Error cancelling message:', error);
+      toast.error('Failed to cancel message');
+    }
+  };
+
+  const handleTemplateSelect = (templateId: string) => {
+    const template = templates.find(t => t.id === templateId);
+    if (template) {
+      setFormData({ ...formData, template_id: templateId, body: template.body });
+    }
+  };
+
+  const handleContactSelect = (contactId: string) => {
+    const contact = contacts.find(c => c.id === contactId);
+    if (contact) {
+      setFormData({ ...formData, contact_id: contactId, to: contact.phone || '' });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      contact_id: '',
+      to: '',
+      body: '',
+      template_id: '',
+      scheduled_date: '',
+      scheduled_time: ''
+    });
+  };
+
+  const getMinDateTime = () => {
+    const now = new Date();
+    return now.toISOString().slice(0, 16);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-full">
+      {/* Header */}
+      <div className="bg-white shadow">
+        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+          <div className="py-6 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <ClockIcon className="w-8 h-8 text-primary-600" />
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Scheduled SMS</h1>
+                <p className="text-gray-600">Schedule messages to be sent later</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+            >
+              <PlusIcon className="w-5 h-5 mr-2" />
+              Schedule Message
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+        {scheduledMessages.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
+            <ClockIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No scheduled messages</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by scheduling a new message.</p>
+            <div className="mt-6">
+              <button
+                onClick={() => setShowModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+              >
+                <PlusIcon className="w-5 h-5 mr-2" />
+                Schedule Message
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
+            {scheduledMessages.map((msg) => (
+              <div key={msg.id} className="p-6 hover:bg-gray-50">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-3 mb-2">
+                      <CalendarIcon className="w-5 h-5 text-gray-400" />
+                      <span className="text-sm font-medium text-gray-900">
+                        {new Date(msg.scheduled_at).toLocaleString()}
+                      </span>
+                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                        Pending
+                      </span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">
+                      <strong>To:</strong> {msg.to_address}
+                    </p>
+                    <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
+                      {msg.body}
+                    </p>
+                    <p className="mt-2 text-xs text-gray-400">
+                      Created: {new Date(msg.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleCancel(msg.id)}
+                    className="ml-4 inline-flex items-center px-3 py-2 border border-red-300 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50"
+                  >
+                    <TrashIcon className="w-4 h-4 mr-1" />
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Schedule Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900 flex items-center">
+                <ClockIcon className="w-6 h-6 mr-2 text-primary-600" />
+                Schedule SMS
+              </h3>
+              <button onClick={() => { setShowModal(false); resetForm(); }} className="text-gray-400 hover:text-gray-600 text-2xl">
+                ×
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Template Selection */}
+              <div>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  Use Template (Optional)
+                </label>
+                <select
+                  value={formData.template_id}
+                  onChange={(e) => handleTemplateSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                >
+                  <option value="">Select a template...</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Contact Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact) *</label>
+                <select
+                  value={formData.contact_id}
+                  onChange={(e) => handleContactSelect(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select a contact...</option>
+                  {contacts.map((contact) => (
+                    <option key={contact.id} value={contact.id}>
+                      {contact.first_name} {contact.last_name} - {contact.phone}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date and Time */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <input
+                    type="date"
+                    value={formData.scheduled_date}
+                    onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                  <input
+                    type="time"
+                    value={formData.scheduled_time}
+                    onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Message Body */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <textarea
+                  value={formData.body}
+                  onChange={(e) => setFormData({ ...formData, body: e.target.value })}
+                  rows={5}
+                  placeholder="Type your message..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  required
+                />
+                <p className="mt-1 text-xs text-gray-500">{formData.body.length} characters</p>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => { setShowModal(false); resetForm(); }}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Schedule SMS
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

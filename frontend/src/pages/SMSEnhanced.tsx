@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   ChatBubbleLeftRightIcon, 
   PlusIcon, 
@@ -44,6 +45,7 @@ interface PhoneNumber {
 }
 
 export default function SMSEnhanced() {
+  const navigate = useNavigate();
   const [messages, setMessages] = useState<SMSMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
@@ -51,7 +53,6 @@ export default function SMSEnhanced() {
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'inbox' | 'sent'>('inbox');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -70,13 +71,6 @@ export default function SMSEnhanced() {
     body: '',
     template_id: '',
     use_rotation: true
-  });
-
-  const [scheduleForm, setScheduleForm] = useState({
-    to: '',
-    body: '',
-    scheduled_at: '',
-    template_id: ''
   });
 
   useEffect(() => {
@@ -258,7 +252,7 @@ export default function SMSEnhanced() {
                 Bulk SMS
               </button>
               <button
-                onClick={() => setShowScheduleModal(true)}
+                onClick={() => navigate('/sms-scheduled')}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
               >
                 <ClockIcon className="h-4 w-4 mr-2" />
@@ -547,35 +541,6 @@ export default function SMSEnhanced() {
         </div>
       )}
 
-      {/* Schedule SMS Modal */}
-      {showScheduleModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-lg bg-white">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center">
-                <ClockIcon className="w-6 h-6 mr-2 text-primary-600" />
-                Schedule SMS
-              </h3>
-              <button onClick={() => setShowScheduleModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
-                ×
-              </button>
-            </div>
-            <div className="p-6 bg-yellow-50 rounded-lg">
-              <p className="text-sm text-yellow-800">
-                🚧 <strong>Coming Soon:</strong> Scheduled SMS feature will be available in the next update. You'll be able to schedule messages to be sent at specific times.
-              </p>
-            </div>
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={() => setShowScheduleModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
