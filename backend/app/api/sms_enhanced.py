@@ -1,0 +1,652 @@
+"""
+Enhanced SMS API with AI responses, templates, and number rotation
+"""
+
+from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
+from sqlalchemy.orm import Session
+from sqlalchemy import and_, or_, desc, func
+from typing import List, Optional, Dict
+from pydantic import BaseModel
+from datetime import datetime, timedelta
+from uuid import UUID
+import uuid
+import json
+
+from app.core.security import get_current_active_user
+from app.core.database import get_db
+from app.models.sms import SMSMessage as SMSModel, SMSDirection, SMSStatus
+from app.models.sms_templates import SMSTemplate
+from app.models.phone_numbers import PhoneNumber
+from app.models.twilio_settings import TwilioSettings
+from app.models.contacts import Contact
+from app.services.claude_service import get_claude_service
+
+router = APIRouter(prefix="/sms", tags=["SMS Enhanced"])
+
+
+# Pydantic Models
+class SMSSendRequest(BaseModel):
+    to: str
+    body: Optional[str] = None
+    template_id: Optional[str] = None
+    contact_id: Optional[str] = None
+    from_number: Optional[str] = None  # Specific number to use
+    use_rotation: bool = True  # Use number rotation
+    variables: Optional[Dict[str, str]] = None  # For template variables
+
+
+class SMSTemplateCreate(BaseModel):
+    name: str
+    category: Optional[str] = None
+    body: str
+    is_static: bool = True
+    variables: Optional[str] = None
+    use_ai_enhancement: bool = False
+    ai_tone: str = 'professional'
+
+
+class SMSTemplateResponse(BaseModel):
+    id: str
+    name: str
+    category: Optional[str]
+    body: str
+    is_static: bool
+    use_ai_enhancement: bool
+    usage_count: int
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+
+class PhoneNumberCreate(BaseModel):
+    phone_number: str
+    friendly_name: Optional[str] = None
+    twilio_sid: Optional[str] = None
+    rotation_enabled: bool = False
+    rotation_priority: int = 0
+
+
+class PhoneNumberResponse(BaseModel):
+    id: str
+    phone_number: str
+    friendly_name: Optional[str]
+    rotation_enabled: bool
+    total_messages_sent: int
+    total_messages_received: int
+    last_used_at: Optional[datetime]
+    
+    class Config:
+        from_attributes = True
+
+
+class SMSAnalytics(BaseModel):
+    total_sent: int
+    total_received: int
+    total_failed: int
+    total_delivered: int
+    success_rate: float
+    response_rate: float
+    avg_response_time_minutes: Optional[float]
+
+
+# Helper Functions
+def get_next_rotation_number(db: Session, user_id: UUID) -> Optional[PhoneNumber]:
+    """Get next phone number in rotation"""
+    numbers = db.query(PhoneNumber).filter(
+        and_(
+            PhoneNumber.user_id == user_id,
+            PhoneNumber.is_active == True,
+            PhoneNumber.rotation_enabled == True
+        )
+    ).order_by(
+        desc(PhoneNumber.rotation_priority),
+        PhoneNumber.last_used_at.asc().nullsfirst()
+    ).all()
+    
+    if not numbers:
+        return None
+    
+    # Return least recently used number with highest priority
+    return numbers[0]
+
+
+def process_template(template: SMSTemplate, variables: Optional[Dict[str, str]] = None) -> str:
+    """Process template with variables"""
+    body = template.body
+    
+    if variables and not template.is_static:
+        for key, value in variables.items():
+            placeholder = f"{{{key}}}"
+            body = body.replace(placeholder, value)
+    
+    return body
+
+
+async def generate_ai_response(
+    incoming_message: str,
+    contact: Optional[Contact],
+    conversation_history: List[SMSModel],
+    user_id: UUID,
+    db: Session
+) -> str:
+    """Generate AI response using Claude"""
+    try:
+        # Get Twilio settings for business context
+        settings = db.query(TwilioSettings).filter(
+            TwilioSettings.user_id == user_id
+        ).first()
+        
+        # Build conversation history
+        history = [
+            {
+                "direction": msg.direction.value,
+                "body": msg.body
+            }
+            for msg in conversation_history[-10:]  # Last 10 messages
+        ]
+        
+        # Get Claude service
+        import os
+        claude_api_key = os.getenv("CLAUDE_API_KEY")
+        if not claude_api_key:
+            # Fallback to default response if Claude not configured
+            return "Thank you for your message. We'll get back to you soon!"
+        
+        claude = get_claude_service(api_key=claude_api_key)
+        
+        # Generate response
+        response = await claude.generate_sms_response(
+            incoming_message=incoming_message,
+            contact_name=f"{contact.first_name} {contact.last_name}" if contact else None,
+            contact_company=contact.company if contact else None,
+            conversation_history=history,
+            business_context="Sales CRM - helping businesses manage customer relationships",
+            response_tone="professional"
+        )
+        
+        return response
+        
+    except Exception as e:
+        print(f"Error generating AI response: {e}")
+        return "Thank you for your message. We'll get back to you soon!"
+
+
+# Endpoints
+
+@router.post("/send")
+async def send_sms(
+    request: SMSSendRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Send SMS with template support and number rotation"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Get message body
+    message_body = request.body
+    
+    # If template_id provided, use template
+    if request.template_id:
+        template = db.query(SMSTemplate).filter(
+            and_(
+                SMSTemplate.id == uuid.UUID(request.template_id),
+                SMSTemplate.user_id == user_id
+            )
+        ).first()
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        message_body = process_template(template, request.variables)
+        
+        # Increment usage count
+        template.usage_count += 1
+        db.commit()
+    
+    if not message_body:
+        raise HTTPException(status_code=400, detail="Message body or template_id required")
+    
+    # Determine which number to use
+    from_number = None
+    phone_number_record = None
+    
+    if request.from_number:
+        # Use specific number
+        phone_number_record = db.query(PhoneNumber).filter(
+            and_(
+                PhoneNumber.phone_number == request.from_number,
+                PhoneNumber.user_id == user_id
+            )
+        ).first()
+        from_number = request.from_number
+    elif request.use_rotation:
+        # Use rotation
+        phone_number_record = get_next_rotation_number(db, user_id)
+        if phone_number_record:
+            from_number = phone_number_record.phone_number
+    
+    if not from_number:
+        # Fallback to Twilio settings default
+        settings = db.query(TwilioSettings).filter(
+            TwilioSettings.user_id == user_id
+        ).first()
+        if settings and settings.phone_number:
+            from_number = settings.phone_number
+        else:
+            raise HTTPException(status_code=400, detail="No phone number available")
+    
+    # Send SMS via Twilio
+    try:
+        from twilio.rest import Client
+        settings = db.query(TwilioSettings).filter(
+            TwilioSettings.user_id == user_id
+        ).first()
+        
+        if not settings:
+            raise HTTPException(status_code=400, detail="Twilio not configured")
+        
+        client = Client(settings.account_sid, settings.auth_token)
+        message = client.messages.create(
+            body=message_body,
+            from_=from_number,
+            to=request.to
+        )
+        
+        # Save to database
+        sms_record = SMSModel(
+            direction=SMSDirection.OUTBOUND,
+            status=SMSStatus.SENT,
+            from_address=from_number,
+            to_address=request.to,
+            body=message_body,
+            user_id=user_id,
+            contact_id=uuid.UUID(request.contact_id) if request.contact_id else None,
+            twilio_sid=message.sid
+        )
+        db.add(sms_record)
+        
+        # Update phone number stats
+        if phone_number_record:
+            phone_number_record.total_messages_sent += 1
+            phone_number_record.last_used_at = datetime.utcnow()
+        
+        db.commit()
+        
+        return {
+            "success": True,
+            "message_sid": message.sid,
+            "from": from_number,
+            "to": request.to,
+            "body": message_body
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send SMS: {str(e)}")
+
+
+@router.post("/webhook/incoming")
+async def handle_incoming_sms(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    """Webhook for incoming SMS from Twilio"""
+    try:
+        form_data = await request.form()
+        
+        from_number = form_data.get("From")
+        to_number = form_data.get("To")
+        body = form_data.get("Body")
+        message_sid = form_data.get("MessageSid")
+        
+        print(f"📱 Incoming SMS from {from_number}: {body}")
+        
+        # Find user by phone number
+        phone_record = db.query(PhoneNumber).filter(
+            PhoneNumber.phone_number == to_number
+        ).first()
+        
+        if not phone_record:
+            # Try Twilio settings
+            settings = db.query(TwilioSettings).filter(
+                TwilioSettings.phone_number == to_number
+            ).first()
+            user_id = settings.user_id if settings else None
+        else:
+            user_id = phone_record.user_id
+            phone_record.total_messages_received += 1
+            db.commit()
+        
+        if not user_id:
+            print(f"⚠️ No user found for number {to_number}")
+            return {"status": "ok"}
+        
+        # Find contact by phone number
+        contact = db.query(Contact).filter(
+            and_(
+                Contact.phone == from_number,
+                Contact.owner_id == user_id
+            )
+        ).first()
+        
+        # Save incoming message
+        sms_record = SMSModel(
+            direction=SMSDirection.INBOUND,
+            status=SMSStatus.RECEIVED,
+            from_address=from_number,
+            to_address=to_number,
+            body=body,
+            user_id=user_id,
+            contact_id=contact.id if contact else None,
+            twilio_sid=message_sid
+        )
+        db.add(sms_record)
+        db.commit()
+        db.refresh(sms_record)
+        
+        # Get conversation history
+        conversation = db.query(SMSModel).filter(
+            or_(
+                and_(SMSModel.from_address == from_number, SMSModel.to_address == to_number),
+                and_(SMSModel.from_address == to_number, SMSModel.to_address == from_number)
+            )
+        ).order_by(SMSModel.created_at.desc()).limit(10).all()
+        
+        # Generate AI response
+        ai_response = await generate_ai_response(
+            incoming_message=body,
+            contact=contact,
+            conversation_history=conversation,
+            user_id=user_id,
+            db=db
+        )
+        
+        # Send auto-response
+        try:
+            settings = db.query(TwilioSettings).filter(
+                TwilioSettings.user_id == user_id
+            ).first()
+            
+            if settings and settings.is_active:
+                from twilio.rest import Client
+                client = Client(settings.account_sid, settings.auth_token)
+                
+                response_message = client.messages.create(
+                    body=ai_response,
+                    from_=to_number,
+                    to=from_number
+                )
+                
+                # Save auto-response
+                auto_response_record = SMSModel(
+                    direction=SMSDirection.OUTBOUND,
+                    status=SMSStatus.SENT,
+                    from_address=to_number,
+                    to_address=from_number,
+                    body=ai_response,
+                    user_id=user_id,
+                    contact_id=contact.id if contact else None,
+                    twilio_sid=response_message.sid,
+                    is_auto_response=True
+                )
+                db.add(auto_response_record)
+                db.commit()
+                
+                print(f"🤖 Auto-response sent: {ai_response[:50]}...")
+        
+        except Exception as e:
+            print(f"❌ Error sending auto-response: {e}")
+        
+        return {"status": "ok"}
+        
+    except Exception as e:
+        print(f"Error handling incoming SMS: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"status": "error", "message": str(e)}
+
+
+@router.get("/analytics", response_model=SMSAnalytics)
+async def get_sms_analytics(
+    days: int = 30,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get SMS analytics"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    since_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Total sent
+    total_sent = db.query(func.count(SMSModel.id)).filter(
+        and_(
+            SMSModel.user_id == user_id,
+            SMSModel.direction == SMSDirection.OUTBOUND,
+            SMSModel.created_at >= since_date
+        )
+    ).scalar()
+    
+    # Total received
+    total_received = db.query(func.count(SMSModel.id)).filter(
+        and_(
+            SMSModel.user_id == user_id,
+            SMSModel.direction == SMSDirection.INBOUND,
+            SMSModel.created_at >= since_date
+        )
+    ).scalar()
+    
+    # Total failed
+    total_failed = db.query(func.count(SMSModel.id)).filter(
+        and_(
+            SMSModel.user_id == user_id,
+            SMSModel.status == SMSStatus.FAILED,
+            SMSModel.created_at >= since_date
+        )
+    ).scalar()
+    
+    # Total delivered
+    total_delivered = db.query(func.count(SMSModel.id)).filter(
+        and_(
+            SMSModel.user_id == user_id,
+            SMSModel.status == SMSStatus.DELIVERED,
+            SMSModel.created_at >= since_date
+        )
+    ).scalar()
+    
+    # Calculate rates
+    success_rate = (total_delivered / total_sent * 100) if total_sent > 0 else 0
+    response_rate = (total_received / total_sent * 100) if total_sent > 0 else 0
+    
+    return SMSAnalytics(
+        total_sent=total_sent or 0,
+        total_received=total_received or 0,
+        total_failed=total_failed or 0,
+        total_delivered=total_delivered or 0,
+        success_rate=round(success_rate, 2),
+        response_rate=round(response_rate, 2),
+        avg_response_time_minutes=None  # TODO: Calculate from conversation pairs
+    )
+
+
+# Template Management
+
+@router.post("/templates", response_model=SMSTemplateResponse)
+async def create_template(
+    template: SMSTemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Create SMS template"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    db_template = SMSTemplate(
+        name=template.name,
+        category=template.category,
+        body=template.body,
+        is_static=template.is_static,
+        variables=template.variables,
+        use_ai_enhancement=template.use_ai_enhancement,
+        ai_tone=template.ai_tone,
+        user_id=user_id
+    )
+    
+    db.add(db_template)
+    db.commit()
+    db.refresh(db_template)
+    
+    return SMSTemplateResponse(
+        id=str(db_template.id),
+        name=db_template.name,
+        category=db_template.category,
+        body=db_template.body,
+        is_static=db_template.is_static,
+        use_ai_enhancement=db_template.use_ai_enhancement,
+        usage_count=db_template.usage_count,
+        created_at=db_template.created_at
+    )
+
+
+@router.get("/templates", response_model=List[SMSTemplateResponse])
+async def get_templates(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get all SMS templates"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    templates = db.query(SMSTemplate).filter(
+        and_(
+            SMSTemplate.user_id == user_id,
+            SMSTemplate.is_active == True
+        )
+    ).order_by(desc(SMSTemplate.usage_count)).all()
+    
+    return [
+        SMSTemplateResponse(
+            id=str(t.id),
+            name=t.name,
+            category=t.category,
+            body=t.body,
+            is_static=t.is_static,
+            use_ai_enhancement=t.use_ai_enhancement,
+            usage_count=t.usage_count,
+            created_at=t.created_at
+        )
+        for t in templates
+    ]
+
+
+# Phone Number Management
+
+@router.post("/phone-numbers", response_model=PhoneNumberResponse)
+async def add_phone_number(
+    phone_data: PhoneNumberCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Add phone number to rotation pool"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Get Twilio settings
+    settings = db.query(TwilioSettings).filter(
+        TwilioSettings.user_id == user_id
+    ).first()
+    
+    if not settings:
+        raise HTTPException(status_code=400, detail="Twilio not configured")
+    
+    # Check if number already exists
+    existing = db.query(PhoneNumber).filter(
+        and_(
+            PhoneNumber.phone_number == phone_data.phone_number,
+            PhoneNumber.user_id == user_id
+        )
+    ).first()
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Phone number already added")
+    
+    db_number = PhoneNumber(
+        phone_number=phone_data.phone_number,
+        friendly_name=phone_data.friendly_name,
+        twilio_sid=phone_data.twilio_sid,
+        rotation_enabled=phone_data.rotation_enabled,
+        rotation_priority=phone_data.rotation_priority,
+        user_id=user_id,
+        twilio_settings_id=settings.id
+    )
+    
+    db.add(db_number)
+    db.commit()
+    db.refresh(db_number)
+    
+    return PhoneNumberResponse(
+        id=str(db_number.id),
+        phone_number=db_number.phone_number,
+        friendly_name=db_number.friendly_name,
+        rotation_enabled=db_number.rotation_enabled,
+        total_messages_sent=db_number.total_messages_sent,
+        total_messages_received=db_number.total_messages_received,
+        last_used_at=db_number.last_used_at
+    )
+
+
+@router.get("/phone-numbers", response_model=List[PhoneNumberResponse])
+async def get_phone_numbers(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get all phone numbers"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    numbers = db.query(PhoneNumber).filter(
+        and_(
+            PhoneNumber.user_id == user_id,
+            PhoneNumber.is_active == True
+        )
+    ).order_by(desc(PhoneNumber.rotation_priority)).all()
+    
+    return [
+        PhoneNumberResponse(
+            id=str(n.id),
+            phone_number=n.phone_number,
+            friendly_name=n.friendly_name,
+            rotation_enabled=n.rotation_enabled,
+            total_messages_sent=n.total_messages_sent,
+            total_messages_received=n.total_messages_received,
+            last_used_at=n.last_used_at
+        )
+        for n in numbers
+    ]
+
+
+@router.patch("/phone-numbers/{number_id}/rotation")
+async def toggle_rotation(
+    number_id: str,
+    enabled: bool,
+    priority: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Toggle number rotation"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    number = db.query(PhoneNumber).filter(
+        and_(
+            PhoneNumber.id == uuid.UUID(number_id),
+            PhoneNumber.user_id == user_id
+        )
+    ).first()
+    
+    if not number:
+        raise HTTPException(status_code=404, detail="Phone number not found")
+    
+    number.rotation_enabled = enabled
+    if priority is not None:
+        number.rotation_priority = priority
+    
+    db.commit()
+    
+    return {"success": True, "rotation_enabled": enabled}

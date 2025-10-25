@@ -2,7 +2,7 @@
 SMS Message models
 """
 
-from sqlalchemy import Column, String, ForeignKey, DateTime, Text, Enum as SQLEnum
+from sqlalchemy import Column, String, ForeignKey, DateTime, Text, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from .base import BaseModel
@@ -56,6 +56,7 @@ class SMSMessage(BaseModel):
     # Metadata
     num_segments = Column(String(10))  # Number of message segments
     num_media = Column(String(10))  # Number of media attachments
+    is_auto_response = Column(Boolean, default=False)  # AI-generated auto-response
     
     # Relationships
     user = relationship('User', back_populates='sms_messages', foreign_keys=[user_id])
