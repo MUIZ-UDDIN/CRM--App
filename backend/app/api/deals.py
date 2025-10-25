@@ -504,11 +504,78 @@ def move_deal_stage(
             raise HTTPException(status_code=400, detail=f"Stage '{to_stage_id_str}' not found")
         stage_id = stage.id
     
+    # Track old stage for workflow trigger
+    old_stage_id = deal.stage_id
+    old_status = deal.status
+    
     deal.stage_id = stage_id
     deal.updated_at = datetime.utcnow()
     
     db.commit()
     db.refresh(deal)
+    
+    # Trigger workflows for stage change
+    try:
+        from app.services.workflow_executor import WorkflowExecutor
+        from app.models.workflows import WorkflowTrigger
+        from app.core.database import SessionLocal
+        import asyncio
+        import threading
+        
+        trigger_data = {
+            "deal_id": str(deal.id),
+            "deal_title": deal.title,
+            "deal_value": deal.value,
+            "contact_id": str(deal.contact_id) if deal.contact_id else None,
+            "owner_id": str(deal.owner_id),
+            "old_stage_id": str(old_stage_id) if old_stage_id else None,
+            "new_stage_id": str(deal.stage_id) if deal.stage_id else None,
+            "old_status": old_status.value if old_status else None,
+            "new_status": deal.status.value if deal.status else None
+        }
+        
+        def run_workflow(trigger_type, data):
+            workflow_db = SessionLocal()
+            try:
+                print(f"🔥 Starting workflow trigger for {trigger_type.value}")
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                executor = WorkflowExecutor(workflow_db)
+                print(f"🔥 Trigger data: {data}")
+                result = loop.run_until_complete(executor.trigger_workflows(
+                    trigger_type,
+                    data,
+                    user_id
+                ))
+                print(f"🔥 Workflow trigger completed, executions: {len(result) if result else 0}")
+                loop.close()
+            except Exception as e:
+                print(f"❌ Workflow execution error: {e}")
+                import traceback
+                traceback.print_exc()
+            finally:
+                workflow_db.close()
+        
+        # Trigger DEAL_STAGE_CHANGED if stage changed
+        if old_stage_id != deal.stage_id:
+            thread = threading.Thread(target=run_workflow, args=(WorkflowTrigger.DEAL_STAGE_CHANGED, trigger_data.copy()), daemon=True)
+            thread.start()
+            print(f"🔥 Workflow thread started for deal_stage_changed")
+        
+        # Check if stage change also changed status
+        if old_status != deal.status:
+            if old_status != DealStatus.WON and deal.status == DealStatus.WON:
+                thread = threading.Thread(target=run_workflow, args=(WorkflowTrigger.DEAL_WON, trigger_data.copy()), daemon=True)
+                thread.start()
+                print(f"🔥 Workflow thread started for deal_won")
+            elif old_status != DealStatus.LOST and deal.status == DealStatus.LOST:
+                thread = threading.Thread(target=run_workflow, args=(WorkflowTrigger.DEAL_LOST, trigger_data.copy()), daemon=True)
+                thread.start()
+                print(f"🔥 Workflow thread started for deal_lost")
+    except Exception as workflow_error:
+        print(f"❌ Workflow trigger error: {workflow_error}")
+        import traceback
+        traceback.print_exc()
     
     # Map stage name to frontend format
     stage_name_map = {
