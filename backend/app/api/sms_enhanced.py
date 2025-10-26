@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from uuid import UUID
 import uuid
 import json
+from loguru import logger
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
@@ -183,6 +184,44 @@ async def generate_ai_response(
 
 
 # Endpoints
+
+@router.get("/messages")
+async def get_sms_messages(
+    skip: int = 0,
+    limit: int = 100,
+    type: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get all SMS messages for current user"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    query = db.query(SMSModel).filter(SMSModel.user_id == user_id)
+    
+    # Filter by type if provided
+    if type:
+        if type == "sent":
+            query = query.filter(SMSModel.direction == SMSDirection.OUTBOUND)
+        elif type == "received":
+            query = query.filter(SMSModel.direction == SMSDirection.INBOUND)
+    
+    messages = query.order_by(SMSModel.created_at.desc()).offset(skip).limit(limit).all()
+    
+    return [
+        {
+            "id": str(msg.id),
+            "direction": msg.direction,
+            "status": msg.status,
+            "from_address": msg.from_address,
+            "to_address": msg.to_address,
+            "body": msg.body,
+            "sent_at": msg.created_at,
+            "read_at": msg.read_at,
+            "contact_id": str(msg.contact_id) if msg.contact_id else None,
+            "created_at": msg.created_at
+        } for msg in messages
+    ]
+
 
 @router.post("/send")
 async def send_sms(
