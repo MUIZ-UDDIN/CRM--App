@@ -122,29 +122,90 @@ async def create_email(
     db: Session = Depends(get_db)
 ):
     """Create and send a new email"""
+    from loguru import logger
+    import os
+    from sendgrid import SendGridAPIClient
+    from sendgrid.helpers.mail import Mail, Email, To, Content
+    
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    # Create email record
-    email = EmailModel(
-        from_email=current_user["email"],
-        to_email=email_data.to_email,
-        subject=email_data.subject,
-        body=email_data.body,
-        cc=email_data.cc,
-        bcc=email_data.bcc,
-        contact_id=email_data.contact_id,
-        user_id=user_id,
-        status=EmailStatus.SENT,
-        sent_at=datetime.utcnow()
-    )
-    
-    db.add(email)
-    db.commit()
-    db.refresh(email)
-    
-    # TODO: Actually send the email using email service (SendGrid, etc.)
-    
-    return email
+    try:
+        # Get SendGrid API key from environment or Twilio settings
+        sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
+        
+        if not sendgrid_api_key:
+            # Try to get from Twilio settings
+            from app.models.twilio_settings import TwilioSettings
+            settings = db.query(TwilioSettings).filter(
+                TwilioSettings.user_id == user_id
+            ).first()
+            
+            if settings and hasattr(settings, 'sendgrid_api_key'):
+                sendgrid_api_key = settings.sendgrid_api_key
+        
+        # Create email record
+        email = EmailModel(
+            from_email=current_user["email"],
+            to_email=email_data.to_email,
+            subject=email_data.subject,
+            body=email_data.body,
+            cc=email_data.cc,
+            bcc=email_data.bcc,
+            contact_id=email_data.contact_id,
+            user_id=user_id,
+            status=EmailStatus.DRAFT,  # Start as draft
+            sent_at=None
+        )
+        
+        # Send email via SendGrid if API key is available
+        if sendgrid_api_key:
+            try:
+                sg = SendGridAPIClient(sendgrid_api_key)
+                
+                message = Mail(
+                    from_email=Email(current_user["email"]),
+                    to_emails=To(email_data.to_email),
+                    subject=email_data.subject,
+                    html_content=Content("text/html", email_data.body)
+                )
+                
+                # Add CC and BCC if provided
+                if email_data.cc:
+                    message.add_cc(email_data.cc)
+                if email_data.bcc:
+                    message.add_bcc(email_data.bcc)
+                
+                response = sg.send(message)
+                
+                if response.status_code in [200, 201, 202]:
+                    logger.info(f"✅ Email sent successfully to {email_data.to_email}")
+                    email.status = EmailStatus.SENT
+                    email.sent_at = datetime.utcnow()
+                else:
+                    logger.error(f"❌ SendGrid error: {response.status_code}")
+                    email.status = EmailStatus.FAILED
+                    
+            except Exception as e:
+                logger.error(f"❌ SendGrid error: {str(e)}")
+                email.status = EmailStatus.FAILED
+                # Don't raise - save the email record anyway
+        else:
+            logger.warning("⚠️ No SendGrid API key configured - email saved as draft")
+            email.status = EmailStatus.DRAFT
+        
+        db.add(email)
+        db.commit()
+        db.refresh(email)
+        
+        return email
+        
+    except Exception as e:
+        logger.error(f"❌ Email creation error: {str(e)}")
+        db.rollback()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to create email: {str(e)}"
+        )
 
 
 @router.post("/draft", response_model=EmailResponse, status_code=201)

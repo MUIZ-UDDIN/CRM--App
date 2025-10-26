@@ -104,6 +104,34 @@ export default function CallsNew() {
     }
   };
 
+  const formatPhoneNumber = (phone: string): string => {
+    // Remove all non-digit characters
+    const digits = phone.replace(/\D/g, '');
+    
+    // If starts with 0 (Pakistan local format), convert to +92
+    if (digits.startsWith('0') && digits.length === 11) {
+      return `+92${digits.substring(1)}`;
+    }
+    
+    // If already has country code but no +
+    if (digits.length === 12 && digits.startsWith('92')) {
+      return `+${digits}`;
+    }
+    
+    // If starts with 1 (US/Canada), add +
+    if (digits.startsWith('1') && digits.length === 11) {
+      return `+${digits}`;
+    }
+    
+    // If already starts with +, return as is
+    if (phone.startsWith('+')) {
+      return phone;
+    }
+    
+    // Default: assume it needs +
+    return digits ? `+${digits}` : phone;
+  };
+
   const handleMakeCall = async () => {
     if (!callForm.from || !callForm.to) {
       toast.error('Please select from number and enter recipient number');
@@ -111,6 +139,8 @@ export default function CallsNew() {
     }
 
     try {
+      const formattedTo = formatPhoneNumber(callForm.to);
+      
       const response = await fetch(`${API_BASE_URL}/api/calls/initiate`, {
         method: 'POST',
         headers: {
@@ -119,7 +149,7 @@ export default function CallsNew() {
         },
         body: JSON.stringify({
           from: callForm.from,
-          to: callForm.to
+          to: formattedTo
         })
       });
 
