@@ -5,7 +5,7 @@ Voice calls API endpoints for Twilio integration
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from uuid import UUID
 
@@ -19,14 +19,13 @@ twilio_service = TwilioService()
 
 
 class CallMakeRequest(BaseModel):
-    from_: str = None  # Twilio number to call from
+    from_number: Optional[str] = Field(None, alias='from')  # Twilio number to call from
     to: str
     notes: Optional[str] = None
     contact_id: Optional[str] = None
 
     class Config:
         populate_by_name = True
-        fields = {'from_': 'from'}
 
 
 class CallResponse(BaseModel):
@@ -103,7 +102,7 @@ async def make_call(
         client = Client(settings.account_sid, settings.auth_token)
         
         # Use from number from request or get from database
-        from_number = request.from_
+        from_number = request.from_number
         if not from_number:
             from ..models.phone_numbers import PhoneNumber
             phone_number = db.query(PhoneNumber).filter(
