@@ -176,34 +176,60 @@ export default function SMSEnhanced() {
     }
 
     try {
-      const promises = bulkForm.contact_ids.map(contactId => {
-        const contact = contacts.find(c => c.id === contactId);
-        if (!contact?.phone) return Promise.resolve();
+      let successCount = 0;
+      let failCount = 0;
+      const errors: string[] = [];
 
-        return fetch(`${API_BASE_URL}/api/sms/send`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            to: contact.phone,
-            body: bulkForm.body,
-            template_id: bulkForm.template_id,
-            use_rotation: bulkForm.use_rotation,
-            contact_id: contactId
-          })
-        });
+      const promises = bulkForm.contact_ids.map(async (contactId) => {
+        const contact = contacts.find(c => c.id === contactId);
+        if (!contact?.phone) return;
+
+        try {
+          const response = await fetch(`${API_BASE_URL}/api/sms/send`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              to: contact.phone,
+              body: bulkForm.body,
+              template_id: bulkForm.template_id,
+              use_rotation: bulkForm.use_rotation,
+              contact_id: contactId
+            })
+          });
+
+          if (response.ok) {
+            successCount++;
+          } else {
+            failCount++;
+            const error = await response.json();
+            errors.push(`${contact.first_name} ${contact.last_name}: ${error.detail}`);
+          }
+        } catch (err) {
+          failCount++;
+          errors.push(`${contact.first_name} ${contact.last_name}: Network error`);
+        }
       });
 
       await Promise.all(promises);
-      toast.success(`Sent ${bulkForm.contact_ids.length} messages successfully!`);
+
+      // Show appropriate message
+      if (successCount > 0 && failCount === 0) {
+        toast.success(`Sent ${successCount} messages successfully!`);
+      } else if (successCount > 0 && failCount > 0) {
+        toast.error(`Sent ${successCount} messages, ${failCount} failed. Check console for details.`);
+        console.error('Failed messages:', errors);
+      } else {
+        toast.error(`All ${failCount} messages failed. ${errors[0] || 'Unknown error'}`);
+      }
+
       setShowBulkModal(false);
       setBulkForm({ contact_ids: [], body: '', template_id: '', use_rotation: true });
       fetchMessages();
-    } catch (error) {
-      console.error('Error sending bulk SMS:', error);
-      toast.error('Failed to send bulk SMS');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send bulk SMS');
     }
   };
 

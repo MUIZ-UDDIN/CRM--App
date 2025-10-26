@@ -25,6 +25,7 @@ class ScheduledSMS(Base):
     sent_at = Column(DateTime, nullable=True)
     is_sent = Column(Boolean, default=False)
     is_cancelled = Column(Boolean, default=False)
+    error_message = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

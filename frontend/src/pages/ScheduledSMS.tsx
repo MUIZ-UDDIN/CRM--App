@@ -261,9 +261,23 @@ export default function ScheduledSMS() {
                       <span className="text-sm font-medium text-gray-900">
                         {new Date(msg.scheduled_at).toLocaleString()}
                       </span>
-                      <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
-                        Pending
-                      </span>
+                      {msg.is_sent ? (
+                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
+                          Sent
+                        </span>
+                      ) : msg.is_cancelled ? (
+                        <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">
+                          Cancelled
+                        </span>
+                      ) : new Date(msg.scheduled_at) <= new Date() ? (
+                        <span className="px-2 py-1 text-xs rounded-full bg-yellow-100 text-yellow-800">
+                          Sending...
+                        </span>
+                      ) : (
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">
+                          Pending
+                        </span>
+                      )}
                     </div>
                     <p className="text-sm text-gray-600 mb-2">
                       <strong>To:</strong> {msg.to_address}
@@ -345,7 +359,15 @@ export default function ScheduledSMS() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                  <div className="relative">
+                  <div 
+                    className="relative cursor-pointer"
+                    onClick={(e) => {
+                      const input = e.currentTarget.querySelector('input');
+                      if (input && e.target === e.currentTarget) {
+                        input.showPicker?.();
+                      }
+                    }}
+                  >
                     <input
                       type="date"
                       value={formData.scheduled_date}
@@ -359,7 +381,15 @@ export default function ScheduledSMS() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
-                  <div className="relative">
+                  <div 
+                    className="relative cursor-pointer"
+                    onClick={(e) => {
+                      const input = e.currentTarget.querySelector('input');
+                      if (input && e.target === e.currentTarget) {
+                        input.showPicker?.();
+                      }
+                    }}
+                  >
                     <input
                       type="time"
                       value={formData.scheduled_time}

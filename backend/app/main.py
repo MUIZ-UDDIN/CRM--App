@@ -91,6 +91,11 @@ async def lifespan(app: FastAPI):
         from app.services.workflow_scheduler import start_scheduler
         start_scheduler()
         logger.info("✅ Workflow scheduler started")
+        
+        # Start SMS scheduler
+        from app.services.sms_scheduler import sms_scheduler
+        sms_scheduler.start()
+        logger.info("✅ SMS scheduler started")
     except Exception as e:
         logger.warning(f"Some services failed to initialize: {e}")
     logger.info("Sales CRM API started successfully!")
@@ -103,8 +108,12 @@ async def lifespan(app: FastAPI):
         from app.services.workflow_scheduler import stop_scheduler
         stop_scheduler()
         logger.info("Workflow scheduler stopped")
+        
+        from app.services.sms_scheduler import sms_scheduler
+        sms_scheduler.stop()
+        logger.info("SMS scheduler stopped")
     except Exception as e:
-        logger.warning(f"Error stopping scheduler: {e}")
+        logger.warning(f"Error stopping schedulers: {e}")
 
 
 # Create FastAPI application
