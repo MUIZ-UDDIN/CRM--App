@@ -492,11 +492,7 @@ export default function Settings() {
     }
     
     if (integration.name === 'Twilio' && integration.status === 'connected') {
-      localStorage.removeItem('twilioConfig');
-      setIntegrations(integrations.map(i =>
-        i.id === integration.id ? { ...i, status: 'disconnected' } : i
-      ));
-      toast.success('Twilio disconnected');
+      handleDisconnectTwilio();
       return;
     }
     
@@ -527,6 +523,34 @@ export default function Settings() {
     toast.success(`${integration.name} ${integration.status === 'connected' ? 'disconnected' : 'connected'}`);
   };
   
+  const handleDisconnectTwilio = async () => {
+    if (!confirm('Are you sure you want to disconnect Twilio? This will remove all settings.')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        }
+      });
+
+      if (response.ok) {
+        setIntegrations(integrations.map(i =>
+          i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
+        ));
+        toast.success('Twilio disconnected successfully');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to disconnect Twilio');
+      }
+    } catch (error) {
+      console.error('Error disconnecting Twilio:', error);
+      toast.error('Failed to disconnect Twilio');
+    }
+  };
+
   const handleSaveTwilio = async () => {
     if (!twilioForm.accountSid || !twilioForm.authToken) {
       toast.error('Please fill in all Twilio credentials');
@@ -556,7 +580,8 @@ export default function Settings() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
+      // Try POST first (create new settings)
+      let response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -568,6 +593,21 @@ export default function Settings() {
         })
       });
 
+      // If settings already exist (400), use PUT to update
+      if (response.status === 400) {
+        response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            account_sid: twilioForm.accountSid,
+            auth_token: twilioForm.authToken
+          })
+        });
+      }
+
       if (response.ok) {
         // Update integration status
         setIntegrations(integrations.map(i =>
@@ -577,9 +617,9 @@ export default function Settings() {
         setShowTwilioModal(false);
         toast.success('Twilio connected successfully!');
         
-        // Optionally sync phone numbers
+        // Sync phone numbers
         toast.loading('Syncing phone numbers...');
-        await fetch(`${API_BASE_URL}/twilio/sync/phone-numbers`, {
+        await fetch(`${API_BASE_URL}/api/twilio/sync/phone-numbers`, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` }
         });
