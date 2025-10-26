@@ -233,6 +233,35 @@ async def send_sms(
     """Send SMS with template support and number rotation"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
+    # Validate and format recipient phone number
+    to_number = request.to.strip()
+    
+    # Check if it starts with +
+    if not to_number.startswith('+'):
+        # Try to detect country and add country code
+        if to_number.startswith('0'):
+            # Pakistani number (03xx -> +923xx)
+            if to_number.startswith('03'):
+                to_number = '+92' + to_number[1:]
+            # US/Canada number (1xxx -> +1xxx)
+            elif len(to_number) == 10:
+                to_number = '+1' + to_number
+        elif len(to_number) == 10:
+            # Assume US/Canada
+            to_number = '+1' + to_number
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid phone number format. Please use E.164 format (e.g., +923160978329 for Pakistan, +1234567890 for US). You entered: {request.to}"
+            )
+    
+    # Validate E.164 format (+ followed by 1-15 digits)
+    if not to_number[1:].isdigit() or len(to_number) < 8 or len(to_number) > 16:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid phone number format. Must be E.164 format: +[country code][number]. Example: +923160978329 (Pakistan) or +12345678900 (US). You entered: {request.to}"
+        )
+    
     # Get message body
     message_body = request.body
     
@@ -312,13 +341,13 @@ async def send_sms(
         if not settings:
             raise HTTPException(status_code=400, detail="Twilio not configured. Please connect Twilio in Settings > Integrations.")
         
-        logger.info(f"📤 Sending SMS from {from_number} to {request.to}")
+        logger.info(f"📤 Sending SMS from {from_number} to {to_number}")
         
         client = Client(settings.account_sid, settings.auth_token)
         message = client.messages.create(
             body=message_body,
             from_=from_number,
-            to=request.to
+            to=to_number
         )
         
         logger.info(f"✅ SMS sent successfully: {message.sid}")
@@ -328,7 +357,7 @@ async def send_sms(
             direction=SMSDirection.OUTBOUND,
             status=SMSStatus.SENT,
             from_address=from_number,
-            to_address=request.to,
+            to_address=to_number,
             body=message_body,
             user_id=user_id,
             contact_id=uuid.UUID(request.contact_id) if request.contact_id else None,
@@ -347,7 +376,7 @@ async def send_sms(
             "success": True,
             "message_sid": message.sid,
             "from": from_number,
-            "to": request.to,
+            "to": to_number,
             "body": message_body
         }
     
