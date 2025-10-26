@@ -84,30 +84,50 @@ async def make_call(
 ):
     """Make outbound call via Twilio"""
     try:
+        from twilio.rest import Client
+        from twilio.base.exceptions import TwilioRestException
+        from ..models.twilio_settings import TwilioSettings
+        
+        # Get Twilio settings from database
+        settings = db.query(TwilioSettings).filter(
+            TwilioSettings.user_id == current_user["id"]
+        ).first()
+        
+        if not settings:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No Twilio settings configured. Please configure Twilio in settings."
+            )
+        
+        # Initialize Twilio client with user's credentials
+        client = Client(settings.account_sid, settings.auth_token)
+        
+        # Use from number from request or get from database
+        from_number = request.from_
+        if not from_number:
+            from ..models.phone_numbers import PhoneNumber
+            phone_number = db.query(PhoneNumber).filter(
+                PhoneNumber.user_id == current_user["id"],
+                PhoneNumber.is_active == True
+            ).first()
+            
+            if not phone_number:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No active phone number found. Please add a phone number in settings."
+                )
+            from_number = phone_number.phone_number
+        
         # For now, we'll create a simple TwiML URL that plays a message
         # In production, you would have proper TwiML endpoints
         twiml_url = "https://handler.twilio.com/twiml/EHaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         
-        # Use from number from request or fallback to service default
-        from_number = request.from_ or twilio_service.phone_number
-        if not from_number:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No Twilio phone number configured. Please add a phone number in settings."
-            )
-        
         # Make call via Twilio
-        result = await twilio_service.make_call(
-            to_number=request.to,
-            from_number=from_number,
-            twiml_url=twiml_url
+        call = client.calls.create(
+            url=twiml_url,
+            to=request.to,
+            from_=from_number
         )
-        
-        if not result["success"]:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Failed to make call: {result.get('error', 'Unknown error')}"
-            )
         
         # Save to database
         call_record = CallModel(
@@ -118,7 +138,7 @@ async def make_call(
             user_id=current_user["id"],
             contact_id=request.contact_id,
             notes=request.notes,
-            twilio_sid=result.get("call_sid"),
+            twilio_sid=call.sid,
             started_at=datetime.utcnow()
         )
         
@@ -129,10 +149,16 @@ async def make_call(
         return {
             "success": True,
             "call_id": str(call_record.id),
-            "twilio_sid": result.get("call_sid"),
-            "status": result.get("status")
+            "twilio_sid": call.sid,
+            "status": call.status
         }
         
+    except TwilioRestException as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Twilio error: {str(e)}"
+        )
     except Exception as e:
         db.rollback()
         raise HTTPException(

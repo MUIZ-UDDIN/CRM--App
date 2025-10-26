@@ -18,6 +18,7 @@ interface ScheduledSMS {
   scheduled_at: string;
   is_sent: boolean;
   is_cancelled: boolean;
+  error_message?: string;
   created_at: string;
 }
 
@@ -292,6 +293,13 @@ export default function ScheduledSMS() {
                     <p className="text-sm text-gray-900 bg-gray-50 p-3 rounded-lg">
                       {msg.body}
                     </p>
+                    {msg.error_message && (
+                      <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-xs text-red-700">
+                          <strong>Error:</strong> {msg.error_message}
+                        </p>
+                      </div>
+                    )}
                     <p className="mt-2 text-xs text-gray-400">
                       Created: {new Date(msg.created_at).toLocaleString()}
                     </p>

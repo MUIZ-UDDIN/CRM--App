@@ -815,10 +815,36 @@ class ScheduledSMSResponse(BaseModel):
     scheduled_at: datetime
     is_sent: bool
     is_cancelled: bool
+    error_message: Optional[str] = None
     created_at: datetime
 
     class Config:
         from_attributes = True
+
+
+def format_phone_number(phone: str) -> str:
+    """Format phone number to E.164 format"""
+    # Remove all non-digit characters
+    digits = ''.join(filter(str.isdigit, phone))
+    
+    # If starts with 0 (Pakistan local format), convert to +92
+    if digits.startswith('0') and len(digits) == 11:
+        return f'+92{digits[1:]}'
+    
+    # If already has country code but no +
+    if len(digits) == 12 and digits.startswith('92'):
+        return f'+{digits}'
+    
+    # If starts with 1 (US/Canada), add +
+    if digits.startswith('1') and len(digits) == 11:
+        return f'+{digits}'
+    
+    # If already starts with +, return as is
+    if phone.startswith('+'):
+        return phone
+    
+    # Default: assume it needs +
+    return f'+{digits}' if digits else phone
 
 
 @router.post("/scheduled", response_model=ScheduledSMSResponse)
@@ -837,10 +863,13 @@ async def create_scheduled_sms(
     if request.scheduled_at <= now_utc:
         raise HTTPException(status_code=400, detail="Scheduled time must be in the future")
     
+    # Format phone number to E.164
+    formatted_phone = format_phone_number(request.to)
+    
     scheduled_sms = ScheduledSMS(
         user_id=user_id,
         contact_id=uuid.UUID(request.contact_id) if request.contact_id else None,
-        to_address=request.to,
+        to_address=formatted_phone,
         body=request.body,
         template_id=uuid.UUID(request.template_id) if request.template_id else None,
         scheduled_at=request.scheduled_at
