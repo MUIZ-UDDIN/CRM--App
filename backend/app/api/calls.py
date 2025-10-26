@@ -82,7 +82,11 @@ async def make_call(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Make outbound call via Twilio"""
+    from loguru import logger
+    
     try:
+        logger.info(f"📞 Received call request: from={request.from_number}, to={request.to}")
+        
         from twilio.rest import Client
         from twilio.base.exceptions import TwilioRestException
         from ..models.twilio_settings import TwilioSettings
@@ -152,12 +156,17 @@ async def make_call(
         }
         
     except TwilioRestException as e:
+        logger.error(f"❌ Twilio error: {str(e)}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Twilio error: {str(e)}"
         )
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"❌ Call error: {str(e)}")
+        logger.exception(e)
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
