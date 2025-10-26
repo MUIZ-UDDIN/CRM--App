@@ -214,12 +214,13 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 
-app.include_router(
-    sms_router,
-    prefix="/api/sms",
-    tags=["SMS"],
-    dependencies=[Depends(get_current_user)]
-)
+# OLD SMS router - replaced by sms_enhanced_router
+# app.include_router(
+#     sms_router,
+#     prefix="/api/sms",
+#     tags=["SMS"],
+#     dependencies=[Depends(get_current_user)]
+# )
 
 app.include_router(
     calls_router,
