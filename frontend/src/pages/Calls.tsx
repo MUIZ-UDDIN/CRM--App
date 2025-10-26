@@ -117,7 +117,10 @@ export default function CallsNew() {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(callForm)
+        body: JSON.stringify({
+          from: callForm.from,
+          to: callForm.to
+        })
       });
 
       if (response.ok) {
@@ -126,7 +129,9 @@ export default function CallsNew() {
         setCallForm({ from: callForm.from, to: '' });
         fetchCalls();
       } else {
-        toast.error('Failed to initiate call');
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to initiate call');
+        console.error('Call error:', error);
       }
     } catch (error) {
       console.error('Error initiating call:', error);
