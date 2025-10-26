@@ -67,14 +67,24 @@ class PhoneNumberCreate(BaseModel):
     rotation_priority: int = 0
 
 
+class PhoneNumberCapabilities(BaseModel):
+    voice: bool
+    sms: bool
+    mms: bool
+
+
 class PhoneNumberResponse(BaseModel):
     id: str
     phone_number: str
     friendly_name: Optional[str]
-    rotation_enabled: bool
+    capabilities: PhoneNumberCapabilities
+    is_active: bool
+    use_for_rotation: bool
+    rotation_enabled: bool  # Deprecated, use use_for_rotation
     total_messages_sent: int
     total_messages_received: int
     last_used_at: Optional[datetime]
+    created_at: datetime
     
     class Config:
         from_attributes = True
@@ -586,10 +596,18 @@ async def add_phone_number(
         id=str(db_number.id),
         phone_number=db_number.phone_number,
         friendly_name=db_number.friendly_name,
+        capabilities=PhoneNumberCapabilities(
+            voice=db_number.voice_enabled,
+            sms=db_number.sms_enabled,
+            mms=db_number.mms_enabled
+        ),
+        is_active=db_number.is_active,
+        use_for_rotation=db_number.rotation_enabled,
         rotation_enabled=db_number.rotation_enabled,
         total_messages_sent=db_number.total_messages_sent,
         total_messages_received=db_number.total_messages_received,
-        last_used_at=db_number.last_used_at
+        last_used_at=db_number.last_used_at,
+        created_at=db_number.created_at
     )
 
 
@@ -613,10 +631,18 @@ async def get_phone_numbers(
             id=str(n.id),
             phone_number=n.phone_number,
             friendly_name=n.friendly_name,
+            capabilities=PhoneNumberCapabilities(
+                voice=n.voice_enabled,
+                sms=n.sms_enabled,
+                mms=n.mms_enabled
+            ),
+            is_active=n.is_active,
+            use_for_rotation=n.rotation_enabled,
             rotation_enabled=n.rotation_enabled,
             total_messages_sent=n.total_messages_sent,
             total_messages_received=n.total_messages_received,
-            last_used_at=n.last_used_at
+            last_used_at=n.last_used_at,
+            created_at=n.created_at
         )
         for n in numbers
     ]
