@@ -12,6 +12,9 @@ from .deals import Deal, Pipeline, PipelineStage, DealStatus
 from .activities import Activity, ActivityType, ActivityStatus
 from .emails import Email, EmailTemplate, EmailCampaign, EmailStatus
 from .sms import SMSMessage, SMSDirection, SMSStatus
+from .sms_templates import SMSTemplate
+from .scheduled_sms import ScheduledSMS
+from .phone_numbers import PhoneNumber
 from .calls import Call, CallDirection, CallStatus
 from .documents import Document, DocumentSignature, DocumentType, DocumentStatus
 from .workflows import Workflow, WorkflowExecution, WorkflowStatus, WorkflowTrigger
@@ -70,6 +73,9 @@ __all__ = [
     'SMSMessage',
     'SMSDirection',
     'SMSStatus',
+    'SMSTemplate',
+    'ScheduledSMS',
+    'PhoneNumber',
     
     # Calls
     'Call',

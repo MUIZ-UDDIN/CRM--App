@@ -250,12 +250,13 @@ async def send_sms(
     # Send SMS via Twilio
     try:
         from twilio.rest import Client
+        from twilio.base.exceptions import TwilioRestException
         settings = db.query(TwilioSettings).filter(
             TwilioSettings.user_id == user_id
         ).first()
         
         if not settings:
-            raise HTTPException(status_code=400, detail="Twilio not configured")
+            raise HTTPException(status_code=400, detail="Twilio not configured. Please connect Twilio in Settings > Integrations.")
         
         client = Client(settings.account_sid, settings.auth_token)
         message = client.messages.create(
@@ -291,6 +292,27 @@ async def send_sms(
             "to": request.to,
             "body": message_body
         }
+    
+    except TwilioRestException as e:
+        # Handle Twilio-specific errors
+        error_message = str(e)
+        if "authentication" in error_message.lower() or "401" in error_message:
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid Twilio credentials. Please reconnect Twilio in Settings > Integrations with correct Account SID and Auth Token."
+            )
+        elif "phone number" in error_message.lower() or "21606" in str(e.code):
+            raise HTTPException(
+                status_code=400,
+                detail=f"The phone number '{from_number}' is not verified or doesn't belong to your Twilio account. Please sync phone numbers in Settings > Integrations."
+            )
+        elif "21211" in str(e.code):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid 'To' phone number: {request.to}. Please use E.164 format (e.g., +1234567890)."
+            )
+        else:
+            raise HTTPException(status_code=500, detail=f"Twilio error: {error_message}")
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to send SMS: {str(e)}")
