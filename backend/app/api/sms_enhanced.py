@@ -238,14 +238,29 @@ async def send_sms(
             from_number = phone_number_record.phone_number
     
     if not from_number:
-        # Fallback to Twilio settings default
-        settings = db.query(TwilioSettings).filter(
-            TwilioSettings.user_id == user_id
+        # Fallback to first active phone number
+        first_number = db.query(PhoneNumber).filter(
+            and_(
+                PhoneNumber.user_id == user_id,
+                PhoneNumber.is_active == True,
+                PhoneNumber.sms_enabled == True
+            )
         ).first()
-        if settings and settings.phone_number:
-            from_number = settings.phone_number
+        
+        if first_number:
+            from_number = first_number.phone_number
         else:
-            raise HTTPException(status_code=400, detail="No phone number available")
+            # Try Twilio settings default
+            settings = db.query(TwilioSettings).filter(
+                TwilioSettings.user_id == user_id
+            ).first()
+            if settings and settings.phone_number:
+                from_number = settings.phone_number
+            else:
+                raise HTTPException(
+                    status_code=400, 
+                    detail="No phone number available. Please sync phone numbers from Settings > Integrations > Twilio > Sync Phone Numbers."
+                )
     
     # Send SMS via Twilio
     try:
@@ -258,12 +273,16 @@ async def send_sms(
         if not settings:
             raise HTTPException(status_code=400, detail="Twilio not configured. Please connect Twilio in Settings > Integrations.")
         
+        logger.info(f"📤 Sending SMS from {from_number} to {request.to}")
+        
         client = Client(settings.account_sid, settings.auth_token)
         message = client.messages.create(
             body=message_body,
             from_=from_number,
             to=request.to
         )
+        
+        logger.info(f"✅ SMS sent successfully: {message.sid}")
         
         # Save to database
         sms_record = SMSModel(

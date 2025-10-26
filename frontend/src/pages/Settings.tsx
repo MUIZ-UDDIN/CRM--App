@@ -662,11 +662,6 @@ export default function Settings() {
       }
 
       if (response.ok) {
-        // Update integration status
-        setIntegrations(integrations.map(i =>
-          i.name === 'Twilio' ? { ...i, status: 'connected' } : i
-        ));
-        
         setShowTwilioModal(false);
         toast.success('Twilio connected successfully!');
         
@@ -678,6 +673,9 @@ export default function Settings() {
         });
         toast.dismiss();
         toast.success('Phone numbers synced!');
+        
+        // Refresh Twilio connection status and details
+        await checkTwilioConnection();
       } else {
         const error = await response.json();
         toast.error(error.detail || 'Failed to connect Twilio');
