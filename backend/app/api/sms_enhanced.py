@@ -801,6 +801,7 @@ async def toggle_rotation(
 
 # Scheduled SMS Models
 class ScheduledSMSCreate(BaseModel):
+    from_number: str
     to: str
     body: str
     contact_id: Optional[str] = None
@@ -865,10 +866,12 @@ async def create_scheduled_sms(
     
     # Format phone number to E.164
     formatted_phone = format_phone_number(request.to)
+    formatted_from = format_phone_number(request.from_number)
     
     scheduled_sms = ScheduledSMS(
         user_id=user_id,
         contact_id=uuid.UUID(request.contact_id) if request.contact_id else None,
+        from_number=formatted_from,
         to_address=formatted_phone,
         body=request.body,
         template_id=uuid.UUID(request.template_id) if request.template_id else None,

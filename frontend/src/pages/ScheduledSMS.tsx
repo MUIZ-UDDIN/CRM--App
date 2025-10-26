@@ -28,11 +28,19 @@ interface SMSTemplate {
   body: string;
 }
 
+interface PhoneNumber {
+  id: string;
+  phone_number: string;
+  friendly_name?: string;
+  is_active: boolean;
+}
+
 export default function ScheduledSMS() {
   const navigate = useNavigate();
   const [scheduledMessages, setScheduledMessages] = useState<ScheduledSMS[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
+  const [phoneNumbers, setPhoneNumbers] = useState<PhoneNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const { token } = useAuth();
@@ -41,6 +49,7 @@ export default function ScheduledSMS() {
   const [formData, setFormData] = useState({
     contact_id: '',
     to: '',
+    from_number: '',
     body: '',
     template_id: '',
     scheduled_date: '',
@@ -51,6 +60,7 @@ export default function ScheduledSMS() {
     fetchScheduledMessages();
     fetchContacts();
     fetchTemplates();
+    fetchPhoneNumbers();
     
     // Auto-refresh scheduled messages every 30 seconds
     const interval = setInterval(() => {
@@ -108,10 +118,29 @@ export default function ScheduledSMS() {
     }
   };
 
+  const fetchPhoneNumbers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/sms/phone-numbers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        const activeNumbers = data.filter((num: PhoneNumber) => num.is_active);
+        setPhoneNumbers(activeNumbers);
+        // Set first number as default
+        if (activeNumbers.length > 0 && !formData.from_number) {
+          setFormData(prev => ({ ...prev, from_number: activeNumbers[0].phone_number }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching phone numbers:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.to || !formData.body || !formData.scheduled_date || !formData.scheduled_time) {
+    if (!formData.from_number || !formData.to || !formData.body || !formData.scheduled_date || !formData.scheduled_time) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -127,6 +156,7 @@ export default function ScheduledSMS() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          from_number: formData.from_number,
           to: formData.to,
           body: formData.body,
           contact_id: formData.contact_id || null,
@@ -188,9 +218,11 @@ export default function ScheduledSMS() {
   };
 
   const resetForm = () => {
+    const defaultFromNumber = phoneNumbers.length > 0 ? phoneNumbers[0].phone_number : '';
     setFormData({
       contact_id: '',
       to: '',
+      from_number: defaultFromNumber,
       body: '',
       template_id: '',
       scheduled_date: '',
@@ -333,6 +365,24 @@ export default function ScheduledSMS() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {/* From Number Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Number *</label>
+                <select
+                  value={formData.from_number}
+                  onChange={(e) => setFormData({...formData, from_number: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select a number...</option>
+                  {phoneNumbers.map((num) => (
+                    <option key={num.id} value={num.phone_number}>
+                      {num.phone_number} {num.friendly_name ? `(${num.friendly_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
               {/* Template Selection */}
               <div>
                 <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
