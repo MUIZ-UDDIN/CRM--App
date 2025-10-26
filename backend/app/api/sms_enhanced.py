@@ -773,3 +773,29 @@ async def cancel_scheduled_sms(
     db.commit()
     
     return {"success": True, "message": "Scheduled SMS cancelled"}
+
+
+@router.patch("/phone-numbers/{number_id}/active")
+async def toggle_phone_number_active(
+    number_id: str,
+    enabled: bool,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Toggle phone number active status"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    phone_number = db.query(PhoneNumber).filter(
+        and_(
+            PhoneNumber.id == uuid.UUID(number_id),
+            PhoneNumber.user_id == user_id
+        )
+    ).first()
+    
+    if not phone_number:
+        raise HTTPException(status_code=404, detail="Phone number not found")
+    
+    phone_number.is_active = enabled
+    db.commit()
+    
+    return {"success": True, "is_active": enabled}

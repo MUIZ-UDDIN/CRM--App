@@ -108,12 +108,18 @@ export default function Settings() {
       });
       if (response.ok) {
         const data = await response.json();
+        setTwilioDetails(data);
         // If we get data back, Twilio is connected
         setIntegrations(integrations.map(i =>
           i.name === 'Twilio' ? { ...i, status: 'connected' } : i
         ));
+        
+        // Fetch phone numbers
+        fetchPhoneNumbers();
       } else {
         // No settings found, disconnected
+        setTwilioDetails(null);
+        setPhoneNumbers([]);
         setIntegrations(integrations.map(i =>
           i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
         ));
@@ -122,11 +128,56 @@ export default function Settings() {
       console.error('Error checking Twilio connection:', error);
     }
   };
+  
+  const fetchPhoneNumbers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/sms/phone-numbers`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPhoneNumbers(data);
+      }
+    } catch (error) {
+      console.error('Error fetching phone numbers:', error);
+    }
+  };
+  
+  const handleSyncPhoneNumbers = async () => {
+    try {
+      toast.loading('Syncing phone numbers...');
+      const response = await fetch(`${API_BASE_URL}/api/twilio/sync/phone-numbers`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast.dismiss();
+        toast.success(`Synced ${data.added || 0} new numbers`);
+        fetchPhoneNumbers();
+      } else {
+        toast.dismiss();
+        toast.error('Failed to sync phone numbers');
+      }
+    } catch (error) {
+      toast.dismiss();
+      console.error('Error syncing phone numbers:', error);
+      toast.error('Failed to sync phone numbers');
+    }
+  };
 
   const [integrations, setIntegrations] = useState<Integration[]>([
     { id: '1', name: 'Twilio', description: 'SMS, Voice calls, and messaging', status: 'disconnected', icon: '📱' },
     { id: '2', name: 'Gmail', description: 'Sync emails and calendar', status: 'disconnected', icon: '📧' },
   ]);
+  
+  const [twilioDetails, setTwilioDetails] = useState<any>(null);
+  const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
   
   const [showTwilioModal, setShowTwilioModal] = useState(false);
   const [twilioForm, setTwilioForm] = useState({
@@ -540,6 +591,8 @@ export default function Settings() {
         setIntegrations(integrations.map(i =>
           i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
         ));
+        setTwilioDetails(null);
+        setPhoneNumbers([]);
         toast.success('Twilio disconnected successfully');
       } else {
         const error = await response.json();
@@ -1157,6 +1210,40 @@ export default function Settings() {
                       {integration.status === 'connected' ? 'Disconnect' : 'Connect'}
                     </button>
                   </div>
+                  
+                  {/* Show details when connected */}
+                  {integration.name === 'Twilio' && integration.status === 'connected' && twilioDetails && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-3">
+                      <div className="text-xs text-gray-600">
+                        <p><strong>Account SID:</strong> {twilioDetails.account_sid?.substring(0, 10)}...</p>
+                        <p className="mt-1"><strong>Status:</strong> {twilioDetails.is_verified ? '✓ Verified' : '⚠ Not Verified'}</p>
+                        <p className="mt-1"><strong>Phone Numbers:</strong> {phoneNumbers.length}</p>
+                      </div>
+                      <button
+                        onClick={handleSyncPhoneNumbers}
+                        className="w-full px-3 py-2 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100"
+                      >
+                        🔄 Sync Phone Numbers
+                      </button>
+                      {phoneNumbers.length > 0 && (
+                        <button
+                          onClick={() => window.location.href = '/phone-numbers'}
+                          className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                        >
+                          📱 Manage Phone Numbers
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  
+                  {integration.name === 'Gmail' && integration.status === 'connected' && (
+                    <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                      <div className="text-xs text-gray-600">
+                        <p><strong>Email:</strong> {gmailForm.email}</p>
+                        <p className="mt-1"><strong>Status:</strong> ✓ Connected</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

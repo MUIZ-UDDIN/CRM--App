@@ -25,6 +25,7 @@ import SMSEnhanced from './pages/SMSEnhanced';
 import SMSTemplates from './pages/SMSTemplates';
 import SMSAnalytics from './pages/SMSAnalytics';
 import ScheduledSMS from './pages/ScheduledSMS';
+import PhoneNumbers from './pages/PhoneNumbers';
 import Calls from './pages/Calls';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -83,6 +84,7 @@ function App() {
                 <Route path="sms-templates" element={<SMSTemplates />} />
                 <Route path="sms-analytics" element={<SMSAnalytics />} />
                 <Route path="sms-scheduled" element={<ScheduledSMS />} />
+                <Route path="phone-numbers" element={<PhoneNumbers />} />
                 <Route path="calls" element={<Calls />} />
               </Route>
 
