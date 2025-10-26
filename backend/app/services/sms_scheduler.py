@@ -99,13 +99,26 @@ class SMSScheduler:
             if not settings:
                 logger.error(f"No Twilio settings found for user {scheduled_msg.user_id}")
                 scheduled_msg.is_cancelled = True
+                scheduled_msg.error_message = "No Twilio settings configured"
                 return
             
             # Initialize Twilio client
             client = Client(settings.account_sid, settings.auth_token)
             
-            # Determine from number
-            from_number = settings.phone_number
+            # Get active phone number from database
+            from app.models.phone_numbers import PhoneNumber
+            phone_number = db.query(PhoneNumber).filter(
+                PhoneNumber.user_id == scheduled_msg.user_id,
+                PhoneNumber.is_active == True
+            ).first()
+            
+            if not phone_number:
+                logger.error(f"No active phone number found for user {scheduled_msg.user_id}")
+                scheduled_msg.is_cancelled = True
+                scheduled_msg.error_message = "No active phone number configured"
+                return
+            
+            from_number = phone_number.phone_number
             
             logger.info(f"📤 Sending scheduled SMS from {from_number} to {scheduled_msg.to_address}")
             

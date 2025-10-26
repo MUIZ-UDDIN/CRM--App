@@ -70,6 +70,7 @@ export default function SMSEnhanced() {
     contact_ids: [] as string[],
     body: '',
     template_id: '',
+    from_number: '',
     use_rotation: true
   });
 
@@ -195,6 +196,7 @@ export default function SMSEnhanced() {
               to: contact.phone,
               body: bulkForm.body,
               template_id: bulkForm.template_id,
+              from_number: bulkForm.from_number,
               use_rotation: bulkForm.use_rotation,
               contact_id: contactId
             })
@@ -226,7 +228,7 @@ export default function SMSEnhanced() {
       }
 
       setShowBulkModal(false);
-      setBulkForm({ contact_ids: [], body: '', template_id: '', use_rotation: true });
+      setBulkForm({ contact_ids: [], body: '', template_id: '', from_number: '', use_rotation: true });
       fetchMessages();
     } catch (error: any) {
       toast.error(error.message || 'Failed to send bulk SMS');
@@ -523,6 +525,27 @@ export default function SMSEnhanced() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* From Number Selection */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Number *</label>
+                <select
+                  value={bulkForm.from_number}
+                  onChange={(e) => setBulkForm({...bulkForm, from_number: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  required
+                >
+                  <option value="">Select a number...</option>
+                  {phoneNumbers.map((num) => (
+                    <option key={num.id} value={num.phone_number}>
+                      {num.phone_number} {num.friendly_name ? `(${num.friendly_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  Note: US/Canada numbers can only send to US/Canada. Enable geographic permissions in Twilio for other regions.
+                </p>
               </div>
 
               {/* Contact Selection */}

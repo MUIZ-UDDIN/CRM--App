@@ -19,9 +19,14 @@ twilio_service = TwilioService()
 
 
 class CallMakeRequest(BaseModel):
+    from_: str = None  # Twilio number to call from
     to: str
     notes: Optional[str] = None
     contact_id: Optional[str] = None
+
+    class Config:
+        populate_by_name = True
+        fields = {'from_': 'from'}
 
 
 class CallResponse(BaseModel):
@@ -71,6 +76,7 @@ async def get_calls(
 
 
 @router.post("/make")
+@router.post("/initiate")  # Alias for frontend compatibility
 async def make_call(
     request: CallMakeRequest,
     db: Session = Depends(get_db),
@@ -82,9 +88,18 @@ async def make_call(
         # In production, you would have proper TwiML endpoints
         twiml_url = "https://handler.twilio.com/twiml/EHaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         
+        # Use from number from request or fallback to service default
+        from_number = request.from_ or twilio_service.phone_number
+        if not from_number:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No Twilio phone number configured. Please add a phone number in settings."
+            )
+        
         # Make call via Twilio
         result = await twilio_service.make_call(
             to_number=request.to,
+            from_number=from_number,
             twiml_url=twiml_url
         )
         
@@ -98,7 +113,7 @@ async def make_call(
         call_record = CallModel(
             direction=CallDirection.OUTBOUND,
             status=CallStatus.INITIATED,
-            from_address=twilio_service.phone_number or "+1234567890",
+            from_address=from_number,
             to_address=request.to,
             user_id=current_user["id"],
             contact_id=request.contact_id,

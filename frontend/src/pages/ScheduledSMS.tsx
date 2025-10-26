@@ -50,6 +50,13 @@ export default function ScheduledSMS() {
     fetchScheduledMessages();
     fetchContacts();
     fetchTemplates();
+    
+    // Auto-refresh scheduled messages every 30 seconds
+    const interval = setInterval(() => {
+      fetchScheduledMessages();
+    }, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const fetchScheduledMessages = async () => {
@@ -359,46 +366,28 @@ export default function ScheduledSMS() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
-                  <div 
-                    className="relative cursor-pointer"
-                    onClick={(e) => {
-                      const input = e.currentTarget.querySelector('input');
-                      if (input && e.target === e.currentTarget) {
-                        input.showPicker?.();
-                      }
-                    }}
-                  >
-                    <input
-                      type="date"
-                      value={formData.scheduled_date}
-                      onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
-                      min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
-                      style={{ colorScheme: 'light' }}
-                      required
-                    />
-                  </div>
+                  <input
+                    type="date"
+                    value={formData.scheduled_date}
+                    onChange={(e) => setFormData({ ...formData, scheduled_date: e.target.value })}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
+                    style={{ colorScheme: 'light' }}
+                    required
+                  />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
-                  <div 
-                    className="relative cursor-pointer"
-                    onClick={(e) => {
-                      const input = e.currentTarget.querySelector('input');
-                      if (input && e.target === e.currentTarget) {
-                        input.showPicker?.();
-                      }
-                    }}
-                  >
-                    <input
-                      type="time"
-                      value={formData.scheduled_time}
-                      onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
-                      style={{ colorScheme: 'light' }}
-                      required
-                    />
-                  </div>
+                  <input
+                    type="time"
+                    value={formData.scheduled_time}
+                    onChange={(e) => setFormData({ ...formData, scheduled_time: e.target.value })}
+                    onClick={(e) => e.currentTarget.showPicker?.()}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent cursor-pointer"
+                    style={{ colorScheme: 'light' }}
+                    required
+                  />
                 </div>
               </div>
 
