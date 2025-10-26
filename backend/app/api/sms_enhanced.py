@@ -383,20 +383,27 @@ async def send_sms(
     except TwilioRestException as e:
         # Handle Twilio-specific errors
         error_message = str(e)
+        error_code = str(e.code) if hasattr(e, 'code') else 'N/A'
         logger.error(f"❌ Twilio error: {error_message}")
-        logger.error(f"Error code: {e.code if hasattr(e, 'code') else 'N/A'}")
+        logger.error(f"Error code: {error_code}")
         
         if "authentication" in error_message.lower() or "401" in error_message:
             raise HTTPException(
                 status_code=400, 
                 detail="Invalid Twilio credentials. Please reconnect Twilio in Settings > Integrations with correct Account SID and Auth Token."
             )
-        elif "phone number" in error_message.lower() or "21606" in str(e.code) if hasattr(e, 'code') else False:
+        elif "21408" in error_code or "Permission to send" in error_message:
+            # Geographic permissions error
+            raise HTTPException(
+                status_code=400,
+                detail=f"Your Twilio account doesn't have permission to send SMS to this region. Please enable geographic permissions for the destination country in your Twilio Console: https://console.twilio.com/us1/develop/sms/settings/geo-permissions"
+            )
+        elif "phone number" in error_message.lower() or "21606" in error_code:
             raise HTTPException(
                 status_code=400,
                 detail=f"The phone number '{from_number}' is not verified or doesn't belong to your Twilio account. Please sync phone numbers in Settings > Integrations."
             )
-        elif "21211" in str(e.code) if hasattr(e, 'code') else False:
+        elif "21211" in error_code:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid 'To' phone number: {to_number}. Please use E.164 format (e.g., +1234567890)."

@@ -1,6 +1,7 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
+import { useEffect } from 'react';
 
 // Layout Components
 import MainLayout from './components/layout/MainLayout';
@@ -49,11 +50,40 @@ const queryClient = new QueryClient({
   },
 });
 
+// Global 401 handler component
+function GlobalAuthHandler() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Intercept fetch globally
+    const originalFetch = window.fetch;
+    window.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      
+      // Handle 401 Unauthorized
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        navigate('/auth/login');
+      }
+      
+      return response;
+    };
+
+    return () => {
+      window.fetch = originalFetch;
+    };
+  }, [navigate]);
+
+  return null;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <GlobalAuthHandler />
           <div className="min-h-screen bg-gray-50">
             <Routes>
               {/* Authentication Routes */}

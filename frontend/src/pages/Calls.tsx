@@ -37,20 +37,31 @@ export default function CallsNew() {
   });
 
   const [searchTo, setSearchTo] = useState('');
-  const [twilioNumbers, setTwilioNumbers] = useState<string[]>([]);
+  const [twilioNumbers, setTwilioNumbers] = useState<any[]>([]);
 
   useEffect(() => {
     fetchCalls();
     fetchContacts();
-    loadTwilioConfig();
+    fetchTwilioNumbers();
   }, [selectedTab]);
 
-  const loadTwilioConfig = () => {
-    const twilioConfig = localStorage.getItem('twilioConfig');
-    if (twilioConfig) {
-      const config = JSON.parse(twilioConfig);
-      setTwilioNumbers([config.phoneNumber]);
-      setCallForm(prev => ({ ...prev, from: config.phoneNumber }));
+  const fetchTwilioNumbers = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/sms/phone-numbers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        // Filter for voice-enabled numbers
+        const voiceNumbers = data.filter((num: any) => num.voice_enabled);
+        setTwilioNumbers(voiceNumbers);
+        // Set first number as default
+        if (voiceNumbers.length > 0) {
+          setCallForm(prev => ({ ...prev, from: voiceNumbers[0].phone_number }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching Twilio numbers:', error);
     }
   };
 
@@ -250,14 +261,21 @@ export default function CallsNew() {
               </button>
             </div>
             <div className="space-y-4">
-              <SearchableSelect
-                label="From (Your Twilio Number)"
-                options={twilioNumbers}
-                value={callForm.from}
-                onChange={(value) => setCallForm({...callForm, from: value})}
-                placeholder="Search Twilio numbers or enter manually..."
-                allowCustom={true}
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From (Your Twilio Number)</label>
+                <select
+                  value={callForm.from}
+                  onChange={(e) => setCallForm({...callForm, from: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">Select a number...</option>
+                  {twilioNumbers.map((num) => (
+                    <option key={num.id} value={num.phone_number}>
+                      {num.phone_number} {num.friendly_name ? `(${num.friendly_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact or Phone Number)</label>
                 <input
