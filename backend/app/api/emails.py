@@ -130,18 +130,20 @@ async def create_email(
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
     try:
-        # Get SendGrid API key from environment or Twilio settings
-        sendgrid_api_key = os.getenv('SENDGRID_API_KEY')
+        # Get SendGrid settings from Twilio settings
+        from app.models.twilio_settings import TwilioSettings
+        settings = db.query(TwilioSettings).filter(
+            TwilioSettings.user_id == user_id
+        ).first()
         
-        if not sendgrid_api_key:
-            # Try to get from Twilio settings
-            from app.models.twilio_settings import TwilioSettings
-            settings = db.query(TwilioSettings).filter(
-                TwilioSettings.user_id == user_id
-            ).first()
-            
-            if settings and hasattr(settings, 'sendgrid_api_key'):
-                sendgrid_api_key = settings.sendgrid_api_key
+        if not settings or not settings.sendgrid_api_key:
+            raise HTTPException(
+                status_code=400,
+                detail="SendGrid not configured. Please add SendGrid API key in Twilio Settings."
+            )
+        
+        sendgrid_api_key = settings.sendgrid_api_key
+        from_email = settings.sendgrid_from_email or current_user["email"]
         
         # Create email record
         email = EmailModel(
@@ -157,41 +159,40 @@ async def create_email(
             sent_at=None
         )
         
-        # Send email via SendGrid if API key is available
-        if sendgrid_api_key:
-            try:
-                sg = SendGridAPIClient(sendgrid_api_key)
-                
-                message = Mail(
-                    from_email=Email(current_user["email"]),
-                    to_emails=To(email_data.to_email),
-                    subject=email_data.subject,
-                    html_content=Content("text/html", email_data.body)
-                )
-                
-                # Add CC and BCC if provided
-                if email_data.cc:
-                    message.add_cc(email_data.cc)
-                if email_data.bcc:
-                    message.add_bcc(email_data.bcc)
-                
-                response = sg.send(message)
-                
-                if response.status_code in [200, 201, 202]:
-                    logger.info(f"✅ Email sent successfully to {email_data.to_email}")
-                    email.status = EmailStatus.SENT
-                    email.sent_at = datetime.utcnow()
-                else:
-                    logger.error(f"❌ SendGrid error: {response.status_code}")
-                    email.status = EmailStatus.FAILED
-                    
-            except Exception as e:
-                logger.error(f"❌ SendGrid error: {str(e)}")
+        # Send email via SendGrid
+        try:
+            sg = SendGridAPIClient(sendgrid_api_key)
+            
+            message = Mail(
+                from_email=Email(from_email),
+                to_emails=To(email_data.to_email),
+                subject=email_data.subject,
+                html_content=Content("text/html", email_data.body)
+            )
+            
+            # Add CC and BCC if provided
+            if email_data.cc:
+                message.add_cc(email_data.cc)
+            if email_data.bcc:
+                message.add_bcc(email_data.bcc)
+            
+            response = sg.send(message)
+            
+            if response.status_code in [200, 201, 202]:
+                logger.info(f"✅ Email sent successfully to {email_data.to_email}")
+                email.status = EmailStatus.SENT
+                email.sent_at = datetime.utcnow()
+            else:
+                logger.error(f"❌ SendGrid error: {response.status_code}")
                 email.status = EmailStatus.FAILED
-                # Don't raise - save the email record anyway
-        else:
-            logger.warning("⚠️ No SendGrid API key configured - email saved as draft")
-            email.status = EmailStatus.DRAFT
+                
+        except Exception as e:
+            logger.error(f"❌ SendGrid error: {str(e)}")
+            email.status = EmailStatus.FAILED
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to send email: {str(e)}"
+            )
         
         db.add(email)
         db.commit()
@@ -419,6 +420,63 @@ async def get_email_stats(
         "sent": sent,
         "drafts": drafts
     }
+
+
+@router.post("/webhook/inbound", include_in_schema=False)
+async def inbound_email_webhook(
+    request: dict,
+    db: Session = Depends(get_db)
+):
+    """
+    Webhook for receiving inbound emails from SendGrid
+    Configure this URL in SendGrid: https://sunstonecrm.com/api/emails/webhook/inbound
+    """
+    from loguru import logger
+    
+    try:
+        logger.info(f"📧 Received inbound email webhook: {request}")
+        
+        # Extract email data from SendGrid webhook
+        from_email = request.get("from", "")
+        to_email = request.get("to", "")
+        subject = request.get("subject", "")
+        text_body = request.get("text", "")
+        html_body = request.get("html", "")
+        
+        # Use HTML if available, otherwise text
+        body = html_body if html_body else text_body
+        
+        # Find user by to_email (match with sendgrid_from_email)
+        from app.models.twilio_settings import TwilioSettings
+        settings = db.query(TwilioSettings).filter(
+            TwilioSettings.sendgrid_from_email == to_email
+        ).first()
+        
+        if not settings:
+            logger.warning(f"⚠️ No user found for email: {to_email}")
+            return {"status": "ok", "message": "No user found"}
+        
+        # Create inbound email record
+        email = EmailModel(
+            from_email=from_email,
+            to_email=to_email,
+            subject=subject,
+            body=body,
+            user_id=settings.user_id,
+            status=EmailStatus.RECEIVED,
+            sent_at=datetime.utcnow()
+        )
+        
+        db.add(email)
+        db.commit()
+        
+        logger.info(f"✅ Inbound email saved from {from_email}")
+        
+        return {"status": "ok", "message": "Email received"}
+        
+    except Exception as e:
+        logger.error(f"❌ Inbound email webhook error: {str(e)}")
+        return {"status": "error", "message": str(e)}
 
 
 @router.post("/track/open/{email_id}")

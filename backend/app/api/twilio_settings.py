@@ -22,8 +22,11 @@ class TwilioSettingsBase(BaseModel):
     account_sid: str = Field(..., min_length=34, max_length=34, description="Twilio Account SID")
     auth_token: str = Field(..., min_length=32, description="Twilio Auth Token")
     phone_number: Optional[str] = Field(None, description="Twilio phone number (E.164 format)")
+    sendgrid_api_key: Optional[str] = Field(None, description="SendGrid API key for emails")
+    sendgrid_from_email: Optional[str] = Field(None, description="Verified sender email address")
     sms_enabled: bool = Field(True, description="Enable SMS functionality")
     voice_enabled: bool = Field(True, description="Enable voice call functionality")
+    email_enabled: bool = Field(False, description="Enable email functionality")
 
 
 class TwilioSettingsCreate(TwilioSettingsBase):
@@ -34,8 +37,11 @@ class TwilioSettingsUpdate(BaseModel):
     account_sid: Optional[str] = Field(None, min_length=34, max_length=34)
     auth_token: Optional[str] = Field(None, min_length=32)
     phone_number: Optional[str] = None
+    sendgrid_api_key: Optional[str] = None
+    sendgrid_from_email: Optional[str] = None
     sms_enabled: Optional[bool] = None
     voice_enabled: Optional[bool] = None
+    email_enabled: Optional[bool] = None
     is_active: Optional[bool] = None
 
 
@@ -44,8 +50,11 @@ class TwilioSettingsResponse(BaseModel):
     user_id: uuid.UUID
     account_sid: str
     phone_number: Optional[str]
+    sendgrid_api_key: Optional[str]
+    sendgrid_from_email: Optional[str]
     sms_enabled: bool
     voice_enabled: bool
+    email_enabled: bool
     is_active: bool
     is_verified: bool
     created_at: datetime

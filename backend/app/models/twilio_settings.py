@@ -21,9 +21,14 @@ class TwilioSettings(BaseModel):
     # Twilio Phone Numbers
     phone_number = Column(String(20), nullable=True)  # Primary phone number for calls/SMS
     
+    # SendGrid (Twilio Email) Settings
+    sendgrid_api_key = Column(String(255), nullable=True)  # SendGrid API key for emails
+    sendgrid_from_email = Column(String(255), nullable=True)  # Verified sender email
+    
     # Feature Flags
     sms_enabled = Column(Boolean, default=True)
     voice_enabled = Column(Boolean, default=True)
+    email_enabled = Column(Boolean, default=False)
     
     # Status
     is_verified = Column(Boolean, default=False)  # Whether credentials have been verified

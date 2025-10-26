@@ -15,6 +15,7 @@ class EmailStatus(str, enum.Enum):
     DRAFT = "draft"
     SCHEDULED = "scheduled"
     SENT = "sent"
+    RECEIVED = "received"  # For inbound emails
     DELIVERED = "delivered"
     OPENED = "opened"
     CLICKED = "clicked"
