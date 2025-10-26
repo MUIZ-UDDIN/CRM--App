@@ -117,16 +117,13 @@ async def make_call(
                 )
             from_number = phone_number.phone_number
         
-        # Use our TwiML endpoint for call handling
-        # This will connect the call and allow conversation
-        twiml_url = "https://sunstonecrm.com/api/calls/twiml"
-        
-        # Make call via Twilio
+        # Make call via Twilio with inline TwiML
+        # According to Twilio docs, we can pass TwiML directly as a string
         call = client.calls.create(
-            url=twiml_url,
+            twiml="<Response><Say>Hello! This is a call from your CRM system.</Say></Response>",
             to=request.to,
             from_=from_number,
-            status_callback=f"https://sunstonecrm.com/api/calls/webhook",
+            status_callback="https://sunstonecrm.com/api/calls/webhook",
             status_callback_event=['initiated', 'ringing', 'answered', 'completed']
         )
         
