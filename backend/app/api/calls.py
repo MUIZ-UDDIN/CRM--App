@@ -117,15 +117,17 @@ async def make_call(
                 )
             from_number = phone_number.phone_number
         
-        # For now, we'll create a simple TwiML URL that plays a message
-        # In production, you would have proper TwiML endpoints
-        twiml_url = "https://handler.twilio.com/twiml/EHaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        # Use our TwiML endpoint for call handling
+        # This will connect the call and allow conversation
+        twiml_url = "https://sunstonecrm.com/api/calls/twiml"
         
         # Make call via Twilio
         call = client.calls.create(
             url=twiml_url,
             to=request.to,
-            from_=from_number
+            from_=from_number,
+            status_callback=f"https://sunstonecrm.com/api/calls/webhook",
+            status_callback_event=['initiated', 'ringing', 'answered', 'completed']
         )
         
         # Save to database
@@ -208,6 +210,21 @@ async def update_call_notes(
     db.commit()
     
     return {"success": True, "message": "Call notes updated"}
+
+
+@router.post("/twiml", include_in_schema=False)
+@router.get("/twiml", include_in_schema=False)
+async def call_twiml():
+    """TwiML endpoint for handling calls - simple dial"""
+    from fastapi.responses import Response
+    
+    # Simple TwiML that just connects the call
+    twiml = """<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+    <Say voice="alice">Hello, connecting your call.</Say>
+</Response>"""
+    
+    return Response(content=twiml, media_type="application/xml")
 
 
 @router.post("/webhook")
