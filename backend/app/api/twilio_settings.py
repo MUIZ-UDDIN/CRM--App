@@ -64,11 +64,17 @@ def verify_twilio_credentials(account_sid: str, auth_token: str) -> bool:
     """
     try:
         from twilio.rest import Client
+        from loguru import logger
+        
+        logger.info(f"🔐 Verifying Twilio credentials for Account SID: {account_sid[:10]}...")
         client = Client(account_sid, auth_token)
         # Test by fetching account info
         account = client.api.accounts(account_sid).fetch()
+        logger.info(f"✅ Twilio credentials verified! Account status: {account.status}")
         return account.status == 'active'
     except Exception as e:
+        from loguru import logger
+        logger.error(f"❌ Twilio verification failed: {str(e)}")
         print(f"Twilio verification failed: {str(e)}")
         return False
 
