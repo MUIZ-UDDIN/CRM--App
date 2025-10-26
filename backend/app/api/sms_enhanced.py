@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_, desc, func
 from typing import List, Optional, Dict
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 import uuid
 import json
@@ -396,7 +396,7 @@ async def send_sms(
             # Geographic permissions error
             raise HTTPException(
                 status_code=400,
-                detail=f"Your Twilio account doesn't have permission to send SMS to this region. Please enable geographic permissions for the destination country in your Twilio Console: https://console.twilio.com/us1/develop/sms/settings/geo-permissions"
+                detail="SMS blocked: Geographic permissions not enabled for this region. Enable in Twilio Console → SMS Settings → Geo Permissions"
             )
         elif "phone number" in error_message.lower() or "21606" in error_code:
             raise HTTPException(
@@ -833,7 +833,8 @@ async def create_scheduled_sms(
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
     # Validate scheduled time is in the future
-    if request.scheduled_at <= datetime.utcnow():
+    now_utc = datetime.now(timezone.utc)
+    if request.scheduled_at <= now_utc:
         raise HTTPException(status_code=400, detail="Scheduled time must be in the future")
     
     scheduled_sms = ScheduledSMS(

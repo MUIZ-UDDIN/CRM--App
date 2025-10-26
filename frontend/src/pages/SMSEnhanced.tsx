@@ -163,9 +163,9 @@ export default function SMSEnhanced() {
         const error = await response.json();
         toast.error(error.detail || 'Failed to send SMS');
       }
-    } catch (error) {
-      console.error('Error sending SMS:', error);
-      toast.error('Failed to send SMS');
+    } catch (error: any) {
+      // Don't log to console, just show user-friendly error
+      toast.error(error.message || 'Failed to send SMS');
     }
   };
 

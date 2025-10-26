@@ -52,13 +52,17 @@ export default function CallsNew() {
       });
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched Twilio numbers:', data);
         // Filter for voice-enabled numbers
         const voiceNumbers = data.filter((num: any) => num.voice_enabled);
+        console.log('Voice-enabled numbers:', voiceNumbers.length);
         setTwilioNumbers(voiceNumbers);
         // Set first number as default
         if (voiceNumbers.length > 0) {
           setCallForm(prev => ({ ...prev, from: voiceNumbers[0].phone_number }));
         }
+      } else {
+        console.error('Failed to fetch Twilio numbers:', response.status);
       }
     } catch (error) {
       console.error('Error fetching Twilio numbers:', error);
@@ -72,7 +76,10 @@ export default function CallsNew() {
       });
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched contacts:', data.length);
         setContacts(data);
+      } else {
+        console.error('Failed to fetch contacts:', response.status);
       }
     } catch (error) {
       console.error('Error fetching contacts:', error);
