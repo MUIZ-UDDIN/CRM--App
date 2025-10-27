@@ -533,11 +533,11 @@ export default function Dashboard() {
                   {recentActivities.map((activity) => (
                     <li key={activity.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-200 group">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 flex-1">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
                           <div className={`w-2 h-2 rounded-full ${activity.type === 'call' ? 'bg-green-400' : activity.type === 'email' ? 'bg-blue-400' : activity.type === 'meeting' ? 'bg-purple-400' : activity.type === 'task' ? 'bg-yellow-400' : 'bg-gray-400'}`}></div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{activity.description}</p>
-                            <p className="text-sm text-gray-500">{activity.time} • {activity.status}</p>
+                            <p className="text-sm font-medium text-gray-900 truncate" title={activity.description}>{activity.description}</p>
+                            <p className="text-sm text-gray-500 truncate">{activity.time} • {activity.status}</p>
                           </div>
                         </div>
                         <button onClick={() => handleDeleteRecentActivity(activity.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 p-1">
@@ -567,11 +567,11 @@ export default function Dashboard() {
                   {upcomingActivities.map((activity) => (
                     <li key={activity.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-200 group">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 flex-1">
-                          <div className={`w-2 h-2 rounded-full ${activity.priority === 'high' ? 'bg-red-400' : activity.priority === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}></div>
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${activity.priority === 'high' ? 'bg-red-400' : activity.priority === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}></div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium text-gray-900 truncate">{activity.title}</p>
-                            <p className="text-sm text-gray-500">{activity.contact}</p>
+                            <p className="text-sm font-medium text-gray-900 truncate" title={activity.title}>{activity.title}</p>
+                            <p className="text-sm text-gray-500 truncate" title={activity.contact}>{activity.contact}</p>
                           </div>
                         </div>
                         <div className="text-right flex items-center space-x-2">
@@ -604,11 +604,32 @@ export default function Dashboard() {
             <h3 className="text-lg leading-6 font-medium text-gray-900">Pipeline Overview</h3>
           </div>
           <div className="px-6 py-4">
-            <div className="text-center text-gray-500 py-12">
-              <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-4">Pipeline charts will be displayed here</p>
-              <p className="text-sm">Connect to your analytics API to see detailed charts</p>
-            </div>
+            {dashboardData && dashboardData.pipeline_by_stage && dashboardData.pipeline_by_stage.length > 0 ? (
+              <div className="space-y-4">
+                {dashboardData.pipeline_by_stage.map((stage: any) => (
+                  <div key={stage.stage_name} className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">{stage.stage_name}</span>
+                      <span className="text-sm text-gray-600">
+                        {stage.deal_count} deals • ${stage.total_value.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div 
+                        className="bg-primary-600 h-2.5 rounded-full transition-all duration-300" 
+                        style={{ width: `${stage.percentage || 0}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center text-gray-500 py-12">
+                <ChartBarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                <p className="mt-4">No pipeline data available</p>
+                <p className="text-sm">Create some deals to see your pipeline overview</p>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -106,6 +106,12 @@ export default function Activities() {
   
   // Handle edit activity
   const handleEdit = (activity: Activity) => {
+    // Prevent editing completed activities
+    if (activity.status === 'completed') {
+      toast.error('Cannot edit completed activities');
+      return;
+    }
+    
     setSelectedActivity(activity);
     // Convert ISO date to date format (YYYY-MM-DD)
     let formattedDate = '';

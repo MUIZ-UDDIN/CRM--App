@@ -1069,6 +1069,29 @@ async def get_dashboard_analytics(
     
     activities_today = db.query(func.count(ActivityModel.id)).filter(and_(*activity_filters)).scalar() or 0
     
+    # Pipeline by Stage
+    stage_query = db.query(
+        PipelineStage.name.label('stage_name'),
+        func.count(DealModel.id).label('deal_count'),
+        func.sum(DealModel.value).label('total_value')
+    ).join(DealModel, DealModel.stage_id == PipelineStage.id)\
+     .filter(and_(*pipeline_filters))\
+     .group_by(PipelineStage.name)\
+     .all()
+    
+    pipeline_by_stage = []
+    max_value = max([s.total_value or 0 for s in stage_query]) if stage_query else 1
+    
+    for stage in stage_query:
+        stage_value = float(stage.total_value or 0)
+        percentage = (stage_value / max_value * 100) if max_value > 0 else 0
+        pipeline_by_stage.append({
+            "stage_name": stage.stage_name,
+            "deal_count": stage.deal_count or 0,
+            "total_value": round(stage_value, 2),
+            "percentage": round(percentage, 1)
+        })
+    
     return {
         "kpis": {
             "total_revenue": round(total_revenue, 2),
@@ -1084,7 +1107,8 @@ async def get_dashboard_analytics(
             "active_deals": active_deals,
             "deal_growth": round(deal_growth, 1),
             "activities_today": activities_today
-        }
+        },
+        "pipeline_by_stage": pipeline_by_stage
     }
 
 
