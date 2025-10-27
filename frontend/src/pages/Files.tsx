@@ -551,8 +551,14 @@ export default function Files() {
 
   const formatFileSize = (bytes?: number) => {
     if (!bytes) return 'N/A';
+    const kb = bytes / 1024;
     const mb = bytes / (1024 * 1024);
-    return `${mb.toFixed(2)} MB`;
+    
+    if (mb >= 1) {
+      return `${mb.toFixed(2)} MB`;
+    } else {
+      return `${kb.toFixed(2)} KB`;
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -722,9 +728,12 @@ export default function Files() {
                 <div className="space-y-1 text-xs text-gray-600 flex-grow">
                   {file.type === 'file' && (
                     <>
-                      <p>Size: {formatFileSize(file.size)}</p>
-                      <p>Category: {file.category || 'N/A'}</p>
+                      <p className="text-center">Size: {formatFileSize(file.size)}</p>
+                      <p className="text-center">Category: {file.category || 'N/A'}</p>
                     </>
+                  )}
+                  {file.type === 'folder' && file.size && (
+                    <p className="text-center">Size: {formatFileSize(file.size)}</p>
                   )}
                   <p>Status: <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
                     file.status === 'active' ? 'bg-green-100 text-green-800' :
@@ -1110,7 +1119,7 @@ export default function Files() {
       {/* View Modal */}
       {showViewModal && selectedFile && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">File Details</h3>
               <button onClick={handleCloseViewModal} className="text-gray-400 hover:text-gray-600">
@@ -1120,7 +1129,7 @@ export default function Files() {
             <div className="space-y-3">
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
-                <p className="text-gray-900">{selectedFile.name}</p>
+                <p className="text-gray-900 break-words">{selectedFile.name}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Type</label>
@@ -1135,7 +1144,7 @@ export default function Files() {
               {selectedFile.description && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">Description</label>
-                  <p className="text-gray-900">{selectedFile.description}</p>
+                  <p className="text-gray-900 break-words whitespace-pre-wrap">{selectedFile.description}</p>
                 </div>
               )}
               {selectedFile.category && (

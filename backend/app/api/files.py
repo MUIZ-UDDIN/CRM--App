@@ -46,6 +46,7 @@ class FolderResponse(BaseModel):
     status: Optional[str] = 'active'
     tags: List[str] = []
     parent_id: Optional[str] = None
+    size: Optional[int] = None
     created_at: str
     
     class Config:
@@ -304,18 +305,32 @@ async def get_folders(
     
     folders = query.order_by(Folder.name).all()
     
-    return [
-        FolderResponse(
-            id=str(folder.id),
-            name=folder.name,
-            description=folder.description,
-            status=folder.status if hasattr(folder, 'status') else 'active',
-            tags=folder.tags if hasattr(folder, 'tags') and folder.tags else [],
-            parent_id=str(folder.parent_id) if folder.parent_id else None,
-            created_at=folder.created_at.isoformat() if folder.created_at else None
+    result = []
+    for folder in folders:
+        # Calculate total size of files in this folder
+        total_size = db.query(File).filter(
+            and_(
+                File.folder_id == folder.id,
+                File.is_deleted == False
+            )
+        ).with_entities(File.size).all()
+        
+        folder_size = sum(size[0] for size in total_size if size[0] is not None)
+        
+        result.append(
+            FolderResponse(
+                id=str(folder.id),
+                name=folder.name,
+                description=folder.description,
+                status=folder.status if hasattr(folder, 'status') else 'active',
+                tags=folder.tags if hasattr(folder, 'tags') and folder.tags else [],
+                parent_id=str(folder.parent_id) if folder.parent_id else None,
+                size=folder_size if folder_size > 0 else None,
+                created_at=folder.created_at.isoformat() if folder.created_at else None
+            )
         )
-        for folder in folders
-    ]
+    
+    return result
 
 
 @router.post("/folders", response_model=FolderResponse)
