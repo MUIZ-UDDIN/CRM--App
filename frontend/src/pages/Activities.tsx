@@ -48,6 +48,7 @@ export default function Activities() {
     duration_minutes: 30,
     priority: 1,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Check for action query parameter
   useEffect(() => {
@@ -151,6 +152,55 @@ export default function Activities() {
   
   // Handle create activity
   const handleCreate = async () => {
+    // Validate required fields
+    if (!activityForm.subject.trim()) {
+      toast.error('Subject is required');
+      return;
+    }
+
+    if (!activityForm.due_date) {
+      toast.error('Due date is required');
+      return;
+    }
+
+    // Check for HTML/script tags in subject
+    if (/<[^>]*>/gi.test(activityForm.subject)) {
+      toast.error('HTML tags and script tags are not allowed in subject');
+      return;
+    }
+
+    // Check for HTML/script tags in description
+    if (activityForm.description && /<[^>]*>/gi.test(activityForm.description)) {
+      toast.error('HTML tags and script tags are not allowed in description');
+      return;
+    }
+
+    // Check character limits
+    if (activityForm.subject.length > 255) {
+      toast.error('Subject cannot exceed 255 characters');
+      return;
+    }
+
+    if (activityForm.description && activityForm.description.length > 1000) {
+      toast.error('Description cannot exceed 1000 characters');
+      return;
+    }
+
+    // Validate date is not in the past
+    const selectedDate = new Date(activityForm.due_date);
+    const now = new Date();
+    if (selectedDate < now) {
+      toast.error('Due date cannot be in the past');
+      return;
+    }
+
+    // Validate status vs date
+    if (activityForm.status === 'overdue' && selectedDate >= now) {
+      toast.error('Cannot set status as overdue for future dates');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await activitiesService.createActivity(activityForm);
       toast.success('Activity created');
@@ -165,8 +215,22 @@ export default function Activities() {
         priority: 1,
       });
       fetchActivities();
-    } catch (error) {
-      toast.error('Failed to create activity');
+    } catch (error: any) {
+      console.error('Create error:', error);
+      const errorDetail = error?.response?.data?.detail;
+      let errorMessage = 'Failed to create activity';
+      
+      if (errorDetail) {
+        if (typeof errorDetail === 'string') {
+          errorMessage = errorDetail;
+        } else if (Array.isArray(errorDetail)) {
+          errorMessage = errorDetail.map((e: any) => e.msg || e).join(', ');
+        }
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
@@ -174,23 +238,94 @@ export default function Activities() {
   const handleUpdate = async () => {
     if (!selectedActivity) return;
     
+    // Validate required fields
+    if (!activityForm.subject.trim()) {
+      toast.error('Subject is required');
+      return;
+    }
+
+    if (!activityForm.due_date) {
+      toast.error('Due date is required');
+      return;
+    }
+
+    // Check for HTML/script tags in subject
+    if (/<[^>]*>/gi.test(activityForm.subject)) {
+      toast.error('HTML tags and script tags are not allowed in subject');
+      return;
+    }
+
+    // Check for HTML/script tags in description
+    if (activityForm.description && /<[^>]*>/gi.test(activityForm.description)) {
+      toast.error('HTML tags and script tags are not allowed in description');
+      return;
+    }
+
+    // Check character limits
+    if (activityForm.subject.length > 255) {
+      toast.error('Subject cannot exceed 255 characters');
+      return;
+    }
+
+    if (activityForm.description && activityForm.description.length > 1000) {
+      toast.error('Description cannot exceed 1000 characters');
+      return;
+    }
+
+    // Validate date is not in the past (only for pending activities)
+    if (activityForm.status === 'pending') {
+      const selectedDate = new Date(activityForm.due_date);
+      const now = new Date();
+      if (selectedDate < now) {
+        toast.error('Due date cannot be in the past for pending activities');
+        return;
+      }
+    }
+
+    // Validate status vs date
+    const selectedDate = new Date(activityForm.due_date);
+    const now = new Date();
+    if (activityForm.status === 'overdue' && selectedDate >= now) {
+      toast.error('Cannot set status as overdue for future dates');
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
       await activitiesService.updateActivity(selectedActivity.id, activityForm);
       toast.success('Activity updated');
       setShowEditModal(false);
       fetchActivities();
-    } catch (error) {
-      toast.error('Failed to update activity');
+    } catch (error: any) {
+      console.error('Update error:', error);
+      const errorDetail = error?.response?.data?.detail;
+      let errorMessage = 'Failed to update activity';
+      
+      if (errorDetail) {
+        if (typeof errorDetail === 'string') {
+          errorMessage = errorDetail;
+        } else if (Array.isArray(errorDetail)) {
+          errorMessage = errorDetail.map((e: any) => e.msg || e).join(', ');
+        }
+      }
+      
+      toast.error(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
   
   // Filter activities
   const filteredActivities = activities.filter(activity => {
-    const matchesSearch = 
-      activity.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (activity.description && activity.description.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (!searchQuery.trim()) return true;
     
-    return matchesSearch;
+    const query = searchQuery.toLowerCase().trim();
+    const matchesSubject = activity.subject?.toLowerCase().includes(query);
+    const matchesDescription = activity.description?.toLowerCase().includes(query);
+    const matchesType = activity.type?.toLowerCase().includes(query);
+    const matchesStatus = activity.status?.toLowerCase().includes(query);
+    
+    return matchesSubject || matchesDescription || matchesType || matchesStatus;
   });
 
   // Format date
@@ -398,20 +533,67 @@ export default function Activities() {
                 <option value="email">Email</option>
                 <option value="task">Task</option>
               </select>
-              <input
-                type="text"
-                placeholder="Subject"
-                value={activityForm.subject}
-                onChange={(e) => setActivityForm({...activityForm, subject: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <textarea
-                placeholder="Description"
-                value={activityForm.description}
-                onChange={(e) => setActivityForm({...activityForm, description: e.target.value})}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Subject"
+                  value={activityForm.subject}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setActivityForm({...activityForm, subject: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={255}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {activityForm.subject.length}/255 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Description (optional)"
+                  value={activityForm.description}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setActivityForm({...activityForm, description: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={1000}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {activityForm.description.length}/1000 characters
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
                 <div className="relative">
@@ -453,9 +635,10 @@ export default function Activities() {
                 </button>
                 <button
                   onClick={handleCreate}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Activity
+                  {isSubmitting ? 'Creating...' : 'Create Activity'}
                 </button>
               </div>
             </div>
@@ -484,20 +667,67 @@ export default function Activities() {
                 <option value="email">Email</option>
                 <option value="task">Task</option>
               </select>
-              <input
-                type="text"
-                placeholder="Subject"
-                value={activityForm.subject}
-                onChange={(e) => setActivityForm({...activityForm, subject: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <textarea
-                placeholder="Description"
-                value={activityForm.description}
-                onChange={(e) => setActivityForm({...activityForm, description: e.target.value})}
-                rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  placeholder="Subject"
+                  value={activityForm.subject}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setActivityForm({...activityForm, subject: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={255}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {activityForm.subject.length}/255 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  placeholder="Description (optional)"
+                  value={activityForm.description}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setActivityForm({...activityForm, description: value});
+                    } else {
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags are not allowed');
+                    }
+                  }}
+                  maxLength={1000}
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  {activityForm.description.length}/1000 characters
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
                 <div className="relative">
@@ -522,9 +752,10 @@ export default function Activities() {
                 </button>
                 <button
                   onClick={handleUpdate}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </div>
@@ -532,7 +763,7 @@ export default function Activities() {
         </div>
       )}
 
-      {/* View Activity Modal */}
+      {/* View Modal */}
       {showViewModal && selectedActivity && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
