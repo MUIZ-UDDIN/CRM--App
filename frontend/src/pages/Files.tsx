@@ -249,6 +249,13 @@ export default function Files() {
       const formData = new FormData();
       formData.append('file', file);
       formData.append('category', fileForm.category);
+      
+      // Add tags if provided
+      if (fileForm.tags) {
+        const tagsArray = fileForm.tags.split(',').map(t => t.trim()).filter(t => t);
+        formData.append('tags', JSON.stringify(tagsArray));
+      }
+      
       if (currentFolderId) {
         formData.append('folder_id', currentFolderId);
       }
@@ -727,27 +734,45 @@ export default function Files() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="file"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-              />
-              <select
-                value={fileForm.category}
-                onChange={(e) => setFileForm({...fileForm, category: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="">Select Category</option>
-                <option value="Sales">Sales</option>
-                <option value="Legal">Legal</option>
-                <option value="Marketing">Marketing</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Tags (comma separated)"
-                value={fileForm.tags}
-                onChange={(e) => setFileForm({...fileForm, tags: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Select File <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="file"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Maximum file size: 50MB
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <SearchableCategorySelect
+                  categories={categories}
+                  value={fileForm.category}
+                  onChange={(value) => setFileForm({...fileForm, category: value})}
+                  onAddCategory={handleAddCategory}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tags (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Tags (comma separated)"
+                  value={fileForm.tags}
+                  onChange={(e) => setFileForm({...fileForm, tags: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Separate multiple tags with commas (e.g., important, contract, 2024)
+                </div>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowUploadModal(false)}
@@ -837,6 +862,21 @@ export default function Files() {
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {fileForm.description.length}/500 characters
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tags (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Tags (comma separated)"
+                  value={fileForm.tags}
+                  onChange={(e) => setFileForm({...fileForm, tags: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+                <div className="text-xs text-gray-500 mt-1">
+                  Separate multiple tags with commas (e.g., important, project-a, 2024)
                 </div>
               </div>
               <div>

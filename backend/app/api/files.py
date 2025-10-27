@@ -128,6 +128,7 @@ async def upload_file(
     file: UploadFile = FastAPIFile(...),
     category: Optional[str] = Form(None),
     folder_id: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -135,6 +136,7 @@ async def upload_file(
     import os
     import shutil
     from pathlib import Path
+    import json
     
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
@@ -166,12 +168,22 @@ async def upload_file(
         except ValueError:
             pass
     
+    # Parse tags if provided
+    tags_list = []
+    if tags:
+        try:
+            tags_list = json.loads(tags)
+        except:
+            # If not JSON, split by comma
+            tags_list = [t.strip() for t in tags.split(',') if t.strip()]
+    
     new_file = File(
         name=file.filename,
         original_name=file.filename,
         file_type=file.content_type,
         size=file_size,
         category=category,
+        tags=tags_list,
         storage_path=str(file_path),
         url=str(file_path),
         folder_id=folder_uuid,
