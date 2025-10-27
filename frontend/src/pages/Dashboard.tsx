@@ -532,15 +532,15 @@ export default function Dashboard() {
                 <ul className="divide-y divide-gray-200">
                   {recentActivities.map((activity) => (
                     <li key={activity.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-200 group">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 flex-1 min-w-0">
-                          <div className={`w-2 h-2 rounded-full ${activity.type === 'call' ? 'bg-green-400' : activity.type === 'email' ? 'bg-blue-400' : activity.type === 'meeting' ? 'bg-purple-400' : activity.type === 'task' ? 'bg-yellow-400' : 'bg-gray-400'}`}></div>
-                          <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0 overflow-hidden">
+                          <div className={`w-2 h-2 rounded-full flex-shrink-0 ${activity.type === 'call' ? 'bg-green-400' : activity.type === 'email' ? 'bg-blue-400' : activity.type === 'meeting' ? 'bg-purple-400' : activity.type === 'task' ? 'bg-yellow-400' : 'bg-gray-400'}`}></div>
+                          <div className="flex-1 min-w-0 overflow-hidden">
                             <p className="text-sm font-medium text-gray-900 truncate" title={activity.description}>{activity.description}</p>
                             <p className="text-sm text-gray-500 truncate">{activity.time} • {activity.status}</p>
                           </div>
                         </div>
-                        <button onClick={() => handleDeleteRecentActivity(activity.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 p-1">
+                        <button onClick={() => handleDeleteRecentActivity(activity.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 p-1 flex-shrink-0">
                           <TrashIcon className="h-4 w-4" />
                         </button>
                       </div>
@@ -566,22 +566,22 @@ export default function Dashboard() {
                 <ul className="divide-y divide-gray-200">
                   {upcomingActivities.map((activity) => (
                     <li key={activity.id} className="px-6 py-4 hover:bg-gray-50 transition-colors duration-200 group">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0 overflow-hidden">
                           <div className={`w-2 h-2 rounded-full flex-shrink-0 ${activity.priority === 'high' ? 'bg-red-400' : activity.priority === 'medium' ? 'bg-yellow-400' : 'bg-green-400'}`}></div>
-                          <div className="min-w-0 flex-1">
+                          <div className="min-w-0 flex-1 overflow-hidden">
                             <p className="text-sm font-medium text-gray-900 truncate" title={activity.title}>{activity.title}</p>
                             <p className="text-sm text-gray-500 truncate" title={activity.contact}>{activity.contact}</p>
                           </div>
                         </div>
-                        <div className="text-right flex items-center space-x-2">
-                          <div>
-                            <p className="text-sm text-gray-900">{activity.time}</p>
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activity.priority === 'high' ? 'bg-red-100 text-red-800' : activity.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
+                        <div className="text-right flex items-center space-x-2 flex-shrink-0">
+                          <div className="text-right">
+                            <p className="text-sm text-gray-900 whitespace-nowrap">{activity.time}</p>
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium whitespace-nowrap ${activity.priority === 'high' ? 'bg-red-100 text-red-800' : activity.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}`}>
                               {activity.priority} priority
                             </span>
                           </div>
-                          <button onClick={() => handleDeleteUpcomingActivity(activity.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 p-1">
+                          <button onClick={() => handleDeleteUpcomingActivity(activity.id)} className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 text-red-500 hover:text-red-700 p-1 flex-shrink-0">
                             <TrashIcon className="h-4 w-4" />
                           </button>
                         </div>
