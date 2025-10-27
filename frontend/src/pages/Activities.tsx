@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as activitiesService from '../services/activitiesService';
 import ActionButtons from '../components/common/ActionButtons';
+import Pagination from '../components/common/Pagination';
 import { 
   CalendarIcon, 
   PlusIcon, 
@@ -37,6 +38,7 @@ export default function Activities() {
   const [filterType, setFilterType] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [activities, setActivities] = useState<Activity[]>([]);
   const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
   const [activityForm, setActivityForm] = useState({
@@ -378,6 +380,18 @@ export default function Activities() {
     return score;
   }
 
+  // Pagination
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(filteredActivities.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedActivities = filteredActivities.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType, filterStatus]);
+
   // Format date
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'N/A';
@@ -494,7 +508,7 @@ export default function Activities() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredActivities.map((activity) => (
+                  {paginatedActivities.map((activity) => (
                     <tr key={activity.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -558,6 +572,15 @@ export default function Activities() {
                 </div>
               )}
             </div>
+          )}
+          {filteredActivities.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredActivities.length}
+            />
           )}
         </div>
       </div>

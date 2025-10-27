@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import * as contactsService from '../services/contactsService';
 import ActionButtons from '../components/common/ActionButtons';
 import ContactUpload from '../components/contacts/ContactUpload';
+import Pagination from '../components/common/Pagination';
 import { 
   UserGroupIcon, 
   PlusIcon, 
@@ -39,6 +40,7 @@ export default function Contacts() {
   const [filterType, setFilterType] = useState('all');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [contactTypes, setContactTypes] = useState<string[]>([]);
@@ -364,6 +366,18 @@ export default function Contacts() {
     return matchesSearch;
   });
 
+  // Pagination
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(filteredContacts.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedContacts = filteredContacts.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterType]);
+
   return (
     <div className="min-h-full">
       {/* Header */}
@@ -462,7 +476,7 @@ export default function Contacts() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredContacts.map((contact) => (
+                  {paginatedContacts.map((contact) => (
                     <tr key={contact.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
@@ -523,6 +537,15 @@ export default function Contacts() {
                 </div>
               )}
             </div>
+          )}
+          {filteredContacts.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              totalItems={filteredContacts.length}
+            />
           )}
         </div>
       </div>
