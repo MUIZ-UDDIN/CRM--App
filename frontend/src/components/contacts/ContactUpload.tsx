@@ -142,38 +142,35 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
 
       {/* Instructions */}
       <div className="bg-gray-50 rounded-lg p-4">
-        <h4 className="text-sm font-medium text-gray-900 mb-3">Supported Columns:</h4>
-        <div className="grid grid-cols-2 gap-2 text-sm">
+        <h4 className="text-sm font-medium text-gray-900 mb-3">Supported Columns (in order):</h4>
+        <div className="space-y-2 text-sm">
           <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">email</code>
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">first_name</code>
+          </div>
+          <div className="flex items-center">
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">last_name</code>
+          </div>
+          <div className="flex items-center">
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">phone</code>
+          </div>
+          <div className="flex items-center">
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">title</code>
+          </div>
+          <div className="flex items-center">
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">company</code>
+          </div>
+          <div className="flex items-center">
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">email</code>
             <span className="text-red-500">*</span>
           </div>
           <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">first_name</code>
-          </div>
-          <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">last_name</code>
-          </div>
-          <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">phone</code>
-          </div>
-          <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">company</code>
-          </div>
-          <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">title</code>
-          </div>
-          <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">type</code>
-          </div>
-          <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2">owner_id</code>
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">type</code>
           </div>
         </div>
         <p className="text-xs text-gray-500 mt-3">* Required field</p>
         <p className="text-xs text-gray-600 mt-2">
-          <strong>Type:</strong> Lead, Prospect, Customer, Partner, Marketing Qualified Lead<br/>
-          <strong>Owner ID:</strong> Optional UUID of the contact owner (defaults to current user)
+          <strong>Column Order:</strong> first_name, last_name, phone, title, company, email, type<br/>
+          <strong>Type Values:</strong> Lead, Prospect, Customer, Partner, Marketing Qualified Lead
         </p>
       </div>
 
