@@ -652,18 +652,15 @@ export default function Activities() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <input
-                    id="add-due-date"
-                    type="datetime-local"
-                    value={activityForm.due_date}
-                    onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
-                    min={new Date().toISOString().slice(0, 16)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-                  />
-                  <label htmlFor="add-due-date" className="absolute inset-0 cursor-pointer" />
-                </div>
+                <input
+                  type="datetime-local"
+                  value={activityForm.due_date}
+                  onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  min={new Date().toISOString().slice(0, 16)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                />
                 <p className="text-xs text-gray-500 mt-1">Select future date and time (past dates not allowed)</p>
               </div>
               <div>
@@ -803,18 +800,15 @@ export default function Activities() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Due Date <span className="text-red-500">*</span></label>
-                <div className="relative">
-                  <input
-                    id="edit-due-date"
-                    type="datetime-local"
-                    value={activityForm.due_date}
-                    onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
-                    min={new Date().toISOString().slice(0, 16)}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
-                  />
-                  <label htmlFor="edit-due-date" className="absolute inset-0 cursor-pointer" />
-                </div>
+                <input
+                  type="datetime-local"
+                  value={activityForm.due_date}
+                  onChange={(e) => setActivityForm({...activityForm, due_date: e.target.value})}
+                  onClick={(e) => e.currentTarget.showPicker?.()}
+                  min={new Date().toISOString().slice(0, 16)}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 cursor-pointer"
+                />
                 <p className="text-xs text-gray-500 mt-1">Select future date and time (past dates not allowed)</p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">

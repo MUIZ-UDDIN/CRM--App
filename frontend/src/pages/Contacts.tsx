@@ -38,6 +38,7 @@ export default function Contacts() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [contactTypes, setContactTypes] = useState<string[]>([]);
@@ -249,12 +250,16 @@ export default function Contacts() {
   
   // Handle create contact
   const handleCreate = async () => {
+    if (submitting) return;
+    
     try {
       // Validate owner_id is set
       if (!contactForm.owner_id) {
         toast.error('Please select an owner');
         return;
       }
+      
+      setSubmitting(true);
       
       // Character limit validation
       if (contactForm.first_name && contactForm.first_name.length > 100) {
@@ -299,12 +304,15 @@ export default function Contacts() {
     } catch (error: any) {
       const errorMessage = error?.response?.data?.detail || 'Failed to create contact';
       toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
     }
   };
   
   // Handle update contact
   const handleUpdate = async () => {
     if (!selectedContact) return;
+    if (submitting) return;
     
     try {
       // Validate owner_id is set
@@ -312,6 +320,8 @@ export default function Contacts() {
         toast.error('Please select an owner');
         return;
       }
+      
+      setSubmitting(true);
       
       // Remove empty source field to avoid enum validation errors
       const { source, ...updateData } = contactForm;
@@ -322,6 +332,8 @@ export default function Contacts() {
     } catch (error: any) {
       const errorMessage = error?.response?.data?.detail || 'Failed to update contact';
       toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
     }
   };
   
@@ -633,9 +645,10 @@ export default function Contacts() {
                 </button>
                 <button
                   onClick={handleCreate}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={submitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Contact
+                  {submitting ? 'Creating...' : 'Create Contact'}
                 </button>
               </div>
             </div>
@@ -761,9 +774,10 @@ export default function Contacts() {
                 </button>
                 <button
                   onClick={handleUpdate}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={submitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Save Changes
+                  {submitting ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </div>
