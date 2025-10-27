@@ -606,22 +606,33 @@ export default function Dashboard() {
           <div className="px-6 py-4">
             {dashboardData && dashboardData.pipeline_by_stage && dashboardData.pipeline_by_stage.length > 0 ? (
               <div className="space-y-4">
-                {dashboardData.pipeline_by_stage.map((stage: any) => (
-                  <div key={stage.stage_name} className="space-y-2">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">{stage.stage_name}</span>
-                      <span className="text-sm text-gray-600">
-                        {stage.deal_count} deals • ${stage.total_value.toLocaleString()}
-                      </span>
+                {dashboardData.pipeline_by_stage.map((stage: any, index: number) => {
+                  // Assign different colors to each stage
+                  const colors = [
+                    'bg-blue-600',    // Qualification
+                    'bg-yellow-600',  // Proposal
+                    'bg-orange-600',  // Negotiation
+                    'bg-green-600'    // Closed Won
+                  ];
+                  const barColor = colors[index % colors.length];
+                  
+                  return (
+                    <div key={stage.stage_name} className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm font-medium text-gray-700">{stage.stage_name}</span>
+                        <span className="text-sm text-gray-600">
+                          {stage.deal_count} deals • ${stage.total_value.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2.5">
+                        <div 
+                          className={`${barColor} h-2.5 rounded-full transition-all duration-300`}
+                          style={{ width: `${Math.min(stage.percentage || 0, 100)}%` }}
+                        ></div>
+                      </div>
                     </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div 
-                        className="bg-primary-600 h-2.5 rounded-full transition-all duration-300" 
-                        style={{ width: `${stage.percentage || 0}%` }}
-                      ></div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="text-center text-gray-500 py-12">
