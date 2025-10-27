@@ -315,18 +315,62 @@ export default function Activities() {
     }
   };
   
-  // Filter activities
-  const filteredActivities = activities.filter(activity => {
-    if (!searchQuery.trim()) return true;
+  // Filter and sort activities
+  const filteredActivities = activities
+    .filter(activity => {
+      if (!searchQuery.trim()) return true;
+      
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSubject = activity.subject?.toLowerCase().includes(query);
+      const matchesDescription = activity.description?.toLowerCase().includes(query);
+      const matchesType = activity.type?.toLowerCase().includes(query);
+      const matchesStatus = activity.status?.toLowerCase().includes(query);
+      
+      return matchesSubject || matchesDescription || matchesType || matchesStatus;
+    })
+    .sort((a, b) => {
+      if (!searchQuery.trim()) return 0;
+      
+      const query = searchQuery.toLowerCase().trim();
+      
+      // Calculate relevance scores
+      const scoreA = calculateRelevanceScore(a, query);
+      const scoreB = calculateRelevanceScore(b, query);
+      
+      // Sort by relevance (higher score first)
+      return scoreB - scoreA;
+    });
+
+  // Calculate relevance score for search results
+  function calculateRelevanceScore(activity: Activity, query: string): number {
+    let score = 0;
     
-    const query = searchQuery.toLowerCase().trim();
-    const matchesSubject = activity.subject?.toLowerCase().includes(query);
-    const matchesDescription = activity.description?.toLowerCase().includes(query);
-    const matchesType = activity.type?.toLowerCase().includes(query);
-    const matchesStatus = activity.status?.toLowerCase().includes(query);
+    // Subject matches are most important
+    if (activity.subject?.toLowerCase().includes(query)) {
+      score += 100;
+      // Exact match or starts with query gets bonus
+      if (activity.subject.toLowerCase() === query) score += 50;
+      else if (activity.subject.toLowerCase().startsWith(query)) score += 30;
+    }
     
-    return matchesSubject || matchesDescription || matchesType || matchesStatus;
-  });
+    // Type matches are second priority
+    if (activity.type?.toLowerCase().includes(query)) {
+      score += 50;
+      if (activity.type.toLowerCase() === query) score += 25;
+    }
+    
+    // Status matches
+    if (activity.status?.toLowerCase().includes(query)) {
+      score += 30;
+    }
+    
+    // Description matches are least important
+    if (activity.description?.toLowerCase().includes(query)) {
+      score += 10;
+    }
+    
+    return score;
+  }
 
   // Format date
   const formatDate = (dateString?: string) => {
@@ -515,7 +559,7 @@ export default function Activities() {
       {/* Add Activity Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Activity</h3>
               <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -665,7 +709,7 @@ export default function Activities() {
       {/* Edit Activity Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Activity</h3>
               <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
