@@ -59,20 +59,35 @@ export default function SearchableCategorySelect({
   };
 
   const handleAddNewCategory = () => {
-    if (!newCategoryName.trim()) {
+    const trimmedName = newCategoryName.trim();
+    
+    if (!trimmedName) {
       toast.error('Please enter a category name');
       return;
     }
-    if (categories.includes(newCategoryName.trim())) {
+
+    // Check for HTML/script tags
+    if (/<[^>]*>/gi.test(trimmedName)) {
+      toast.error('HTML tags and script tags are not allowed in category name');
+      return;
+    }
+
+    // Check character limit (50 characters)
+    if (trimmedName.length > 50) {
+      toast.error('Category name cannot exceed 50 characters');
+      return;
+    }
+
+    if (categories.includes(trimmedName)) {
       toast.error('Category already exists');
       return;
     }
-    onAddCategory(newCategoryName.trim());
-    onChange(newCategoryName.trim());
+    
+    onAddCategory(trimmedName);
+    onChange(trimmedName);
     setNewCategoryName('');
     setShowAddModal(false);
     setIsOpen(false);
-    toast.success('Category added successfully');
   };
 
   const handleDelete = (e: React.MouseEvent, category: string) => {
@@ -157,22 +172,45 @@ export default function SearchableCategorySelect({
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 shadow-xl">
             <h3 className="text-lg font-semibold mb-4">Add New Category</h3>
-            <input
-              type="text"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAddNewCategory();
-                } else if (e.key === 'Escape') {
-                  setShowAddModal(false);
-                  setNewCategoryName('');
-                }
-              }}
-              placeholder="Enter category name"
-              autoFocus
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 mb-4"
-            />
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={newCategoryName}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (!/<[^>]*>/gi.test(value)) {
+                    setNewCategoryName(value);
+                  } else {
+                    toast.error('HTML tags are not allowed');
+                  }
+                }}
+                onPaste={(e) => {
+                  const pastedText = e.clipboardData.getData('text');
+                  if (/<[^>]*>/gi.test(pastedText)) {
+                    e.preventDefault();
+                    toast.error('HTML tags are not allowed');
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddNewCategory();
+                  } else if (e.key === 'Escape') {
+                    setShowAddModal(false);
+                    setNewCategoryName('');
+                  }
+                }}
+                placeholder="Enter category name"
+                maxLength={50}
+                autoFocus
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              />
+              <div className="text-xs text-gray-500 mt-1">
+                {newCategoryName.length}/50 characters
+              </div>
+            </div>
             <div className="flex justify-end gap-2">
               <button
                 type="button"

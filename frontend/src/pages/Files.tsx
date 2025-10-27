@@ -238,11 +238,28 @@ export default function Files() {
       return;
     }
 
+    // Check for unsupported file formats
+    const unsupportedExtensions = ['.exe', '.bat', '.cmd', '.sh', '.msi', '.app', '.deb', '.rpm', '.dmg', '.iso', '.bin'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    if (unsupportedExtensions.includes(fileExtension)) {
+      toast.error(`File format ${fileExtension} is not supported. Executable and system files are not allowed.`);
+      return;
+    }
+
     // Check file size (50MB limit)
     const maxSize = 50 * 1024 * 1024; // 50MB in bytes
     if (file.size > maxSize) {
       toast.error(`File size exceeds the maximum limit of 50MB. Your file is ${(file.size / (1024 * 1024)).toFixed(2)}MB.`);
       return;
+    }
+
+    // Validate tags limit (max 5)
+    if (fileForm.tags) {
+      const tagsArray = fileForm.tags.split(',').map(t => t.trim()).filter(t => t);
+      if (tagsArray.length > 5) {
+        toast.error('Maximum 5 tags are allowed.');
+        return;
+      }
     }
 
     try {
@@ -302,7 +319,32 @@ export default function Files() {
 
   // Category management functions
   const handleAddCategory = (category: string) => {
+    // Validate category name
+    if (!category.trim()) {
+      toast.error('Category name cannot be empty');
+      return;
+    }
+
+    // Check for HTML/script tags
+    if (/<[^>]*>/gi.test(category)) {
+      toast.error('HTML tags and script tags are not allowed in category name');
+      return;
+    }
+
+    // Check character limit (50 characters)
+    if (category.length > 50) {
+      toast.error('Category name cannot exceed 50 characters');
+      return;
+    }
+
+    // Check if category already exists
+    if (categories.includes(category)) {
+      toast.error('Category already exists');
+      return;
+    }
+
     setCategories([...categories, category]);
+    toast.success('Category added successfully');
   };
 
   const handleDeleteCategory = (category: string) => {
@@ -337,6 +379,15 @@ export default function Files() {
     if (fileForm.description && fileForm.description.length > 500) {
       toast.error(`Description cannot exceed 500 characters. Current: ${fileForm.description.length} characters`);
       return;
+    }
+
+    // Validate tags limit (max 5)
+    if (fileForm.tags) {
+      const tagsArray = fileForm.tags.split(',').map(t => t.trim()).filter(t => t);
+      if (tagsArray.length > 5) {
+        toast.error('Maximum 5 tags are allowed.');
+        return;
+      }
     }
 
     try {
@@ -394,6 +445,15 @@ export default function Files() {
     if (fileForm.description && fileForm.description.length > 500) {
       toast.error(`Description cannot exceed 500 characters. Current: ${fileForm.description.length} characters`);
       return;
+    }
+
+    // Validate tags limit (max 5)
+    if (fileForm.tags) {
+      const tagsArray = fileForm.tags.split(',').map(t => t.trim()).filter(t => t);
+      if (tagsArray.length > 5) {
+        toast.error('Maximum 5 tags are allowed.');
+        return;
+      }
     }
 
     try {
@@ -668,9 +728,10 @@ export default function Files() {
                   )}
                   <p>Status: <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
                     file.status === 'active' ? 'bg-green-100 text-green-800' :
+                    file.status === 'inactive' ? 'bg-red-100 text-red-800' :
                     file.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'
-                  }`}>{file.status}</span></p>
+                  }`}>{file.status ? file.status.charAt(0).toUpperCase() + file.status.slice(1) : 'N/A'}</span></p>
                   {file.contact && <p>Contact: {file.contact}</p>}
                   {file.deal && <p className="truncate" title={file.deal}>Deal: {file.deal}</p>}
                   <p className="text-gray-500 mt-2">{formatDate(file.created_at)}</p>
@@ -770,7 +831,7 @@ export default function Files() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  Separate multiple tags with commas (e.g., important, contract, 2024)
+                  Separate multiple tags with commas. Maximum 5 tags allowed (e.g., important, contract, 2024)
                 </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -876,7 +937,7 @@ export default function Files() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  Separate multiple tags with commas (e.g., important, project-a, 2024)
+                  Separate multiple tags with commas. Maximum 5 tags allowed (e.g., important, project-a, 2024)
                 </div>
               </div>
               <div>
@@ -1009,6 +1070,9 @@ export default function Files() {
                   onChange={(e) => setFileForm({...fileForm, tags: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  Separate multiple tags with commas. Maximum 5 tags allowed
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
