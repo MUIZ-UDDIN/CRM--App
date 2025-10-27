@@ -256,6 +256,41 @@ export default function Contacts() {
         return;
       }
       
+      // Character limit validation
+      if (contactForm.first_name && contactForm.first_name.length > 100) {
+        toast.error('First name must be less than 100 characters');
+        return;
+      }
+      if (contactForm.last_name && contactForm.last_name.length > 100) {
+        toast.error('Last name must be less than 100 characters');
+        return;
+      }
+      if (contactForm.email && contactForm.email.length > 255) {
+        toast.error('Email must be less than 255 characters');
+        return;
+      }
+      if (contactForm.phone && contactForm.phone.length > 50) {
+        toast.error('Phone must be less than 50 characters');
+        return;
+      }
+      if (contactForm.company && contactForm.company.length > 200) {
+        toast.error('Company name must be less than 200 characters');
+        return;
+      }
+      if (contactForm.title && contactForm.title.length > 200) {
+        toast.error('Title must be less than 200 characters');
+        return;
+      }
+      
+      // XSS prevention - check for script tags
+      const fields = [contactForm.first_name, contactForm.last_name, contactForm.company, contactForm.title];
+      for (const field of fields) {
+        if (field && /<script|<\/script|javascript:|onerror=|onload=/gi.test(field)) {
+          toast.error('Script tags and JavaScript code are not allowed');
+          return;
+        }
+      }
+      
       await contactsService.createContact(contactForm);
       toast.success('Contact created');
       setShowAddModal(false);
@@ -338,7 +373,10 @@ export default function Contacts() {
                 Import
               </button>
               <button
-                onClick={() => setShowAddModal(true)}
+                onClick={() => {
+                  resetContactForm();
+                  setShowAddModal(true);
+                }}
                 className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
@@ -774,9 +812,9 @@ export default function Contacts() {
       )}
 
       {/* Upload Modal */}
-            {showUploadModal && (
+      {showUploadModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-2xl shadow-lg rounded-md bg-white my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-medium text-gray-900">Import Contacts</h3>
               <button onClick={() => setShowUploadModal(false)} className="text-gray-400 hover:text-gray-600">

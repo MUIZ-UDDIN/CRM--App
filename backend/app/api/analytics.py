@@ -1088,11 +1088,13 @@ async def get_dashboard_analytics(
      .all()
     
     pipeline_by_stage = []
-    max_value = max([s.total_value or 0 for s in stage_query]) if stage_query else 1
+    # Calculate total value across all stages for percentage calculation
+    total_all_stages = sum([s.total_value or 0 for s in stage_query]) if stage_query else 1
     
     for stage in stage_query:
         stage_value = float(stage.total_value or 0)
-        percentage = (stage_value / max_value * 100) if max_value > 0 else 0
+        # Calculate percentage as portion of total pipeline value (not relative to max)
+        percentage = (stage_value / total_all_stages * 100) if total_all_stages > 0 else 0
         pipeline_by_stage.append({
             "stage_name": stage.stage_name,
             "deal_count": stage.deal_count or 0,
