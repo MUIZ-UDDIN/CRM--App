@@ -241,13 +241,37 @@ export default function Contacts() {
   
   // Handle add new contact type
   const handleAddContactType = () => {
-    if (newTypeName.trim() && !contactTypes.includes(newTypeName.trim())) {
-      setContactTypes([...contactTypes, newTypeName.trim()]);
-      setContactForm({...contactForm, type: newTypeName.trim()});
-      setNewTypeName('');
-      setShowAddTypeModal(false);
-      toast.success('New contact type added');
+    const trimmedName = newTypeName.trim();
+    
+    // Validate not empty
+    if (!trimmedName) {
+      toast.error('Contact type name is required');
+      return;
     }
+    
+    // Character limit validation
+    if (trimmedName.length > 50) {
+      toast.error('Contact type name must be less than 50 characters');
+      return;
+    }
+    
+    // XSS prevention - check for script tags
+    if (/<script|<\/script|javascript:|onerror=|onload=/gi.test(trimmedName)) {
+      toast.error('Script tags and JavaScript code are not allowed');
+      return;
+    }
+    
+    // Check for duplicate
+    if (contactTypes.includes(trimmedName)) {
+      toast.error('This contact type already exists');
+      return;
+    }
+    
+    setContactTypes([...contactTypes, trimmedName]);
+    setContactForm({...contactForm, type: trimmedName});
+    setNewTypeName('');
+    setShowAddTypeModal(false);
+    toast.success('New contact type added');
   };
   
   // Handle create contact
@@ -878,14 +902,20 @@ export default function Contacts() {
               </button>
             </div>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Enter new contact type"
-                value={newTypeName}
-                onChange={(e) => setNewTypeName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                onKeyPress={(e) => e.key === 'Enter' && handleAddContactType()}
-              />
+              <div>
+                <input
+                  type="text"
+                  placeholder="Enter new contact type"
+                  value={newTypeName}
+                  onChange={(e) => setNewTypeName(e.target.value)}
+                  maxLength={50}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddContactType()}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  {newTypeName.length}/50 characters
+                </p>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowAddTypeModal(false)}
