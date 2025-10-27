@@ -523,16 +523,22 @@ export default function Activities() {
               </button>
             </div>
             <div className="space-y-4">
-              <select
-                value={activityForm.type}
-                onChange={(e) => setActivityForm({...activityForm, type: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="call">Call</option>
-                <option value="meeting">Meeting</option>
-                <option value="email">Email</option>
-                <option value="task">Task</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Activity Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={activityForm.type}
+                  onChange={(e) => setActivityForm({...activityForm, type: e.target.value})}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="call">Call</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="email">Email</option>
+                  <option value="task">Task</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Subject <span className="text-red-500">*</span>
@@ -609,23 +615,33 @@ export default function Activities() {
                 </div>
                 <p className="text-xs text-gray-500 mt-1">Select future date and time (past dates not allowed)</p>
               </div>
-              <input
-                type="number"
-                placeholder="Duration (minutes)"
-                value={activityForm.duration_minutes || ''}
-                onChange={(e) => setActivityForm({...activityForm, duration_minutes: parseInt(e.target.value) || 0})}
-                min="0"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <select
-                value={activityForm.priority}
-                onChange={(e) => setActivityForm({...activityForm, priority: parseInt(e.target.value)})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value={0}>Low Priority</option>
-                <option value={1}>Medium Priority</option>
-                <option value={2}>High Priority</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  placeholder="Duration (minutes)"
+                  value={activityForm.duration_minutes || ''}
+                  onChange={(e) => setActivityForm({...activityForm, duration_minutes: parseInt(e.target.value) || 0})}
+                  min="0"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Priority
+                </label>
+                <select
+                  value={activityForm.priority}
+                  onChange={(e) => setActivityForm({...activityForm, priority: parseInt(e.target.value)})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value={0}>Low Priority</option>
+                  <option value={1}>Medium Priority</option>
+                  <option value={2}>High Priority</option>
+                </select>
+              </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -657,16 +673,22 @@ export default function Activities() {
               </button>
             </div>
             <div className="space-y-4">
-              <select
-                value={activityForm.type}
-                onChange={(e) => setActivityForm({...activityForm, type: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                <option value="call">Call</option>
-                <option value="meeting">Meeting</option>
-                <option value="email">Email</option>
-                <option value="task">Task</option>
-              </select>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Activity Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={activityForm.type}
+                  onChange={(e) => setActivityForm({...activityForm, type: e.target.value})}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="call">Call</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="email">Email</option>
+                  <option value="task">Task</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Subject <span className="text-red-500">*</span>
