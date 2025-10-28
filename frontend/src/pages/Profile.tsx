@@ -174,14 +174,14 @@ export default function Profile() {
         setProfileData(tempData);
         setIsEditing(false);
         setErrors({});
-        toast.success('✅ Profile updated successfully!');
+        toast.success('Profile updated successfully!');
       } else {
         const error = await response.json();
-        toast.error(`❌ ${error.detail || 'Failed to update profile. Please try again.'}`);
+        toast.error(`${error.detail || 'Failed to update profile. Please try again.'}`);
       }
     } catch (error) {
       console.error('Error updating profile:', error);
-      toast.error('❌ Network error. Please check your connection and try again.');
+      toast.error('Network error. Please check your connection and try again.');
     }
   };
 
@@ -214,13 +214,13 @@ export default function Profile() {
     // Validate file type - only allow JPG, JPEG, PNG
     const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
     if (!allowedTypes.includes(file.type.toLowerCase())) {
-      toast.error('❌ Please upload only JPG, JPEG, or PNG images');
+      toast.error('Please upload only JPG, JPEG, or PNG images');
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('❌ Image size must be less than 5MB');
+      toast.error('Image size must be less than 5MB');
       return;
     }
 
@@ -253,14 +253,18 @@ export default function Profile() {
         const data = await response.json();
         setProfileData(prev => ({ ...prev, avatar: data.avatar }));
         setTempData(prev => ({ ...prev, avatar: data.avatar }));
-        toast.success('✅ Profile picture updated successfully!');
+        
+        // Trigger custom event to update avatar in header
+        window.dispatchEvent(new CustomEvent('avatarUpdated', { detail: { avatar: data.avatar } }));
+        
+        toast.success('Profile picture updated successfully!');
       } else {
         const error = await response.json();
-        toast.error(`❌ ${error.detail || 'Failed to upload image. Please try again.'}`);
+        toast.error(`${error.detail || 'Failed to upload image. Please try again.'}`);
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      toast.error('❌ Failed to upload image. Please check your connection.');
+      toast.error('Failed to upload image. Please check your connection.');
     } finally {
       setUploadingImage(false);
       setSelectedImageFile(null);

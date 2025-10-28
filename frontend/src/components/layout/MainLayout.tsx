@@ -104,6 +104,17 @@ export default function MainLayout() {
     fetchNotifications();
     fetchUnreadCount();
     fetchUserProfile();
+    
+    // Listen for avatar updates
+    const handleAvatarUpdate = (event: any) => {
+      setUserAvatar(event.detail.avatar);
+    };
+    
+    window.addEventListener('avatarUpdated', handleAvatarUpdate);
+    
+    return () => {
+      window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+    };
   }, []);
 
   const fetchNotifications = async () => {

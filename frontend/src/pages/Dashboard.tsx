@@ -359,14 +359,14 @@ export default function Dashboard() {
 
       if (response.ok) {
         setRecentActivities(prev => prev.filter(activity => activity.id !== activityId));
-        toast.success('✅ Activity deleted successfully');
+        toast.success('Activity deleted successfully');
       } else {
         const error = await response.json();
-        toast.error(`❌ ${error.detail || 'Failed to delete activity'}`);
+        toast.error(`${error.detail || 'Failed to delete activity'}`);
       }
     } catch (error) {
       console.error('Error deleting activity:', error);
-      toast.error('❌ Failed to delete activity. Please try again.');
+      toast.error('Failed to delete activity. Please try again.');
     }
   };
 
@@ -384,14 +384,14 @@ export default function Dashboard() {
 
       if (response.ok) {
         setUpcomingActivities(prev => prev.filter(activity => activity.id !== activityId));
-        toast.success('✅ Activity deleted successfully');
+        toast.success('Activity deleted successfully');
       } else {
         const error = await response.json();
-        toast.error(`❌ ${error.detail || 'Failed to delete activity'}`);
+        toast.error(`${error.detail || 'Failed to delete activity'}`);
       }
     } catch (error) {
       console.error('Error deleting activity:', error);
-      toast.error('❌ Failed to delete activity. Please try again.');
+      toast.error('Failed to delete activity. Please try again.');
     }
   };
 
