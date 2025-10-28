@@ -137,6 +137,12 @@ export default function MainLayout() {
       console.error('Error fetching unread count:', error);
     }
   };
+  
+  // Sync notificationsList with notifications from API
+  useEffect(() => {
+    setNotificationsList(notifications);
+  }, [notifications]);
+  
   const [notificationsList, setNotificationsList] = useState(notifications);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
