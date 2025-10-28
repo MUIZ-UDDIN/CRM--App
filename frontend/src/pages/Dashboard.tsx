@@ -345,14 +345,54 @@ export default function Dashboard() {
     }
   };
 
-  const handleDeleteRecentActivity = (activityId: string) => {
-    setRecentActivities(prev => prev.filter(activity => activity.id !== activityId));
-    toast.success('Notification removed');
+  const handleDeleteRecentActivity = async (activityId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${API_BASE_URL}/api/activities/${activityId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setRecentActivities(prev => prev.filter(activity => activity.id !== activityId));
+        toast.success('✅ Activity deleted successfully');
+      } else {
+        const error = await response.json();
+        toast.error(`❌ ${error.detail || 'Failed to delete activity'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      toast.error('❌ Failed to delete activity. Please try again.');
+    }
   };
 
-  const handleDeleteUpcomingActivity = (activityId: string) => {
-    setUpcomingActivities(prev => prev.filter(activity => activity.id !== activityId));
-    toast.success('Notification removed');
+  const handleDeleteUpcomingActivity = async (activityId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${API_BASE_URL}/api/activities/${activityId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        setUpcomingActivities(prev => prev.filter(activity => activity.id !== activityId));
+        toast.success('✅ Activity deleted successfully');
+      } else {
+        const error = await response.json();
+        toast.error(`❌ ${error.detail || 'Failed to delete activity'}`);
+      }
+    } catch (error) {
+      console.error('Error deleting activity:', error);
+      toast.error('❌ Failed to delete activity. Please try again.');
+    }
   };
 
   const handleAddDeal = async (e: React.FormEvent) => {
