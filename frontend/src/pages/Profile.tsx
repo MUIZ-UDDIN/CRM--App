@@ -54,8 +54,8 @@ export default function Profile() {
           phone: data.phone || '',
           title: data.title || '',
           department: data.department || '',
-          location: '',
-          bio: '',
+          location: data.location || '',
+          bio: data.bio || '',
           joinDate: data.created_at || '',
           avatar: data.avatar || ''
         };
@@ -159,7 +159,9 @@ export default function Profile() {
           last_name: tempData.lastName,
           phone: tempData.phone,
           title: tempData.title,
-          department: tempData.department
+          department: tempData.department,
+          location: tempData.location,
+          bio: tempData.bio
         })
       });
       
@@ -204,9 +206,10 @@ export default function Profile() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('❌ Please upload an image file (JPG, PNG, GIF)');
+    // Validate file type - only allow JPG, JPEG, PNG
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedTypes.includes(file.type.toLowerCase())) {
+      toast.error('❌ Please upload only JPG, JPEG, or PNG images');
       return;
     }
 
@@ -306,7 +309,7 @@ export default function Profile() {
                 <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white hover:bg-primary-700 transition-colors duration-200 cursor-pointer">
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/jpg,image/png"
                     onChange={handleImageUpload}
                     className="hidden"
                     disabled={uploadingImage}

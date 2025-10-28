@@ -45,6 +45,8 @@ class User(BaseModel):
     # Profile fields
     title = Column(String(100))
     department = Column(String(100))
+    location = Column(String(100))
+    bio = Column(String(500))
     team_id = Column(UUID(as_uuid=True), ForeignKey('teams.id', name='fk_user_team'))
     manager_id = Column(UUID(as_uuid=True), ForeignKey('users.id', name='fk_user_manager'))
     

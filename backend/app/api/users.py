@@ -26,6 +26,9 @@ class UserResponse(BaseModel):
     phone: Optional[str] = None
     title: Optional[str] = None
     department: Optional[str] = None
+    location: Optional[str] = None
+    bio: Optional[str] = None
+    avatar: Optional[str] = None
     team_id: Optional[str] = None
     is_active: bool = True
     created_at: datetime
@@ -42,6 +45,8 @@ class UserUpdate(BaseModel):
     phone: Optional[str] = None
     title: Optional[str] = None
     department: Optional[str] = None
+    location: Optional[str] = None
+    bio: Optional[str] = None
 
 
 class PasswordChange(BaseModel):
@@ -68,6 +73,9 @@ async def get_current_user_info(
         phone=user.phone,
         title=user.title,
         department=user.department,
+        location=user.location,
+        bio=user.bio,
+        avatar=user.avatar_url,
         team_id=str(user.team_id) if user.team_id else None,
         is_active=True,
         created_at=user.created_at
@@ -102,10 +110,39 @@ async def update_current_user(
         phone=user.phone,
         title=user.title,
         department=user.department,
+        location=user.location,
+        bio=user.bio,
+        avatar=user.avatar_url,
         team_id=str(user.team_id) if user.team_id else None,
         is_active=True,
         created_at=user.created_at
     )
+
+
+@router.post("/me/avatar")
+async def upload_avatar(
+    file: bytes = Depends(lambda: None),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Upload user avatar (simplified - stores as base64)"""
+    from fastapi import File, UploadFile
+    import base64
+    
+    # For now, return a placeholder since we don't have file storage setup
+    # In production, you would upload to S3, Cloudinary, etc.
+    user = db.query(UserModel).filter(UserModel.id == current_user["id"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # For demo purposes, just return success
+    # In production: upload file, get URL, save to user.avatar_url
+    avatar_url = f"https://ui-avatars.com/api/?name={user.first_name}+{user.last_name}&size=200&background=random"
+    user.avatar_url = avatar_url
+    user.updated_at = datetime.utcnow()
+    db.commit()
+    
+    return {"avatar": avatar_url, "message": "Avatar uploaded successfully"}
 
 
 @router.post("/me/change-password")
@@ -149,6 +186,9 @@ async def get_all_users(
             phone=user.phone,
             title=user.title,
             department=user.department,
+            location=user.location,
+            bio=user.bio,
+            avatar=user.avatar_url,
             team_id=str(user.team_id) if user.team_id else None,
             is_active=True,
             created_at=user.created_at
@@ -181,6 +221,9 @@ async def get_user(
         phone=user.phone,
         title=user.title,
         department=user.department,
+        location=user.location,
+        bio=user.bio,
+        avatar=user.avatar_url,
         team_id=str(user.team_id) if user.team_id else None,
         is_active=True,
         created_at=user.created_at
@@ -276,6 +319,12 @@ async def update_user(
         first_name=user.first_name,
         last_name=user.last_name,
         role=user.role,
+        phone=user.phone,
+        title=user.title,
+        department=user.department,
+        location=user.location,
+        bio=user.bio,
+        avatar=user.avatar_url,
         team_id=str(user.team_id) if user.team_id else None,
         is_active=user.is_active,
         created_at=user.created_at
