@@ -627,10 +627,10 @@ export default function Deals() {
                           .filter(deal => {
                             if (!searchQuery.trim()) return true;
                             const query = searchQuery.toLowerCase().trim();
-                            const matchesTitle = deal.title?.toLowerCase().startsWith(query);
-                            const matchesCompany = deal.company?.toLowerCase().startsWith(query);
-                            const matchesContact = deal.contact?.toLowerCase().startsWith(query);
-                            return matchesTitle || matchesCompany || matchesContact;
+                            const title = deal.title?.toLowerCase() || '';
+                            const company = deal.company?.toLowerCase() || '';
+                            const contact = deal.contact?.toLowerCase() || '';
+                            return title.includes(query) || company.includes(query) || contact.includes(query);
                           })
                           .map((deal, index) => (
                           <Draggable key={deal.id} draggableId={deal.id} index={index}>

@@ -329,10 +329,11 @@ export default function Activities() {
       if (!searchQuery.trim()) return true;
       
       const query = searchQuery.toLowerCase().trim();
-      // Search only from start of subject
-      const matchesSubject = activity.subject?.toLowerCase().startsWith(query);
+      const subject = activity.subject?.toLowerCase() || '';
+      const description = activity.description?.toLowerCase() || '';
+      const type = activity.type?.toLowerCase() || '';
       
-      return matchesSubject;
+      return subject.includes(query) || description.includes(query) || type.includes(query);
     });
 
   // Pagination

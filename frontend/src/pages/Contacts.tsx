@@ -384,15 +384,20 @@ export default function Contacts() {
     }
   };
   
-  // Filter contacts - search from start of first name and last name only
+  // Filter contacts - search in full name, company, email, and phone
   const filteredContacts = contacts.filter(contact => {
     if (!searchQuery.trim()) return true;
     
     const query = searchQuery.toLowerCase().trim();
-    const matchesFirstName = contact.first_name.toLowerCase().startsWith(query);
-    const matchesLastName = contact.last_name.toLowerCase().startsWith(query);
+    const fullName = `${contact.first_name} ${contact.last_name}`.toLowerCase();
+    const company = contact.company?.toLowerCase() || '';
+    const email = contact.email?.toLowerCase() || '';
+    const phone = contact.phone?.toLowerCase() || '';
     
-    return matchesFirstName || matchesLastName;
+    return fullName.includes(query) || 
+           company.includes(query) || 
+           email.includes(query) || 
+           phone.includes(query);
   });
 
   // Pagination
