@@ -9,6 +9,7 @@ import {
   XMarkIcon
 } from '@heroicons/react/24/outline';
 import ImageCropper from '../components/ImageCropper';
+import ImageViewer from '../components/ImageViewer';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -32,6 +33,7 @@ export default function Profile() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [showCropper, setShowCropper] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [showImageViewer, setShowImageViewer] = useState(false);
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   // Fetch user profile data
@@ -319,14 +321,18 @@ export default function Profile() {
             {/* Profile Header */}
             <div className="flex items-center space-x-6 mb-8">
               <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                <div 
+                  className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => profileData.avatar && setShowImageViewer(true)}
+                  title={profileData.avatar ? "Click to view full image" : ""}
+                >
                   {profileData.avatar ? (
                     <img src={profileData.avatar} alt="Profile" className="w-full h-full object-cover" />
                   ) : (
                     <UserCircleIcon className="w-20 h-20 text-gray-400" />
                   )}
                 </div>
-                <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white hover:bg-primary-700 transition-colors duration-200 cursor-pointer">
+                <label className="absolute bottom-0 right-0 w-8 h-8 bg-primary-600 rounded-full flex items-center justify-center text-white hover:bg-primary-700 transition-colors duration-200 cursor-pointer z-10">
                   <input
                     type="file"
                     accept="image/jpeg,image/jpg,image/png"
@@ -337,7 +343,7 @@ export default function Profile() {
                   <CameraIcon className="w-4 h-4" />
                 </label>
                 {uploadingImage && (
-                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+                  <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center z-20">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
                   </div>
                 )}
@@ -603,6 +609,15 @@ export default function Profile() {
           imageFile={selectedImageFile}
           onCropComplete={handleCropComplete}
           onCancel={handleCropCancel}
+        />
+      )}
+
+      {/* Image Viewer Modal */}
+      {showImageViewer && profileData.avatar && (
+        <ImageViewer
+          imageUrl={profileData.avatar}
+          onClose={() => setShowImageViewer(false)}
+          userName={`${profileData.firstName} ${profileData.lastName}`}
         />
       )}
     </div>

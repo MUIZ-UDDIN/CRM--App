@@ -22,6 +22,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
+import ImageViewer from '../ImageViewer';
 
 interface NavItem {
   name: string;
@@ -77,6 +78,8 @@ export default function MainLayout() {
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userAvatar, setUserAvatar] = useState<string>('');
+  const [showImageViewer, setShowImageViewer] = useState(false);
   const quickAddRef = useRef<HTMLDivElement>(null);
 
   // Close quick add menu when clicking outside
@@ -96,10 +99,11 @@ export default function MainLayout() {
     };
   }, [showQuickAdd]);
 
-  // Fetch notifications
+  // Fetch notifications and user profile
   useEffect(() => {
     fetchNotifications();
     fetchUnreadCount();
+    fetchUserProfile();
   }, []);
 
   const fetchNotifications = async () => {
@@ -135,6 +139,24 @@ export default function MainLayout() {
       }
     } catch (error) {
       console.error('Error fetching unread count:', error);
+    }
+  };
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUserAvatar(data.avatar || '');
+      }
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
     }
   };
   
@@ -567,7 +589,11 @@ export default function MainLayout() {
                   onClick={() => setShowProfile(!showProfile)}
                   className="flex items-center space-x-1 sm:space-x-2 p-1.5 sm:p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                 >
-                  <UserCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                  {userAvatar ? (
+                    <img src={userAvatar} alt="Profile" className="h-5 w-5 sm:h-6 sm:w-6 rounded-full object-cover" />
+                  ) : (
+                    <UserCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+                  )}
                   <span className="text-sm font-medium hidden md:block">{user?.firstName} {user?.lastName}</span>
                   <ChevronDownIcon className={clsx(
                     'h-4 w-4 transition-transform duration-200 hidden sm:block',
@@ -580,13 +606,28 @@ export default function MainLayout() {
                   <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                     <div className="p-4 border-b border-gray-200">
                       <div className="flex items-center space-x-3">
-                        <UserCircleIcon className="h-10 w-10 text-gray-400" />
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">
+                        <div 
+                          className="flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => {
+                            if (userAvatar) {
+                              setShowImageViewer(true);
+                              setShowProfile(false);
+                            }
+                          }}
+                          title={userAvatar ? "Click to view full image" : ""}
+                        >
+                          {userAvatar ? (
+                            <img src={userAvatar} alt="Profile" className="h-12 w-12 rounded-full object-cover" />
+                          ) : (
+                            <UserCircleIcon className="h-12 w-12 text-gray-400" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">
                             {user?.firstName} {user?.lastName}
                           </p>
-                          <p className="text-sm text-gray-600">{user?.email}</p>
-                          <p className="text-xs text-gray-400">{user?.role}</p>
+                          <p className="text-xs text-gray-600 truncate">{user?.email}</p>
+                          <p className="text-xs text-primary-600 font-medium">{user?.role}</p>
                         </div>
                       </div>
                     </div>
@@ -755,6 +796,15 @@ export default function MainLayout() {
           )}
         </div>
       </div>
+
+      {/* Image Viewer Modal */}
+      {showImageViewer && userAvatar && (
+        <ImageViewer
+          imageUrl={userAvatar}
+          onClose={() => setShowImageViewer(false)}
+          userName={`${user?.firstName} ${user?.lastName}`}
+        />
+      )}
     </div>
   );
 }
