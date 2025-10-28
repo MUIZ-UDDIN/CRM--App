@@ -11,6 +11,7 @@ import {
   BuildingOfficeIcon,
   UserIcon,
   Bars3Icon,
+  MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
 
 interface Deal {
@@ -42,6 +43,7 @@ export default function Deals() {
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -563,6 +565,30 @@ export default function Deals() {
         </div>
       </div>
 
+      {/* Search Bar */}
+      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-4">
+        <div className="relative max-w-md">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            placeholder="Search deals by title, company, or contact..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Pipeline Board */}
       <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
         {loading ? (
@@ -597,7 +623,16 @@ export default function Deals() {
                           snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
                         }`}
                       >
-                        {(deals[stage.id] || []).map((deal, index) => (
+                        {(deals[stage.id] || [])
+                          .filter(deal => {
+                            if (!searchQuery.trim()) return true;
+                            const query = searchQuery.toLowerCase().trim();
+                            const matchesTitle = deal.title?.toLowerCase().startsWith(query);
+                            const matchesCompany = deal.company?.toLowerCase().startsWith(query);
+                            const matchesContact = deal.contact?.toLowerCase().startsWith(query);
+                            return matchesTitle || matchesCompany || matchesContact;
+                          })
+                          .map((deal, index) => (
                           <Draggable key={deal.id} draggableId={deal.id} index={index}>
                             {(provided, snapshot) => (
                               <div

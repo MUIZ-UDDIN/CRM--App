@@ -267,17 +267,47 @@ export default function MainLayout() {
     navigate('/notifications');
   };
 
-  const markAllAsRead = () => {
-    setNotificationsList(prev => 
-      prev.map(n => ({ ...n, unread: false }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${API_BASE_URL}/api/notifications/mark-all-read`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      // Update local state
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+      setNotificationsList(prev => prev.map(n => ({ ...n, read: true })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Error marking all as read:', error);
+    }
   };
 
-  const deleteNotification = (notificationId: number, e: React.MouseEvent) => {
+  const deleteNotification = async (notificationId: string, e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the notification click
-    setNotificationsList(prev => 
-      prev.filter(n => n.id !== notificationId)
-    );
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      // Update local state immediately
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+      setNotificationsList(prev => prev.filter(n => n.id !== notificationId));
+      
+      // Update unread count
+      fetchUnreadCount();
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+    }
   };
 
   return (
