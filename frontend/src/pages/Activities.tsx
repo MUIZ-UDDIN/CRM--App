@@ -329,56 +329,11 @@ export default function Activities() {
       if (!searchQuery.trim()) return true;
       
       const query = searchQuery.toLowerCase().trim();
-      const matchesSubject = activity.subject?.toLowerCase().includes(query);
-      const matchesDescription = activity.description?.toLowerCase().includes(query);
-      const matchesType = activity.type?.toLowerCase().includes(query);
-      const matchesStatus = activity.status?.toLowerCase().includes(query);
+      // Search only from start of subject
+      const matchesSubject = activity.subject?.toLowerCase().startsWith(query);
       
-      return matchesSubject || matchesDescription || matchesType || matchesStatus;
-    })
-    .sort((a, b) => {
-      if (!searchQuery.trim()) return 0;
-      
-      const query = searchQuery.toLowerCase().trim();
-      
-      // Calculate relevance scores
-      const scoreA = calculateRelevanceScore(a, query);
-      const scoreB = calculateRelevanceScore(b, query);
-      
-      // Sort by relevance (higher score first)
-      return scoreB - scoreA;
+      return matchesSubject;
     });
-
-  // Calculate relevance score for search results
-  function calculateRelevanceScore(activity: Activity, query: string): number {
-    let score = 0;
-    
-    // Subject matches are most important
-    if (activity.subject?.toLowerCase().includes(query)) {
-      score += 100;
-      // Exact match or starts with query gets bonus
-      if (activity.subject.toLowerCase() === query) score += 50;
-      else if (activity.subject.toLowerCase().startsWith(query)) score += 30;
-    }
-    
-    // Type matches are second priority
-    if (activity.type?.toLowerCase().includes(query)) {
-      score += 50;
-      if (activity.type.toLowerCase() === query) score += 25;
-    }
-    
-    // Status matches
-    if (activity.status?.toLowerCase().includes(query)) {
-      score += 30;
-    }
-    
-    // Description matches are least important
-    if (activity.description?.toLowerCase().includes(query)) {
-      score += 10;
-    }
-    
-    return score;
-  }
 
   // Pagination
   const itemsPerPage = 15;

@@ -64,11 +64,10 @@ async def get_contacts(
     query = db.query(ContactModel).filter(ContactModel.is_deleted == False)
     
     if search:
+        # Search only from start of first name or last name
         query = query.filter(
-            (ContactModel.first_name.ilike(f"%{search}%")) |
-            (ContactModel.last_name.ilike(f"%{search}%")) |
-            (ContactModel.email.ilike(f"%{search}%")) |
-            (ContactModel.company.ilike(f"%{search}%"))
+            (ContactModel.first_name.ilike(f"{search}%")) |
+            (ContactModel.last_name.ilike(f"{search}%"))
         )
     
     if type:

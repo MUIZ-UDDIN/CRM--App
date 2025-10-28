@@ -255,9 +255,15 @@ export default function Contacts() {
       return;
     }
     
-    // XSS prevention - check for script tags
-    if (/<script|<\/script|javascript:|onerror=|onload=/gi.test(trimmedName)) {
-      toast.error('Script tags and JavaScript code are not allowed');
+    // XSS prevention - check for ANY HTML tags and JavaScript
+    if (/<[^>]*>/gi.test(trimmedName)) {
+      toast.error('HTML tags are not allowed in contact type name');
+      return;
+    }
+    
+    // Additional check for JavaScript patterns
+    if (/javascript:|on\w+=/gi.test(trimmedName)) {
+      toast.error('JavaScript code is not allowed in contact type name');
       return;
     }
     
@@ -378,16 +384,15 @@ export default function Contacts() {
     }
   };
   
-  // Filter contacts
+  // Filter contacts - search from start of first name and last name only
   const filteredContacts = contacts.filter(contact => {
-    const matchesSearch = 
-      contact.first_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.last_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      contact.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (contact.phone && contact.phone.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (contact.company && contact.company.toLowerCase().includes(searchQuery.toLowerCase()));
+    if (!searchQuery.trim()) return true;
     
-    return matchesSearch;
+    const query = searchQuery.toLowerCase().trim();
+    const matchesFirstName = contact.first_name.toLowerCase().startsWith(query);
+    const matchesLastName = contact.last_name.toLowerCase().startsWith(query);
+    
+    return matchesFirstName || matchesLastName;
   });
 
   // Pagination
