@@ -183,14 +183,14 @@ export default function Contacts() {
   // Fetch contacts
   useEffect(() => {
     fetchContacts();
-  }, [filterType, searchQuery]);
+  }, [filterType]); // Removed searchQuery - filtering is done client-side
   
   const fetchContacts = async () => {
     setLoading(true);
     try {
       const data = await contactsService.getContacts({ 
-        type: filterType !== 'all' ? filterType : undefined,
-        search: searchQuery || undefined
+        type: filterType !== 'all' ? filterType : undefined
+        // Removed search parameter - doing client-side filtering instead
       });
       setContacts(data);
     } catch (error) {
