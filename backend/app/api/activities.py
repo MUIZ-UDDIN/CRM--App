@@ -359,3 +359,28 @@ def complete_activity(
         "completed_at": activity.completed_at.isoformat() if activity.completed_at else None,
         "message": message
     }
+
+
+@router.delete("/{activity_id}")
+def delete_activity(
+    activity_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Delete an activity"""
+    activity = db.query(ActivityModel).filter(ActivityModel.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    
+    # Check if user owns this activity
+    if str(activity.owner_id) != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this activity")
+    
+    # Actually delete the activity from database
+    db.delete(activity)
+    db.commit()
+    
+    return {
+        "message": "Activity deleted successfully",
+        "id": str(activity_id)
+    }
