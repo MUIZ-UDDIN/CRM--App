@@ -912,7 +912,15 @@ export default function Contacts() {
                   type="text"
                   placeholder="Enter new contact type"
                   value={newTypeName}
-                  onChange={(e) => setNewTypeName(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Block HTML tags in real-time
+                    if (/<[^>]*>/gi.test(value)) {
+                      toast.error('HTML tags are not allowed');
+                      return;
+                    }
+                    setNewTypeName(value);
+                  }}
                   maxLength={50}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   onKeyPress={(e) => e.key === 'Enter' && handleAddContactType()}

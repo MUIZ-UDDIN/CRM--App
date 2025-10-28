@@ -505,24 +505,22 @@ export default function MainLayout() {
                         ))
                       )}
                     </div>
-                    {notificationsList.length > 0 && (
-                      <div className="p-3 border-t border-gray-200 space-y-2">
-                        {unreadCount > 0 && (
-                          <button 
-                            onClick={markAllAsRead}
-                            className="w-full text-center text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200"
-                          >
-                            Mark all as read
-                          </button>
-                        )}
+                    <div className="p-3 border-t border-gray-200 space-y-2">
+                      {notificationsList.length > 0 && unreadCount > 0 && (
                         <button 
-                          onClick={handleViewAllNotifications}
-                          className="w-full text-center text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors duration-200"
+                          onClick={markAllAsRead}
+                          className="w-full text-center text-sm text-gray-600 hover:text-gray-800 font-medium transition-colors duration-200"
                         >
-                          View all notifications
+                          Mark all as read
                         </button>
-                      </div>
-                    )}
+                      )}
+                      <button 
+                        onClick={handleViewAllNotifications}
+                        className="w-full text-center text-sm text-primary-600 hover:text-primary-800 font-medium transition-colors duration-200"
+                      >
+                        View all notifications
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
