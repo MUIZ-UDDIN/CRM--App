@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
+import * as notificationsService from '../services/notificationsService';
 import { 
   BellIcon, 
   CheckIcon,
@@ -12,74 +14,38 @@ import {
 } from '@heroicons/react/24/outline';
 
 interface Notification {
-  id: number;
-  type: 'deal' | 'meeting' | 'call' | 'email' | 'contact';
+  id: string;
   title: string;
   message: string;
-  time: string;
-  unread: boolean;
-  priority: 'high' | 'medium' | 'low';
+  type: string;
+  read: boolean;
+  created_at: string;
+  link?: string;
 }
 
 export default function Notifications() {
   const [filter, setFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(true);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: 'deal',
-      title: 'New deal created',
-      message: 'Enterprise Software License - $50,000 has been added to the pipeline',
-      time: '2 minutes ago',
-      unread: true,
-      priority: 'high'
-    },
-    {
-      id: 2,
-      type: 'meeting',
-      title: 'Meeting reminder',
-      message: 'Demo call with John Smith at TechCorp in 30 minutes',
-      time: '28 minutes ago',
-      unread: true,
-      priority: 'high'
-    },
-    {
-      id: 3,
-      type: 'deal',
-      title: 'Deal won',
-      message: 'Marketing Consulting deal has been marked as closed won - $25,000',
-      time: '1 hour ago',
-      unread: true,
-      priority: 'medium'
-    },
-    {
-      id: 4,
-      type: 'email',
-      title: 'Email response',
-      message: 'Sarah Marketing replied to your proposal email',
-      time: '2 hours ago',
-      unread: false,
-      priority: 'medium'
-    },
-    {
-      id: 5,
-      type: 'call',
-      title: 'Missed call',
-      message: 'Missed call from David Tech (+1 555-123-4567)',
-      time: '3 hours ago',
-      unread: false,
-      priority: 'low'
-    },
-    {
-      id: 6,
-      type: 'contact',
-      title: 'New contact added',
-      message: 'Amanda Health has been added as a new contact',
-      time: '4 hours ago',
-      unread: false,
-      priority: 'low'
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchNotifications();
+  }, [filter]);
+
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const unreadOnly = filter === 'unread';
+      const data = await notificationsService.getNotifications(unreadOnly);
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast.error('Failed to load notifications');
+    } finally {
+      setLoading(false);
     }
-  ]);
+  };
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -105,32 +71,65 @@ export default function Notifications() {
 
   const filteredNotifications = notifications.filter(notification => {
     if (filter === 'all') return true;
-    if (filter === 'unread') return notification.unread;
+    if (filter === 'unread') return !notification.read;
     return notification.type === filter;
   });
 
-  const unreadCount = notifications.filter(n => n.unread).length;
+  const unreadCount = notifications.filter(n => !n.read).length;
 
-  const markAsRead = (id: number) => {
-    setNotifications(prev => 
-      prev.map(notification =>
-        notification.id === id 
-          ? { ...notification, unread: false }
-          : notification
-      )
-    );
+  const handleMarkAsRead = async (id: string) => {
+    try {
+      await notificationsService.markAsRead(id);
+      setNotifications(prev => 
+        prev.map(notification =>
+          notification.id === id 
+            ? { ...notification, read: true }
+            : notification
+        )
+      );
+      toast.success('Marked as read');
+    } catch (error) {
+      toast.error('Failed to mark as read');
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => 
-      prev.map(notification => ({ ...notification, unread: false }))
-    );
+  const handleMarkAllAsRead = async () => {
+    try {
+      await notificationsService.markAllAsRead();
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, read: true }))
+      );
+      toast.success('All notifications marked as read');
+    } catch (error) {
+      toast.error('Failed to mark all as read');
+    }
   };
 
-  const deleteNotification = (id: number) => {
-    setNotifications(prev => 
-      prev.filter(notification => notification.id !== id)
-    );
+  const handleDeleteNotification = async (id: string) => {
+    try {
+      await notificationsService.deleteNotification(id);
+      setNotifications(prev => 
+        prev.filter(notification => notification.id !== id)
+      );
+      toast.success('Notification deleted');
+    } catch (error) {
+      toast.error('Failed to delete notification');
+    }
+  };
+
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+    return date.toLocaleDateString();
   };
 
   const filterOptions = [
@@ -158,7 +157,7 @@ export default function Notifications() {
             <div className="flex items-center space-x-3">
               {unreadCount > 0 && (
                 <button
-                  onClick={markAllAsRead}
+                  onClick={handleMarkAllAsRead}
                   className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded text-primary-700 bg-primary-100 hover:bg-primary-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                 >
                   <CheckIcon className="h-3 w-3 mr-1" />
@@ -217,7 +216,12 @@ export default function Notifications() {
 
           {/* Notifications List */}
           <div className="divide-y divide-gray-200">
-            {filteredNotifications.length === 0 ? (
+            {loading ? (
+              <div className="px-6 py-12 text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading notifications...</p>
+              </div>
+            ) : filteredNotifications.length === 0 ? (
               <div className="px-6 py-12 text-center">
                 <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
                 <h3 className="mt-4 text-lg font-medium text-gray-900">
@@ -239,7 +243,7 @@ export default function Notifications() {
                   <div
                     key={notification.id}
                     className={`px-6 py-4 hover:bg-gray-50 transition-colors duration-200 ${
-                      notification.unread ? 'bg-blue-50' : ''
+                      !notification.read ? 'bg-blue-50' : ''
                     }`}
                   >
                     <div className="flex items-start space-x-4">
@@ -251,7 +255,7 @@ export default function Notifications() {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <p className={`text-sm font-medium ${
-                              notification.unread ? 'text-gray-900' : 'text-gray-700'
+                              !notification.read ? 'text-gray-900' : 'text-gray-700'
                             }`}>
                               {notification.title}
                             </p>
@@ -262,9 +266,9 @@ export default function Notifications() {
                           
                           <div className="flex items-center space-x-2 ml-4">
                             <span className="text-xs text-gray-400 whitespace-nowrap">
-                              {notification.time}
+                              {formatTime(notification.created_at)}
                             </span>
-                            {notification.unread && (
+                            {!notification.read && (
                               <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                             )}
                           </div>
@@ -273,25 +277,26 @@ export default function Notifications() {
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center space-x-3">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              notification.priority === 'high' ? 'bg-red-100 text-red-800' :
-                              notification.priority === 'medium' ? 'bg-yellow-100 text-yellow-800' :
-                              'bg-gray-100 text-gray-800'
+                              notification.type === 'error' ? 'bg-red-100 text-red-800' :
+                              notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                              notification.type === 'success' ? 'bg-green-100 text-green-800' :
+                              'bg-blue-100 text-blue-800'
                             }`}>
-                              {notification.priority} priority
+                              {notification.type}
                             </span>
                           </div>
                           
                           <div className="flex items-center space-x-2">
-                            {notification.unread && (
+                            {!notification.read && (
                               <button
-                                onClick={() => markAsRead(notification.id)}
+                                onClick={() => handleMarkAsRead(notification.id)}
                                 className="text-xs text-primary-600 hover:text-primary-800 font-medium"
                               >
                                 Mark as read
                               </button>
                             )}
                             <button
-                              onClick={() => deleteNotification(notification.id)}
+                              onClick={() => handleDeleteNotification(notification.id)}
                               className="text-gray-400 hover:text-red-500 transition-colors duration-200"
                             >
                               <TrashIcon className="h-4 w-4" />
