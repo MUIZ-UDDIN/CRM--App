@@ -30,8 +30,8 @@ export default function ImageCropper({ imageFile, onCropComplete, onCancel }: Im
     reader.readAsDataURL(imageFile);
   }, [imageFile]);
 
-  const getCroppedImg = useCallback(async () => {
-    if (!completedCrop || !imgRef.current) {
+  const getCroppedImg = useCallback(async (useCrop: PixelCrop | null = null) => {
+    if (!imgRef.current) {
       return;
     }
 
@@ -51,18 +51,40 @@ export default function ImageCropper({ imageFile, onCropComplete, onCancel }: Im
     canvas.width = targetSize;
     canvas.height = targetSize;
 
-    // Draw the cropped image
-    ctx.drawImage(
-      image,
-      completedCrop.x * scaleX,
-      completedCrop.y * scaleY,
-      completedCrop.width * scaleX,
-      completedCrop.height * scaleY,
-      0,
-      0,
-      targetSize,
-      targetSize
-    );
+    // Use provided crop or default to full image centered
+    const cropToUse = useCrop || completedCrop;
+    
+    if (cropToUse) {
+      // Draw the cropped image
+      ctx.drawImage(
+        image,
+        cropToUse.x * scaleX,
+        cropToUse.y * scaleY,
+        cropToUse.width * scaleX,
+        cropToUse.height * scaleY,
+        0,
+        0,
+        targetSize,
+        targetSize
+      );
+    } else {
+      // No crop selected - use center square of image
+      const size = Math.min(image.naturalWidth, image.naturalHeight);
+      const x = (image.naturalWidth - size) / 2;
+      const y = (image.naturalHeight - size) / 2;
+      
+      ctx.drawImage(
+        image,
+        x,
+        y,
+        size,
+        size,
+        0,
+        0,
+        targetSize,
+        targetSize
+      );
+    }
 
     return new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(

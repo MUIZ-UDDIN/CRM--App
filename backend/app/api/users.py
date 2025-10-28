@@ -141,11 +141,19 @@ async def upload_avatar(
     if len(contents) > 5 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="Image size must be less than 5MB")
     
+    # Delete old avatar (if exists and is base64 data)
+    # Note: We're storing in database, so just overwriting is fine
+    # In production with S3/Cloudinary, you'd delete the old file here
+    old_avatar = user.avatar_url
+    if old_avatar and old_avatar.startswith('data:image'):
+        # Old base64 image will be garbage collected
+        pass
+    
     # Convert to base64 data URL for storage
     base64_image = base64.b64encode(contents).decode('utf-8')
     data_url = f"data:{file.content_type};base64,{base64_image}"
     
-    # Save to database
+    # Save to database (overwrites old avatar)
     user.avatar_url = data_url
     user.updated_at = datetime.utcnow()
     db.commit()
