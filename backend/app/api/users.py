@@ -121,28 +121,39 @@ async def update_current_user(
 
 @router.post("/me/avatar")
 async def upload_avatar(
-    file: bytes = Depends(lambda: None),
+    file: UploadFile,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Upload user avatar (simplified - stores as base64)"""
+    """Upload user avatar - stores as base64 data URL"""
     from fastapi import File, UploadFile
     import base64
+    import os
     
-    # For now, return a placeholder since we don't have file storage setup
-    # In production, you would upload to S3, Cloudinary, etc.
     user = db.query(UserModel).filter(UserModel.id == current_user["id"]).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # For demo purposes, just return success
-    # In production: upload file, get URL, save to user.avatar_url
-    avatar_url = f"https://ui-avatars.com/api/?name={user.first_name}+{user.last_name}&size=200&background=random"
-    user.avatar_url = avatar_url
+    # Validate file type
+    allowed_types = ["image/jpeg", "image/jpg", "image/png"]
+    if file.content_type not in allowed_types:
+        raise HTTPException(status_code=400, detail="Only JPG, JPEG, and PNG images are allowed")
+    
+    # Validate file size (5MB max)
+    contents = await file.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Image size must be less than 5MB")
+    
+    # Convert to base64 data URL for storage
+    base64_image = base64.b64encode(contents).decode('utf-8')
+    data_url = f"data:{file.content_type};base64,{base64_image}"
+    
+    # Save to database
+    user.avatar_url = data_url
     user.updated_at = datetime.utcnow()
     db.commit()
     
-    return {"avatar": avatar_url, "message": "Avatar uploaded successfully"}
+    return {"avatar": data_url, "message": "Avatar uploaded successfully"}
 
 
 @router.post("/me/change-password")

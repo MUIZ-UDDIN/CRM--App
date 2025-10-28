@@ -8,6 +8,7 @@ import {
   CheckIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
+import ImageCropper from '../components/ImageCropper';
 
 export default function Profile() {
   const { user } = useAuth();
@@ -29,6 +30,8 @@ export default function Profile() {
   const [tempData, setTempData] = useState(profileData);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [showCropper, setShowCropper] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   // Fetch user profile data
@@ -202,7 +205,7 @@ export default function Profile() {
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -219,10 +222,21 @@ export default function Profile() {
       return;
     }
 
+    // Show cropper
+    setSelectedImageFile(file);
+    setShowCropper(true);
+    
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedBlob: Blob) => {
+    setShowCropper(false);
     setUploadingImage(true);
+
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', croppedBlob, 'avatar.jpg');
 
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/api/users/me/avatar`, {
@@ -247,7 +261,13 @@ export default function Profile() {
       toast.error('❌ Failed to upload image. Please check your connection.');
     } finally {
       setUploadingImage(false);
+      setSelectedImageFile(null);
     }
+  };
+
+  const handleCropCancel = () => {
+    setShowCropper(false);
+    setSelectedImageFile(null);
   };
 
   return (
@@ -310,7 +330,7 @@ export default function Profile() {
                   <input
                     type="file"
                     accept="image/jpeg,image/jpg,image/png"
-                    onChange={handleImageUpload}
+                    onChange={handleImageSelect}
                     className="hidden"
                     disabled={uploadingImage}
                   />
@@ -576,6 +596,15 @@ export default function Profile() {
           </div>
         </div>
       </div>
+
+      {/* Image Cropper Modal */}
+      {showCropper && selectedImageFile && (
+        <ImageCropper
+          imageFile={selectedImageFile}
+          onCropComplete={handleCropComplete}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   );
 }
