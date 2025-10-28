@@ -2,12 +2,13 @@
 Users API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 import uuid
+import base64
 
 from ..core.security import get_current_active_user, get_password_hash, verify_password
 from ..core.database import get_db
@@ -121,15 +122,11 @@ async def update_current_user(
 
 @router.post("/me/avatar")
 async def upload_avatar(
-    file: UploadFile,
+    file: UploadFile = File(...),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Upload user avatar - stores as base64 data URL"""
-    from fastapi import File, UploadFile
-    import base64
-    import os
-    
     user = db.query(UserModel).filter(UserModel.id == current_user["id"]).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
