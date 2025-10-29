@@ -1034,23 +1034,24 @@ async def get_dashboard_analytics(
     total_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*pipeline_filters)).scalar() or 0.0
     active_deals = db.query(func.count(DealModel.id)).filter(and_(*pipeline_filters)).scalar() or 0
     
-    # For growth calculation, compare deals created in current period vs previous period
-    # Current period open deals created in this period
-    current_period_pipeline_filters = pipeline_filters.copy()
-    if date_from_obj:
-        current_period_pipeline_filters.append(func.date(DealModel.created_at) >= date_from_obj)
-    if date_to_obj:
-        current_period_pipeline_filters.append(func.date(DealModel.created_at) <= date_to_obj)
+    # For growth: Compare total open deals now vs 30 days ago
+    # Get deals that were open 30 days ago (created before prev_period_end and still open OR were closed after prev_period_end)
+    # Simplified: Just compare deals created in last 30 days vs previous 30 days
+    thirty_days_ago = today - timedelta(days=30)
+    sixty_days_ago = today - timedelta(days=60)
     
-    current_period_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*current_period_pipeline_filters)).scalar() or 0.0
-    current_period_deals = db.query(func.count(DealModel.id)).filter(and_(*current_period_pipeline_filters)).scalar() or 0
+    # Open deals created in last 30 days
+    recent_pipeline_filters = pipeline_filters.copy()
+    recent_pipeline_filters.append(func.date(DealModel.created_at) >= thirty_days_ago)
+    recent_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*recent_pipeline_filters)).scalar() or 0.0
+    recent_deals = db.query(func.count(DealModel.id)).filter(and_(*recent_pipeline_filters)).scalar() or 0
     
-    # Previous period open deals created in previous period
+    # Open deals created 30-60 days ago (that are still open)
     prev_pipeline_filters = [
         DealModel.is_deleted == False,
         DealModel.status == DealStatus.OPEN,
-        func.date(DealModel.created_at) >= prev_period_start,
-        func.date(DealModel.created_at) <= prev_period_end
+        func.date(DealModel.created_at) >= sixty_days_ago,
+        func.date(DealModel.created_at) < thirty_days_ago
     ]
     if filter_user_id:
         prev_pipeline_filters.append(DealModel.owner_id == filter_user_id)
@@ -1062,9 +1063,20 @@ async def get_dashboard_analytics(
     prev_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*prev_pipeline_filters)).scalar() or 0.0
     prev_active_deals = db.query(func.count(DealModel.id)).filter(and_(*prev_pipeline_filters)).scalar() or 0
     
-    # Calculate growth based on deals created in each period
-    pipeline_growth = ((current_period_pipeline - prev_pipeline) / prev_pipeline * 100) if prev_pipeline > 0 else (100 if current_period_pipeline > 0 else 0)
-    deal_growth = ((current_period_deals - prev_active_deals) / prev_active_deals * 100) if prev_active_deals > 0 else (100 if current_period_deals > 0 else 0)
+    # Calculate growth: Compare new deals added in last 30 days vs previous 30 days
+    if prev_pipeline > 0:
+        pipeline_growth = ((recent_pipeline - prev_pipeline) / prev_pipeline * 100)
+    elif recent_pipeline > 0:
+        pipeline_growth = 100  # Growing from zero
+    else:
+        pipeline_growth = 0
+    
+    if prev_active_deals > 0:
+        deal_growth = ((recent_deals - prev_active_deals) / prev_active_deals * 100)
+    elif recent_deals > 0:
+        deal_growth = 100  # Growing from zero
+    else:
+        deal_growth = 0
     
     # Activities Today
     activity_filters = [
