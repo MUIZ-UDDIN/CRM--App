@@ -35,6 +35,9 @@ from app.api.quotes import router as quotes_router
 from app.api.calls import router as calls_router
 from app.api.conversations import router as conversations_router
 from app.api.analytics_enhanced import router as analytics_enhanced_router
+from app.api.performance_alerts import router as performance_alerts_router
+from app.api.voice_transcription import router as voice_transcription_router
+from app.api.bulk_email_campaigns import router as bulk_email_campaigns_router
 
 # Import with error handling for debugging
 try:
@@ -332,6 +335,27 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 logger.info("✅ Enhanced Analytics routes registered")
+
+app.include_router(
+    performance_alerts_router,
+    prefix="/api",
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Performance Alerts routes registered")
+
+app.include_router(
+    voice_transcription_router,
+    prefix="/api",
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Voice Transcription routes registered")
+
+app.include_router(
+    bulk_email_campaigns_router,
+    prefix="/api",
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Bulk Email Campaigns routes registered")
 
 
 if __name__ == "__main__":
