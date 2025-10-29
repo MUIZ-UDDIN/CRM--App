@@ -95,18 +95,24 @@ Total Pipeline = SUM(deal.value) WHERE status = 'OPEN' AND is_deleted = FALSE
 
 **Growth Calculation:**
 ```
-Pipeline Growth % = ((Current Pipeline - Previous Pipeline) / Previous Pipeline) × 100
+Pipeline Growth % = ((Recent Pipeline - Previous Pipeline) / Previous Pipeline) × 100
 
 Where:
-- Current Pipeline = All deals with status = 'OPEN' now
-- Previous Pipeline = All deals that were 'OPEN' at end of previous period
-  (created on or before previous period end date and still open)
+- Recent Pipeline = Open deals created in LAST 30 DAYS
+- Previous Pipeline = Open deals created 30-60 DAYS AGO (that are still open)
+- If Previous = 0 and Recent > 0: Growth = +100%
+- If both = 0: Growth = 0%
 ```
 
 **Example:**
-- Current: 25 open deals worth $120,000
-- Previous Period End: 20 open deals worth $100,000
-- Growth: ((120,000 - 100,000) / 100,000) × 100 = +20%
+- Last 30 days: 24 deals created worth $140M (still open)
+- 30-60 days ago: 20 deals created worth $120M (still open)
+- Growth: ((140M - 120M) / 120M) × 100 = +16.7%
+
+**Special Case - Growing from Zero:**
+- Last 30 days: 24 deals = $140M
+- 30-60 days ago: 0 deals = $0
+- Growth: +100% (doubled from zero)
 
 ---
 
@@ -120,18 +126,24 @@ Active Deals = COUNT(deals) WHERE status = 'OPEN' AND is_deleted = FALSE
 
 **Growth Calculation:**
 ```
-Deal Growth % = ((Current Active - Previous Active) / Previous Active) × 100
+Deal Growth % = ((Recent Deals - Previous Deals) / Previous Deals) × 100
 
 Where:
-- Current Active = Count of deals with status = 'OPEN' now
-- Previous Active = Count of deals that were 'OPEN' at end of previous period
-  (created on or before previous period end date and still open)
+- Recent Deals = Count of open deals created in LAST 30 DAYS
+- Previous Deals = Count of open deals created 30-60 DAYS AGO (still open)
+- If Previous = 0 and Recent > 0: Growth = +100%
+- If both = 0: Growth = 0%
 ```
 
 **Example:**
-- Current: 25 active deals
-- Previous Period End: 20 active deals
-- Growth: ((25 - 20) / 20) × 100 = +25%
+- Last 30 days: 24 deals created (still open)
+- 30-60 days ago: 20 deals created (still open)
+- Growth: ((24 - 20) / 20) × 100 = +20%
+
+**Special Case - Growing from Zero:**
+- Last 30 days: 24 deals
+- 30-60 days ago: 0 deals
+- Growth: +100% (doubled from zero)
 
 ---
 
