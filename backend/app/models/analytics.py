@@ -344,3 +344,70 @@ class RevenueMetrics(BaseModel):
     
     def __repr__(self):
         return f"<RevenueMetrics year={self.year} month={self.month}>"
+
+
+class MessageAnalytics(BaseModel):
+    """
+    Message Analytics - Track performance of each SMS message
+    Used for calculating response rates, delivery rates, engagement
+    """
+    __tablename__ = "message_analytics"
+
+    conversation_id = Column(UUID(as_uuid=True), ForeignKey("user_conversations.id"), index=True)
+    message_id = Column(UUID(as_uuid=True), ForeignKey("sms_messages.id"), index=True)
+    from_twilio_number = Column(String(20), index=True)
+    to_number = Column(String(20), index=True)
+    response_time = Column(Integer)  # in seconds
+    delivered = Column(Boolean, default=False)
+    responded = Column(Boolean, default=False)
+    opened = Column(Boolean, default=False)
+    clicked = Column(Boolean, default=False)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # Relationships
+    conversation = relationship("UserConversation", back_populates="analytics")
+    message = relationship("SMSMessage")
+
+    class Config:
+        from_attributes = True
+
+    def __repr__(self):
+        return f"<MessageAnalytics {self.from_twilio_number} -> {self.to_number}>"
+
+
+class NumberPerformanceStats(BaseModel):
+    """
+    Daily performance statistics per phone number
+    Used for rotation decisions and performance alerts
+    """
+    __tablename__ = "number_performance_stats"
+
+    phone_number_id = Column(UUID(as_uuid=True), ForeignKey("phone_numbers.id"), nullable=False, index=True)
+    twilio_number = Column(String(20), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    date = Column(DateTime, nullable=False, index=True)
+    
+    # Metrics
+    total_sent = Column(Integer, default=0)
+    total_delivered = Column(Integer, default=0)
+    total_received = Column(Integer, default=0)
+    total_responded = Column(Integer, default=0)
+    avg_response_time = Column(Integer)  # in seconds
+    delivery_rate = Column(Float)  # percentage
+    response_rate = Column(Float)  # percentage
+    engagement_score = Column(Float)  # calculated score
+
+    # Relationships
+    phone_number = relationship("PhoneNumber")
+    user = relationship("User")
+
+    __table_args__ = (
+        Index('idx_number_stats_phone_date', 'phone_number_id', 'date'),
+        Index('idx_number_stats_user_date', 'user_id', 'date'),
+    )
+
+    class Config:
+        from_attributes = True
+
+    def __repr__(self):
+        return f"<NumberPerformanceStats {self.twilio_number} {self.date}>"

@@ -71,6 +71,7 @@ class User(BaseModel):
     sms_messages = relationship('SMSMessage', back_populates='user', foreign_keys='SMSMessage.user_id')
     calls = relationship('Call', back_populates='user', foreign_keys='Call.user_id')
     twilio_settings = relationship('TwilioSettings', back_populates='user', uselist=False)
+    conversations = relationship('UserConversation', back_populates='user')
     
     def __repr__(self):
         return f"<User {self.email}>"

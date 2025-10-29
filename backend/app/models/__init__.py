@@ -23,6 +23,10 @@ from .notifications import Notification, NotificationType
 from .quotes import Quote, QuoteStatus
 from .security import AuditLog, SecurityLog, Session, AuditAction, SecurityEventType
 from .twilio_settings import TwilioSettings
+from .conversations import UserConversation
+from .call_transcripts import CallTranscript
+from .email_campaigns import EmailCampaign, EmailAnalytics
+from .performance_alerts import PerformanceAlert
 
 # Analytics models (materialized views / aggregation tables)
 from .analytics import (
@@ -32,7 +36,9 @@ from .analytics import (
     CallMetrics,
     ContactMetrics,
     DocumentMetrics,
-    RevenueMetrics
+    RevenueMetrics,
+    MessageAnalytics,
+    NumberPerformanceStats
 )
 
 # Export all models
@@ -121,7 +127,14 @@ __all__ = [
     'ContactMetrics',
     'DocumentMetrics',
     'RevenueMetrics',
+    'MessageAnalytics',
+    'NumberPerformanceStats',
     
-    # Twilio
+    # Twilio & Communications
     'TwilioSettings',
+    'UserConversation',
+    'CallTranscript',
+    'EmailCampaign',
+    'EmailAnalytics',
+    'PerformanceAlert',
 ]

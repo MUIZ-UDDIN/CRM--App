@@ -57,10 +57,12 @@ class SMSMessage(BaseModel):
     num_segments = Column(String(10))  # Number of message segments
     num_media = Column(String(10))  # Number of media attachments
     is_auto_response = Column(Boolean, default=False)  # AI-generated auto-response
+    conversation_id = Column(UUID(as_uuid=True), ForeignKey('user_conversations.id'), nullable=True, index=True)
     
     # Relationships
     user = relationship('User', back_populates='sms_messages', foreign_keys=[user_id])
     contact = relationship('Contact', back_populates='sms_messages')
+    conversation = relationship('UserConversation', back_populates='messages', foreign_keys=[conversation_id])
     
     def __repr__(self):
         return f"<SMSMessage {self.direction} - {self.from_address} to {self.to_address}>"
