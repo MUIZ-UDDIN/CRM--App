@@ -156,6 +156,21 @@ async def create_quote(
     """Create new quote"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
+    # Check for duplicate quote with same title for this user
+    existing_quote = db.query(QuoteModel).filter(
+        and_(
+            QuoteModel.title == quote_data.title,
+            QuoteModel.owner_id == user_id,
+            QuoteModel.is_deleted == False
+        )
+    ).first()
+    
+    if existing_quote:
+        raise HTTPException(
+            status_code=400,
+            detail=f"A quote with title '{quote_data.title}' already exists. Please use a different title."
+        )
+    
     # Generate quote number
     year = datetime.now().year
     count = db.query(QuoteModel).filter(

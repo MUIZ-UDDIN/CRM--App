@@ -141,6 +141,29 @@ async def upload_file(
     
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
+    # Check for duplicate file with same name in the same folder for this user
+    folder_uuid = None
+    if folder_id and folder_id.strip():
+        try:
+            folder_uuid = uuid.UUID(folder_id)
+        except ValueError:
+            pass
+    
+    existing_file = db.query(File).filter(
+        and_(
+            File.name == file.filename,
+            File.folder_id == folder_uuid,
+            File.owner_id == user_id,
+            File.is_deleted == False
+        )
+    ).first()
+    
+    if existing_file:
+        raise HTTPException(
+            status_code=400,
+            detail=f"A file with name '{file.filename}' already exists in this location. Please rename the file or choose a different location."
+        )
+    
     # Create uploads directory if it doesn't exist
     upload_dir = Path("/var/www/crm-app/uploads")
     upload_dir.mkdir(parents=True, exist_ok=True)
@@ -161,14 +184,6 @@ async def upload_file(
         raise HTTPException(status_code=500, detail="Failed to save file. Please try again.")
     
     # Create database record
-    # Handle folder_id - convert to UUID if valid, otherwise None
-    folder_uuid = None
-    if folder_id and folder_id.strip():
-        try:
-            folder_uuid = uuid.UUID(folder_id)
-        except ValueError:
-            pass
-    
     # Parse tags if provided
     tags_list = []
     if tags:

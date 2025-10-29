@@ -94,6 +94,37 @@ def create_activity(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Create a new activity"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Check for duplicate activity with same subject and due_date for this user
+    if activity.due_date:
+        try:
+            date_str = activity.due_date.replace('Z', '+00:00')
+            if 'T' not in date_str:
+                date_str = date_str + 'T00:00:00'
+            elif date_str.count(':') == 1:
+                date_str = date_str + ':00'
+            check_due_date = datetime.fromisoformat(date_str)
+            
+            existing_activity = db.query(ActivityModel).filter(
+                and_(
+                    ActivityModel.subject == activity.subject,
+                    ActivityModel.due_date == check_due_date,
+                    ActivityModel.owner_id == user_id,
+                    ActivityModel.is_deleted == False
+                )
+            ).first()
+            
+            if existing_activity:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"An activity with subject '{activity.subject}' and the same due date already exists. Please use a different subject or date."
+                )
+        except HTTPException:
+            raise
+        except Exception:
+            pass  # If date parsing fails, skip duplicate check
+    
     # Map frontend values to database enums
     activity_type_map = {
         "call": ActivityType.CALL,
