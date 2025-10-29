@@ -284,49 +284,49 @@ export default function Contacts() {
   const handleCreate = async () => {
     if (submitting) return;
     
+    // Validate owner_id is set
+    if (!contactForm.owner_id) {
+      toast.error('Please select an owner');
+      return;
+    }
+    
+    // Character limit validation
+    if (contactForm.first_name && contactForm.first_name.length > 100) {
+      toast.error('First name must be less than 100 characters');
+      return;
+    }
+    if (contactForm.last_name && contactForm.last_name.length > 100) {
+      toast.error('Last name must be less than 100 characters');
+      return;
+    }
+    if (contactForm.email && contactForm.email.length > 255) {
+      toast.error('Email must be less than 255 characters');
+      return;
+    }
+    if (contactForm.phone && contactForm.phone.length > 50) {
+      toast.error('Phone must be less than 50 characters');
+      return;
+    }
+    if (contactForm.company && contactForm.company.length > 200) {
+      toast.error('Company name must be less than 200 characters');
+      return;
+    }
+    if (contactForm.title && contactForm.title.length > 200) {
+      toast.error('Title must be less than 200 characters');
+      return;
+    }
+    
+    // XSS prevention - check for script tags
+    const fields = [contactForm.first_name, contactForm.last_name, contactForm.company, contactForm.title];
+    for (const field of fields) {
+      if (field && /<script|<\/script|javascript:|onerror=|onload=/gi.test(field)) {
+        toast.error('Script tags and JavaScript code are not allowed');
+        return;
+      }
+    }
+    
+    setSubmitting(true);
     try {
-      // Validate owner_id is set
-      if (!contactForm.owner_id) {
-        toast.error('Please select an owner');
-        return;
-      }
-      
-      setSubmitting(true);
-      
-      // Character limit validation
-      if (contactForm.first_name && contactForm.first_name.length > 100) {
-        toast.error('First name must be less than 100 characters');
-        return;
-      }
-      if (contactForm.last_name && contactForm.last_name.length > 100) {
-        toast.error('Last name must be less than 100 characters');
-        return;
-      }
-      if (contactForm.email && contactForm.email.length > 255) {
-        toast.error('Email must be less than 255 characters');
-        return;
-      }
-      if (contactForm.phone && contactForm.phone.length > 50) {
-        toast.error('Phone must be less than 50 characters');
-        return;
-      }
-      if (contactForm.company && contactForm.company.length > 200) {
-        toast.error('Company name must be less than 200 characters');
-        return;
-      }
-      if (contactForm.title && contactForm.title.length > 200) {
-        toast.error('Title must be less than 200 characters');
-        return;
-      }
-      
-      // XSS prevention - check for script tags
-      const fields = [contactForm.first_name, contactForm.last_name, contactForm.company, contactForm.title];
-      for (const field of fields) {
-        if (field && /<script|<\/script|javascript:|onerror=|onload=/gi.test(field)) {
-          toast.error('Script tags and JavaScript code are not allowed');
-          return;
-        }
-      }
       
       await contactsService.createContact(contactForm);
       toast.success('Contact created');
