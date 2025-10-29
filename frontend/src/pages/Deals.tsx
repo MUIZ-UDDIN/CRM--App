@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import * as dealsService from '../services/dealsService';
 import ActionButtons from '../components/common/ActionButtons';
 import SearchableContactSelect from '../components/common/SearchableContactSelect';
+import { useSubmitOnce } from '../hooks/useSubmitOnce';
 import { 
   PlusIcon, 
   XMarkIcon,
@@ -357,60 +358,56 @@ export default function Deals() {
     resetDealForm();
   };
 
-  const handleAddDeal = async (e: React.FormEvent) => {
+  const [isSubmitting, handleAddDeal] = useSubmitOnce(async (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      // Validate that title and company don't contain HTML/scripts
-      if (containsHTMLOrScript(dealFormData.title) || containsHTMLOrScript(dealFormData.company)) {
-        toast.error('Cannot create deal: HTML tags and scripts are not allowed. Please use plain text only.');
-        return;
-      }
-
-      // Validate positive number
-      const dealValue = parseFloat(dealFormData.value);
-      if (dealValue <= 0 || isNaN(dealValue)) {
-        toast.error('Please enter a positive number for deal value');
-        return;
-      }
-
-      // Convert stage name to UUID
-      const stageUUID = stageMapping[dealFormData.stage_id];
-      if (!stageUUID) {
-        toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
-        return;
-      }
-
-      if (!pipelineId) {
-        toast.error('Pipeline not loaded. Please refresh the page.');
-        return;
-      }
-
-      await dealsService.createDeal({
-        title: dealFormData.title,
-        value: dealValue,
-        company: dealFormData.company,
-        contact: dealFormData.contact,
-        stage_id: stageUUID, // Use actual UUID
-        pipeline_id: pipelineId, // Use actual pipeline UUID
-        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
-        status: dealFormData.status
-      });
-      toast.success('Deal created successfully!');
-      setShowAddDealModal(false);
-      setDealFormData({
-        title: '',
-        value: '',
-        company: '',
-        contact: '',
-        stage_id: 'qualification',
-        expectedCloseDate: '',
-        status: 'open'
-      });
-      fetchDeals();
-    } catch (error) {
-      toast.error('Failed to create deal');
+    // Validate that title and company don't contain HTML/scripts
+    if (containsHTMLOrScript(dealFormData.title) || containsHTMLOrScript(dealFormData.company)) {
+      toast.error('Cannot create deal: HTML tags and scripts are not allowed. Please use plain text only.');
+      return;
     }
-  };
+
+    // Validate positive number
+    const dealValue = parseFloat(dealFormData.value);
+    if (dealValue <= 0 || isNaN(dealValue)) {
+      toast.error('Please enter a positive number for deal value');
+      return;
+    }
+
+    // Convert stage name to UUID
+    const stageUUID = stageMapping[dealFormData.stage_id];
+    if (!stageUUID) {
+      toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
+      return;
+    }
+
+    if (!pipelineId) {
+      toast.error('Pipeline not loaded. Please refresh the page.');
+      return;
+    }
+
+    await dealsService.createDeal({
+      title: dealFormData.title,
+      value: dealValue,
+      company: dealFormData.company,
+      contact: dealFormData.contact,
+      stage_id: stageUUID, // Use actual UUID
+      pipeline_id: pipelineId, // Use actual pipeline UUID
+      expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
+      status: dealFormData.status
+    });
+    toast.success('Deal created successfully!');
+    setShowAddDealModal(false);
+    setDealFormData({
+      title: '',
+      value: '',
+      company: '',
+      contact: '',
+      stage_id: 'qualification',
+      expectedCloseDate: '',
+      status: 'open'
+    });
+    fetchDeals();
+  });
 
   const handleView = (deal: Deal) => {
     setSelectedDeal(deal);
@@ -840,9 +837,10 @@ export default function Deals() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Deal
+                  {isSubmitting ? 'Creating...' : 'Create Deal'}
                 </button>
               </div>
             </form>
