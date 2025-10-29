@@ -26,6 +26,9 @@ export function useSubmitOnce<T extends (...args: any[]) => Promise<any>>(
       try {
         const result = await submitFunction(...args);
         return result;
+      } catch (error: any) {
+        // Re-throw the error so it can be caught by the caller
+        throw error;
       } finally {
         // Always reset submitting state, even if there's an error
         setIsSubmitting(false);

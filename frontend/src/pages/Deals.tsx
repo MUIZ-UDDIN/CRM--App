@@ -385,28 +385,34 @@ export default function Deals() {
       return;
     }
 
-    await dealsService.createDeal({
-      title: dealFormData.title,
-      value: dealValue,
-      company: dealFormData.company,
-      contact: dealFormData.contact,
-      stage_id: stageUUID, // Use actual UUID
-      pipeline_id: pipelineId, // Use actual pipeline UUID
-      expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
-      status: dealFormData.status
-    });
-    toast.success('Deal created successfully!');
-    setShowAddDealModal(false);
-    setDealFormData({
-      title: '',
-      value: '',
-      company: '',
-      contact: '',
-      stage_id: 'qualification',
-      expectedCloseDate: '',
-      status: 'open'
-    });
-    fetchDeals();
+    try {
+      await dealsService.createDeal({
+        title: dealFormData.title,
+        value: dealValue,
+        company: dealFormData.company,
+        contact: dealFormData.contact,
+        stage_id: stageUUID, // Use actual UUID
+        pipeline_id: pipelineId, // Use actual pipeline UUID
+        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
+        status: dealFormData.status
+      });
+      toast.success('Deal created successfully!');
+      setShowAddDealModal(false);
+      setDealFormData({
+        title: '',
+        value: '',
+        company: '',
+        contact: '',
+        stage_id: 'qualification',
+        expectedCloseDate: '',
+        status: 'open'
+      });
+      fetchDeals();
+    } catch (error: any) {
+      // Display user-friendly error message from backend
+      const errorMessage = error?.response?.data?.detail || 'Failed to create deal. Please try again.';
+      toast.error(errorMessage);
+    }
   });
 
   const handleView = (deal: Deal) => {

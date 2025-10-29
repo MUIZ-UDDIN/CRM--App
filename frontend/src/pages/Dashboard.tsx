@@ -446,9 +446,11 @@ export default function Dashboard() {
       
       // Redirect to deals page
       navigate('/deals');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating deal:', error);
-      toast.error('Failed to create deal');
+      // Display user-friendly error message from backend
+      const errorMessage = error?.response?.data?.detail || 'Failed to create deal. Please try again.';
+      toast.error(errorMessage);
     } finally {
       setIsCreatingDeal(false);
     }
