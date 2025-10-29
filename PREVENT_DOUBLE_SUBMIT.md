@@ -45,14 +45,14 @@ const [isSubmitting, handleSubmit] = useSubmitOnce(async (e: React.FormEvent) =>
 
 ### High Priority (Create Forms)
 - [x] `frontend/src/pages/Deals.tsx` - handleAddDeal ✅
-- [ ] `frontend/src/pages/Contacts.tsx` - handleAddContact
-- [ ] `frontend/src/pages/Activities.tsx` - handleAddActivity
-- [ ] `frontend/src/pages/Quotes.tsx` - handleAddQuote
-- [ ] `frontend/src/pages/Files.tsx` - handleUpload
-- [ ] `frontend/src/pages/Workflows.tsx` - handleAddWorkflow
-- [ ] `frontend/src/pages/PipelineSettings.tsx` - handleAddStage
-- [ ] `frontend/src/pages/SMSTemplates.tsx` - handleAddTemplate
-- [ ] `frontend/src/pages/ScheduledSMS.tsx` - handleScheduleSMS
+- [x] `frontend/src/pages/Contacts.tsx` - handleCreate ✅
+- [x] `frontend/src/pages/Activities.tsx` - handleCreate ✅
+- [x] `frontend/src/pages/Quotes.tsx` - N/A (no create form) ✅
+- [x] `frontend/src/pages/Files.tsx` - handleUpload ✅
+- [x] `frontend/src/pages/Workflows.tsx` - handleCreate ✅
+- [x] `frontend/src/pages/PipelineSettings.tsx` - handleAddStage ✅
+- [x] `frontend/src/pages/SMSNew.tsx` - handleSendSMS ✅
+- [x] `frontend/src/pages/EmailNew.tsx` - handleSendEmail ✅
 
 ### Medium Priority (Edit Forms)
 - [ ] `frontend/src/pages/Deals.tsx` - handleUpdateDeal
