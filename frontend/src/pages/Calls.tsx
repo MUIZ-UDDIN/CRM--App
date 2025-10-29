@@ -52,10 +52,8 @@ export default function CallsNew() {
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched Twilio numbers:', data);
         // Use all active numbers (voice_enabled might be false in DB but Twilio supports it)
         const activeNumbers = data.filter((num: any) => num.is_active);
-        console.log('Active numbers:', activeNumbers.length);
         setTwilioNumbers(activeNumbers);
         // Set first number as default
         if (activeNumbers.length > 0) {
@@ -76,7 +74,6 @@ export default function CallsNew() {
       });
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched contacts:', data.length);
         setContacts(data);
       } else {
         console.error('Failed to fetch contacts:', response.status);
