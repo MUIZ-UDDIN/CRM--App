@@ -261,6 +261,10 @@ def create_deal(
             "created_at": new_deal.created_at,
             "message": "Deal created successfully"
         }
+    except HTTPException:
+        # Re-raise HTTPException (like duplicate check) without modification
+        db.rollback()
+        raise
     except Exception as e:
         db.rollback()
         print(f"Error creating deal: {e}")
