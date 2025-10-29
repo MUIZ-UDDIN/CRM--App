@@ -273,6 +273,13 @@ export default function SMSEnhanced() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
+                onClick={() => navigate('/sms-templates')}
+                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+              >
+                <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
+                Templates
+              </button>
+              <button
                 onClick={() => navigate('/sms-analytics')}
                 className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
               >

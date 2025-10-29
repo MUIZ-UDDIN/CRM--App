@@ -1,5 +1,5 @@
 """
-Enhanced SMS API with AI responses and number rotation
+Enhanced SMS API with AI responses, templates, and number rotation
 """
 
 from fastapi import APIRouter, Depends, HTTPException, Request, BackgroundTasks
@@ -16,7 +16,7 @@ from loguru import logger
 from app.core.security import get_current_active_user
 from app.core.database import get_db
 from app.models.sms import SMSMessage as SMSModel, SMSDirection, SMSStatus
-# from app.models.sms_templates import SMSTemplate  # Removed - using AI responses
+from app.models.sms_templates import SMSTemplate
 from app.models.phone_numbers import PhoneNumber
 from app.models.twilio_settings import TwilioSettings
 from app.models.contacts import Contact
@@ -36,7 +36,28 @@ class SMSSendRequest(BaseModel):
     variables: Optional[Dict[str, str]] = None  # For template variables
 
 
-# Template models removed - using AI responses instead
+class SMSTemplateCreate(BaseModel):
+    name: str
+    category: Optional[str] = None
+    body: str
+    is_static: bool = True
+    variables: Optional[str] = None
+    use_ai_enhancement: bool = False
+    ai_tone: str = 'professional'
+
+
+class SMSTemplateResponse(BaseModel):
+    id: str
+    name: str
+    category: Optional[str]
+    body: str
+    is_static: bool
+    use_ai_enhancement: bool
+    usage_count: int
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
 
 
 class PhoneNumberCreate(BaseModel):
@@ -101,7 +122,16 @@ def get_next_rotation_number(db: Session, user_id: UUID) -> Optional[PhoneNumber
     return numbers[0]
 
 
-# process_template function removed - using AI responses instead
+def process_template(template: SMSTemplate, variables: Optional[Dict[str, str]] = None) -> str:
+    """Process template with variables"""
+    body = template.body
+    
+    if variables and not template.is_static:
+        for key, value in variables.items():
+            placeholder = f"{{{key}}}"
+            body = body.replace(placeholder, value)
+    
+    return body
 
 
 async def generate_ai_response(
@@ -235,13 +265,26 @@ async def send_sms(
     # Get message body
     message_body = request.body
     
-    # Template functionality removed - using AI responses instead
-    # if request.template_id:
-    #     # Templates have been replaced with AI-powered responses
-    #     pass
+    # If template_id provided, use template
+    if request.template_id:
+        template = db.query(SMSTemplate).filter(
+            and_(
+                SMSTemplate.id == uuid.UUID(request.template_id),
+                SMSTemplate.user_id == user_id
+            )
+        ).first()
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        message_body = process_template(template, request.variables)
+        
+        # Increment usage count
+        template.usage_count += 1
+        db.commit()
     
     if not message_body:
-        raise HTTPException(status_code=400, detail="Message body required")
+        raise HTTPException(status_code=400, detail="Message body or template_id required")
     
     # Determine which number to use
     from_number = None
@@ -558,9 +601,72 @@ async def get_sms_analytics(
     )
 
 
-# Template Management - REMOVED
-# Using AI-powered responses instead of static templates
-# Templates functionality has been replaced with Claude AI integration
+# Template Management
+
+@router.post("/templates", response_model=SMSTemplateResponse)
+async def create_template(
+    template: SMSTemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Create SMS template"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    db_template = SMSTemplate(
+        name=template.name,
+        category=template.category,
+        body=template.body,
+        is_static=template.is_static,
+        variables=template.variables,
+        use_ai_enhancement=template.use_ai_enhancement,
+        ai_tone=template.ai_tone,
+        user_id=user_id
+    )
+    
+    db.add(db_template)
+    db.commit()
+    db.refresh(db_template)
+    
+    return SMSTemplateResponse(
+        id=str(db_template.id),
+        name=db_template.name,
+        category=db_template.category,
+        body=db_template.body,
+        is_static=db_template.is_static,
+        use_ai_enhancement=db_template.use_ai_enhancement,
+        usage_count=db_template.usage_count,
+        created_at=db_template.created_at
+    )
+
+
+@router.get("/templates", response_model=List[SMSTemplateResponse])
+async def get_templates(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get all SMS templates"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    templates = db.query(SMSTemplate).filter(
+        and_(
+            SMSTemplate.user_id == user_id,
+            SMSTemplate.is_active == True
+        )
+    ).order_by(desc(SMSTemplate.usage_count)).all()
+    
+    return [
+        SMSTemplateResponse(
+            id=str(t.id),
+            name=t.name,
+            category=t.category,
+            body=t.body,
+            is_static=t.is_static,
+            use_ai_enhancement=t.use_ai_enhancement,
+            usage_count=t.usage_count,
+            created_at=t.created_at
+        )
+        for t in templates
+    ]
 
 
 # Phone Number Management
