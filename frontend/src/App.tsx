@@ -23,7 +23,7 @@ import Workflows from './pages/Workflows';
 import Inbox from './pages/Inbox';
 import SMS from './pages/SMS';
 import SMSEnhanced from './pages/SMSEnhanced';
-import SMSTemplates from './pages/SMSTemplates';
+// import SMSTemplates from './pages/SMSTemplates'; // Removed - using AI responses instead
 import SMSAnalytics from './pages/SMSAnalytics';
 import ScheduledSMS from './pages/ScheduledSMS';
 import PhoneNumbers from './pages/PhoneNumbers';
@@ -111,7 +111,7 @@ function App() {
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="inbox" element={<Inbox />} />
                 <Route path="sms" element={<SMSEnhanced />} />
-                <Route path="sms-templates" element={<SMSTemplates />} />
+                {/* <Route path="sms-templates" element={<SMSTemplates />} /> */}
                 <Route path="sms-analytics" element={<SMSAnalytics />} />
                 <Route path="sms-scheduled" element={<ScheduledSMS />} />
                 <Route path="phone-numbers" element={<PhoneNumbers />} />
