@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps stage names to UUIDs
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
+  const [isCreatingDeal, setIsCreatingDeal] = useState(false);
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -398,32 +399,35 @@ export default function Dashboard() {
   const handleAddDeal = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (isCreatingDeal) return;
+    
+    // Validate that title and company don't contain HTML/scripts
+    if (containsHTMLOrScript(dealFormData.title) || containsHTMLOrScript(dealFormData.company)) {
+      toast.error('Cannot create deal: HTML tags and scripts are not allowed. Please use plain text only.');
+      return;
+    }
+
+    // Validate positive number
+    const dealValue = parseFloat(dealFormData.value);
+    if (dealValue <= 0 || isNaN(dealValue)) {
+      toast.error('Please enter a positive number for deal value');
+      return;
+    }
+
+    // Convert stage name to UUID
+    const stageUUID = stageMapping[dealFormData.stage_id];
+    if (!stageUUID) {
+      toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
+      return;
+    }
+
+    if (!pipelineId) {
+      toast.error('Pipeline not loaded. Please refresh the page.');
+      return;
+    }
+
+    setIsCreatingDeal(true);
     try {
-      // Validate that title and company don't contain HTML/scripts
-      if (containsHTMLOrScript(dealFormData.title) || containsHTMLOrScript(dealFormData.company)) {
-        toast.error('Cannot create deal: HTML tags and scripts are not allowed. Please use plain text only.');
-        return;
-      }
-
-      // Validate positive number
-      const dealValue = parseFloat(dealFormData.value);
-      if (dealValue <= 0 || isNaN(dealValue)) {
-        toast.error('Please enter a positive number for deal value');
-        return;
-      }
-
-      // Convert stage name to UUID
-      const stageUUID = stageMapping[dealFormData.stage_id];
-      if (!stageUUID) {
-        toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
-        return;
-      }
-
-      if (!pipelineId) {
-        toast.error('Pipeline not loaded. Please refresh the page.');
-        return;
-      }
-
       await dealsService.createDeal({
         title: dealFormData.title,
         value: dealValue || 0,
@@ -445,6 +449,8 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error creating deal:', error);
       toast.error('Failed to create deal');
+    } finally {
+      setIsCreatingDeal(false);
     }
   };
 
@@ -787,9 +793,10 @@ export default function Dashboard() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isCreatingDeal}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Deal
+                  {isCreatingDeal ? 'Creating...' : 'Create Deal'}
                 </button>
               </div>
             </form>
