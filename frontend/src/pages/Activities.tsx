@@ -450,8 +450,10 @@ export default function Activities() {
               <p className="mt-4 text-gray-600">Loading activities...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
@@ -527,7 +529,110 @@ export default function Activities() {
                   <p className="mt-1 text-sm text-gray-500">Get started by creating a new activity.</p>
                 </div>
               )}
-            </div>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {paginatedActivities.length > 0 ? (
+                  paginatedActivities.map((activity) => (
+                    <div key={activity.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              activity.type === 'call' ? 'bg-blue-100 text-blue-800' :
+                              activity.type === 'meeting' ? 'bg-purple-100 text-purple-800' :
+                              activity.type === 'email' ? 'bg-green-100 text-green-800' :
+                              'bg-gray-100 text-gray-800'
+                            }`}>
+                              {activity.type}
+                            </span>
+                            <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              activity.status === 'completed' ? 'bg-green-100 text-green-800' :
+                              activity.status === 'overdue' ? 'bg-red-100 text-red-800' :
+                              'bg-yellow-100 text-yellow-800'
+                            }`}>
+                              {activity.status}
+                            </span>
+                          </div>
+                          <h3 className="text-sm font-medium text-gray-900">
+                            {activity.subject}
+                          </h3>
+                          {activity.description && (
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{activity.description}</p>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
+                            <div className="flex items-center">
+                              <CalendarIcon className="h-3 w-3 mr-1" />
+                              {formatDate(activity.due_date)}
+                            </div>
+                            {activity.duration_minutes && (
+                              <div className="flex items-center">
+                                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {activity.duration_minutes} min
+                              </div>
+                            )}
+                            <div className="flex items-center">
+                              <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
+                              </svg>
+                              {activity.priority === 2 ? 'High' : activity.priority === 1 ? 'Medium' : 'Low'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="ml-3 flex flex-col gap-1">
+                          {activity.status !== 'completed' && (
+                            <button
+                              onClick={() => handleComplete(activity)}
+                              className="p-2 text-gray-400 hover:text-green-600 rounded-lg hover:bg-green-50"
+                              title="Complete"
+                            >
+                              <CheckCircleIcon className="h-5 w-5" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleView(activity)}
+                            className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100"
+                            title="View"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleEdit(activity)}
+                            className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100"
+                            title="Edit"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(activity)}
+                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100"
+                            title="Delete"
+                          >
+                            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <CalendarIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No activities</h3>
+                    <p className="mt-1 text-sm text-gray-500">Get started by creating a new activity.</p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
           {filteredActivities.length > 0 && (
             <Pagination
