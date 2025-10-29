@@ -87,10 +87,18 @@ export default function TwilioSettings() {
 
       if (response.ok) {
         const data = await response.json();
+        
+        // Handle null response (no settings configured)
+        if (!data) {
+          setShowForm(true);
+          setLoading(false);
+          return;
+        }
+        
         setSettings(data);
         setFormData({
           account_sid: data.account_sid,
-          auth_token: '••••••••••••••••',  // Masked for security
+          auth_token: '', // Don't populate for security
           phone_number: data.phone_number || '',
           sms_enabled: data.sms_enabled,
           voice_enabled: data.voice_enabled
@@ -106,6 +114,8 @@ export default function TwilioSettings() {
       }
     } catch (error) {
       console.error('Error fetching Twilio settings:', error);
+      // Show form if there's an error
+      setShowForm(true);
     } finally {
       setLoading(false);
     }

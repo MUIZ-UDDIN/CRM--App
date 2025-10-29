@@ -88,24 +88,29 @@ def verify_twilio_credentials(account_sid: str, auth_token: str) -> bool:
         return False
 
 
-@router.get("/", response_model=TwilioSettingsResponse)
+@router.get("/", response_model=Optional[TwilioSettingsResponse])
 async def get_twilio_settings(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get current user's Twilio settings"""
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
-    
-    settings = db.query(TwilioSettingsModel).filter(
-        TwilioSettingsModel.user_id == user_id
-    ).first()
-    
-    if not settings:
-        raise HTTPException(status_code=404, detail="Twilio settings not configured")
-    
-    return settings
+    try:
+        user_id = current_user["id"]
+        if isinstance(user_id, str):
+            user_id = uuid.UUID(user_id)
+        
+        settings = db.query(TwilioSettingsModel).filter(
+            TwilioSettingsModel.user_id == user_id
+        ).first()
+        
+        # Return None if no settings exist (frontend will handle this)
+        return settings
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Error fetching Twilio settings: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error fetching Twilio settings: {str(e)}")
 
 
 @router.post("/", response_model=TwilioSettingsResponse, status_code=201)
