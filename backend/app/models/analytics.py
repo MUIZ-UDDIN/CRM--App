@@ -5,7 +5,7 @@ These tables store pre-computed analytics metrics and are updated either:
 2. Batch processing (via scheduled ETL jobs)
 """
 
-from sqlalchemy import Column, String, ForeignKey, DateTime, Integer, Float, Index
+from sqlalchemy import Column, String, ForeignKey, DateTime, Integer, Float, Index, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 from .base import BaseModel
