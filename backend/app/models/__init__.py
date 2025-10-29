@@ -25,7 +25,7 @@ from .security import AuditLog, SecurityLog, Session, AuditAction, SecurityEvent
 from .twilio_settings import TwilioSettings
 from .conversations import UserConversation
 from .call_transcripts import CallTranscript
-from .email_campaigns import EmailCampaign, EmailAnalytics
+from .email_campaigns import BulkEmailCampaign, BulkEmailAnalytics
 from .performance_alerts import PerformanceAlert
 
 # Analytics models (materialized views / aggregation tables)
@@ -134,7 +134,7 @@ __all__ = [
     'TwilioSettings',
     'UserConversation',
     'CallTranscript',
-    'EmailCampaign',
-    'EmailAnalytics',
+    'BulkEmailCampaign',
+    'BulkEmailAnalytics',
     'PerformanceAlert',
 ]

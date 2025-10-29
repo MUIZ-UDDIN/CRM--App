@@ -47,8 +47,8 @@ CREATE TABLE IF NOT EXISTS call_transcripts (
     updated_at TIMESTAMP DEFAULT NOW()
 );
 
--- 4. Email Campaigns Table
-CREATE TABLE IF NOT EXISTS email_campaigns (
+-- 4. Bulk Email Campaigns Table (separate from regular email_campaigns)
+CREATE TABLE IF NOT EXISTS bulk_email_campaigns (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     campaign_name VARCHAR(255) NOT NULL,
@@ -71,10 +71,10 @@ CREATE TABLE IF NOT EXISTS email_campaigns (
     is_deleted BOOLEAN DEFAULT FALSE
 );
 
--- 5. Email Analytics Table
-CREATE TABLE IF NOT EXISTS email_analytics (
+-- 5. Bulk Email Analytics Table
+CREATE TABLE IF NOT EXISTS bulk_email_analytics (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    campaign_id UUID REFERENCES email_campaigns(id) ON DELETE CASCADE,
+    campaign_id UUID REFERENCES bulk_email_campaigns(id) ON DELETE CASCADE,
     recipient_email VARCHAR(255) NOT NULL,
     recipient_name VARCHAR(255),
     sent_at TIMESTAMP,
@@ -137,9 +137,9 @@ CREATE INDEX IF NOT EXISTS idx_message_analytics_conversation_id ON message_anal
 CREATE INDEX IF NOT EXISTS idx_message_analytics_timestamp ON message_analytics(timestamp);
 CREATE INDEX IF NOT EXISTS idx_call_transcripts_conversation_id ON call_transcripts(conversation_id);
 CREATE INDEX IF NOT EXISTS idx_call_transcripts_call_sid ON call_transcripts(call_sid);
-CREATE INDEX IF NOT EXISTS idx_email_campaigns_user_id ON email_campaigns(user_id);
-CREATE INDEX IF NOT EXISTS idx_email_campaigns_status ON email_campaigns(status);
-CREATE INDEX IF NOT EXISTS idx_email_analytics_campaign_id ON email_analytics(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_bulk_email_campaigns_user_id ON bulk_email_campaigns(user_id);
+CREATE INDEX IF NOT EXISTS idx_bulk_email_campaigns_status ON bulk_email_campaigns(status);
+CREATE INDEX IF NOT EXISTS idx_bulk_email_analytics_campaign_id ON bulk_email_analytics(campaign_id);
 CREATE INDEX IF NOT EXISTS idx_performance_alerts_user_id ON performance_alerts(user_id);
 CREATE INDEX IF NOT EXISTS idx_performance_alerts_is_read ON performance_alerts(is_read);
 CREATE INDEX IF NOT EXISTS idx_number_performance_stats_phone_number_id ON number_performance_stats(phone_number_id);
@@ -149,8 +149,8 @@ CREATE INDEX IF NOT EXISTS idx_number_performance_stats_date ON number_performan
 COMMENT ON TABLE user_conversations IS 'Stores phone-number-persistent conversations - each recipient always uses the same Twilio number';
 COMMENT ON TABLE message_analytics IS 'Detailed analytics for each message including response times and engagement';
 COMMENT ON TABLE call_transcripts IS 'Stores transcriptions for calls longer than 1 minute';
-COMMENT ON TABLE email_campaigns IS 'Bulk email campaigns with SendGrid integration';
-COMMENT ON TABLE email_analytics IS 'Per-recipient email analytics including opens, clicks, bounces';
+COMMENT ON TABLE bulk_email_campaigns IS 'Bulk email campaigns with SendGrid integration and IP rotation';
+COMMENT ON TABLE bulk_email_analytics IS 'Per-recipient email analytics including opens, clicks, bounces';
 COMMENT ON TABLE performance_alerts IS 'Automated alerts for underperforming numbers or campaigns';
 COMMENT ON TABLE number_performance_stats IS 'Daily performance statistics per phone number';
 
