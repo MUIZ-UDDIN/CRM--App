@@ -41,8 +41,6 @@ export default function EmailNew() {
     message: ''
   });
 
-  const [searchTo, setSearchTo] = useState('');
-
   useEffect(() => {
     fetchEmails();
     fetchContacts();
