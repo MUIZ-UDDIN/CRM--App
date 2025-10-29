@@ -669,6 +669,77 @@ async def get_templates(
     ]
 
 
+@router.delete("/templates/{template_id}")
+async def delete_template(
+    template_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Delete SMS template"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    template = db.query(SMSTemplate).filter(
+        and_(
+            SMSTemplate.id == uuid.UUID(template_id),
+            SMSTemplate.user_id == user_id
+        )
+    ).first()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Soft delete
+    template.is_active = False
+    template.is_deleted = True
+    db.commit()
+    
+    return {"message": "Template deleted successfully"}
+
+
+@router.put("/templates/{template_id}", response_model=SMSTemplateResponse)
+async def update_template(
+    template_id: str,
+    template: SMSTemplateCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Update SMS template"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    db_template = db.query(SMSTemplate).filter(
+        and_(
+            SMSTemplate.id == uuid.UUID(template_id),
+            SMSTemplate.user_id == user_id
+        )
+    ).first()
+    
+    if not db_template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Update fields
+    db_template.name = template.name
+    db_template.category = template.category
+    db_template.body = template.body
+    db_template.is_static = template.is_static
+    db_template.variables = template.variables
+    db_template.use_ai_enhancement = template.use_ai_enhancement
+    db_template.ai_tone = template.ai_tone
+    
+    db.commit()
+    db.refresh(db_template)
+    
+    return SMSTemplateResponse(
+        id=str(db_template.id),
+        name=db_template.name,
+        category=db_template.category,
+        body=db_template.body,
+        is_static=db_template.is_static,
+        use_ai_enhancement=db_template.use_ai_enhancement,
+        usage_count=db_template.usage_count,
+        created_at=db_template.created_at
+    )
+
+
 # Phone Number Management
 
 @router.post("/phone-numbers", response_model=PhoneNumberResponse)
