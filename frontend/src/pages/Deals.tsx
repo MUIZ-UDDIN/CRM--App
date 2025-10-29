@@ -13,6 +13,7 @@ import {
   UserIcon,
   Bars3Icon,
   MagnifyingGlassIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline';
 
 interface Deal {
@@ -45,6 +46,7 @@ export default function Deals() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [expandedStages, setExpandedStages] = useState<string[]>([]);
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -195,6 +197,11 @@ export default function Deals() {
           // Set default stage_id to the first stage if not already set
           if (dynamicStagesArray.length > 0 && dealFormData.stage_id === 'qualification') {
             setDealFormData(prev => ({ ...prev, stage_id: dynamicStagesArray[0].id }));
+          }
+          
+          // Expand first stage by default on mobile
+          if (dynamicStagesArray.length > 0) {
+            setExpandedStages([dynamicStagesArray[0].id]);
           }
         } else {
           console.error('Failed to fetch stages:', stagesResponse.status, stagesResponse.statusText);
@@ -600,33 +607,54 @@ export default function Deals() {
           </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
-            {/* Mobile: Horizontal scroll, Desktop: Grid */}
-            <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 flex md:flex-none overflow-x-auto md:overflow-x-visible gap-4 pb-4 md:pb-0 snap-x snap-mandatory md:snap-none">
-              {stages.map((stage) => (
-                <div key={stage.id} className={`rounded-lg border-2 ${stage.color} p-4 min-w-[280px] md:min-w-0 flex-shrink-0 md:flex-shrink snap-start md:snap-align-none`}>
-                  {/* Stage Header */}
-                  <div className="mb-4">
+            {/* Mobile: Vertical Accordion, Desktop: Grid */}
+            <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 space-y-3 md:space-y-0">
+              {stages.map((stage) => {
+                const isExpanded = expandedStages.includes(stage.id);
+                const toggleStage = () => {
+                  setExpandedStages(prev => 
+                    prev.includes(stage.id) 
+                      ? prev.filter(id => id !== stage.id)
+                      : [...prev, stage.id]
+                  );
+                };
+                
+                return (
+                <div key={stage.id} className={`rounded-lg border-2 ${stage.color} overflow-hidden`}>
+                  {/* Stage Header - Clickable on Mobile */}
+                  <button
+                    onClick={toggleStage}
+                    className="w-full p-4 text-left md:cursor-default md:pointer-events-none"
+                  >
                     <div className="flex justify-between items-center">
-                      <h3 className={`font-semibold ${stage.textColor}`}>{stage.name}</h3>
-                      <span className={`text-sm ${stage.textColor}`}>
-                        {deals[stage.id]?.length || 0} deals
-                      </span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className={`font-semibold ${stage.textColor}`}>{stage.name}</h3>
+                          <span className={`text-sm ${stage.textColor}`}>
+                            ({deals[stage.id]?.length || 0})
+                          </span>
+                          <ChevronDownIcon 
+                            className={`h-4 w-4 ${stage.textColor} transition-transform md:hidden ${isExpanded ? 'rotate-180' : ''}`}
+                          />
+                        </div>
+                        <p className={`text-lg font-bold ${stage.textColor} mt-1`}>
+                          {formatCurrency(getTotalValue(deals[stage.id] || []))}
+                        </p>
+                      </div>
                     </div>
-                    <p className={`text-lg font-bold ${stage.textColor} mt-1`}>
-                      {formatCurrency(getTotalValue(deals[stage.id] || []))}
-                    </p>
-                  </div>
+                  </button>
 
-                  {/* Droppable Area */}
-                  <Droppable droppableId={stage.id}>
-                    {(provided, snapshot) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`min-h-[200px] space-y-3 ${
-                          snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
-                        }`}
-                      >
+                  {/* Droppable Area - Always visible on desktop, collapsible on mobile */}
+                  <div className={`${isExpanded ? 'block' : 'hidden'} md:block`}>
+                    <Droppable droppableId={stage.id}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`min-h-[50px] md:min-h-[200px] space-y-3 p-4 pt-0 md:p-4 ${
+                            snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
+                          }`}
+                        >
                         {(deals[stage.id] || [])
                           .filter(deal => {
                             if (!searchQuery.trim()) return true;
@@ -726,8 +754,10 @@ export default function Deals() {
                       </div>
                     )}
                   </Droppable>
+                  </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </DragDropContext>
         )}

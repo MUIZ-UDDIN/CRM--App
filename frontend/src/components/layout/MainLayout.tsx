@@ -409,7 +409,7 @@ export default function MainLayout() {
                         </button>
                         
                         {isOpen && (
-                          <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1" style={{ zIndex: 9999 }}>
+                          <div className="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-1 max-h-96 overflow-y-auto" style={{ zIndex: 9999 }}>
                             {item.children.map((child) => (
                               <Link
                                 key={child.name}
