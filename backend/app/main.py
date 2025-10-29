@@ -33,6 +33,8 @@ from app.api.sms import router as sms_router
 from app.api.twilio_settings import router as twilio_settings_router
 from app.api.quotes import router as quotes_router
 from app.api.calls import router as calls_router
+from app.api.conversations import router as conversations_router
+from app.api.analytics_enhanced import router as analytics_enhanced_router
 
 # Import with error handling for debugging
 try:
@@ -315,6 +317,21 @@ if twilio_sync_router:
     logger.info("✅ Twilio Sync routes registered")
 else:
     logger.warning("⚠️ Twilio Sync router not loaded - skipping registration")
+
+# New Phase 2 routers
+app.include_router(
+    conversations_router,
+    prefix="/api",
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Conversations routes registered")
+
+app.include_router(
+    analytics_enhanced_router,
+    prefix="/api",
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Enhanced Analytics routes registered")
 
 
 if __name__ == "__main__":
