@@ -661,15 +661,24 @@ export default function Deals() {
                                 </div>
 
                                 {/* Deal Info */}
-                                <h4 className="font-medium text-gray-900 mb-2">{deal.title}</h4>
+                                <h4 className="font-medium text-gray-900 mb-2 truncate" title={deal.title}>{deal.title}</h4>
                                 <div className="space-y-1 text-sm text-gray-600">
-                                  <div className="flex items-center">
-                                    <BuildingOfficeIcon className="h-4 w-4 mr-2 text-gray-400" />
-                                    <span>{deal.company}</span>
+                                  <div className="flex items-center gap-2">
+                                    {deal.company && (
+                                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                                        <span className="text-primary-600 font-semibold text-sm">
+                                          {deal.company.charAt(0).toUpperCase()}
+                                        </span>
+                                      </div>
+                                    )}
+                                    <div className="flex items-center min-w-0 flex-1">
+                                      <BuildingOfficeIcon className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                                      <span className="truncate" title={deal.company}>{deal.company}</span>
+                                    </div>
                                   </div>
                                   <div className="flex items-center">
-                                    <UserIcon className="h-4 w-4 mr-2 text-gray-400" />
-                                    <span>{deal.contact}</span>
+                                    <UserIcon className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
+                                    <span className="truncate" title={deal.contact}>{deal.contact}</span>
                                   </div>
                                   <div className="mt-2 flex flex-wrap gap-2">
                                     {/* Status Badge */}
