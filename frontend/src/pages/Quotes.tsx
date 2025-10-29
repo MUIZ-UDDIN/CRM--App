@@ -46,6 +46,7 @@ export default function Quotes() {
     valid_until: '',
     status: 'draft',
   });
+  const [isCreating, setIsCreating] = useState(false);
 
   const resetQuoteForm = () => {
     setQuoteForm({
@@ -244,6 +245,8 @@ export default function Quotes() {
   };
 
   const handleCreate = async () => {
+    if (isCreating) return;
+    
     // Validate mandatory fields
     if (!quoteForm.title.trim()) {
       toast.error('Quote Title is required');
@@ -289,6 +292,7 @@ export default function Quotes() {
       return;
     }
 
+    setIsCreating(true);
     try {
       const payload: any = {
         title: quoteForm.title,
@@ -322,6 +326,8 @@ export default function Quotes() {
     } catch (error: any) {
       const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to create quote';
       toast.error(errorMessage);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -728,9 +734,10 @@ export default function Quotes() {
                 </button>
                 <button
                   onClick={handleCreate}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isCreating}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Quote
+                  {isCreating ? 'Creating...' : 'Create Quote'}
                 </button>
               </div>
             </div>
