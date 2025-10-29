@@ -88,7 +88,7 @@ def verify_twilio_credentials(account_sid: str, auth_token: str) -> bool:
         return False
 
 
-@router.get("/", response_model=Optional[TwilioSettingsResponse])
+@router.get("/")
 async def get_twilio_settings(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -103,8 +103,27 @@ async def get_twilio_settings(
             TwilioSettingsModel.user_id == user_id
         ).first()
         
-        # Return None if no settings exist (frontend will handle this)
-        return settings
+        # Return None if no settings exist
+        if not settings:
+            return None
+        
+        # Manually serialize to avoid Pydantic issues
+        return {
+            "id": str(settings.id),
+            "user_id": str(settings.user_id),
+            "account_sid": settings.account_sid,
+            "phone_number": settings.phone_number,
+            "sendgrid_api_key": settings.sendgrid_api_key,
+            "sendgrid_from_email": settings.sendgrid_from_email,
+            "sms_enabled": settings.sms_enabled,
+            "voice_enabled": settings.voice_enabled,
+            "email_enabled": settings.email_enabled,
+            "is_active": settings.is_active,
+            "is_verified": settings.is_verified,
+            "created_at": settings.created_at.isoformat() if settings.created_at else None,
+            "updated_at": settings.updated_at.isoformat() if settings.updated_at else None,
+            "last_verified_at": settings.last_verified_at.isoformat() if settings.last_verified_at else None
+        }
     except Exception as e:
         # Log the error for debugging
         print(f"Error fetching Twilio settings: {str(e)}")
