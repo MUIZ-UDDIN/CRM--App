@@ -1080,13 +1080,13 @@ async def get_dashboard_analytics(
     
     stage_query = db.query(
         PipelineStage.name.label('stage_name'),
-        PipelineStage.order.label('stage_order'),
+        PipelineStage.order_index.label('stage_order'),
         func.count(DealModel.id).label('deal_count'),
         func.sum(DealModel.value).label('total_value')
     ).join(DealModel, DealModel.stage_id == PipelineStage.id)\
      .filter(and_(*stage_filters))\
-     .group_by(PipelineStage.name, PipelineStage.order)\
-     .order_by(PipelineStage.order)\
+     .group_by(PipelineStage.name, PipelineStage.order_index)\
+     .order_by(PipelineStage.order_index)\
      .all()
     
     pipeline_by_stage = []
