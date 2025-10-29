@@ -600,9 +600,10 @@ export default function Deals() {
           </div>
         ) : (
           <DragDropContext onDragEnd={onDragEnd}>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Mobile: Horizontal scroll, Desktop: Grid */}
+            <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 flex md:flex-none overflow-x-auto md:overflow-x-visible gap-4 pb-4 md:pb-0 snap-x snap-mandatory md:snap-none">
               {stages.map((stage) => (
-                <div key={stage.id} className={`rounded-lg border-2 ${stage.color} p-4`}>
+                <div key={stage.id} className={`rounded-lg border-2 ${stage.color} p-4 min-w-[280px] md:min-w-0 flex-shrink-0 md:flex-shrink snap-start md:snap-align-none`}>
                   {/* Stage Header */}
                   <div className="mb-4">
                     <div className="flex justify-between items-center">

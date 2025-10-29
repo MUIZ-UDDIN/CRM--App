@@ -495,8 +495,10 @@ export default function Contacts() {
               <p className="mt-4 text-gray-600">Loading contacts...</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
@@ -570,7 +572,99 @@ export default function Contacts() {
                   <p className="mt-1 text-sm text-gray-500">Get started by creating a new contact.</p>
                 </div>
               )}
-            </div>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden divide-y divide-gray-200">
+                {paginatedContacts.length > 0 ? (
+                  paginatedContacts.map((contact) => (
+                    <div key={contact.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="text-sm font-medium text-gray-900 truncate">
+                            {contact.first_name} {contact.last_name}
+                          </h3>
+                          {contact.title && (
+                            <p className="text-xs text-gray-500 mt-0.5">{contact.title}</p>
+                          )}
+                          {contact.company && (
+                            <p className="text-xs text-gray-600 mt-1 flex items-center">
+                              <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                              </svg>
+                              {contact.company}
+                            </p>
+                          )}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {contact.email && (
+                              <a href={`mailto:${contact.email}`} className="text-xs text-primary-600 hover:text-primary-700 flex items-center">
+                                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                {contact.email}
+                              </a>
+                            )}
+                            {contact.phone && (
+                              <a href={`tel:${contact.phone}`} className="text-xs text-primary-600 hover:text-primary-700 flex items-center">
+                                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                </svg>
+                                {contact.phone}
+                              </a>
+                            )}
+                          </div>
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              contact.type?.toLowerCase().trim() === 'customer' ? 'bg-blue-100 text-blue-800' :
+                              contact.type?.toLowerCase().trim() === 'prospect' ? 'bg-teal-100 text-teal-800' :
+                              contact.type?.toLowerCase().trim() === 'marketing qualified lead' ? 'bg-purple-100 text-purple-800' :
+                              contact.type?.toLowerCase().trim() === 'partner' ? 'bg-orange-100 text-orange-800' :
+                              'bg-green-100 text-green-800'
+                            }`}>
+                              {contact.type || 'Lead'}
+                            </span>
+                            <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                              contact.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                            }`}>
+                              {contact.status || 'Active'}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-3 flex flex-col gap-1">
+                          <button
+                            onClick={() => handleView(contact)}
+                            className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100"
+                            title="View"
+                          >
+                            <EyeIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleEdit(contact)}
+                            className="p-2 text-gray-400 hover:text-primary-600 rounded-lg hover:bg-gray-100"
+                            title="Edit"
+                          >
+                            <PencilIcon className="h-5 w-5" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(contact)}
+                            className="p-2 text-gray-400 hover:text-red-600 rounded-lg hover:bg-gray-100"
+                            title="Delete"
+                          >
+                            <TrashIcon className="h-5 w-5" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <UserGroupIcon className="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 className="mt-2 text-sm font-medium text-gray-900">No contacts</h3>
+                    <p className="mt-1 text-sm text-gray-500">Get started by creating a new contact.</p>
+                  </div>
+                )}
+              </div>
+            </>
           )}
           {filteredContacts.length > 0 && (
             <Pagination
@@ -595,7 +689,7 @@ export default function Contacts() {
               </button>
             </div>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input
                   type="text"
                   placeholder="First Name"
@@ -719,12 +813,12 @@ export default function Contacts() {
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Contact</h3>
-              <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <input
                   type="text"
                   placeholder="First Name"
