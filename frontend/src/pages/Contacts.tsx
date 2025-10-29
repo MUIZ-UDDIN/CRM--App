@@ -12,6 +12,9 @@ import {
   FunnelIcon,
   ArrowUpTrayIcon,
   XMarkIcon,
+  EyeIcon,
+  PencilIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 
 interface Contact {
