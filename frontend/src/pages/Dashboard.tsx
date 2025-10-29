@@ -52,7 +52,8 @@ export default function Dashboard() {
     company: '',
     contact: '',
     stage_id: 'qualification',
-    expectedCloseDate: ''
+    expectedCloseDate: '',
+    status: 'open'
   });
 
   // Get today's date in YYYY-MM-DD format for min date
@@ -435,11 +436,12 @@ export default function Dashboard() {
         contact: dealFormData.contact,
         stage_id: stageUUID, // Use actual UUID
         pipeline_id: pipelineId, // Use actual pipeline UUID
-        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined
+        expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
+        status: dealFormData.status
       });
       
       setDealFormData({
-        title: '', value: '', company: '', contact: '', stage_id: 'qualification', expectedCloseDate: ''
+        title: '', value: '', company: '', contact: '', stage_id: 'qualification', expectedCloseDate: '', status: 'open'
       });
       setShowAddDealModal(false);
       toast.success('Deal created successfully!');
@@ -447,8 +449,6 @@ export default function Dashboard() {
       // Redirect to deals page
       navigate('/deals');
     } catch (error: any) {
-      console.error('Error creating deal:', error);
-      console.log('Error details:', error?.response?.data);
       // Display user-friendly error message from backend
       const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to create deal. Please try again.';
       toast.error(errorMessage);
@@ -512,7 +512,8 @@ export default function Dashboard() {
       company: '',
       contact: '',
       stage_id: 'qualification',
-      expectedCloseDate: ''
+      expectedCloseDate: '',
+      status: 'open'
     });
   };
 
@@ -784,6 +785,21 @@ export default function Dashboard() {
                     Deal will be active until {new Date(dealFormData.expectedCloseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Deal Status</label>
+                <select
+                  name="status"
+                  value={dealFormData.status || 'open'}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="open">Open</option>
+                  <option value="won">Won</option>
+                  <option value="lost">Lost</option>
+                  <option value="abandoned">Abandoned</option>
+                </select>
               </div>
               
               <div className="flex justify-end space-x-3 pt-4">
