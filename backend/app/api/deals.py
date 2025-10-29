@@ -149,11 +149,10 @@ def create_deal(
         stage_id = stage.id
     
     try:
-        # Check for duplicate deal with same title and company for this user
+        # Check for duplicate deal with same title for this user
         existing_deal = db.query(DealModel).filter(
             and_(
                 DealModel.title == deal.title,
-                DealModel.company == deal.company,
                 DealModel.owner_id == user_id,
                 DealModel.is_deleted == False
             )
@@ -162,7 +161,7 @@ def create_deal(
         if existing_deal:
             raise HTTPException(
                 status_code=400, 
-                detail=f"A deal with title '{deal.title}' and company '{deal.company}' already exists. Please use a different title or company name."
+                detail=f"A deal with title '{deal.title}' already exists. Please use a different deal title."
             )
         
         # Parse contact_id if provided
