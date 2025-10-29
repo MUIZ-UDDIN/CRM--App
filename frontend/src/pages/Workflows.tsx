@@ -39,6 +39,7 @@ export default function Workflows() {
     trigger: 'contact_created',
     status: 'inactive',
   });
+  const [isCreating, setIsCreating] = useState(false);
 
   useEffect(() => {
     fetchWorkflows();
@@ -144,6 +145,8 @@ export default function Workflows() {
   };
 
   const handleCreate = async () => {
+    if (isCreating) return;
+    
     // Validate workflow name
     if (!workflowForm.name.trim()) {
       toast.error('Please enter a workflow name');
@@ -177,6 +180,7 @@ export default function Workflows() {
       return;
     }
 
+    setIsCreating(true);
     try {
       await workflowsService.createWorkflow({
         name: workflowForm.name,
@@ -190,6 +194,8 @@ export default function Workflows() {
     } catch (error: any) {
       console.error('Create error:', error);
       toast.error(error?.response?.data?.detail || 'Failed to create workflow');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -498,9 +504,10 @@ export default function Workflows() {
                 </button>
                 <button
                   onClick={handleCreate}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isCreating}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Workflow
+                  {isCreating ? 'Creating...' : 'Create Workflow'}
                 </button>
               </div>
             </div>

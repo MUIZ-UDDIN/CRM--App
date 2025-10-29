@@ -39,6 +39,7 @@ export default function PipelineSettings() {
   const [newStageName, setNewStageName] = useState('');
   const [newStageProbability, setNewStageProbability] = useState(50);
   const [loading, setLoading] = useState(false);
+  const [isAddingStage, setIsAddingStage] = useState(false);
 
   const resetStageForm = () => {
     setNewStageName('');
@@ -140,6 +141,8 @@ export default function PipelineSettings() {
   };
 
   const handleAddStage = async () => {
+    if (isAddingStage) return;
+    
     // Validate stage name
     if (!newStageName.trim()) {
       toast.error('Stage Name is required');
@@ -174,6 +177,7 @@ export default function PipelineSettings() {
       return;
     }
 
+    setIsAddingStage(true);
     try {
       await pipelinesService.createStage(selectedPipeline, {
         name: newStageName,
@@ -190,6 +194,8 @@ export default function PipelineSettings() {
       console.error('Add stage error:', error);
       const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to add stage';
       toast.error(errorMessage);
+    } finally {
+      setIsAddingStage(false);
     }
   };
 
@@ -466,9 +472,10 @@ export default function PipelineSettings() {
                 </button>
                 <button
                   onClick={handleAddStage}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isAddingStage}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Add Stage
+                  {isAddingStage ? 'Adding...' : 'Add Stage'}
                 </button>
               </div>
             </div>
