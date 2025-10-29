@@ -24,6 +24,10 @@ interface EmailMessage {
 export default function EmailNew() {
   const [emails, setEmails] = useState<EmailMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
+  const [searchTo, setSearchTo] = useState('');
+  const [searchCc, setSearchCc] = useState('');
+  const [searchBcc, setSearchBcc] = useState('');
+  const [isSending, setIsSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'inbox' | 'sent'>('inbox');
@@ -86,11 +90,14 @@ export default function EmailNew() {
   };
 
   const handleSendEmail = async () => {
+    if (isSending) return;
+    
     if (!emailForm.from || !emailForm.to || !emailForm.subject || !emailForm.message) {
       toast.error('Please fill in all fields');
       return;
     }
 
+    setIsSending(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/emails/send`, {
         method: 'POST',
@@ -112,6 +119,8 @@ export default function EmailNew() {
     } catch (error) {
       console.error('Error sending email:', error);
       toast.error('Failed to send email');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -290,9 +299,10 @@ export default function EmailNew() {
                 </button>
                 <button
                   onClick={handleSendEmail}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isSending}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send Email
+                  {isSending ? 'Sending...' : 'Send Email'}
                 </button>
               </div>
             </div>

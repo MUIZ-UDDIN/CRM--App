@@ -38,6 +38,7 @@ export default function SMSNew() {
 
   const [searchTo, setSearchTo] = useState('');
   const [twilioNumbers, setTwilioNumbers] = useState<string[]>([]);
+  const [isSending, setIsSending] = useState(false);
 
   useEffect(() => {
     fetchMessages();
@@ -87,11 +88,14 @@ export default function SMSNew() {
   };
 
   const handleSendSMS = async () => {
+    if (isSending) return;
+    
     if (!smsForm.from || !smsForm.to || !smsForm.message) {
       toast.error('Please fill in all fields');
       return;
     }
 
+    setIsSending(true);
     try {
       const response = await fetch(`${API_BASE_URL}/api/sms/send`, {
         method: 'POST',
@@ -113,6 +117,8 @@ export default function SMSNew() {
     } catch (error) {
       console.error('Error sending SMS:', error);
       toast.error('Failed to send SMS');
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -291,9 +297,10 @@ export default function SMSNew() {
                 </button>
                 <button
                   onClick={handleSendSMS}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isSending}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send SMS
+                  {isSending ? 'Sending...' : 'Send SMS'}
                 </button>
               </div>
             </div>
