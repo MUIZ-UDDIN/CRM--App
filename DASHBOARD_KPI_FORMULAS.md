@@ -96,11 +96,16 @@ Total Pipeline = SUM(deal.value) WHERE status = 'OPEN' AND is_deleted = FALSE
 **Growth Calculation:**
 ```
 Pipeline Growth % = ((Current Pipeline - Previous Pipeline) / Previous Pipeline) × 100
+
+Where:
+- Current Pipeline = All deals with status = 'OPEN' now
+- Previous Pipeline = All deals that were 'OPEN' at end of previous period
+  (created on or before previous period end date and still open)
 ```
 
 **Example:**
-- Current Period: $120,000 in open deals
-- Previous Period: $100,000 in open deals
+- Current: 25 open deals worth $120,000
+- Previous Period End: 20 open deals worth $100,000
 - Growth: ((120,000 - 100,000) / 100,000) × 100 = +20%
 
 ---
@@ -116,11 +121,16 @@ Active Deals = COUNT(deals) WHERE status = 'OPEN' AND is_deleted = FALSE
 **Growth Calculation:**
 ```
 Deal Growth % = ((Current Active - Previous Active) / Previous Active) × 100
+
+Where:
+- Current Active = Count of deals with status = 'OPEN' now
+- Previous Active = Count of deals that were 'OPEN' at end of previous period
+  (created on or before previous period end date and still open)
 ```
 
 **Example:**
-- Current Period: 25 active deals
-- Previous Period: 20 active deals
+- Current: 25 active deals
+- Previous Period End: 20 active deals
 - Growth: ((25 - 20) / 20) × 100 = +25%
 
 ---

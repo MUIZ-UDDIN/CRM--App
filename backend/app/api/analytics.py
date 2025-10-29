@@ -1033,12 +1033,12 @@ async def get_dashboard_analytics(
     
     total_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*pipeline_filters)).scalar() or 0.0
     
-    # Previous period pipeline
+    # Previous period pipeline - compare deals that were open at the end of previous period
+    # This includes deals created before or during previous period that were still open
     prev_pipeline_filters = [
         DealModel.is_deleted == False,
         DealModel.status == DealStatus.OPEN,
-        func.date(DealModel.created_at) >= prev_period_start,
-        func.date(DealModel.created_at) <= prev_period_end
+        func.date(DealModel.created_at) <= prev_period_end  # Created on or before end of previous period
     ]
     if filter_user_id:
         prev_pipeline_filters.append(DealModel.owner_id == filter_user_id)
@@ -1053,7 +1053,7 @@ async def get_dashboard_analytics(
     # Active Deals Count
     active_deals = db.query(func.count(DealModel.id)).filter(and_(*pipeline_filters)).scalar() or 0
     
-    # Previous period active deals
+    # Previous period active deals - count deals that were open at end of previous period
     prev_active_deals = db.query(func.count(DealModel.id)).filter(and_(*prev_pipeline_filters)).scalar() or 0
     deal_growth = ((active_deals - prev_active_deals) / prev_active_deals * 100) if prev_active_deals > 0 else 0
     
