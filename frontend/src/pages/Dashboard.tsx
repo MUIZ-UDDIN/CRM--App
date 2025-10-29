@@ -448,8 +448,9 @@ export default function Dashboard() {
       navigate('/deals');
     } catch (error: any) {
       console.error('Error creating deal:', error);
+      console.log('Error details:', error?.response?.data);
       // Display user-friendly error message from backend
-      const errorMessage = error?.response?.data?.detail || 'Failed to create deal. Please try again.';
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to create deal. Please try again.';
       toast.error(errorMessage);
     } finally {
       setIsCreatingDeal(false);

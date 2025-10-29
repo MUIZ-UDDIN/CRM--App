@@ -410,7 +410,8 @@ export default function Deals() {
       fetchDeals();
     } catch (error: any) {
       // Display user-friendly error message from backend
-      const errorMessage = error?.response?.data?.detail || 'Failed to create deal. Please try again.';
+      console.log('Error details:', error?.response?.data);
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to create deal. Please try again.';
       toast.error(errorMessage);
     }
   });
