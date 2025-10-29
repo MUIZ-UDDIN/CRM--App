@@ -1032,13 +1032,25 @@ async def get_dashboard_analytics(
         pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
     total_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*pipeline_filters)).scalar() or 0.0
+    active_deals = db.query(func.count(DealModel.id)).filter(and_(*pipeline_filters)).scalar() or 0
     
-    # Previous period pipeline - compare deals that were open at the end of previous period
-    # This includes deals created before or during previous period that were still open
+    # For growth calculation, compare deals created in current period vs previous period
+    # Current period open deals created in this period
+    current_period_pipeline_filters = pipeline_filters.copy()
+    if date_from_obj:
+        current_period_pipeline_filters.append(func.date(DealModel.created_at) >= date_from_obj)
+    if date_to_obj:
+        current_period_pipeline_filters.append(func.date(DealModel.created_at) <= date_to_obj)
+    
+    current_period_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*current_period_pipeline_filters)).scalar() or 0.0
+    current_period_deals = db.query(func.count(DealModel.id)).filter(and_(*current_period_pipeline_filters)).scalar() or 0
+    
+    # Previous period open deals created in previous period
     prev_pipeline_filters = [
         DealModel.is_deleted == False,
         DealModel.status == DealStatus.OPEN,
-        func.date(DealModel.created_at) <= prev_period_end  # Created on or before end of previous period
+        func.date(DealModel.created_at) >= prev_period_start,
+        func.date(DealModel.created_at) <= prev_period_end
     ]
     if filter_user_id:
         prev_pipeline_filters.append(DealModel.owner_id == filter_user_id)
@@ -1048,14 +1060,11 @@ async def get_dashboard_analytics(
         prev_pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
     prev_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*prev_pipeline_filters)).scalar() or 0.0
-    pipeline_growth = ((total_pipeline - prev_pipeline) / prev_pipeline * 100) if prev_pipeline > 0 else 0
-    
-    # Active Deals Count
-    active_deals = db.query(func.count(DealModel.id)).filter(and_(*pipeline_filters)).scalar() or 0
-    
-    # Previous period active deals - count deals that were open at end of previous period
     prev_active_deals = db.query(func.count(DealModel.id)).filter(and_(*prev_pipeline_filters)).scalar() or 0
-    deal_growth = ((active_deals - prev_active_deals) / prev_active_deals * 100) if prev_active_deals > 0 else 0
+    
+    # Calculate growth based on deals created in each period
+    pipeline_growth = ((current_period_pipeline - prev_pipeline) / prev_pipeline * 100) if prev_pipeline > 0 else (100 if current_period_pipeline > 0 else 0)
+    deal_growth = ((current_period_deals - prev_active_deals) / prev_active_deals * 100) if prev_active_deals > 0 else (100 if current_period_deals > 0 else 0)
     
     # Activities Today
     activity_filters = [
