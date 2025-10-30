@@ -133,24 +133,24 @@ export default function PhoneNumbers() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
               <button
                 onClick={() => navigate('/settings')}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
               >
-                <ArrowLeftIcon className="w-6 h-6 text-gray-600" />
+                <ArrowLeftIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
               </button>
-              <PhoneIcon className="w-8 h-8 text-primary-600" />
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Phone Numbers</h1>
-                <p className="text-xs sm:text-sm text-gray-600">Manage your Twilio phone numbers</p>
+              <PhoneIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 truncate">Phone Numbers</h1>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Manage your Twilio phone numbers</p>
               </div>
             </div>
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50"
+              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50 flex-shrink-0"
             >
               <ArrowPathIcon className={`h-4 w-4 mr-1 sm:mr-2 ${syncing ? 'animate-spin' : ''}`} />
               <span className="whitespace-nowrap">{syncing ? 'Syncing...' : 'Sync from Twilio'}</span>

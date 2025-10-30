@@ -159,23 +159,23 @@ export default function SMSTemplates() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex items-center justify-between">
-            <div className="flex items-center space-x-3">
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center space-x-2 sm:space-x-3">
               <button
                 onClick={() => navigate('/sms')}
-                className="p-2 hover:bg-gray-100 rounded-lg"
+                className="p-2 hover:bg-gray-100 rounded-lg flex-shrink-0"
               >
-                <ArrowLeftIcon className="w-6 h-6 text-gray-600" />
+                <ArrowLeftIcon className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
               </button>
-              <DocumentDuplicateIcon className="w-8 h-8 text-primary-600" />
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">SMS Templates</h1>
-                <p className="text-xs sm:text-sm text-gray-600">Create and manage reusable SMS templates</p>
+              <DocumentDuplicateIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
+              <div className="min-w-0">
+                <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 truncate">SMS Templates</h1>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Create and manage reusable SMS templates</p>
               </div>
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 flex-shrink-0"
             >
               <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               <span className="whitespace-nowrap">New Template</span>

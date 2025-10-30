@@ -264,50 +264,50 @@ export default function SMSEnhanced() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex justify-between items-center">
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center">
-                <ChatBubbleLeftRightIcon className="w-8 h-8 mr-3 text-primary-600" />
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 flex items-center">
+                <ChatBubbleLeftRightIcon className="w-6 h-6 sm:w-8 sm:h-8 mr-2 sm:mr-3 text-primary-600" />
                 SMS Messages
               </h1>
-              <p className="mt-1 text-sm text-gray-500">Send and receive text messages with AI-powered features</p>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">Send and receive text messages with AI-powered features</p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               <button
                 onClick={() => navigate('/sms-templates')}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
               >
-                <DocumentDuplicateIcon className="h-4 w-4 mr-1" />
-                Templates
+                <DocumentDuplicateIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="whitespace-nowrap">Templates</span>
               </button>
               <button
                 onClick={() => navigate('/sms-analytics')}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
               >
-                <SparklesIcon className="h-4 w-4 mr-1" />
-                Analytics
+                <SparklesIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="whitespace-nowrap">Analytics</span>
               </button>
               <button
                 onClick={() => navigate('/sms-scheduled')}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 shadow-sm text-xs font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
               >
-                <ClockIcon className="h-4 w-4 mr-1" />
-                Scheduled
+                <ClockIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                <span className="whitespace-nowrap">Scheduled</span>
               </button>
-              <div className="border-l border-gray-300 mx-2"></div>
+              <div className="hidden sm:block border-l border-gray-300 mx-2"></div>
               <button
                 onClick={() => setShowBulkModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                className="inline-flex items-center px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-gray-300 shadow-sm text-xs sm:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
               >
-                <UserGroupIcon className="h-4 w-4 mr-2" />
-                Bulk SMS
+                <UserGroupIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="whitespace-nowrap">Bulk SMS</span>
               </button>
               <button
                 onClick={() => setShowComposeModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+                className="inline-flex items-center px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
               >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                New Message
+                <PlusIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                <span className="whitespace-nowrap">New Message</span>
               </button>
             </div>
           </div>

@@ -918,7 +918,7 @@ export default function Files() {
                   Description
                 </label>
                 <textarea
-                  placeholder="Enter description (optional, max 500 characters)"
+                  placeholder="Description (optional)"
                   value={fileForm.description}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -936,7 +936,7 @@ export default function Files() {
                     }
                   }}
                   maxLength={500}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
                   rows={3}
                 />
                 <div className="text-xs text-gray-500 mt-1">
