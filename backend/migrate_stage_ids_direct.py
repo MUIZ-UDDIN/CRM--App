@@ -17,15 +17,16 @@ def migrate_stage_ids():
     
     print(f"\n🔗 Connecting to database...")
     
-    # Import psycopg2 (should be installed for FastAPI)
+    # Import psycopg2 (should be installed in venv)
     try:
         import psycopg2
         from psycopg2.extras import RealDictCursor
     except ImportError:
-        print("❌ psycopg2 not found. Installing...")
-        os.system("pip3 install psycopg2-binary")
-        import psycopg2
-        from psycopg2.extras import RealDictCursor
+        print("❌ psycopg2 not found!")
+        print("Please install it in your virtual environment:")
+        print("  source venv/bin/activate")
+        print("  pip install psycopg2-binary")
+        sys.exit(1)
     
     # Parse database URL
     # Format: postgresql://user:password@host:port/database
