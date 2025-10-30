@@ -752,7 +752,7 @@ export default function Contacts() {
                   <select
                     value={contactForm.type}
                     onChange={(e) => setContactForm({...contactForm, type: e.target.value})}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="w-full sm:flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     {contactTypes.map((type) => (
                       <option key={type} value={type}>{type}</option>
@@ -777,7 +777,7 @@ export default function Contacts() {
                   <select
                     value={contactForm.owner_id}
                     onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
-                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="flex-1 min-w-0 w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     {users.length === 0 && <option value="">Loading users...</option>}
                     {users.map((user) => (
@@ -881,7 +881,7 @@ export default function Contacts() {
                     <select
                       value={contactForm.type}
                       onChange={(e) => setContactForm({...contactForm, type: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="w-full sm:flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
                       {contactTypes.map((type) => (
                         <option key={type} value={type}>{type}</option>
@@ -906,7 +906,7 @@ export default function Contacts() {
                     <select
                       value={contactForm.owner_id}
                       onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
-                      className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="flex-1 min-w-0 w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
                       {users.length === 0 && <option value="">Loading users...</option>}
                       {users.map((user) => (
