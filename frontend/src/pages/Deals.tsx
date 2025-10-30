@@ -53,6 +53,7 @@ export default function Deals() {
     company: '',
     contact: '',
     stage_id: 'qualification',
+    pipeline_id: '',
     expectedCloseDate: '',
     status: 'open'
   });
@@ -102,6 +103,7 @@ export default function Deals() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps hardcoded names to UUIDs
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
+  const [pipelines, setPipelines] = useState<any[]>([]); // Store all pipelines
   const [dynamicStages, setDynamicStages] = useState<Stage[]>([]); // Dynamic stages from backend
 
   // Fallback hardcoded stages (used if backend stages not loaded)
@@ -139,9 +141,13 @@ export default function Deals() {
           return;
         }
         
-        // Use the first pipeline's UUID
+        // Store all pipelines
+        setPipelines(pipelines);
+        
+        // Use the first pipeline's UUID as default
         const defaultPipelineId = pipelines[0].id;
         setPipelineId(defaultPipelineId); // Store for later use
+        setDealFormData(prev => ({ ...prev, pipeline_id: defaultPipelineId }));
         
         // Fetch stages from the default pipeline using its UUID
         const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
@@ -350,9 +356,62 @@ export default function Deals() {
       company: '',
       contact: '',
       stage_id: 'qualification',
+      pipeline_id: pipelineId,
       expectedCloseDate: '',
       status: 'open'
     });
+  };
+
+  const handlePipelineChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newPipelineId = e.target.value;
+    setDealFormData(prev => ({ ...prev, pipeline_id: newPipelineId }));
+    setPipelineId(newPipelineId);
+
+    // Fetch stages for the selected pipeline
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${newPipelineId}/stages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (stagesResponse.ok) {
+        const stages = await stagesResponse.json();
+        const mapping: Record<string, string> = {};
+        const dynamicStagesData: Stage[] = [];
+        
+        stages.forEach((stage: any, index: number) => {
+          const stageKey = stage.name.toLowerCase().replace(/\s+/g, '-');
+          mapping[stageKey] = stage.id;
+          
+          // Assign colors based on index
+          const colors = [
+            { color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
+            { color: 'bg-yellow-50 border-yellow-200', textColor: 'text-yellow-700' },
+            { color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
+            { color: 'bg-green-50 border-green-200', textColor: 'text-green-700' }
+          ];
+          const colorIndex = index % colors.length;
+          
+          dynamicStagesData.push({
+            id: stageKey,
+            name: stage.name,
+            ...colors[colorIndex]
+          });
+        });
+        
+        setStageMapping(mapping);
+        setDynamicStages(dynamicStagesData);
+        
+        // Set first stage as default
+        if (stages.length > 0) {
+          const firstStageKey = stages[0].name.toLowerCase().replace(/\s+/g, '-');
+          setDealFormData(prev => ({ ...prev, stage_id: firstStageKey }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching stages:', error);
+    }
   };
 
   const handleCloseAddModal = () => {
@@ -387,19 +446,20 @@ export default function Deals() {
       return;
     }
 
-    if (!pipelineId) {
-      toast.error('Pipeline not loaded. Please refresh the page.');
+    const selectedPipelineId = dealFormData.pipeline_id || pipelineId;
+    if (!selectedPipelineId) {
+      toast.error('Please select a pipeline.');
       return;
     }
 
     try {
       await dealsService.createDeal({
         title: dealFormData.title,
-        value: dealValue,
+        value: dealValue || 0,
         company: dealFormData.company,
         contact: dealFormData.contact,
         stage_id: stageUUID, // Use actual UUID
-        pipeline_id: pipelineId, // Use actual pipeline UUID
+        pipeline_id: selectedPipelineId, // Use selected pipeline UUID
         expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
         status: dealFormData.status
       });
@@ -411,6 +471,7 @@ export default function Deals() {
         company: '',
         contact: '',
         stage_id: 'qualification',
+        pipeline_id: pipelineId,
         expectedCloseDate: '',
         status: 'open'
       });
@@ -435,6 +496,7 @@ export default function Deals() {
       company: deal.company || '',
       contact: deal.contact_id || '',
       stage_id: deal.stage_id,
+      pipeline_id: deal.pipeline_id,
       expectedCloseDate: deal.expected_close_date ? new Date(deal.expected_close_date).toISOString().split('T')[0] : '',
       status: deal.status || 'open'
     });
@@ -826,6 +888,19 @@ export default function Deals() {
                 onChange={(value) => setDealFormData(prev => ({ ...prev, contact: value }))}
                 placeholder="Search and select contact..."
               />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pipeline</label>
+                <select
+                  name="pipeline_id"
+                  value={dealFormData.pipeline_id}
+                  onChange={handlePipelineChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  {pipelines.map(pipeline => (
+                    <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>
+                  ))}
+                </select>
+              </div>
               <select
                 name="stage_id"
                 value={dealFormData.stage_id}
