@@ -498,15 +498,15 @@ export default function Analytics() {
         {/* Action Bar with Filters */}
         {!loading && (
         <>
-        <div className="flex flex-col gap-4 mb-6">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <div className="flex items-center space-x-2">
-                <CalendarIcon className="h-5 w-5 text-gray-400" />
+                <CalendarIcon className="h-4 sm:h-5 w-4 sm:w-5 text-gray-400 flex-shrink-0" />
                 <select
                   value={dateRange}
                   onChange={(e) => handleDateRangeChange(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
+                  className="flex-1 sm:flex-none px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs sm:text-sm"
                 >
                   <option value="last7days">Last 7 days</option>
                   <option value="last30days">Last 30 days</option>
@@ -564,7 +564,7 @@ export default function Analytics() {
                 )}
               </div>
               
-              <div className="relative user-dropdown-container">
+              <div className="relative user-dropdown-container w-full sm:w-auto">
                 <input
                   type="text"
                   value={showUserDropdown ? userSearch : (selectedUser === 'all' ? 'All Users' : users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || '')}
@@ -577,7 +577,7 @@ export default function Analytics() {
                     setUserSearch('');
                   }}
                   placeholder="Search users..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
+                  className="w-full sm:w-48 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs sm:text-sm"
                 />
                 {showUserDropdown && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -612,7 +612,7 @@ export default function Analytics() {
                 )}
               </div>
               
-              <div className="relative pipeline-dropdown-container">
+              <div className="relative pipeline-dropdown-container w-full sm:w-auto">
                 <input
                   type="text"
                   value={showPipelineDropdown ? pipelineSearch : (selectedPipeline === 'all' ? 'All Pipelines' : pipelines.find(p => p.id === selectedPipeline)?.name || '')}
@@ -625,7 +625,7 @@ export default function Analytics() {
                     setPipelineSearch('');
                   }}
                   placeholder="Search pipelines..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-sm"
+                  className="w-full sm:w-48 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs sm:text-sm"
                 />
                 {showPipelineDropdown && (
                   <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
@@ -676,11 +676,11 @@ export default function Analytics() {
                 Export CSV
               </button>
               <button
-                onClick={handleCreateReport}
-                className="inline-flex items-center px-3 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 transition-colors"
+                onClick={() => setShowReportModal(true)}
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
               >
-                <DocumentChartBarIcon className="h-4 w-4 mr-2" />
-                Custom Report
+                <DocumentChartBarIcon className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
+                <span className="whitespace-nowrap">Generate Report</span>
               </button>
             </div>
           </div>
@@ -780,19 +780,19 @@ export default function Analytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
           {/* Pipeline Distribution */}
           <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Pipeline by Stage</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Pipeline by Stage</h3>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+            <div className="p-4 sm:p-6">
+              <ResponsiveContainer width="100%" height={250} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <PieChart>
                   <Pie
                     data={pipelineData}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
+                    label={false}
+                    outerRadius={60}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -808,17 +808,17 @@ export default function Analytics() {
 
           {/* Activity Metrics */}
           <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Weekly Activities</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Weekly Activities</h3>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+            <div className="p-4 sm:p-6">
+              <ResponsiveContainer width="100%" height={250} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <BarChart data={activityData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="day" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
-                  <Legend />
+                  <XAxis dataKey="day" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: '11px' }} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
                   <Bar dataKey="calls" fill="#10B981" />
                   <Bar dataKey="emails" fill="#3B82F6" />
                   <Bar dataKey="meetings" fill="#8B5CF6" />
