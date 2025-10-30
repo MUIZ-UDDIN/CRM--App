@@ -280,37 +280,37 @@ export default function Profile() {
     <div className="min-h-full">
       <div className="bg-white shadow">
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold leading-7 text-gray-900">Profile</h1>
-              <p className="mt-1 text-sm text-gray-500">
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="min-w-0">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">Profile</h1>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 truncate">
                 Manage your personal information and account settings
               </p>
             </div>
-            <div>
+            <div className="flex-shrink-0">
               {!isEditing ? (
                 <button
                   onClick={handleEdit}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                  className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                 >
-                  <PencilIcon className="h-4 w-4 mr-2" />
-                  Edit Profile
+                  <PencilIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                  <span className="whitespace-nowrap">Edit Profile</span>
                 </button>
               ) : (
-                <div className="flex space-x-3">
+                <div className="flex gap-2 sm:gap-3">
                   <button
                     onClick={handleCancel}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 shadow-sm text-xs sm:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                   >
-                    <XMarkIcon className="h-4 w-4 mr-2" />
-                    Cancel
+                    <XMarkIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="whitespace-nowrap">Cancel</span>
                   </button>
                   <button
                     onClick={handleSave}
-                    className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
                   >
-                    <CheckIcon className="h-4 w-4 mr-2" />
-                    Save Changes
+                    <CheckIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+                    <span className="whitespace-nowrap">Save Changes</span>
                   </button>
                 </div>
               )}
