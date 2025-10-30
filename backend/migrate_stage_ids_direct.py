@@ -63,7 +63,7 @@ def migrate_stage_ids():
             FROM pipeline_stages s
             JOIN pipelines p ON s.pipeline_id = p.id
             WHERE s.is_deleted = FALSE AND p.is_deleted = FALSE
-            ORDER BY p.name, s.position
+            ORDER BY p.name, s.order_index
         """)
         
         stages = cursor.fetchall()
