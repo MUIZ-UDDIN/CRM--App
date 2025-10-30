@@ -19,11 +19,16 @@ def migrate_stage_ids():
     print("STAGE ID MIGRATION SCRIPT")
     print("=" * 60)
     
-    # Get database URL from environment
-    database_url = os.getenv('DATABASE_URL')
+    # Get database URL from environment (try both async and sync versions)
+    database_url = os.getenv('DATABASE_URL_SYNC') or os.getenv('DATABASE_URL')
     if not database_url:
-        print("❌ ERROR: DATABASE_URL environment variable not set")
+        print("❌ ERROR: DATABASE_URL or DATABASE_URL_SYNC environment variable not set")
+        print("Please check your .env file")
         return
+    
+    # Convert asyncpg URL to psycopg2 URL if needed
+    if 'asyncpg' in database_url:
+        database_url = database_url.replace('postgresql+asyncpg://', 'postgresql://')
     
     print(f"\n🔗 Connecting to database...")
     
