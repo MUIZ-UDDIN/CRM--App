@@ -45,6 +45,7 @@ export default function Dashboard() {
   const [contacts, setContacts] = useState<any[]>([]);
   const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps stage names to UUIDs
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
+  const [pipelines, setPipelines] = useState<any[]>([]); // Store all pipelines
   const [isCreatingDeal, setIsCreatingDeal] = useState(false);
   const [dealFormData, setDealFormData] = useState({
     title: '',
@@ -52,6 +53,7 @@ export default function Dashboard() {
     company: '',
     contact: '',
     stage_id: 'qualification',
+    pipeline_id: '',
     expectedCloseDate: '',
     status: 'open'
   });
@@ -153,9 +155,13 @@ export default function Dashboard() {
           return;
         }
         
-        // Use the first pipeline's UUID
+        // Store all pipelines
+        setPipelines(pipelines);
+        
+        // Use the first pipeline's UUID as default
         const defaultPipelineId = pipelines[0].id;
         setPipelineId(defaultPipelineId);
+        setDealFormData(prev => ({ ...prev, pipeline_id: defaultPipelineId }));
         
         // Fetch stages from the default pipeline
         const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
@@ -422,8 +428,9 @@ export default function Dashboard() {
       return;
     }
 
-    if (!pipelineId) {
-      toast.error('Pipeline not loaded. Please refresh the page.');
+    const selectedPipelineId = dealFormData.pipeline_id || pipelineId;
+    if (!selectedPipelineId) {
+      toast.error('Please select a pipeline.');
       return;
     }
 
@@ -435,13 +442,13 @@ export default function Dashboard() {
         company: dealFormData.company,
         contact: dealFormData.contact,
         stage_id: stageUUID, // Use actual UUID
-        pipeline_id: pipelineId, // Use actual pipeline UUID
+        pipeline_id: selectedPipelineId, // Use selected pipeline UUID
         expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
         status: dealFormData.status
       });
       
       setDealFormData({
-        title: '', value: '', company: '', contact: '', stage_id: 'qualification', expectedCloseDate: '', status: 'open'
+        title: '', value: '', company: '', contact: '', stage_id: 'qualification', pipeline_id: pipelineId, expectedCloseDate: '', status: 'open'
       });
       setShowAddDealModal(false);
       toast.success('Deal created successfully!');
@@ -476,32 +483,44 @@ export default function Dashboard() {
       .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
       .replace(/<[^>]*>/g, '')
       .replace(/javascript:/gi, '')
-      .replace(/on\w+\s*=/gi, '')
-      .trim();
+      .replace(/on\w+\s*=/gi, '');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
-    // For text inputs, don't allow HTML at all
-    if (name === 'title' || name === 'company') {
-      // Enforce 255 character limit for text fields
-      if (value.length > 255) {
-        toast.error(`${name === 'title' ? 'Deal Title' : 'Company'} cannot exceed 255 characters`);
-        return;
+    setDealFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handlePipelineChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newPipelineId = e.target.value;
+    setDealFormData(prev => ({ ...prev, pipeline_id: newPipelineId }));
+    setPipelineId(newPipelineId);
+
+    // Fetch stages for the selected pipeline
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${newPipelineId}/stages`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (stagesResponse.ok) {
+        const stages = await stagesResponse.json();
+        const mapping: Record<string, string> = {};
+        stages.forEach((stage: any) => {
+          mapping[stage.name.toLowerCase().replace(/\s+/g, '-')] = stage.id;
+        });
+        setStageMapping(mapping);
+        
+        // Set first stage as default
+        if (stages.length > 0) {
+          const firstStageKey = stages[0].name.toLowerCase().replace(/\s+/g, '-');
+          setDealFormData(prev => ({ ...prev, stage_id: firstStageKey }));
+        }
       }
-      
-      // Check if input contains HTML/scripts
-      if (containsHTMLOrScript(value)) {
-        toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
-        return; // Don't update the state with invalid input
-      }
+    } catch (error) {
+      console.error('Error fetching stages:', error);
     }
-    
-    setDealFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
   };
 
   const handleCloseAddDealModal = () => {
@@ -512,6 +531,7 @@ export default function Dashboard() {
       company: '',
       contact: '',
       stage_id: 'qualification',
+      pipeline_id: pipelineId,
       expectedCloseDate: '',
       status: 'open'
     });
@@ -780,6 +800,19 @@ export default function Dashboard() {
                 onChange={(value) => setDealFormData(prev => ({ ...prev, contact: value }))}
                 placeholder="Search and select contact..."
               />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Pipeline</label>
+                <select
+                  name="pipeline_id"
+                  value={dealFormData.pipeline_id}
+                  onChange={handlePipelineChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  {pipelines.map(pipeline => (
+                    <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>
+                  ))}
+                </select>
+              </div>
               <select
                 name="stage_id"
                 value={dealFormData.stage_id}
@@ -821,6 +854,12 @@ export default function Dashboard() {
                   <option value="lost">Lost</option>
                   <option value="abandoned">Abandoned</option>
                 </select>
+                <p className="text-xs text-gray-500 mt-1">
+                  {dealFormData.status === 'won' && 'This deal will count towards revenue'}
+                  {dealFormData.status === 'lost' && 'This deal will be marked as lost'}
+                  {dealFormData.status === 'open' && 'This deal is active in the pipeline'}
+                  {dealFormData.status === 'abandoned' && 'This deal has been abandoned'}
+                </p>
               </div>
               
               <div className="flex justify-end space-x-3 pt-4">
