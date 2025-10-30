@@ -54,6 +54,7 @@ export default function SMSEnhanced() {
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'inbox' | 'sent'>('inbox');
+  const [contactSearch, setContactSearch] = useState('');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -548,24 +549,37 @@ export default function SMSEnhanced() {
                 </p>
               </div>
 
-              {/* Contact Selection */}
+              {/* Contact Selection with Search */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Contacts ({bulkForm.contact_ids.length} selected)
                 </label>
-                <div className="border border-gray-300 rounded-lg max-h-60 overflow-y-auto">
-                  {contacts.filter(c => c.phone).map((contact) => (
+                <input
+                  type="text"
+                  placeholder="Search contacts..."
+                  value={contactSearch}
+                  onChange={(e) => setContactSearch(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-t-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                />
+                <div className="border border-t-0 border-gray-300 rounded-b-lg max-h-60 overflow-y-auto">
+                  {contacts.filter(c => 
+                    c.phone && (
+                      contactSearch === '' ||
+                      `${c.first_name} ${c.last_name}`.toLowerCase().includes(contactSearch.toLowerCase()) ||
+                      c.phone.includes(contactSearch)
+                    )
+                  ).map((contact) => (
                     <label
                       key={contact.id}
-                      className="flex items-center p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
+                      className="flex items-center p-2 sm:p-3 hover:bg-gray-50 cursor-pointer border-b last:border-b-0"
                     >
                       <input
                         type="checkbox"
                         checked={bulkForm.contact_ids.includes(contact.id)}
                         onChange={() => toggleContactSelection(contact.id)}
-                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 flex-shrink-0"
                       />
-                      <span className="ml-3 text-sm">
+                      <span className="ml-2 sm:ml-3 text-xs sm:text-sm truncate">
                         {contact.first_name} {contact.last_name} - {contact.phone}
                       </span>
                     </label>

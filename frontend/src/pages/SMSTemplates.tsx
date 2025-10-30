@@ -169,16 +169,16 @@ export default function SMSTemplates() {
               </button>
               <DocumentDuplicateIcon className="w-8 h-8 text-primary-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">SMS Templates</h1>
-                <p className="text-gray-600">Create and manage reusable SMS templates</p>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">SMS Templates</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Create and manage reusable SMS templates</p>
               </div>
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
             >
-              <PlusIcon className="w-5 h-5 mr-2" />
-              New Template
+              <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+              <span className="whitespace-nowrap">New Template</span>
             </button>
           </div>
         </div>
@@ -257,7 +257,7 @@ export default function SMSTemplates() {
         <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">
+              <h2 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900">
                 {editingTemplate ? 'Edit Template' : 'Create New Template'}
               </h2>
             </div>

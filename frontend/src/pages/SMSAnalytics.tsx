@@ -90,15 +90,15 @@ export default function SMSAnalytics() {
               </button>
               <ChartBarIcon className="w-8 h-8 text-primary-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">SMS Analytics</h1>
-                <p className="text-gray-600">Track your SMS performance and engagement</p>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">SMS Analytics</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Track your SMS performance and engagement</p>
               </div>
             </div>
             <div>
               <select
                 value={days}
                 onChange={(e) => setDays(Number(e.target.value))}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                className="px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent text-xs sm:text-sm"
               >
                 <option value={7}>Last 7 days</option>
                 <option value={30}>Last 30 days</option>
