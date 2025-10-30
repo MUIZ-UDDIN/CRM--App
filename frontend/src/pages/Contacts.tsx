@@ -422,8 +422,8 @@ export default function Contacts() {
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
           <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl font-bold leading-7 text-gray-900">Contacts</h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight sm:leading-7 text-gray-900">Contacts</h1>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">
                 Manage your contacts and leads
               </p>
             </div>
@@ -692,7 +692,7 @@ export default function Contacts() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Add New Contact</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Add New Contact</h3>
               <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -821,7 +821,7 @@ export default function Contacts() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Edit Contact</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Edit Contact</h3>
               <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -950,7 +950,7 @@ export default function Contacts() {
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Contact Details</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Contact Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
