@@ -690,10 +690,10 @@ export default function Deals() {
                 
                 return (
                 <div key={stage.id} className={`rounded-lg border-2 ${stage.color} overflow-hidden`}>
-                  {/* Stage Header - Clickable on Mobile */}
+                  {/* Stage Header - Clickable on All Devices */}
                   <button
                     onClick={toggleStage}
-                    className="w-full p-4 text-left md:cursor-default md:pointer-events-none"
+                    className="w-full p-4 text-left cursor-pointer hover:bg-white hover:bg-opacity-10 transition-colors"
                   >
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
@@ -705,7 +705,7 @@ export default function Deals() {
                             ({deals[stage.id]?.length || 0})
                           </span>
                           <ChevronDownIcon 
-                            className={`h-4 w-4 ${stage.textColor} transition-transform md:hidden ${isExpanded ? 'rotate-180' : ''}`}
+                            className={`h-4 w-4 ${stage.textColor} transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                           />
                         </div>
                         <p className={`text-lg font-bold ${stage.textColor} mt-1`}>
@@ -715,8 +715,8 @@ export default function Deals() {
                     </div>
                   </button>
 
-                  {/* Droppable Area - Always visible on desktop, collapsible on mobile */}
-                  <div className={`${isExpanded ? 'block' : 'hidden'} md:block`}>
+                  {/* Droppable Area - Collapsible on All Devices */}
+                  <div className={`${isExpanded ? 'block' : 'hidden'}`}>
                     <Droppable droppableId={stage.id}>
                       {(provided, snapshot) => (
                         <div
