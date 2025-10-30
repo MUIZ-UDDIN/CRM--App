@@ -185,6 +185,14 @@ export default {
       },
       screens: {
         'xs': '475px',
+        '3xl': '1920px',  // Full HD+
+        '4xl': '2560px',  // 2K/QHD
+        '5xl': '3840px',  // 4K/UHD
+      },
+      maxWidth: {
+        '8xl': '88rem',   // 1408px
+        '9xl': '96rem',   // 1536px
+        '10xl': '120rem', // 1920px
       },
     },
   },

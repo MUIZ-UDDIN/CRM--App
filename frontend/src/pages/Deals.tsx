@@ -615,7 +615,7 @@ export default function Deals() {
     <div className="min-h-full bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div>
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight sm:leading-7 text-gray-900">Deals Pipeline</h1>
@@ -645,7 +645,7 @@ export default function Deals() {
       </div>
 
       {/* Search Bar */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-4">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-4">
         <div className="relative max-w-md">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
@@ -669,7 +669,7 @@ export default function Deals() {
       </div>
 
       {/* Pipeline Board */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-4 sm:py-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-4 sm:py-6">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>

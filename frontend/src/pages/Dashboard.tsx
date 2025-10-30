@@ -584,7 +584,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-full">
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-4 sm:py-6 md:flex md:items-center md:justify-between">
             <div className="flex-1 min-w-0">
               <div className="flex items-center">
@@ -613,7 +613,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
           {stats.map((item) => (
             <div key={item.name} className="relative bg-white pt-4 px-3 pb-10 sm:pt-5 sm:px-4 sm:pb-12 shadow rounded-lg overflow-hidden">
