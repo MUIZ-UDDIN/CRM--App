@@ -752,23 +752,23 @@ export default function Analytics() {
 
         {/* Revenue Trend */}
         <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Revenue Trend</h3>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900">Revenue Trend</h3>
           </div>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={300} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+          <div className="p-4 sm:p-6">
+            <ResponsiveContainer width="100%" height={250} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
               <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3}/>
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
                     <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="month" stroke="#6B7280" />
-                <YAxis stroke="#6B7280" />
-                <Tooltip />
-                <Legend />
+                <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <Tooltip contentStyle={{ fontSize: '11px' }} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#colorRevenue)" />
                 <Area type="monotone" dataKey="target" stroke="#10B981" fillOpacity={0} strokeDasharray="5 5" />
               </AreaChart>
@@ -832,11 +832,11 @@ export default function Analytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
           {/* Lead Sources */}
           <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Lead Sources</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Lead Sources</h3>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300} key={`leadsource-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+            <div className="p-4 sm:p-6">
+              <ResponsiveContainer width="100%" height={250} key={`leadsource-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <PieChart>
                   <Pie
                     data={leadSourceData}
@@ -860,16 +860,16 @@ export default function Analytics() {
           </div>
 
           <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Lead Scoring Distribution (AI)</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Lead Scoring Distribution (AI)</h3>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300} key={`leadscoring-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+            <div className="p-4 sm:p-6">
+              <ResponsiveContainer width="100%" height={250} key={`leadscoring-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <BarChart data={leadScoringData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="score" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
+                  <XAxis dataKey="score" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: '11px' }} />
                   <Bar dataKey="count" fill="#8B5CF6" />
                 </BarChart>
               </ResponsiveContainer>
@@ -879,17 +879,17 @@ export default function Analytics() {
 
         {/* Conversion by Source */}
         <div className="bg-white rounded-lg shadow mb-8">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Conversion Rates by Lead Source</h3>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h3 className="text-base sm:text-lg font-medium text-gray-900">Conversion Rates by Lead Source</h3>
           </div>
-          <div className="p-6">
-            <ResponsiveContainer width="100%" height={300} key={`conversion-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+          <div className="p-4 sm:p-6">
+            <ResponsiveContainer width="100%" height={250} key={`conversion-${dateRange}-${selectedUser}-${selectedPipeline}`}>
               <BarChart data={conversionBySourceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="source" stroke="#6B7280" />
-                <YAxis stroke="#6B7280" />
-                <Tooltip />
-                <Legend />
+                <XAxis dataKey="source" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <Tooltip contentStyle={{ fontSize: '11px' }} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Bar dataKey="leads" fill="#3B82F6" name="Total Leads" />
                 <Bar dataKey="converted" fill="#10B981" name="Converted" />
                 <Bar dataKey="rate" fill="#F59E0B" name="Rate %" />
@@ -901,11 +901,11 @@ export default function Analytics() {
         {/* Document & E-Sign Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
           <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Document Status</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Document Status</h3>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300} key={`docstats-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+            <div className="p-4 sm:p-6">
+              <ResponsiveContainer width="100%" height={250} key={`docstats-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <PieChart>
                   <Pie
                     data={documentStatsData}
@@ -928,16 +928,16 @@ export default function Analytics() {
           </div>
 
           <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Time to Signature</h3>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Time to Signature</h3>
             </div>
-            <div className="p-6">
-              <ResponsiveContainer width="100%" height={300} key={`timetosig-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+            <div className="p-4 sm:p-6">
+              <ResponsiveContainer width="100%" height={250} key={`timetosig-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <BarChart data={timeToSignatureData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="range" stroke="#6B7280" />
-                  <YAxis stroke="#6B7280" />
-                  <Tooltip />
+                  <XAxis dataKey="range" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: '11px' }} />
                   <Bar dataKey="count" fill="#10B981" />
                 </BarChart>
               </ResponsiveContainer>
