@@ -207,14 +207,6 @@ export default function Dashboard() {
     fetchPipelinesAndStages();
   }, []);
 
-  // Poll pipelines every 5 seconds to catch new/updated pipelines
-  useEffect(() => {
-    const pollInterval = setInterval(() => {
-      fetchPipelinesAndStages();
-    }, 5000); // 5 seconds
-
-    return () => clearInterval(pollInterval);
-  }, []);
 
   // Fetch activities, dashboard data, user info, and contacts on component mount
   useEffect(() => {
@@ -224,15 +216,6 @@ export default function Dashboard() {
     fetchContacts();
   }, []);
 
-  // Add polling to sync dashboard data across platforms
-  useEffect(() => {
-    // Poll every 10 seconds to sync dashboard data
-    const pollInterval = setInterval(() => {
-      fetchDashboardData();
-    }, 10000); // 10 seconds
-
-    return () => clearInterval(pollInterval);
-  }, []);
 
   const fetchCurrentUser = async () => {
     try {

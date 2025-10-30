@@ -220,14 +220,6 @@ export default function Deals() {
     fetchPipelinesAndStages();
   }, []);
 
-  // Poll pipelines every 5 seconds to catch new/updated pipelines
-  useEffect(() => {
-    const pollInterval = setInterval(() => {
-      fetchPipelinesAndStages();
-    }, 5000); // 5 seconds
-
-    return () => clearInterval(pollInterval);
-  }, []);
 
   // Fetch contacts
   useEffect(() => {
@@ -264,18 +256,6 @@ export default function Deals() {
     if (Object.keys(stageMapping).length > 0) {
       fetchDeals();
     }
-  }, [stageMapping]);
-
-  // Add polling to sync deals across platforms
-  useEffect(() => {
-    if (Object.keys(stageMapping).length === 0) return;
-
-    // Poll every 10 seconds to sync deals
-    const pollInterval = setInterval(() => {
-      fetchDeals();
-    }, 10000); // 10 seconds
-
-    return () => clearInterval(pollInterval);
   }, [stageMapping]);
 
   const fetchDeals = async () => {
