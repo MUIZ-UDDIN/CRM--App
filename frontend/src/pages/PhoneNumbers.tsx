@@ -143,17 +143,17 @@ export default function PhoneNumbers() {
               </button>
               <PhoneIcon className="w-8 h-8 text-primary-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Phone Numbers</h1>
-                <p className="text-gray-600">Manage your Twilio phone numbers</p>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Phone Numbers</h1>
+                <p className="text-xs sm:text-sm text-gray-600">Manage your Twilio phone numbers</p>
               </div>
             </div>
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50"
+              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 disabled:opacity-50"
             >
-              <ArrowPathIcon className={`h-4 w-4 mr-2 ${syncing ? 'animate-spin' : ''}`} />
-              {syncing ? 'Syncing...' : 'Sync from Twilio'}
+              <ArrowPathIcon className={`h-4 w-4 mr-1 sm:mr-2 ${syncing ? 'animate-spin' : ''}`} />
+              <span className="whitespace-nowrap">{syncing ? 'Syncing...' : 'Sync from Twilio'}</span>
             </button>
           </div>
         </div>
@@ -177,7 +177,70 @@ export default function PhoneNumbers() {
             </div>
           </div>
         ) : (
-          <div className="bg-white shadow rounded-lg overflow-hidden">
+          <>
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {phoneNumbers.map((number) => (
+              <div key={number.id} className="bg-white shadow rounded-lg p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center">
+                    <PhoneIcon className="h-5 w-5 text-gray-400 mr-2" />
+                    <span className="text-sm font-medium text-gray-900">{number.phone_number}</span>
+                  </div>
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    number.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                  }`}>
+                    {number.is_active ? 'Active' : 'Inactive'}
+                  </span>
+                </div>
+                
+                {number.friendly_name && (
+                  <p className="text-sm text-gray-600 mb-2">{number.friendly_name}</p>
+                )}
+                
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {number.capabilities.voice && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800">Voice</span>
+                  )}
+                  {number.capabilities.sms && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">SMS</span>
+                  )}
+                  {number.capabilities.mms && (
+                    <span className="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">MMS</span>
+                  )}
+                </div>
+                
+                <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-gray-600">Rotation:</span>
+                    <button
+                      onClick={() => toggleRotation(number.id, !number.use_for_rotation)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                        number.use_for_rotation ? 'bg-primary-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                          number.use_for_rotation ? 'translate-x-6' : 'translate-x-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => toggleActive(number.id, !number.is_active)}
+                    className={`text-xs font-medium ${
+                      number.is_active ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'
+                    }`}
+                  >
+                    {number.is_active ? 'Deactivate' : 'Activate'}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
@@ -262,6 +325,7 @@ export default function PhoneNumbers() {
               </tbody>
             </table>
           </div>
+          </>
         )}
 
         {/* Info Section */}
