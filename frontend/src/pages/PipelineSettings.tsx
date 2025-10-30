@@ -307,14 +307,14 @@ export default function PipelineSettings() {
 
         {/* Stages List */}
         <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h3 className="text-lg font-medium text-gray-900">Pipeline Stages</h3>
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center gap-2">
+            <h3 className="text-lg font-medium text-gray-900 truncate">Pipeline Stages</h3>
             <button
               onClick={() => setShowAddStageModal(true)}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 flex-shrink-0"
             >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Add Stage
+              <PlusIcon className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Add Stage</span>
             </button>
           </div>
 
@@ -339,19 +339,19 @@ export default function PipelineSettings() {
                                 : 'border-gray-200'
                             }`}
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-4 flex-1">
-                                <div {...provided.dragHandleProps}>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
+                                <div {...provided.dragHandleProps} className="flex-shrink-0">
                                   <Bars3Icon className="h-5 w-5 text-gray-400 cursor-move" />
                                 </div>
                                 
                                 <div className="flex-1 min-w-0">
-                                  <div className="flex items-center space-x-3">
-                                    <h4 className="text-base font-medium text-gray-900 truncate max-w-[200px] sm:max-w-none" title={stage.name}>
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <h4 className="text-base font-medium text-gray-900 truncate max-w-[120px] sm:max-w-[250px]" title={stage.name}>
                                       {stage.name}
                                     </h4>
                                     {stage.is_closed && (
-                                      <span className={`px-2 py-1 text-xs font-medium rounded ${
+                                      <span className={`px-2 py-0.5 text-xs font-medium rounded flex-shrink-0 ${
                                         stage.is_won
                                           ? 'bg-green-100 text-green-800'
                                           : 'bg-red-100 text-red-800'
@@ -366,7 +366,7 @@ export default function PipelineSettings() {
                                 </div>
                               </div>
 
-                              <div className="flex items-center space-x-2">
+                              <div className="flex items-center space-x-1 flex-shrink-0">
                                 <button
                                   onClick={() => {
                                     setEditingStage(stage);
@@ -399,8 +399,14 @@ export default function PipelineSettings() {
 
       {/* Add Stage Modal */}
       {showAddStageModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+          onClick={handleCloseAddStageModal}
+        >
+          <div 
+            className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Stage</h3>
               <button
@@ -485,8 +491,14 @@ export default function PipelineSettings() {
 
       {/* Edit Stage Modal */}
       {showEditStageModal && editingStage && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4"
+          onClick={handleCloseEditStageModal}
+        >
+          <div 
+            className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Stage</h3>
               <button
