@@ -675,8 +675,8 @@ export default function MainLayout() {
 
         {/* Mobile Navigation Menu */}
         {showMobileMenu && (
-          <div className="lg:hidden border-t border-gray-200 bg-white">
-            <nav className="px-4 py-3 space-y-1">
+          <div className="lg:hidden absolute top-full left-0 right-0 border-t border-gray-200 bg-white shadow-lg z-50">
+            <nav className="px-4 py-3 space-y-1 max-h-[calc(100vh-64px)] overflow-y-auto">
               {navigation.map((item) => {
                 if (item.children) {
                   // For mobile, show all child links directly without dropdown
