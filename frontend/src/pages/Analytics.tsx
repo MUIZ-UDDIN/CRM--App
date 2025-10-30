@@ -801,6 +801,10 @@ export default function Analytics() {
                     ))}
                   </Pie>
                   <Tooltip />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '12px' }}
+                    iconType="circle"
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>

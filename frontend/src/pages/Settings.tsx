@@ -910,6 +910,31 @@ export default function Settings() {
               )}
             </div>
             
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-3">
+              {teamMembers.map((member) => (
+                <div key={member.id} className="bg-white shadow rounded-lg p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-semibold text-gray-900 truncate">{member.name}</h3>
+                      <p className="text-xs text-gray-600 truncate mt-1">{member.email}</p>
+                    </div>
+                    {isSuperAdmin && (
+                      <ActionButtons
+                        onEdit={() => handleEditTeamMember(member)}
+                        onDelete={() => handleDeleteTeamMember(member)}
+                        showView={false}
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                    <span className="text-xs text-gray-500">Role:</span>
+                    <span className="text-xs font-medium text-gray-900 capitalize">{member.role}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
             {/* Desktop Table */}
             <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
               <table className="min-w-full divide-y divide-gray-200">
