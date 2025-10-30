@@ -616,10 +616,10 @@ export default function Deals() {
       {/* Header */}
       <div className="bg-white shadow">
         <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div>
-              <h1 className="text-2xl font-bold leading-7 text-gray-900">Deals Pipeline</h1>
-              <p className="mt-1 text-sm text-gray-500">
+              <h1 className="text-lg sm:text-xl md:text-2xl font-bold leading-tight sm:leading-7 text-gray-900">Deals Pipeline</h1>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500">
                 Manage your sales pipeline with drag-and-drop functionality
               </p>
             </div>
@@ -669,7 +669,7 @@ export default function Deals() {
       </div>
 
       {/* Pipeline Board */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-4 sm:py-6">
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
@@ -844,7 +844,7 @@ export default function Deals() {
         >
           <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Add New Deal</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Add New Deal</h3>
               <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -993,7 +993,7 @@ export default function Deals() {
         >
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Edit Deal</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Edit Deal</h3>
               <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -1078,7 +1078,7 @@ export default function Deals() {
         >
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Deal Details</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Deal Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -1119,7 +1119,7 @@ export default function Deals() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
