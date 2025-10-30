@@ -590,7 +590,7 @@ export default function Dashboard() {
               <div className="flex items-center">
                 <div>
                   <div className="flex items-center">
-                    <h1 className="ml-0 text-2xl font-bold leading-7 text-gray-900 sm:truncate">
+                    <h1 className="ml-0 text-lg sm:text-xl md:text-2xl font-bold leading-tight sm:leading-7 text-gray-900 truncate">
                       Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 18 ? 'afternoon' : 'evening'}, {currentUser?.full_name?.split(' ')[0] || 'there'}! 👋
                     </h1>
                   </div>
@@ -605,8 +605,8 @@ export default function Dashboard() {
             </div>
             <div className="mt-4 flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 md:mt-0 md:ml-4 items-stretch sm:items-center">
               <div className="hidden sm:block"><BackendStatus /></div>
-              <button type="button" onClick={() => setShowAddDealModal(true)} className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
-                <PlusIcon className="h-4 w-4 mr-2" />Add Deal
+              <button type="button" onClick={() => setShowAddDealModal(true)} className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors duration-200">
+                <PlusIcon className="h-4 w-4 mr-1 sm:mr-2" /><span className="whitespace-nowrap">Add Deal</span>
               </button>
             </div>
           </div>
@@ -614,17 +614,17 @@ export default function Dashboard() {
       </div>
 
       <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-8">
-        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <div className="grid grid-cols-1 gap-4 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
           {stats.map((item) => (
-            <div key={item.name} className="relative bg-white pt-5 px-4 pb-12 sm:pt-6 sm:px-6 shadow rounded-lg overflow-hidden">
+            <div key={item.name} className="relative bg-white pt-4 px-3 pb-10 sm:pt-5 sm:px-4 sm:pb-12 shadow rounded-lg overflow-hidden">
               <dt>
                 <div className="absolute bg-primary-500 rounded-md p-3">
                   <item.icon className="h-6 w-6 text-white" aria-hidden="true" />
                 </div>
-                <p className="ml-16 text-sm font-medium text-gray-500 truncate">{item.name}</p>
+                <p className="ml-14 sm:ml-16 text-xs sm:text-sm font-medium text-gray-500 truncate">{item.name}</p>
               </dt>
-              <dd className="ml-16 pb-6 flex items-baseline sm:pb-7">
-                <p className="text-2xl font-semibold text-gray-900 truncate" title={item.value}>{item.value}</p>
+              <dd className="ml-14 sm:ml-16 pb-4 sm:pb-6 flex items-baseline">
+                <p className="text-xl sm:text-2xl font-semibold text-gray-900 truncate" title={item.value}>{item.value}</p>
                 <p className={`ml-2 flex items-baseline text-sm font-semibold flex-shrink-0 ${item.changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
                   {item.changeType === 'positive' ? <ArrowTrendingUpIcon className="self-center flex-shrink-0 h-4 w-4 text-green-500" /> : <ArrowTrendingDownIcon className="self-center flex-shrink-0 h-4 w-4 text-red-500" />}
                   <span className="ml-1">{item.change}</span>
@@ -634,14 +634,14 @@ export default function Dashboard() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
           {/* Recent Activities with fixed height and scroll */}
           <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Recent Activities</h3>
-              <button onClick={fetchActivities} className="text-sm text-primary-600 hover:text-primary-700">Refresh</button>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Recent Activities</h3>
+              <button onClick={fetchActivities} className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 whitespace-nowrap">Refresh</button>
             </div>
-            <div className="h-80 overflow-y-auto">
+            <div className="h-64 sm:h-80 overflow-y-auto">
               {recentActivities.length > 0 ? (
                 <ul className="divide-y divide-gray-200">
                   {recentActivities.map((activity) => (
@@ -671,11 +671,11 @@ export default function Dashboard() {
 
           {/* Upcoming Activities with fixed height and scroll */}
           <div className="bg-white shadow rounded-lg">
-            <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-              <h3 className="text-lg leading-6 font-medium text-gray-900">Upcoming Activities</h3>
-              <button onClick={fetchActivities} className="text-sm text-primary-600 hover:text-primary-700">Refresh</button>
+            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Upcoming Activities</h3>
+              <button onClick={fetchActivities} className="text-xs sm:text-sm text-primary-600 hover:text-primary-700 whitespace-nowrap">Refresh</button>
             </div>
-            <div className="h-80 overflow-y-auto">
+            <div className="h-64 sm:h-80 overflow-y-auto">
               {upcomingActivities.length > 0 ? (
                 <ul className="divide-y divide-gray-200">
                   {upcomingActivities.map((activity) => (
@@ -714,8 +714,8 @@ export default function Dashboard() {
 
         {/* Pipeline Overview */}
         <div className="mt-8 bg-white shadow rounded-lg">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg leading-6 font-medium text-gray-900">Pipeline Overview</h3>
+          <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
+            <h3 className="text-base sm:text-lg leading-6 font-medium text-gray-900">Pipeline Overview</h3>
           </div>
           <div className="px-6 py-4">
             {dashboardData && dashboardData.pipeline_by_stage && dashboardData.pipeline_by_stage.length > 0 ? (
