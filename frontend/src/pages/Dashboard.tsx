@@ -749,21 +749,21 @@ export default function Dashboard() {
                           isMaxStage ? 'bg-primary-50 border-2 border-primary-200' : 'bg-transparent'
                         }`}
                       >
-                        <div className="flex justify-between items-center">
+                        <div className="flex justify-between items-center gap-3">
                           <div className="flex items-center gap-2 flex-1 min-w-0">
                             <span 
-                              className={`text-sm font-medium ${isMaxStage ? 'text-primary-700' : 'text-gray-700'} truncate max-w-[250px]`}
+                              className={`text-sm font-medium ${isMaxStage ? 'text-primary-700' : 'text-gray-700'} truncate max-w-[150px] sm:max-w-[250px]`}
                               title={stage.stage_name}
                             >
                               {stage.stage_name}
                             </span>
                             {isMaxStage && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800 flex-shrink-0">
                                 Highest Value
                               </span>
                             )}
                           </div>
-                          <span className={`text-sm ${isMaxStage ? 'text-primary-700 font-semibold' : 'text-gray-600'} whitespace-nowrap flex-shrink-0`}>
+                          <span className={`text-sm ${isMaxStage ? 'text-primary-700 font-semibold' : 'text-gray-600'} whitespace-nowrap flex-shrink-0 ml-2`}>
                             {stage.deal_count} deals • ${stage.total_value.toLocaleString()}
                           </span>
                         </div>

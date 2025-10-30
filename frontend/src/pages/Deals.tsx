@@ -926,10 +926,10 @@ export default function Deals() {
                 </select>
               </div>
               <div className="relative">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Expected Close Date (Optional)</label>
                 <input
                   type="date"
                   name="expectedCloseDate"
-                  placeholder="Expected Close Date"
                   value={dealFormData.expectedCloseDate}
                   onChange={handleInputChange}
                   min={getTodayDate()}

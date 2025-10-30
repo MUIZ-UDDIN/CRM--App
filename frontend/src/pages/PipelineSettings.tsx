@@ -345,9 +345,9 @@ export default function PipelineSettings() {
                                   <Bars3Icon className="h-5 w-5 text-gray-400 cursor-move" />
                                 </div>
                                 
-                                <div className="flex-1">
+                                <div className="flex-1 min-w-0">
                                   <div className="flex items-center space-x-3">
-                                    <h4 className="text-base font-medium text-gray-900">
+                                    <h4 className="text-base font-medium text-gray-900 truncate max-w-[200px] sm:max-w-none" title={stage.name}>
                                       {stage.name}
                                     </h4>
                                     {stage.is_closed && (
@@ -400,7 +400,7 @@ export default function PipelineSettings() {
       {/* Add Stage Modal */}
       {showAddStageModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Stage</h3>
               <button
@@ -486,7 +486,7 @@ export default function PipelineSettings() {
       {/* Edit Stage Modal */}
       {showEditStageModal && editingStage && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Stage</h3>
               <button
