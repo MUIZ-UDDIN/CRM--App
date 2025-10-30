@@ -632,6 +632,12 @@ export default function Contacts() {
                               {contact.status || 'Active'}
                             </span>
                           </div>
+                          {/* Owner/Team Member */}
+                          <div className="mt-2">
+                            <p className="text-xs text-gray-500">
+                              Owner: <span className="font-medium text-gray-700">{users.find(u => u.id === contact.owner_id)?.name || 'Unassigned'}</span>
+                            </p>
+                          </div>
                         </div>
                         <div className="ml-3 flex flex-col gap-1">
                           <button
@@ -742,7 +748,7 @@ export default function Contacts() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Type <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <select
                     value={contactForm.type}
                     onChange={(e) => setContactForm({...contactForm, type: e.target.value})}
@@ -755,7 +761,7 @@ export default function Contacts() {
                   <button
                     type="button"
                     onClick={() => setShowAddTypeModal(true)}
-                    className="px-3 py-2 text-sm text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50"
+                    className="px-3 py-2 text-sm text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50 whitespace-nowrap flex-shrink-0"
                   >
                     + Add New Value
                   </button>
@@ -771,7 +777,7 @@ export default function Contacts() {
                   <select
                     value={contactForm.owner_id}
                     onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   >
                     {users.length === 0 && <option value="">Loading users...</option>}
                     {users.map((user) => (
@@ -783,7 +789,7 @@ export default function Contacts() {
                     onClick={() => {
                       toast('Please add new users from Settings > Team Members', { icon: 'ℹ️' });
                     }}
-                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                    className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex-shrink-0"
                     title="Add new owner"
                   >
                     <PlusIcon className="h-5 w-5" />
@@ -871,7 +877,7 @@ export default function Contacts() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Type <span className="text-red-500">*</span>
                   </label>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <select
                       value={contactForm.type}
                       onChange={(e) => setContactForm({...contactForm, type: e.target.value})}
@@ -884,7 +890,7 @@ export default function Contacts() {
                     <button
                       type="button"
                       onClick={() => setShowAddTypeModal(true)}
-                      className="px-3 py-2 text-sm text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50"
+                      className="px-3 py-2 text-sm text-primary-600 border border-primary-300 rounded-lg hover:bg-primary-50 whitespace-nowrap flex-shrink-0"
                     >
                       + Add New Value
                     </button>
@@ -900,7 +906,7 @@ export default function Contacts() {
                     <select
                       value={contactForm.owner_id}
                       onChange={(e) => setContactForm({...contactForm, owner_id: e.target.value})}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      className="flex-1 min-w-0 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                     >
                       {users.length === 0 && <option value="">Loading users...</option>}
                       {users.map((user) => (
@@ -912,7 +918,7 @@ export default function Contacts() {
                       onClick={() => {
                         toast('Please add new users from Settings > Team Members', { icon: 'ℹ️' });
                       }}
-                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                      className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex-shrink-0"
                       title="Add new owner"
                     >
                       <PlusIcon className="h-5 w-5" />
