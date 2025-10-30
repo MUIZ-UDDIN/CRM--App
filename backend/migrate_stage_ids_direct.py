@@ -1,57 +1,48 @@
+#!/usr/bin/env python3
 """
-Direct database migration script with no dependencies
-Uses raw SQL connection to PostgreSQL
+Migrate old text-based stage_ids to UUIDs in deals table
 """
 import os
 import sys
+import uuid as uuid_lib
+
+# Add the backend directory to the path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 def migrate_stage_ids():
     """Migrate old text-based stage_ids to UUIDs using raw SQL"""
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    from urllib.parse import urlparse
     
     print("=" * 60)
     print("STAGE ID MIGRATION SCRIPT")
     print("=" * 60)
     
-    # Get database credentials from environment
-    db_url = os.getenv('DATABASE_URL_SYNC', 'postgresql://crm_user:Marc@2025crmServer#@localhost:5432/sales_crm')
+    # Get database URL from environment
+    database_url = os.getenv('DATABASE_URL')
+    if not database_url:
+        print("❌ ERROR: DATABASE_URL environment variable not set")
+        return
     
     print(f"\n🔗 Connecting to database...")
     
-    # Import psycopg2 (should be installed in venv)
-    try:
-        import psycopg2
-        from psycopg2.extras import RealDictCursor
-    except ImportError:
-        print("❌ psycopg2 not found!")
-        print("Please install it in your virtual environment:")
-        print("  source venv/bin/activate")
-        print("  pip install psycopg2-binary")
-        sys.exit(1)
-    
     # Parse database URL
-    # Format: postgresql://user:password@host:port/database
-    db_url = db_url.replace('postgresql://', '')
-    if '@' in db_url:
-        user_pass, host_db = db_url.split('@')
-        user, password = user_pass.split(':')
-        host_port, database = host_db.split('/')
-        if ':' in host_port:
-            host, port = host_port.split(':')
-        else:
-            host = host_port
-            port = '5432'
-    else:
-        print("❌ Invalid DATABASE_URL format")
-        return
+    result = urlparse(database_url)
+    username = result.username
+    password = result.password
+    database = result.path[1:]
+    hostname = result.hostname
+    port = result.port
     
     # Create database connection
     try:
         conn = psycopg2.connect(
-            host=host,
-            port=port,
             database=database,
-            user=user,
-            password=password
+            user=username,
+            password=password,
+            host=hostname,
+            port=port
         )
         cursor = conn.cursor(cursor_factory=RealDictCursor)
         print("✅ Connected to database")
@@ -127,7 +118,6 @@ def migrate_stage_ids():
             
             # Check if stage_id is already a valid UUID
             try:
-                import uuid as uuid_lib
                 uuid_lib.UUID(stage_id)
                 # Already a UUID, skip
                 skipped_count += 1
