@@ -791,7 +791,7 @@ export default function Dashboard() {
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
         >
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Deal</h3>
               <button onClick={handleCloseAddDealModal} className="text-gray-400 hover:text-gray-600 transition-colors duration-200">
@@ -869,7 +869,9 @@ export default function Dashboard() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   {stages.map(stage => (
-                    <option key={stage.id} value={stage.id}>{stage.name}</option>
+                    <option key={stage.id} value={stage.id} title={stage.name}>
+                      {stage.name.length > 40 ? stage.name.substring(0, 40) + '...' : stage.name}
+                    </option>
                   ))}
                 </select>
               </div>
