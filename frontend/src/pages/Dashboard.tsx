@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [pipelines, setPipelines] = useState<any[]>([]); // Store all pipelines
   const [dynamicStages, setDynamicStages] = useState<any[]>([]); // Dynamic stages from backend
   const [isCreatingDeal, setIsCreatingDeal] = useState(false);
+  const [showAllStages, setShowAllStages] = useState(false); // For pipeline overview
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -723,7 +724,13 @@ export default function Dashboard() {
                   // Find the stage with maximum total value
                   const maxValue = Math.max(...dashboardData.pipeline_by_stage.map((s: any) => s.total_value || 0));
                   
-                  return dashboardData.pipeline_by_stage.map((stage: any, index: number) => {
+                  // Show only first 4 stages unless "Show All" is clicked
+                  const stagesToShow = showAllStages ? dashboardData.pipeline_by_stage : dashboardData.pipeline_by_stage.slice(0, 4);
+                  const hasMoreStages = dashboardData.pipeline_by_stage.length > 4;
+                  
+                  return (
+                    <>
+                      {stagesToShow.map((stage: any, index: number) => {
                     const isMaxStage = stage.total_value === maxValue && maxValue > 0;
                     
                     // Assign different colors to each stage
@@ -743,8 +750,11 @@ export default function Dashboard() {
                         }`}
                       >
                         <div className="flex justify-between items-center">
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-medium ${isMaxStage ? 'text-primary-700' : 'text-gray-700'}`}>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <span 
+                              className={`text-sm font-medium ${isMaxStage ? 'text-primary-700' : 'text-gray-700'} truncate max-w-[250px]`}
+                              title={stage.stage_name}
+                            >
                               {stage.stage_name}
                             </span>
                             {isMaxStage && (
@@ -753,7 +763,7 @@ export default function Dashboard() {
                               </span>
                             )}
                           </div>
-                          <span className={`text-sm ${isMaxStage ? 'text-primary-700 font-semibold' : 'text-gray-600'}`}>
+                          <span className={`text-sm ${isMaxStage ? 'text-primary-700 font-semibold' : 'text-gray-600'} whitespace-nowrap flex-shrink-0`}>
                             {stage.deal_count} deals • ${stage.total_value.toLocaleString()}
                           </span>
                         </div>
@@ -765,7 +775,19 @@ export default function Dashboard() {
                         </div>
                       </div>
                     );
-                  });
+                      })}
+                      
+                      {/* Show More/Less Button */}
+                      {hasMoreStages && (
+                        <button
+                          onClick={() => setShowAllStages(!showAllStages)}
+                          className="w-full mt-4 px-4 py-2 text-sm font-medium text-primary-600 hover:text-primary-700 hover:bg-primary-50 rounded-lg transition-colors duration-200 border border-primary-200"
+                        >
+                          {showAllStages ? 'Show Less' : `Show ${dashboardData.pipeline_by_stage.length - 4} More Stages`}
+                        </button>
+                      )}
+                    </>
+                  );
                 })()}
               </div>
             ) : (
