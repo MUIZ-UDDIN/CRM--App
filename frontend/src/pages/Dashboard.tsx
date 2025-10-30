@@ -195,6 +195,16 @@ export default function Dashboard() {
     fetchContacts();
   }, []);
 
+  // Add polling to sync dashboard data across platforms
+  useEffect(() => {
+    // Poll every 10 seconds to sync dashboard data
+    const pollInterval = setInterval(() => {
+      fetchDashboardData();
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(pollInterval);
+  }, []);
+
   const fetchCurrentUser = async () => {
     try {
       const token = localStorage.getItem('token');

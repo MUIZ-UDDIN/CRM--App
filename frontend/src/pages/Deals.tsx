@@ -256,6 +256,18 @@ export default function Deals() {
     }
   }, [stageMapping]);
 
+  // Add polling to sync deals across platforms
+  useEffect(() => {
+    if (Object.keys(stageMapping).length === 0) return;
+
+    // Poll every 10 seconds to sync deals
+    const pollInterval = setInterval(() => {
+      fetchDeals();
+    }, 10000); // 10 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [stageMapping]);
+
   const fetchDeals = async () => {
     setLoading(true);
     try {
