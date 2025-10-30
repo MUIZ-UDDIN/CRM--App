@@ -14,6 +14,7 @@ import {
   Bars3Icon,
   MagnifyingGlassIcon,
   ChevronDownIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
 interface Deal {
@@ -256,6 +257,18 @@ export default function Deals() {
     if (Object.keys(stageMapping).length > 0) {
       fetchDeals();
     }
+  }, [stageMapping]);
+
+  // Auto-refresh when user returns to the page (cross-platform sync)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && Object.keys(stageMapping).length > 0) {
+        fetchDeals();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [stageMapping]);
 
   const fetchDeals = async () => {
@@ -585,19 +598,11 @@ export default function Deals() {
     newDeals[destStage] = destDeals;
     setDeals(newDeals);
 
-    // Update backend - use the actual stage_id (UUID) from the deal
+    // Update backend - destStage is already a UUID (from droppableId)
     try {
-      // Convert hardcoded stage name to UUID
-      const destStageUUID = stageMapping[destStage];
-      if (!destStageUUID) {
-        toast.error('Invalid destination stage');
-        fetchDeals(); // Revert on error
-        return;
-      }
-      
-      await dealsService.moveDealStage(draggableId, originalStageId, destStageUUID);
+      await dealsService.moveDealStage(draggableId, originalStageId, destStage);
       // Update the deal's stage_id with the new UUID
-      movedDeal.stage_id = destStageUUID;
+      movedDeal.stage_id = destStage;
       toast.success('Deal moved successfully');
     } catch (error: any) {
       const errorMessage = error?.response?.data?.detail || 'Failed to move deal';
@@ -618,13 +623,22 @@ export default function Deals() {
                 Manage your sales pipeline with drag-and-drop functionality
               </p>
             </div>
-            <button
-              onClick={() => setShowAddDealModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700"
-            >
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Add New Deal
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => fetchDeals()}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                title="Refresh deals"
+              >
+                <ArrowPathIcon className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setShowAddDealModal(true)}
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700"
+              >
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Add New Deal
+              </button>
+            </div>
           </div>
         </div>
       </div>
