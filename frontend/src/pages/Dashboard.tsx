@@ -131,9 +131,8 @@ export default function Dashboard() {
     },
   ];
 
-  // Fetch pipeline stages to get UUID mapping
-  useEffect(() => {
-    const fetchStages = async () => {
+  // Fetch pipelines and stages
+  const fetchPipelinesAndStages = async () => {
       try {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -182,9 +181,21 @@ export default function Dashboard() {
         }
       } catch (error) {
         console.error('[Dashboard] Error fetching stages:', error);
-      }
-    };
-    fetchStages();
+    }
+  };
+
+  // Fetch pipeline stages to get UUID mapping
+  useEffect(() => {
+    fetchPipelinesAndStages();
+  }, []);
+
+  // Poll pipelines every 5 seconds to catch new/updated pipelines
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      fetchPipelinesAndStages();
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   // Fetch activities, dashboard data, user info, and contacts on component mount
@@ -864,12 +875,14 @@ export default function Dashboard() {
                   <option value="lost">Lost</option>
                   <option value="abandoned">Abandoned</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
-                  {dealFormData.status === 'won' && 'This deal will count towards revenue'}
-                  {dealFormData.status === 'lost' && 'This deal will be marked as lost'}
-                  {dealFormData.status === 'open' && 'This deal is active in the pipeline'}
-                  {dealFormData.status === 'abandoned' && 'This deal has been abandoned'}
-                </p>
+                {dealFormData.status && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {dealFormData.status === 'won' && 'This deal will count towards revenue'}
+                    {dealFormData.status === 'lost' && 'This deal will be marked as lost'}
+                    {dealFormData.status === 'open' && 'This deal is active in the pipeline'}
+                    {dealFormData.status === 'abandoned' && 'This deal has been abandoned'}
+                  </p>
+                )}
               </div>
               
               <div className="flex justify-end space-x-3 pt-4">

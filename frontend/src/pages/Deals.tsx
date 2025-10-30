@@ -117,9 +117,8 @@ export default function Deals() {
   // Use dynamic stages if available, otherwise use fallback
   const stages = dynamicStages.length > 0 ? dynamicStages : fallbackStages;
 
-  // Fetch pipeline stages to get UUID mapping
-  useEffect(() => {
-    const fetchStages = async () => {
+  // Fetch pipelines and stages
+  const fetchPipelinesAndStages = async () => {
       try {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -213,10 +212,22 @@ export default function Deals() {
           console.error('Failed to fetch stages:', stagesResponse.status, stagesResponse.statusText);
         }
       } catch (error) {
-        console.error('Error fetching stages:', error);
+        console.error('Error fetching pipeline stages:', error);
       }
     };
-    fetchStages();
+
+  // Fetch pipeline stages to get UUID mapping
+  useEffect(() => {
+    fetchPipelinesAndStages();
+  }, []);
+
+  // Poll pipelines every 5 seconds to catch new/updated pipelines
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      fetchPipelinesAndStages();
+    }, 5000); // 5 seconds
+
+    return () => clearInterval(pollInterval);
   }, []);
 
   // Fetch contacts
