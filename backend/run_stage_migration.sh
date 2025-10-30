@@ -11,6 +11,14 @@ if [ -d "venv" ]; then
     echo "🔗 Activating virtual environment..."
     source venv/bin/activate
     
+    # Check if psycopg2 is installed
+    echo "🔍 Checking dependencies..."
+    python3 -c "import psycopg2" 2>/dev/null
+    if [ $? -ne 0 ]; then
+        echo "⚠️  psycopg2 not found, installing..."
+        pip install psycopg2-binary
+    fi
+    
     echo "🚀 Running migration..."
     python3 migrate_stage_ids_direct.py
     
