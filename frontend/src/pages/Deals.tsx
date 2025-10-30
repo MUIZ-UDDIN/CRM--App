@@ -175,14 +175,13 @@ export default function Deals() {
           ];
           
           stages.forEach((stage: any, index: number) => {
-            // Map based on stage name (case-insensitive)
-            const normalizedName = stage.name.toLowerCase().replace(/\s+/g, '-');
-            mapping[normalizedName] = stage.id;
+            // Map stage ID to stage ID (use actual UUID)
+            mapping[stage.id] = stage.id;
             
             // Create dynamic stage object
             const colorScheme = colors[index % colors.length];
             dynamicStagesArray.push({
-              id: normalizedName,
+              id: stage.id, // Use actual stage UUID
               name: stage.name,
               color: colorScheme.color,
               textColor: colorScheme.textColor
@@ -200,7 +199,7 @@ export default function Deals() {
           setDeals(initialDeals);
           
           // Set default stage_id to the first stage if not already set
-          if (dynamicStagesArray.length > 0 && dealFormData.stage_id === 'qualification') {
+          if (dynamicStagesArray.length > 0 && !dealFormData.stage_id) {
             setDealFormData(prev => ({ ...prev, stage_id: dynamicStagesArray[0].id }));
           }
           
@@ -284,33 +283,24 @@ export default function Deals() {
     try {
       const data = await dealsService.getDeals();
       
-      // Create a reverse mapping from UUID to normalized name
-      const uuidToName: Record<string, string> = {};
-      Object.entries(stageMapping).forEach(([name, uuid]) => {
-        uuidToName[uuid] = name;
-      });
-      
-      // Initialize grouped object with all stages
+      // Initialize grouped object with all stages (using actual stage UUIDs)
       const grouped: Record<string, Deal[]> = {};
-      Object.keys(stageMapping).forEach(stageName => {
-        grouped[stageName] = [];
+      dynamicStages.forEach(stage => {
+        grouped[stage.id] = [];
       });
       
-      // Group deals by stage (handle both UUID and string stage_id for backward compatibility)
+      // Group deals by stage (using actual stage UUID)
       data.forEach((deal: Deal) => {
-        let normalizedStageName = uuidToName[deal.stage_id]; // Try UUID first
-        
-        // If not found, check if stage_id is already a normalized name (old format)
-        if (!normalizedStageName && grouped[deal.stage_id]) {
-          normalizedStageName = deal.stage_id;
-        }
-        
-        if (normalizedStageName && grouped[normalizedStageName]) {
-          grouped[normalizedStageName].push(deal);
+        if (grouped[deal.stage_id]) {
+          grouped[deal.stage_id].push(deal);
         } else {
           console.warn('Unknown stage_id:', deal.stage_id, 'for deal:', deal.title);
           console.warn('Available stages:', Object.keys(grouped));
-          console.warn('UUID to name mapping:', uuidToName);
+          // Add to first stage as fallback
+          const firstStageId = Object.keys(grouped)[0];
+          if (firstStageId) {
+            grouped[firstStageId].push(deal);
+          }
         }
       });
       
@@ -404,8 +394,8 @@ export default function Deals() {
         const dynamicStagesData: Stage[] = [];
         
         stages.forEach((stage: any, index: number) => {
-          const stageKey = stage.name.toLowerCase().replace(/\s+/g, '-');
-          mapping[stageKey] = stage.id;
+          // Map stage ID to stage ID (use actual UUID)
+          mapping[stage.id] = stage.id;
           
           // Assign colors based on index
           const colors = [
@@ -417,7 +407,7 @@ export default function Deals() {
           const colorIndex = index % colors.length;
           
           dynamicStagesData.push({
-            id: stageKey,
+            id: stage.id, // Use actual stage UUID
             name: stage.name,
             ...colors[colorIndex]
           });
@@ -428,8 +418,7 @@ export default function Deals() {
         
         // Set first stage as default
         if (stages.length > 0) {
-          const firstStageKey = stages[0].name.toLowerCase().replace(/\s+/g, '-');
-          setDealFormData(prev => ({ ...prev, stage_id: firstStageKey }));
+          setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
         }
       }
     } catch (error) {

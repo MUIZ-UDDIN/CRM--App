@@ -46,6 +46,7 @@ export default function Dashboard() {
   const [stageMapping, setStageMapping] = useState<Record<string, string>>({}); // Maps stage names to UUIDs
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
   const [pipelines, setPipelines] = useState<any[]>([]); // Store all pipelines
+  const [dynamicStages, setDynamicStages] = useState<any[]>([]); // Dynamic stages from backend
   const [isCreatingDeal, setIsCreatingDeal] = useState(false);
   const [dealFormData, setDealFormData] = useState({
     title: '',
@@ -64,12 +65,16 @@ export default function Dashboard() {
     return today.toISOString().split('T')[0];
   };
 
-  const stages = [
+  // Fallback hardcoded stages (used if backend stages not loaded)
+  const fallbackStages = [
     { id: 'qualification', name: 'Qualification' },
     { id: 'proposal', name: 'Proposal' },
     { id: 'negotiation', name: 'Negotiation' },
     { id: 'closed-won', name: 'Closed Won' }
   ];
+  
+  // Use dynamic stages if available, otherwise use fallback
+  const stages = dynamicStages.length > 0 ? dynamicStages : fallbackStages;
 
   const stats = dashboardData ? [
     {
@@ -171,11 +176,24 @@ export default function Dashboard() {
           const stages = await stagesResponse.json();
           
           const mapping: Record<string, string> = {};
+          const stagesData: any[] = [];
+          
           stages.forEach((stage: any) => {
-            const normalizedName = stage.name.toLowerCase().replace(/\s+/g, '-');
-            mapping[normalizedName] = stage.id;
+            // Map stage ID to stage ID (for consistency)
+            mapping[stage.id] = stage.id;
+            stagesData.push({
+              id: stage.id,
+              name: stage.name
+            });
           });
+          
           setStageMapping(mapping);
+          setDynamicStages(stagesData);
+          
+          // Set first stage as default if form is empty
+          if (stages.length > 0 && !dealFormData.stage_id) {
+            setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
+          }
         } else {
           console.error('[Dashboard] Failed to fetch stages:', stagesResponse.status);
         }
@@ -528,15 +546,23 @@ export default function Dashboard() {
       if (stagesResponse.ok) {
         const stages = await stagesResponse.json();
         const mapping: Record<string, string> = {};
+        const dynamicStagesData: any[] = [];
+        
         stages.forEach((stage: any) => {
-          mapping[stage.name.toLowerCase().replace(/\s+/g, '-')] = stage.id;
+          // Map stage ID to stage ID
+          mapping[stage.id] = stage.id;
+          dynamicStagesData.push({
+            id: stage.id,
+            name: stage.name
+          });
         });
+        
         setStageMapping(mapping);
+        setDynamicStages(dynamicStagesData);
         
         // Set first stage as default
         if (stages.length > 0) {
-          const firstStageKey = stages[0].name.toLowerCase().replace(/\s+/g, '-');
-          setDealFormData(prev => ({ ...prev, stage_id: firstStageKey }));
+          setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
         }
       }
     } catch (error) {
