@@ -297,8 +297,8 @@ export default function PipelineSettings() {
               className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               {pipelines.map(pipeline => (
-                <option key={pipeline.id} value={pipeline.id}>
-                  {pipeline.name}
+                <option key={pipeline.id} value={pipeline.id} title={pipeline.name}>
+                  {pipeline.name.length > 50 ? pipeline.name.substring(0, 50) + '...' : pipeline.name}
                 </option>
               ))}
             </select>

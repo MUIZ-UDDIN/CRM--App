@@ -683,8 +683,10 @@ export default function Deals() {
                     <div className="flex justify-between items-center">
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h3 className={`font-semibold ${stage.textColor}`}>{stage.name}</h3>
-                          <span className={`text-sm ${stage.textColor}`}>
+                          <h3 className={`font-semibold ${stage.textColor} truncate max-w-[200px]`} title={stage.name}>
+                            {stage.name}
+                          </h3>
+                          <span className={`text-sm ${stage.textColor} flex-shrink-0`}>
                             ({deals[stage.id]?.length || 0})
                           </span>
                           <ChevronDownIcon 
