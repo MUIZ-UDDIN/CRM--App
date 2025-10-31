@@ -131,7 +131,22 @@ export default function SuperAdminDashboard() {
 
   const filteredCompanies = companies.filter(company => {
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesFilter = filterStatus === 'all' || company.subscription_status === filterStatus;
+    
+    // Handle filter matching
+    let matchesFilter = false;
+    if (filterStatus === 'all') {
+      matchesFilter = true;
+    } else if (filterStatus === 'expired') {
+      // Match expired subscriptions OR trials with 0 days remaining
+      matchesFilter = company.subscription_status === 'expired' || 
+                     (company.subscription_status === 'trial' && (company.days_remaining || 0) === 0);
+    } else if (filterStatus === 'trial') {
+      // Match only active trials (days remaining > 0)
+      matchesFilter = company.subscription_status === 'trial' && (company.days_remaining || 0) > 0;
+    } else {
+      matchesFilter = company.subscription_status === filterStatus;
+    }
+    
     return matchesSearch && matchesFilter;
   });
 
@@ -155,15 +170,15 @@ export default function SuperAdminDashboard() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Super Admin Dashboard</h1>
-        <p className="text-gray-600 mt-1">Manage all companies and subscriptions</p>
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1">Manage all companies and subscriptions</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -216,8 +231,8 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
+      <div className="bg-white rounded-lg shadow p-3 sm:p-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
           {/* Search */}
           <div className="flex-1 relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -226,7 +241,7 @@ export default function SuperAdminDashboard() {
               placeholder="Search companies..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
@@ -234,7 +249,7 @@ export default function SuperAdminDashboard() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full sm:w-auto px-4 py-2 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
             <option value="all">All Status</option>
             <option value="trial">Trial</option>
@@ -247,7 +262,8 @@ export default function SuperAdminDashboard() {
 
       {/* Companies Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -323,6 +339,7 @@ export default function SuperAdminDashboard() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {/* Company Details Modal */}
