@@ -5,8 +5,9 @@ Company management API endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
+from uuid import UUID
 
 from app.database import get_db
 from app.models import Company, User, UserRole, UserStatus, PlanType, CompanyStatus
@@ -43,8 +44,8 @@ class CompanyResponse(BaseModel):
     name: str
     plan: str
     status: str
-    domain: Optional[str]
-    logo_url: Optional[str]
+    domain: Optional[str] = None
+    logo_url: Optional[str] = None
     timezone: str
     currency: str
     created_at: datetime
@@ -52,6 +53,13 @@ class CompanyResponse(BaseModel):
     subscription_status: Optional[str] = None
     trial_ends_at: Optional[datetime] = None
     days_remaining: Optional[int] = None
+    
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid_to_str(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v
     
     class Config:
         from_attributes = True
