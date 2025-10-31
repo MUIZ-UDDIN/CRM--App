@@ -1,9 +1,17 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Building2, Mail, Lock, User, Phone, CheckCircle2, AlertCircle } from 'lucide-react';
+import { 
+  BuildingOfficeIcon, 
+  EnvelopeIcon, 
+  LockClosedIcon, 
+  UserIcon, 
+  PhoneIcon, 
+  CheckCircleIcon, 
+  ExclamationCircleIcon 
+} from '@heroicons/react/24/outline';
 import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://sunstonecrm.com/api';
+const API_URL = 'https://sunstonecrm.com/api';
 
 interface RegistrationForm {
   company_name: string;
@@ -83,7 +91,7 @@ export default function Register() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-10 h-10 text-green-600" />
+            <CheckCircleIcon className="w-10 h-10 text-green-600" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome to Sunstone CRM! 🎉</h2>
           <p className="text-gray-600 mb-4">
@@ -103,7 +111,7 @@ export default function Register() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-10 h-10 text-white" />
+            <BuildingOfficeIcon className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Start Your Free Trial</h1>
           <p className="text-gray-600">14 days free • No credit card required • Full access</p>
@@ -112,7 +120,7 @@ export default function Register() {
         {/* Error Message */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <ExclamationCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-red-800">{error}</p>
           </div>
         )}
@@ -125,7 +133,7 @@ export default function Register() {
               Company Name *
             </label>
             <div className="relative">
-              <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <BuildingOfficeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 required
@@ -144,7 +152,7 @@ export default function Register() {
                 First Name *
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   required
@@ -160,7 +168,7 @@ export default function Register() {
                 Last Name *
               </label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   required
@@ -179,7 +187,7 @@ export default function Register() {
               Work Email *
             </label>
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="email"
                 required
@@ -197,7 +205,7 @@ export default function Register() {
               Phone Number (Optional)
             </label>
             <div className="relative">
-              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="tel"
                 value={formData.phone}
@@ -214,7 +222,7 @@ export default function Register() {
               Password *
             </label>
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="password"
                 required
