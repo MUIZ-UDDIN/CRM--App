@@ -186,32 +186,30 @@ export default function Inbox() {
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div>
-              <div className="flex items-center space-x-3">
-                <EnvelopeIcon className="w-8 h-8 text-primary-600" />
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Email Inbox</h1>
-                  <p className="text-gray-600">Email communications via Twilio SendGrid</p>
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <EnvelopeIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">Email Inbox</h1>
+                  <p className="text-xs sm:text-sm text-gray-600 truncate">Email communications via Twilio SendGrid</p>
                 </div>
               </div>
             </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowComposeModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
-              >
-                <PlusIcon className="h-4 w-4 mr-2" />
-                Compose Email
-              </button>
-            </div>
+            <button
+              onClick={() => setShowComposeModal(true)}
+              className="inline-flex items-center justify-center px-3 py-2 sm:px-4 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto whitespace-nowrap"
+            >
+              <PlusIcon className="h-4 w-4 sm:mr-2" />
+              <span className="hidden xs:inline ml-1">Compose</span>
+            </button>
           </div>
         </div>
       </div>
 
       {/* Emails List */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-4 sm:py-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="divide-y divide-gray-200">
             {emails.length === 0 ? (
@@ -225,27 +223,27 @@ export default function Inbox() {
               emails.map((email) => (
                 <div
                   key={email.id}
-                  className={`p-6 hover:bg-gray-50 ${
+                  className={`p-3 sm:p-4 md:p-6 hover:bg-gray-50 ${
                     !email.read_at ? 'bg-blue-50' : ''
                   }`}
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-4">
-                      <div className={`p-3 rounded-full ${
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start space-x-2 sm:space-x-3 md:space-x-4 flex-1 min-w-0">
+                      <div className={`p-2 sm:p-3 rounded-full flex-shrink-0 ${
                         email.direction === 'inbound' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
                       }`}>
-                        <EnvelopeIcon className="w-5 h-5" />
+                        <EnvelopeIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className={`text-sm font-medium ${
+                        <div className="flex flex-col xs:flex-row xs:items-center gap-1 xs:gap-2 mb-2">
+                          <span className={`text-xs sm:text-sm font-medium truncate ${
                             email.direction === 'inbound' ? 'text-blue-600' : 'text-green-600'
                           }`}>
                             {email.direction === 'inbound' ? 'From' : 'To'}: {
                               email.direction === 'inbound' ? email.from_address : email.to_address
                             }
                           </span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-500 flex-shrink-0">
                             {formatDate(email.sent_at)}
                           </span>
                           {!email.read_at && (
@@ -254,10 +252,10 @@ export default function Inbox() {
                             </span>
                           )}
                         </div>
-                        <h4 className="text-sm font-medium text-gray-900 mb-1">
+                        <h4 className="text-xs sm:text-sm font-medium text-gray-900 mb-1 truncate">
                           {email.subject}
                         </h4>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
                           {email.body}
                         </p>
                         <div className="mt-2 flex items-center space-x-4">
@@ -271,11 +269,11 @@ export default function Inbox() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col xs:flex-row items-center gap-1 xs:gap-2 flex-shrink-0">
                       {!email.read_at && (
                         <button
                           onClick={() => markAsRead(email.id)}
-                          className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg"
+                          className="p-1.5 sm:p-2 text-blue-500 hover:bg-blue-100 rounded-lg"
                           title="Mark as read"
                         >
                           <EyeIcon className="w-4 h-4" />
@@ -283,7 +281,7 @@ export default function Inbox() {
                       )}
                       <button
                         onClick={() => deleteEmail(email.id)}
-                        className="p-2 text-red-500 hover:bg-red-100 rounded-lg"
+                        className="p-1.5 sm:p-2 text-red-500 hover:bg-red-100 rounded-lg"
                         title="Delete email"
                       >
                         <TrashIcon className="w-4 h-4" />
@@ -299,8 +297,8 @@ export default function Inbox() {
       
       {/* Compose Modal */}
       {showComposeModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-2 sm:p-4">
+          <div className="relative mx-auto p-4 sm:p-5 border w-full max-w-full sm:max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Compose New Message</h3>
               <button 

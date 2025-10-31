@@ -182,18 +182,23 @@ export default function CallsNew() {
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
-            <div>
-              <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Calls</h1>
-              <p className="mt-1 text-xs sm:text-sm text-gray-500">Make and track phone calls</p>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <PhoneIcon className="w-6 h-6 sm:w-8 sm:h-8 text-primary-600 flex-shrink-0" />
+                <div className="min-w-0">
+                  <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">Calls</h1>
+                  <p className="mt-1 text-xs sm:text-sm text-gray-500 truncate">Make and track phone calls</p>
+                </div>
+              </div>
             </div>
             <button
               onClick={() => setShowCallModal(true)}
-              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 flex-shrink-0"
+              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto whitespace-nowrap"
             >
-              <PhoneIcon className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              <span className="whitespace-nowrap">Make Call</span>
+              <PhoneIcon className="h-4 w-4 sm:mr-2" />
+              <span className="hidden xs:inline ml-1">Make Call</span>
             </button>
           </div>
         </div>
