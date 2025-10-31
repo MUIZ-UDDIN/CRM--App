@@ -61,9 +61,9 @@ export default function Login() {
   };
 
   return (
-    <div className="w-full max-w-md space-y-8">
+    <div className="w-full max-w-md xl:max-w-lg 2xl:max-w-xl space-y-6 sm:space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-gray-900">Sign in to your account</h2>
+        <h2 className="text-2xl sm:text-3xl xl:text-4xl font-bold text-gray-900">Sign in to your account</h2>
         <p className="mt-2 text-sm text-gray-600">
           Or{' '}
           <Link
@@ -89,7 +89,7 @@ export default function Login() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              className="relative block w-full px-3 py-2 xl:px-4 xl:py-3 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 text-sm xl:text-base"
               placeholder="Email address"
             />
           </div>
@@ -106,7 +106,7 @@ export default function Login() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
+              className="relative block w-full px-3 py-2 xl:px-4 xl:py-3 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 text-sm xl:text-base"
               placeholder="Password"
             />
             <button
@@ -152,7 +152,7 @@ export default function Login() {
           <button
             type="submit"
             disabled={isSubmitting || isLoading}
-            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+            className="group relative w-full flex justify-center py-2 px-4 xl:py-3 xl:px-6 border border-transparent text-sm xl:text-base font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
           >
             {isSubmitting || isLoading ? (
               <div className="flex items-center">
