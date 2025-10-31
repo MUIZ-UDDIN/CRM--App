@@ -280,7 +280,7 @@ export default function SuperAdminDashboard() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {new Date(company.created_at).toLocaleDateString()}
+                    {new Date(company.created_at).toLocaleDateString('en-US')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <button 
@@ -346,7 +346,7 @@ export default function SuperAdminDashboard() {
                 <div>
                   <label className="text-sm font-medium text-gray-500">Created</label>
                   <p className="text-lg text-gray-900">
-                    {new Date(selectedCompany.created_at).toLocaleDateString()}
+                    {new Date(selectedCompany.created_at).toLocaleDateString('en-US')}
                   </p>
                 </div>
               </div>
@@ -355,7 +355,7 @@ export default function SuperAdminDashboard() {
                 <div>
                   <label className="text-sm font-medium text-gray-500">Trial Ends</label>
                   <p className="text-lg text-gray-900">
-                    {new Date(selectedCompany.trial_ends_at).toLocaleDateString()} 
+                    {new Date(selectedCompany.trial_ends_at).toLocaleDateString('en-US')} 
                     <span className="text-sm text-gray-500 ml-2">
                       ({selectedCompany.days_remaining !== null ? selectedCompany.days_remaining : 0} days remaining)
                     </span>

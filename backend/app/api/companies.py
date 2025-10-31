@@ -128,9 +128,21 @@ def list_companies(
     
     companies = query.offset(skip).limit(limit).all()
     
-    # Add user count
+    # Add user count and calculate days_remaining
+    from datetime import datetime, timezone
     for company in companies:
         company.user_count = db.query(User).filter(User.company_id == company.id).count()
+        
+        # Calculate days remaining for trial accounts
+        if company.subscription_status == 'trial' and company.trial_ends_at:
+            now = datetime.now(timezone.utc)
+            trial_end = company.trial_ends_at
+            if trial_end.tzinfo is None:
+                trial_end = trial_end.replace(tzinfo=timezone.utc)
+            days_left = (trial_end - now).days
+            company.days_remaining = max(0, days_left)
+        else:
+            company.days_remaining = None
     
     return companies
 
