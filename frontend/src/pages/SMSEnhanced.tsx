@@ -263,7 +263,7 @@ export default function SMSEnhanced() {
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-4 sm:py-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-3 sm:gap-4">
             <div className="min-w-0">
               <h1 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-gray-900 flex items-center">
@@ -316,7 +316,7 @@ export default function SMSEnhanced() {
 
       {/* Tabs */}
       <div className="border-b border-gray-200 bg-white">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <nav className="-mb-px flex space-x-8">
             <button
               onClick={() => setSelectedTab('inbox')}
@@ -343,7 +343,7 @@ export default function SMSEnhanced() {
       </div>
 
       {/* Messages List */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
