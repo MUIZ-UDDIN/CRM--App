@@ -279,7 +279,7 @@ export default function Profile() {
   return (
     <div className="min-h-full">
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="min-w-0">
               <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 truncate">Profile</h1>
@@ -319,7 +319,7 @@ export default function Profile() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-8">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg">
           <div className="px-6 py-8">
             {/* Profile Header */}

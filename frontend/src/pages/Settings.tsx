@@ -867,7 +867,7 @@ export default function Settings() {
   return (
     <div className="min-h-full">
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-6">
             <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
             <p className="mt-1 text-sm text-gray-500">Manage your account and application settings</p>
@@ -875,7 +875,7 @@ export default function Settings() {
         </div>
       </div>
 
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         <div className="border-b border-gray-200 mb-6 overflow-x-auto scrollbar-hide">
           <nav className="-mb-px flex space-x-3 sm:space-x-8 min-w-max">
             {tabs.map((tab) => (
