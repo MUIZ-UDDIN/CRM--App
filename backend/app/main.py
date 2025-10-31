@@ -40,6 +40,7 @@ from app.api.voice_transcription import router as voice_transcription_router
 from app.api.bulk_email_campaigns import router as bulk_email_campaigns_router
 from app.api.companies import router as companies_router
 from app.api.registration import router as registration_router
+from app.api.invitations import router as invitations_router
 
 # Import with error handling for debugging
 try:
@@ -175,9 +176,10 @@ async def root():
 
 
 # Include API routers
-# Registration (no auth required)
+# Registration and Invitations (no auth required for some endpoints)
 app.include_router(registration_router)
-logger.info("✅ Registration routes registered")
+app.include_router(invitations_router)
+logger.info("✅ Registration and Invitation routes registered")
 
 app.include_router(
     auth_router,
