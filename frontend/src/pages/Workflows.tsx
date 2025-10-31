@@ -281,8 +281,8 @@ export default function Workflows() {
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
-          <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
+          <div className="py-4 sm:py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-4">
             <div>
               <h1 className="text-2xl font-bold leading-7 text-gray-900">Workflow Automation</h1>
               <p className="mt-1 text-sm text-gray-500">
@@ -339,7 +339,7 @@ export default function Workflows() {
                       </span>
                     </div>
                     
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-3 sm:mt-4">
                       <div>
                         <p className="text-xs text-gray-500">Trigger</p>
                         <p className="text-sm font-medium text-gray-900">{workflow.trigger}</p>
@@ -648,7 +648,7 @@ export default function Workflows() {
                 <label className="text-sm font-medium text-gray-500">Description</label>
                 <p className="text-gray-900 whitespace-pre-wrap break-words overflow-wrap-anywhere max-w-full">{selectedWorkflow.description || 'No description'}</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Trigger</label>
                   <p className="text-gray-900">{selectedWorkflow.trigger}</p>
@@ -663,7 +663,7 @@ export default function Workflows() {
                   </span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Actions Count</label>
                   <p className="text-gray-900">{selectedWorkflow.actions_count}</p>
@@ -673,7 +673,7 @@ export default function Workflows() {
                   <p className="text-gray-900">{selectedWorkflow.executions_count}</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Last Run</label>
                   <p className="text-gray-900">{formatDate(selectedWorkflow.last_run)}</p>

@@ -707,7 +707,7 @@ export default function Files() {
             <p className="mt-4 text-gray-600">Loading files...</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
             {filteredFiles.map((file) => (
               <div 
                 key={file.id} 
@@ -715,25 +715,25 @@ export default function Files() {
                 onDragStart={(e) => handleDragStart(e, file)}
                 onDragOver={file.type === 'folder' ? handleDragOver : undefined}
                 onDrop={file.type === 'folder' ? (e) => handleDrop(e, file.id) : undefined}
-                className="bg-white rounded-lg shadow p-4 hover:shadow-md transition-shadow flex flex-col cursor-move"
+                className="bg-white rounded-lg shadow p-2 sm:p-3 md:p-4 hover:shadow-md transition-shadow flex flex-col cursor-move"
                 onClick={() => file.type === 'folder' && handleOpenFolder(file)}
                 style={{ cursor: file.type === 'folder' ? 'pointer' : 'grab' }}
               >
                 {/* File/Folder Icon */}
-                <div className="flex justify-center mb-3">
+                <div className="flex justify-center mb-2 sm:mb-3">
                   {file.type === 'folder' ? (
-                    <FolderIcon className="h-16 w-16 text-yellow-500" />
+                    <FolderIcon className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-yellow-500" />
                   ) : (
-                    <DocumentIcon className="h-16 w-16 text-blue-500" />
+                    <DocumentIcon className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 text-blue-500" />
                   )}
                 </div>
 
                 {/* File Info */}
-                <h3 className="font-medium text-gray-900 text-sm mb-2 text-center truncate" title={file.name}>
+                <h3 className="font-medium text-gray-900 text-xs sm:text-sm mb-1 sm:mb-2 text-center truncate" title={file.name}>
                   {file.name}
                 </h3>
                 
-                <div className="space-y-1 text-xs text-gray-600 flex-grow">
+                <div className="space-y-0.5 sm:space-y-1 text-xs text-gray-600 flex-grow">
                   {file.type === 'file' && (
                     <>
                       <p className="text-center">Size: {formatFileSize(file.size)}</p>
