@@ -38,6 +38,7 @@ from app.api.analytics_enhanced import router as analytics_enhanced_router
 from app.api.performance_alerts import router as performance_alerts_router
 from app.api.voice_transcription import router as voice_transcription_router
 from app.api.bulk_email_campaigns import router as bulk_email_campaigns_router
+from app.api.companies import router as companies_router
 
 # Import with error handling for debugging
 try:
@@ -356,6 +357,13 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 logger.info("✅ Bulk Email Campaigns routes registered")
+
+# Multi-tenant Company Management
+app.include_router(
+    companies_router,
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Company Management routes registered")
 
 
 if __name__ == "__main__":
