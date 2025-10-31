@@ -6,8 +6,9 @@ All models are imported here to ensure they are registered with SQLAlchemy
 from .base import Base, BaseModel
 
 # Core models
-from .companies import Company, PlanType, CompanyStatus
+from .companies import Company, PlanType, CompanyStatus, SubscriptionStatus
 from .users import User, Role, Team, user_roles, UserRole, UserStatus
+from .payment_history import PaymentHistory
 from .contacts import Contact, ContactStatus, LeadSource
 from .deals import Deal, Pipeline, PipelineStage, DealStatus
 from .activities import Activity, ActivityType, ActivityStatus
@@ -52,6 +53,8 @@ __all__ = [
     'Company',
     'PlanType',
     'CompanyStatus',
+    'SubscriptionStatus',
+    'PaymentHistory',
     
     # Users & Auth
     'User',
