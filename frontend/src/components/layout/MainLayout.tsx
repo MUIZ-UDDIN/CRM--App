@@ -23,6 +23,7 @@ import {
 import { clsx } from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageViewer from '../ImageViewer';
+import TrialBanner from '../TrialBanner';
 
 interface NavItem {
   name: string;
@@ -345,6 +346,9 @@ export default function MainLayout() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Trial Status Banner */}
+      <TrialBanner />
+      
       {/* Top Navigation */}
       <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40 overflow-visible">
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 overflow-visible">

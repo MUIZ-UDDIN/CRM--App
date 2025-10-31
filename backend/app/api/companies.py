@@ -49,6 +49,9 @@ class CompanyResponse(BaseModel):
     currency: str
     created_at: datetime
     user_count: Optional[int] = 0
+    subscription_status: Optional[str] = None
+    trial_ends_at: Optional[datetime] = None
+    days_remaining: Optional[int] = None
     
     class Config:
         from_attributes = True
@@ -148,6 +151,13 @@ def get_company(
         )
     
     company.user_count = db.query(User).filter(User.company_id == company.id).count()
+    
+    # Calculate days remaining if on trial
+    if company.subscription_status == 'trial' and company.trial_ends_at:
+        from datetime import datetime
+        days_remaining = (company.trial_ends_at - datetime.utcnow()).days
+        company.days_remaining = max(0, days_remaining)
+    
     return company
 
 
