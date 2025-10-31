@@ -30,6 +30,7 @@ import PhoneNumbers from './pages/PhoneNumbers';
 import Calls from './pages/Calls';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
+import AcceptInvitation from './pages/auth/AcceptInvitation';
 import ForgotPassword from './pages/auth/ForgotPassword';
 
 // Providers
@@ -90,6 +91,7 @@ function App() {
               <Route path="/auth" element={<AuthLayout />}>
                 <Route path="login" element={<Login />} />
                 <Route path="register" element={<Register />} />
+                <Route path="accept-invitation" element={<AcceptInvitation />} />
                 <Route path="forgot-password" element={<ForgotPassword />} />
                 <Route index element={<Navigate to="/auth/login" replace />} />
               </Route>
