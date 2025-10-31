@@ -357,7 +357,7 @@ export default function SuperAdminDashboard() {
                   <p className="text-lg text-gray-900">
                     {new Date(selectedCompany.trial_ends_at).toLocaleDateString()} 
                     <span className="text-sm text-gray-500 ml-2">
-                      ({selectedCompany.days_remaining} days remaining)
+                      ({selectedCompany.days_remaining !== null ? selectedCompany.days_remaining : 0} days remaining)
                     </span>
                   </p>
                 </div>
