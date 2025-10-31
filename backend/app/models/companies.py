@@ -31,8 +31,8 @@ class Company(BaseModel):
     __tablename__ = 'companies'
     
     name = Column(String(255), nullable=False, index=True)
-    plan = Column(Enum(PlanType), default=PlanType.FREE, nullable=False)
-    status = Column(Enum(CompanyStatus), default=CompanyStatus.ACTIVE, nullable=False)
+    plan = Column(Enum(PlanType, native_enum=False, create_constraint=False), default=PlanType.FREE, nullable=False)
+    status = Column(Enum(CompanyStatus, native_enum=False, create_constraint=False), default=CompanyStatus.ACTIVE, nullable=False)
     
     # Company settings
     domain = Column(String(255), unique=True)  # Custom domain (e.g., acme.yourcrm.com)

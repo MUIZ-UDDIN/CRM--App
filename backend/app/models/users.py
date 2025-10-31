@@ -50,8 +50,8 @@ class User(BaseModel):
     
     # Multi-tenant fields
     company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)  # NULL for super_admin
-    user_role = Column(Enum(UserRole), default=UserRole.COMPANY_USER, nullable=False, index=True)
-    status = Column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
+    user_role = Column(Enum(UserRole, native_enum=False, create_constraint=False), default=UserRole.COMPANY_USER, nullable=False, index=True)
+    status = Column(Enum(UserStatus, native_enum=False, create_constraint=False), default=UserStatus.ACTIVE, nullable=False)
     
     # Basic info
     email = Column(String(255), unique=True, nullable=False, index=True)
