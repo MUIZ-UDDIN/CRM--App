@@ -22,6 +22,10 @@ interface Company {
   days_remaining: number | null;
   user_count: number;
   created_at: string;
+  domain: string | null;
+  logo_url: string | null;
+  timezone: string;
+  currency: string;
 }
 
 export default function SuperAdminDashboard() {
