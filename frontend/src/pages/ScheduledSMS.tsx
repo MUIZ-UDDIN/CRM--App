@@ -247,7 +247,7 @@ export default function ScheduledSMS() {
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-4 sm:py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
               <button
@@ -274,7 +274,7 @@ export default function ScheduledSMS() {
       </div>
 
       {/* Content */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         {scheduledMessages.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow-sm border border-gray-200">
             <ClockIcon className="mx-auto h-12 w-12 text-gray-400" />

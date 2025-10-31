@@ -370,7 +370,7 @@ export default function Activities() {
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold leading-7 text-gray-900">Activities</h1>
@@ -390,7 +390,7 @@ export default function Activities() {
       </div>
 
       {/* Filters */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         <div className="flex flex-col sm:flex-row gap-4">
           <div className="flex-1 relative">
             <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />

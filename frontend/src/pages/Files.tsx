@@ -581,7 +581,7 @@ export default function Files() {
     <div className="min-h-full">
       {/* Header */}
       <div className="bg-white shadow">
-        <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h1 className="text-2xl font-bold leading-7 text-gray-900">File Management</h1>
@@ -620,7 +620,7 @@ export default function Files() {
             handleDrop(e, parentFolder?.id || null);
           }}
         >
-          <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-3">
+          <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
             <div className="flex items-center space-x-2 text-sm flex-wrap">
               <button
                 onClick={handleBackToRoot}
