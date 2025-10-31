@@ -59,6 +59,17 @@ export default function SuperAdminDashboard() {
   const getSubscriptionBadge = (company: Company) => {
     if (company.subscription_status === 'trial') {
       const daysLeft = company.days_remaining || 0;
+      
+      // Show "Expired" if 0 days left
+      if (daysLeft === 0) {
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center gap-1">
+            <XCircleIcon className="w-3 h-3" />
+            Expired
+          </span>
+        );
+      }
+      
       const color = daysLeft <= 3 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
       return (
         <span className={`px-2 py-1 text-xs font-medium rounded-full ${color} flex items-center gap-1`}>
