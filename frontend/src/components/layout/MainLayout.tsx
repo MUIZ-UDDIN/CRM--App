@@ -61,11 +61,10 @@ const navigation: NavItem[] = [
       { name: 'Activities', href: '/activities' },
       { name: 'Files', href: '/files' },
       { name: 'Workflows', href: '/workflows' },
-      { name: 'Team', href: '/team' },
+      { name: 'Admin Dashboard', href: '/admin' },
       { name: 'Settings', href: '/settings' },
     ]
   },
-  { name: 'Admin', href: '/admin', icon: Cog6ToothIcon },
 ];
 
 // Notifications will be fetched from API
