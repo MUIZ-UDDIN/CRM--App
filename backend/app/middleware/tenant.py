@@ -84,9 +84,15 @@ def require_company_admin(user: User):
     return user
 
 
-def require_super_admin(user: User):
+def require_super_admin(user):
     """Decorator/dependency to require super admin role"""
-    if user.user_role != UserRole.SUPER_ADMIN:
+    # Handle both dict and User object
+    if isinstance(user, dict):
+        user_role = user.get('role', '')
+    else:
+        user_role = user.user_role if hasattr(user, 'user_role') else ''
+    
+    if user_role not in ['super_admin', 'Super Admin']:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super admin access required"
