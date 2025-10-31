@@ -40,15 +40,23 @@ async def send_invitation(
     invitation: InvitationCreate,
     background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Send invitation to new team member
     Only Company Admin or Super Admin can send invitations
     """
     
+    # Get user from database
+    user = db.query(User).filter(User.email == current_user.get("email")).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    
     # Check if user is admin
-    if current_user.user_role not in ['super_admin', 'company_admin']:
+    if user.user_role not in ['super_admin', 'company_admin']:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can invite users"
@@ -63,11 +71,11 @@ async def send_invitation(
         )
     
     # Get company
-    if current_user.user_role == 'super_admin':
+    if user.user_role == 'super_admin':
         # Super admin must specify company_id (add this to request model if needed)
-        company_id = current_user.company_id  # For now, use their company
+        company_id = user.company_id  # For now, use their company
     else:
-        company_id = current_user.company_id
+        company_id = user.company_id
     
     if not company_id:
         raise HTTPException(
@@ -93,7 +101,7 @@ async def send_invitation(
         "last_name": invitation.last_name,
         "user_role": invitation.user_role,
         "company_id": str(company_id),
-        "invited_by": str(current_user.id),
+        "invited_by": str(user.id),
         "expires_at": datetime.utcnow() + timedelta(days=7)
     }
     
@@ -105,7 +113,7 @@ async def send_invitation(
         to_email=invitation.email,
         first_name=invitation.first_name,
         company_name=company.name,
-        invited_by=f"{current_user.first_name} {current_user.last_name}",
+        invited_by=f"{user.first_name} {user.last_name}",
         invitation_link=invitation_link,
         sendgrid_api_key=company.sendgrid_api_key
     )
