@@ -2,10 +2,25 @@
 User and Role models
 """
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Table, DateTime
+from sqlalchemy import Column, String, Boolean, ForeignKey, Table, DateTime, Enum
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
+import enum
 from .base import BaseModel
+
+
+class UserRole(str, enum.Enum):
+    """User role types for RBAC"""
+    SUPER_ADMIN = "super_admin"
+    COMPANY_ADMIN = "company_admin"
+    COMPANY_USER = "company_user"
+
+
+class UserStatus(str, enum.Enum):
+    """User status"""
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    PENDING = "pending"
 
 
 # Association table for many-to-many relationship between users and roles
@@ -30,9 +45,15 @@ class Role(BaseModel):
 
 
 class User(BaseModel):
-    """User model"""
+    """User model with multi-tenant support"""
     __tablename__ = 'users'
     
+    # Multi-tenant fields
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)  # NULL for super_admin
+    user_role = Column(Enum(UserRole), default=UserRole.COMPANY_USER, nullable=False, index=True)
+    status = Column(Enum(UserStatus), default=UserStatus.ACTIVE, nullable=False)
+    
+    # Basic info
     email = Column(String(255), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
@@ -53,13 +74,14 @@ class User(BaseModel):
     # Settings
     email_verified = Column(Boolean, default=False)
     last_login = Column(String)
-    role = Column(String(50), default="Regular User")  # User role
+    role = Column(String(50), default="Regular User")  # Legacy role field (keep for backward compatibility)
     
     # Password reset
     reset_code = Column(String(6))
     reset_code_expires = Column(DateTime)
     
     # Relationships
+    company = relationship('Company', back_populates='users', foreign_keys=[company_id])
     roles = relationship('Role', secondary=user_roles, back_populates='users')
     team = relationship('Team', back_populates='members', foreign_keys=[team_id])
     manager = relationship('User', remote_side='User.id', backref='direct_reports')
@@ -72,6 +94,18 @@ class User(BaseModel):
     calls = relationship('Call', back_populates='user', foreign_keys='Call.user_id')
     twilio_settings = relationship('TwilioSettings', back_populates='user', uselist=False)
     conversations = relationship('UserConversation', back_populates='user')
+    
+    def is_super_admin(self) -> bool:
+        """Check if user is super admin"""
+        return self.user_role == UserRole.SUPER_ADMIN
+    
+    def is_company_admin(self) -> bool:
+        """Check if user is company admin"""
+        return self.user_role == UserRole.COMPANY_ADMIN
+    
+    def can_manage_company(self) -> bool:
+        """Check if user can manage company settings"""
+        return self.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN]
     
     def __repr__(self):
         return f"<User {self.email}>"
