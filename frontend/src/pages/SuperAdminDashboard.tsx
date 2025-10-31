@@ -29,6 +29,8 @@ export default function SuperAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   useEffect(() => {
     fetchCompanies();
@@ -277,7 +279,13 @@ export default function SuperAdminDashboard() {
                     {new Date(company.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button className="text-blue-600 hover:text-blue-800 font-medium">
+                    <button 
+                      onClick={() => {
+                        setSelectedCompany(company);
+                        setShowDetailsModal(true);
+                      }}
+                      className="text-blue-600 hover:text-blue-800 font-medium"
+                    >
                       View Details
                     </button>
                   </td>
@@ -287,6 +295,99 @@ export default function SuperAdminDashboard() {
           </tbody>
         </table>
       </div>
+
+      {/* Company Details Modal */}
+      {showDetailsModal && selectedCompany && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Company Details</h2>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircleIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Company Info */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Company Name</label>
+                  <p className="text-lg font-semibold text-gray-900">{selectedCompany.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Company ID</label>
+                  <p className="text-sm text-gray-900 font-mono">{selectedCompany.id}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Plan</label>
+                  <p className="text-lg">{getPlanBadge(selectedCompany.plan)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Status</label>
+                  <p className="text-lg">{getSubscriptionBadge(selectedCompany)}</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Total Users</label>
+                  <p className="text-lg font-semibold text-gray-900">{selectedCompany.user_count}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Created</label>
+                  <p className="text-lg text-gray-900">
+                    {new Date(selectedCompany.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+
+              {selectedCompany.subscription_status === 'trial' && selectedCompany.trial_ends_at && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Trial Ends</label>
+                  <p className="text-lg text-gray-900">
+                    {new Date(selectedCompany.trial_ends_at).toLocaleDateString()} 
+                    <span className="text-sm text-gray-500 ml-2">
+                      ({selectedCompany.days_remaining} days remaining)
+                    </span>
+                  </p>
+                </div>
+              )}
+
+              {selectedCompany.domain && (
+                <div>
+                  <label className="text-sm font-medium text-gray-500">Domain</label>
+                  <p className="text-lg text-gray-900">{selectedCompany.domain}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="mt-6 pt-6 border-t flex gap-3">
+              <button
+                onClick={() => {
+                  // TODO: Implement suspend/activate
+                  toast.success('Feature coming soon!');
+                }}
+                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+              >
+                {selectedCompany.status === 'active' ? 'Suspend Company' : 'Activate Company'}
+              </button>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
