@@ -19,6 +19,7 @@ import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
 import TeamManagement from './pages/TeamManagement';
+import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import PipelineSettings from './pages/PipelineSettings';
 import Workflows from './pages/Workflows';
 import Inbox from './pages/Inbox';
@@ -111,6 +112,7 @@ function App() {
                 <Route path="workflows" element={<Workflows />} />
                 <Route path="settings" element={<Settings />} />
                 <Route path="team" element={<TeamManagement />} />
+                <Route path="admin" element={<SuperAdminDashboard />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="inbox" element={<Inbox />} />
