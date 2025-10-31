@@ -104,16 +104,27 @@ export default function SuperAdminDashboard() {
     );
   };
 
-  const getPlanBadge = (plan: string) => {
+  const getPlanBadge = (company: Company) => {
     const colors = {
       free: 'bg-gray-100 text-gray-800',
       pro: 'bg-blue-100 text-blue-800',
-      enterprise: 'bg-purple-100 text-purple-800'
+      enterprise: 'bg-purple-100 text-purple-800',
+      trial: 'bg-yellow-100 text-yellow-800'
     };
 
+    // Show "Trial" badge for companies on trial, regardless of their plan
+    if (company.subscription_status === 'trial') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+          TRIAL
+        </span>
+      );
+    }
+
+    const plan = company.plan.toLowerCase();
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[plan as keyof typeof colors] || colors.free}`}>
-        {plan.toUpperCase()}
+        {company.plan.toUpperCase()}
       </span>
     );
   };
@@ -127,8 +138,11 @@ export default function SuperAdminDashboard() {
   const stats = {
     total: companies.length,
     active: companies.filter(c => c.subscription_status === 'active').length,
-    trial: companies.filter(c => c.subscription_status === 'trial').length,
-    expired: companies.filter(c => c.subscription_status === 'expired').length,
+    trial: companies.filter(c => c.subscription_status === 'trial' && (c.days_remaining || 0) > 0).length,
+    expired: companies.filter(c => 
+      c.subscription_status === 'expired' || 
+      (c.subscription_status === 'trial' && (c.days_remaining || 0) === 0)
+    ).length,
     totalUsers: companies.reduce((sum, c) => sum + c.user_count, 0)
   };
 
@@ -279,7 +293,7 @@ export default function SuperAdminDashboard() {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    {getPlanBadge(company.plan)}
+                    {getPlanBadge(company)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {getSubscriptionBadge(company)}
@@ -341,7 +355,7 @@ export default function SuperAdminDashboard() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Plan</label>
-                  <p className="text-lg">{getPlanBadge(selectedCompany.plan)}</p>
+                  <p className="text-lg">{getPlanBadge(selectedCompany)}</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Status</label>
