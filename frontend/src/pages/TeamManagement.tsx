@@ -44,8 +44,16 @@ export default function TeamManagement() {
       const token = localStorage.getItem('token');
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       
+      // Check if user is Super Admin (no company_id)
+      if (user.role === 'super_admin' || user.role === 'Super Admin') {
+        toast.error('Super Admins cannot access team management. Please use the Admin Dashboard.');
+        setLoading(false);
+        return;
+      }
+      
       if (!user.company_id) {
-        toast.error('Company not found');
+        toast.error('Company not found. Please contact support.');
+        setLoading(false);
         return;
       }
 
