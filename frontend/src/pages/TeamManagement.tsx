@@ -57,15 +57,21 @@ export default function TeamManagement() {
       
       const user = userResponse.data;
       
+      console.log('TeamManagement - User data:', user);
+      console.log('TeamManagement - User role:', user.role);
+      console.log('TeamManagement - Company ID:', user.company_id);
+      
       // Super Admins see all users, Company admins/users see only their company's users
       let response;
       
       if (user.role === 'super_admin' || user.role === 'Super Admin') {
+        console.log('TeamManagement - Fetching ALL users (Super Admin)');
         // Super Admin sees all users across all companies
         response = await axios.get(`${API_URL}/users/`, {
           headers: { Authorization: `Bearer ${token}` }
         });
       } else {
+        console.log('TeamManagement - Fetching company users (Company Admin/User)');
         // Company users see only their company's users
         if (!user.company_id) {
           toast.error('Company not found. Please contact support.');
@@ -73,6 +79,7 @@ export default function TeamManagement() {
           return;
         }
         
+        console.log('TeamManagement - Calling API:', `${API_URL}/companies/${user.company_id}/users`);
         response = await axios.get(`${API_URL}/companies/${user.company_id}/users`, {
           headers: { Authorization: `Bearer ${token}` }
         });
