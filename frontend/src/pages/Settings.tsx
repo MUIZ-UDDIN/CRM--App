@@ -374,23 +374,26 @@ export default function Settings() {
       if (response.ok) {
         toast.success(`Team member added with role: ${teamForm.role}. Default password: ChangeMe123!`);
         setShowAddTeamModal(false);
-        setTeamForm({ name: '', email: '', role: 'Regular User' });  // Reset to Regular User default
-        setRoleSearchTerm('');  // Clear search term
+        setTeamForm({ name: '', email: '', role: 'Regular User' });
+        setRoleSearchTerm('');
         fetchTeamMembers();
       } else {
         try {
           const errorData = await response.json();
-          // User-friendly error messages
-          if (errorData.detail?.includes('already registered')) {
+          const errorMessage = typeof errorData.detail === 'string' 
+            ? errorData.detail 
+            : (errorData.detail ? JSON.stringify(errorData.detail) : 'Failed to add team member');
+          
+          if (errorMessage.includes('already registered')) {
             toast.error(`This email is already registered. Please use a different email address.`);
-          } else if (errorData.detail?.includes('exceed 255')) {
+          } else if (errorMessage.includes('exceed 255')) {
             toast.error('Name is too long. Please use a shorter name (max 255 characters).');
-          } else if (errorData.detail?.includes('Script') || errorData.detail?.includes('HTML') || errorData.detail?.includes('tags')) {
+          } else if (errorMessage.includes('Script') || errorMessage.includes('HTML') || errorMessage.includes('tags')) {
             toast.error('Invalid characters in name. Please remove any special characters or tags.');
-          } else if (errorData.detail?.includes('empty')) {
+          } else if (errorMessage.includes('empty')) {
             toast.error('Name cannot be empty. Please enter a valid name.');
           } else {
-            toast.error(errorData.detail || 'Failed to add team member. Please check your inputs and try again.');
+            toast.error(errorMessage);
           }
         } catch (parseError) {
           toast.error('Failed to add team member. Please try again.');
