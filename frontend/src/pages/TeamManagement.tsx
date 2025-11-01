@@ -57,22 +57,26 @@ export default function TeamManagement() {
       
       const user = userResponse.data;
       
-      // Check if user is Super Admin (no company_id)
-      if (user.role === 'super_admin' || user.role === 'Super Admin') {
-        toast.error('Super Admins cannot access team management. Please use the Admin Dashboard.');
-        setLoading(false);
-        return;
-      }
+      // Super Admins see all users, Company admins/users see only their company's users
+      let response;
       
-      if (!user.company_id) {
-        toast.error('Company not found. Please contact support.');
-        setLoading(false);
-        return;
+      if (user.role === 'super_admin' || user.role === 'Super Admin') {
+        // Super Admin sees all users across all companies
+        response = await axios.get(`${API_URL}/users/`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+      } else {
+        // Company users see only their company's users
+        if (!user.company_id) {
+          toast.error('Company not found. Please contact support.');
+          setLoading(false);
+          return;
+        }
+        
+        response = await axios.get(`${API_URL}/companies/${user.company_id}/users`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
       }
-
-      const response = await axios.get(`${API_URL}/companies/${user.company_id}/users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
 
       setTeamMembers(response.data);
     } catch (error: any) {
@@ -257,7 +261,7 @@ export default function TeamManagement() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => toast.info('Edit feature coming soon!')}
+                          onClick={() => toast('Edit feature coming soon!', { icon: 'ℹ️' })}
                           className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
                           title="Edit member"
                         >
@@ -266,7 +270,7 @@ export default function TeamManagement() {
                         <button
                           onClick={() => {
                             if (confirm(`Are you sure you want to remove ${member.first_name} ${member.last_name}?`)) {
-                              toast.info('Delete feature coming soon!');
+                              toast('Delete feature coming soon!', { icon: 'ℹ️' });
                             }
                           }}
                           className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
