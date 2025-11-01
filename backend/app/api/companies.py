@@ -279,8 +279,8 @@ def list_company_users(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "user_role": user.user_role.value,
-            "status": user.status.value,
+            "user_role": user.user_role.value if hasattr(user.user_role, 'value') else user.user_role,
+            "status": user.status.value if hasattr(user.status, 'value') else user.status,
             "created_at": user.created_at
         }
         for user in users
