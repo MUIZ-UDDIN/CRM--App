@@ -420,13 +420,13 @@ export default function SuperAdminDashboard() {
                   // TODO: Implement suspend/activate
                   toast.success('Feature coming soon!');
                 }}
-                className="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700"
+                className="flex-1 px-4 py-2 bg-yellow-600 text-white text-sm sm:text-base rounded-lg hover:bg-yellow-700"
               >
                 {selectedCompany.status === 'active' ? 'Suspend Company' : 'Activate Company'}
               </button>
               <button
                 onClick={() => setShowDetailsModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm sm:text-base hover:bg-gray-50"
               >
                 Close
               </button>

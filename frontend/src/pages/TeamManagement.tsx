@@ -42,7 +42,13 @@ export default function TeamManagement() {
   const fetchTeamMembers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Fetch current user from API to get fresh data
+      const userResponse = await axios.get(`${API_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const user = userResponse.data;
       
       // Check if user is Super Admin (no company_id)
       if (user.role === 'super_admin' || user.role === 'Super Admin') {
