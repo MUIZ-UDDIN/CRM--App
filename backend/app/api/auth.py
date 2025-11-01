@@ -76,6 +76,7 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str
     role: str
+    company_id: Optional[str] = None
     team_id: Optional[str] = None
     is_active: bool
 
