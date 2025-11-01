@@ -5,8 +5,11 @@ import {
   UserIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ClockIcon
+  ClockIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -23,10 +26,14 @@ interface TeamMember {
 }
 
 export default function TeamManagement() {
+  const { user } = useAuth();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviting, setInviting] = useState(false);
+  
+  // Check if current user is admin
+  const isAdmin = user?.role === 'company_admin' || user?.role === 'super_admin' || user?.role === 'Super Admin';
 
   const [inviteForm, setInviteForm] = useState({
     email: '',
@@ -166,15 +173,19 @@ export default function TeamManagement() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Team Management</h1>
-          <p className="text-gray-600 mt-1">Manage your team members and send invitations</p>
+          <p className="text-gray-600 mt-1">
+            {isAdmin ? 'Manage your team members and send invitations' : 'View your team members'}
+          </p>
         </div>
-        <button
-          onClick={() => setShowInviteModal(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <UserPlusIcon className="w-5 h-5" />
-          Invite Team Member
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setShowInviteModal(true)}
+            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <UserPlusIcon className="w-5 h-5" />
+            Invite Team Member
+          </button>
+        )}
       </div>
 
       {/* Team Members List */}
@@ -197,12 +208,17 @@ export default function TeamManagement() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Joined
               </th>
+              {isAdmin && (
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {teamMembers.length === 0 ? (
               <tr>
-                <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={isAdmin ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
                   <UserIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                   <p>No team members yet</p>
                   <p className="text-sm mt-1">Invite your first team member to get started</p>
@@ -237,6 +253,30 @@ export default function TeamManagement() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(member.created_at).toLocaleDateString()}
                   </td>
+                  {isAdmin && (
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => toast.info('Edit feature coming soon!')}
+                          className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+                          title="Edit member"
+                        >
+                          <PencilIcon className="w-5 h-5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Are you sure you want to remove ${member.first_name} ${member.last_name}?`)) {
+                              toast.info('Delete feature coming soon!');
+                            }
+                          }}
+                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                          title="Remove member"
+                        >
+                          <TrashIcon className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
