@@ -66,11 +66,6 @@ const navigation: NavItem[] = [
   },
 ];
 
-// Super Admin only navigation
-const superAdminNavigation = [
-  { name: 'Admin Dashboard', href: '/admin', icon: Cog6ToothIcon },
-];
-
 // Notifications will be fetched from API
 
 export default function MainLayout() {
@@ -430,6 +425,16 @@ export default function MainLayout() {
                                 {child.name}
                               </Link>
                             ))}
+                            {/* Add Admin Dashboard for super admins in More dropdown */}
+                            {item.name === 'More' && (user?.role === 'super_admin' || user?.role === 'Super Admin') && (
+                              <Link
+                                to="/admin"
+                                onClick={() => setOpenDropdown(null)}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-200"
+                              >
+                                Admin Dashboard
+                              </Link>
+                            )}
                           </div>
                         )}
                       </div>
@@ -461,28 +466,6 @@ export default function MainLayout() {
                     </Link>
                   );
                 })}
-                
-                {/* Super Admin navigation - only show for super admins */}
-                {(user?.role === 'super_admin' || user?.role === 'Super Admin') && superAdminNavigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={clsx(
-                      'inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap flex-shrink-0',
-                      location.pathname === item.href
-                        ? 'bg-primary-50 text-primary-600'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                    )}
-                  >
-                    <item.icon 
-                      className={clsx(
-                        'mr-2 h-4 w-4 flex-shrink-0',
-                        location.pathname === item.href ? 'text-primary-600' : 'text-gray-400'
-                      )} 
-                    />
-                    <span className="truncate">{item.name}</span>
-                  </Link>
-                ))}
               </nav>
             </div>
 
@@ -737,6 +720,21 @@ export default function MainLayout() {
                           </Link>
                         );
                       })}
+                      {/* Add Admin Dashboard for super admins in More section */}
+                      {item.name === 'More' && (user?.role === 'super_admin' || user?.role === 'Super Admin') && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setShowMobileMenu(false)}
+                          className={clsx(
+                            'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ml-3 border-t border-gray-200 mt-2 pt-3',
+                            location.pathname === '/admin'
+                              ? 'bg-primary-50 text-primary-600 border border-primary-200'
+                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                          )}
+                        >
+                          <span>Admin Dashboard</span>
+                        </Link>
+                      )}
                     </div>
                   );
                 }

@@ -11,11 +11,9 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, isLoading, error, clearError } = useAuth();
+  const { login, isLoading, error, clearError, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const from = location.state?.from?.pathname || '/dashboard';
 
   useEffect(() => {
     if (error) {
@@ -52,7 +50,8 @@ export default function Login() {
         localStorage.removeItem('rememberMe');
       }
       toast.success('Login successful!');
-      navigate(from, { replace: true });
+      // Always redirect to dashboard on login, regardless of previous page
+      navigate('/dashboard', { replace: true });
     } catch (error) {
       // Error is handled by the context and useEffect above
     } finally {
