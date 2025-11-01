@@ -46,8 +46,10 @@ export default function Settings() {
   const { token, user } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
-  // Check if current user is super admin
-  const isSuperAdmin = user?.role === 'Super Admin' || user?.role === 'Admin';
+  // Check if current user is super admin or company admin
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'Super Admin';
+  const isCompanyAdmin = user?.role === 'company_admin' || user?.role === 'Company Admin';
+  const isAdmin = isSuperAdmin || isCompanyAdmin;
   
   // Default roles
   const defaultRoles = ['Super Admin', 'Admin', 'Sales Manager', 'Sales Rep', 'Regular User', 'Support'];
@@ -928,7 +930,7 @@ export default function Settings() {
           <div className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
               <h2 className="text-lg font-medium text-gray-900">Team Members</h2>
-              {isSuperAdmin && (
+              {isAdmin && (
                 <button
                   onClick={handleOpenAddModal}
                   className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto justify-center"
@@ -948,7 +950,7 @@ export default function Settings() {
                       <h3 className="text-sm font-semibold text-gray-900 truncate">{member.name}</h3>
                       <p className="text-xs text-gray-600 truncate mt-1">{member.email}</p>
                     </div>
-                    {isSuperAdmin && (
+                    {isAdmin && (
                       <ActionButtons
                         onEdit={() => handleEditTeamMember(member)}
                         onDelete={() => handleDeleteTeamMember(member)}
@@ -982,7 +984,7 @@ export default function Settings() {
                       <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{member.role}</td>
                       <td className="px-6 py-4 text-right">
-                        {isSuperAdmin ? (
+                        {isAdmin ? (
                           <ActionButtons
                             onEdit={() => handleEditTeamMember(member)}
                             onDelete={() => handleDeleteTeamMember(member)}
