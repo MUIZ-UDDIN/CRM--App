@@ -47,13 +47,16 @@ export default function TeamManagement() {
   }, []);
 
   const fetchTeamMembers = async () => {
+    console.log('🔥 fetchTeamMembers CALLED');
     try {
       const token = localStorage.getItem('token');
+      console.log('🔥 Token:', token ? 'exists' : 'missing');
       
       // Fetch current user from API to get fresh data
       const userResponse = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      console.log('🔥 User response:', userResponse.data);
       
       const user = userResponse.data;
       
