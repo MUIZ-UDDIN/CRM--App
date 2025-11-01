@@ -14,22 +14,33 @@ class TenantContext:
     Ensures all database queries are scoped to the current user's company
     """
     
-    def __init__(self, user: User):
+    def __init__(self, user):
         self.user = user
-        self.company_id = user.company_id
-        self.user_role = user.user_role
+        # Handle both dict and User object
+        if isinstance(user, dict):
+            self.company_id = user.get('company_id')
+            self.user_role = user.get('role')
+            self.user_id = user.get('id')
+        else:
+            self.company_id = user.company_id
+            self.user_role = user.user_role
+            self.user_id = user.id
     
     def is_super_admin(self) -> bool:
         """Check if current user is super admin"""
+        if isinstance(self.user_role, str):
+            return self.user_role.lower() in ['super_admin', 'super admin']
         return self.user_role == UserRole.SUPER_ADMIN
     
     def is_company_admin(self) -> bool:
         """Check if current user is company admin"""
+        if isinstance(self.user_role, str):
+            return self.user_role.lower() in ['company_admin', 'company admin']
         return self.user_role == UserRole.COMPANY_ADMIN
     
     def can_manage_company(self) -> bool:
         """Check if user can manage company settings"""
-        return self.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN]
+        return self.is_super_admin() or self.is_company_admin()
     
     def can_access_company(self, company_id: str) -> bool:
         """Check if user can access a specific company"""
