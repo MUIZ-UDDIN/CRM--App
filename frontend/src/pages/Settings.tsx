@@ -77,19 +77,48 @@ export default function Settings() {
 
   const fetchTeamMembers = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/`, {
+      // First, get current user info to determine role and company
+      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      if (!userResponse.ok) {
+        toast.error('Failed to load user information');
+        return;
+      }
+      
+      const currentUser = await userResponse.json();
+      
+      // Determine which endpoint to call based on user role
+      let apiUrl;
+      if (currentUser.role === 'super_admin' || currentUser.role === 'Super Admin') {
+        // Super Admin sees all users
+        apiUrl = `${API_BASE_URL}/api/users/`;
+      } else {
+        // Company users see only their company's users
+        if (!currentUser.company_id) {
+          toast.error('Company not found. Please contact support.');
+          return;
+        }
+        apiUrl = `${API_BASE_URL}/api/companies/${currentUser.company_id}/users`;
+      }
+      
+      const response = await fetch(apiUrl, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
       if (response.ok) {
         const data = await response.json();
         setTeamMembers(data.map((user: any) => ({
           id: user.id,
           name: `${user.first_name} ${user.last_name}`,
           email: user.email,
-          role: user.role || 'User',
-          status: user.is_active ? 'active' : 'inactive',
+          role: user.user_role || user.role || 'User',
+          status: user.status || (user.is_active ? 'active' : 'inactive'),
           joined_at: user.created_at?.split('T')[0] || 'N/A',
         })));
       }
