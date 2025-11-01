@@ -113,7 +113,8 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "role": user.role,
+            "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
+            "company_id": str(user.company_id) if user.company_id else None,
             "team_id": str(user.team_id) if user.team_id else None,
             "is_active": True
         }
