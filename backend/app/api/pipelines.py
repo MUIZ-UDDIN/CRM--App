@@ -53,8 +53,15 @@ async def get_pipelines(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all pipelines"""
-    pipelines = db.query(Pipeline).filter(Pipeline.is_deleted == False).all()
+    """Get all pipelines for current user's company"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        return []
+    
+    pipelines = db.query(Pipeline).filter(
+        Pipeline.is_deleted == False,
+        Pipeline.company_id == company_id
+    ).all()
     return pipelines
 
 
@@ -64,11 +71,16 @@ async def create_pipeline(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Create a new pipeline"""
+    """Create a new pipeline for current user's company"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
     new_pipeline = Pipeline(
         name=pipeline.name,
         description=pipeline.description,
-        is_default=pipeline.is_default
+        is_default=pipeline.is_default,
+        company_id=company_id
     )
     db.add(new_pipeline)
     db.commit()
@@ -82,10 +94,12 @@ async def get_pipeline(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get pipeline by ID with stages"""
+    """Get pipeline by ID with stages (company-scoped)"""
+    company_id = current_user.get('company_id')
     pipeline = db.query(Pipeline).filter(
         Pipeline.id == pipeline_id,
-        Pipeline.is_deleted == False
+        Pipeline.is_deleted == False,
+        Pipeline.company_id == company_id
     ).first()
     
     if not pipeline:

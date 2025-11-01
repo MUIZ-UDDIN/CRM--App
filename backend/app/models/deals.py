@@ -26,10 +26,12 @@ class Pipeline(BaseModel):
     description = Column(String(500))
     is_default = Column(Boolean, default=False)
     order_index = Column(Integer, default=0)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Relationships
     stages = relationship('PipelineStage', back_populates='pipeline', order_by='PipelineStage.order_index')
     deals = relationship('Deal', back_populates='pipeline')
+    company = relationship('Company', foreign_keys=[company_id])
 
 
 class PipelineStage(BaseModel):
