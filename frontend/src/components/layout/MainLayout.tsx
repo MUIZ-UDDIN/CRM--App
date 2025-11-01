@@ -61,10 +61,14 @@ const navigation: NavItem[] = [
       { name: 'Activities', href: '/activities' },
       { name: 'Files', href: '/files' },
       { name: 'Workflows', href: '/workflows' },
-      { name: 'Admin Dashboard', href: '/admin' },
       { name: 'Settings', href: '/settings' },
     ]
   },
+];
+
+// Super Admin only navigation
+const superAdminNavigation = [
+  { name: 'Admin Dashboard', href: '/admin', icon: Cog6ToothIcon },
 ];
 
 // Notifications will be fetched from API
@@ -380,6 +384,7 @@ export default function MainLayout() {
 
               {/* Navigation Tabs - Desktop */}
               <nav className="ml-6 hidden lg:flex space-x-1">
+                {/* Regular navigation */}
                 {navigation.map((item) => {
                   if (item.children) {
                     // Dropdown menu item
@@ -456,6 +461,28 @@ export default function MainLayout() {
                     </Link>
                   );
                 })}
+                
+                {/* Super Admin navigation - only show for super admins */}
+                {(user?.role === 'super_admin' || user?.role === 'Super Admin') && superAdminNavigation.map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    className={clsx(
+                      'inline-flex items-center px-3 py-2 text-sm font-medium rounded-lg transition-colors duration-200 whitespace-nowrap flex-shrink-0',
+                      location.pathname === item.href
+                        ? 'bg-primary-50 text-primary-600'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                    )}
+                  >
+                    <item.icon 
+                      className={clsx(
+                        'mr-2 h-4 w-4 flex-shrink-0',
+                        location.pathname === item.href ? 'text-primary-600' : 'text-gray-400'
+                      )} 
+                    />
+                    <span className="truncate">{item.name}</span>
+                  </Link>
+                ))}
               </nav>
             </div>
 
