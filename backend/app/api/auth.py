@@ -195,9 +195,28 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
 
 
 @router.get("/me", response_model=UserResponse)
-async def get_current_user_info(current_user: dict = Depends(get_current_active_user)):
-    """Get current user information"""
-    return current_user
+async def get_current_user_info(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get current user information - always fetch fresh from database"""
+    from app.models import User
+    
+    # Fetch fresh user data from database
+    user = db.query(User).filter(User.email == current_user["email"]).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "id": str(user.id),
+        "email": user.email,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
+        "company_id": str(user.company_id) if user.company_id else None,
+        "team_id": str(user.team_id) if user.team_id else None,
+        "is_active": True
+    }
 
 
 @router.post("/logout")
