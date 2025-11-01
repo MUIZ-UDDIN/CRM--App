@@ -105,7 +105,8 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
         "email": user.email,
         "first_name": user.first_name,
         "last_name": user.last_name,
-        "role": user.role,
+        "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
+        "company_id": str(user.company_id) if user.company_id else None,
         "team_id": str(user.team_id) if user.team_id else None,
         "is_active": True
     }
@@ -179,7 +180,8 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         "email": new_user.email,
         "first_name": new_user.first_name,
         "last_name": new_user.last_name,
-        "role": new_user.role,
+        "role": new_user.user_role.value if hasattr(new_user.user_role, 'value') else str(new_user.user_role),
+        "company_id": str(new_user.company_id) if new_user.company_id else None,
         "team_id": None,
         "is_active": True
     }
