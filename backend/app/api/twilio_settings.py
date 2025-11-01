@@ -93,14 +93,17 @@ async def get_twilio_settings(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get current user's Twilio settings"""
+    """Get current company's Twilio settings"""
     try:
-        user_id = current_user["id"]
-        if isinstance(user_id, str):
-            user_id = uuid.UUID(user_id)
+        company_id = current_user.get("company_id")
+        if not company_id:
+            return None
+        
+        if isinstance(company_id, str):
+            company_id = uuid.UUID(company_id)
         
         settings = db.query(TwilioSettingsModel).filter(
-            TwilioSettingsModel.user_id == user_id
+            TwilioSettingsModel.company_id == company_id
         ).first()
         
         # Return None if no settings exist
@@ -138,14 +141,17 @@ async def create_twilio_settings(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Create Twilio settings for current user"""
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    """Create Twilio settings for current company"""
+    company_id = current_user.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
+    if isinstance(company_id, str):
+        company_id = uuid.UUID(company_id)
     
     # Check if settings already exist
     existing = db.query(TwilioSettingsModel).filter(
-        TwilioSettingsModel.user_id == user_id
+        TwilioSettingsModel.company_id == company_id
     ).first()
     
     if existing:
@@ -162,7 +168,8 @@ async def create_twilio_settings(
     
     # Create new settings
     db_settings = TwilioSettingsModel(
-        user_id=user_id,
+        company_id=company_id,
+        user_id=uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"],
         account_sid=settings_data.account_sid,
         auth_token=settings_data.auth_token,  # TODO: Encrypt this in production
         phone_number=settings_data.phone_number,
@@ -185,13 +192,16 @@ async def update_twilio_settings(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Update current user's Twilio settings"""
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    """Update current company's Twilio settings"""
+    company_id = current_user.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
+    if isinstance(company_id, str):
+        company_id = uuid.UUID(company_id)
     
     settings = db.query(TwilioSettingsModel).filter(
-        TwilioSettingsModel.user_id == user_id
+        TwilioSettingsModel.company_id == company_id
     ).first()
     
     if not settings:

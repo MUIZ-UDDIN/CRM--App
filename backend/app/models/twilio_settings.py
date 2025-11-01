@@ -7,12 +7,13 @@ from .base import BaseModel
 
 class TwilioSettings(BaseModel):
     """
-    Twilio settings for each user - allows multi-tenant Twilio integration
-    Each user can configure their own Twilio account
+    Twilio settings for each company - allows multi-tenant Twilio integration
+    Each company can configure their own Twilio account
     """
     __tablename__ = "twilio_settings"
 
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), unique=True, nullable=False)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)  # Legacy, keep for migration
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), unique=True, nullable=False, index=True)
     
     # Twilio Account Credentials
     account_sid = Column(String(255), nullable=False)

@@ -60,8 +60,12 @@ def get_activities(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all activities from database"""
-    query = db.query(ActivityModel)
+    """Get all activities from database (company-scoped)"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        return []
+    
+    query = db.query(ActivityModel).filter(ActivityModel.company_id == company_id)
     
     # Handle type filter (accept both activity_type and type)
     filter_type = activity_type or type
@@ -163,6 +167,11 @@ def create_activity(
             print(f"Failed to parse due_date: {activity.due_date}, error: {e}")
             due_date = None
     
+    # Get company_id from current user
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
     db_activity = ActivityModel(
         subject=activity.subject,
         description=activity.description,
@@ -173,7 +182,8 @@ def create_activity(
         priority=activity.priority or 0,
         owner_id=current_user["id"],
         contact_id=activity.contact_id,
-        deal_id=activity.deal_id
+        deal_id=activity.deal_id,
+        company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id
     )
     
     db.add(db_activity)

@@ -60,8 +60,15 @@ async def get_contacts(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all contacts with optional search, filters and pagination"""
-    query = db.query(ContactModel).filter(ContactModel.is_deleted == False)
+    """Get all contacts with optional search, filters and pagination (company-scoped)"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        return []
+    
+    query = db.query(ContactModel).filter(
+        ContactModel.is_deleted == False,
+        ContactModel.company_id == company_id
+    )
     
     if search:
         # Search only from start of first name or last name
@@ -108,12 +115,18 @@ async def create_contact(
             user_id = current_user["id"]
             owner_id = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
         
+        # Get company_id from current user
+        company_id = current_user.get('company_id')
+        if not company_id:
+            raise HTTPException(status_code=400, detail="User must belong to a company")
+        
         # Create contact dict without owner_id to avoid duplication
         contact_data = contact.dict(exclude={'owner_id'})
         
         db_contact = ContactModel(
             **contact_data,
             owner_id=owner_id,
+            company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )
