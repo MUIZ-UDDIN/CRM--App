@@ -235,13 +235,16 @@ async def delete_twilio_settings(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete current user's Twilio settings"""
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    """Delete current company's Twilio settings"""
+    company_id = current_user.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
+    if isinstance(company_id, str):
+        company_id = uuid.UUID(company_id)
     
     settings = db.query(TwilioSettingsModel).filter(
-        TwilioSettingsModel.user_id == user_id
+        TwilioSettingsModel.company_id == company_id
     ).first()
     
     if not settings:
@@ -258,13 +261,16 @@ async def verify_settings(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Verify current user's Twilio credentials"""
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    """Verify current company's Twilio credentials"""
+    company_id = current_user.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
+    if isinstance(company_id, str):
+        company_id = uuid.UUID(company_id)
     
     settings = db.query(TwilioSettingsModel).filter(
-        TwilioSettingsModel.user_id == user_id
+        TwilioSettingsModel.company_id == company_id
     ).first()
     
     if not settings:
@@ -293,13 +299,16 @@ async def get_available_phone_numbers(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get available phone numbers from user's Twilio account"""
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    """Get available phone numbers from company's Twilio account"""
+    company_id = current_user.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
+    if isinstance(company_id, str):
+        company_id = uuid.UUID(company_id)
     
     settings = db.query(TwilioSettingsModel).filter(
-        TwilioSettingsModel.user_id == user_id
+        TwilioSettingsModel.company_id == company_id
     ).first()
     
     if not settings:

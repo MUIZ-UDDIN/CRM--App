@@ -137,7 +137,7 @@ export default function Deals() {
         const pipelines = await pipelinesResponse.json();
         
         if (pipelines.length === 0) {
-          console.error('No pipelines found in database');
+          // No pipelines yet - normal for new companies
           return;
         }
         

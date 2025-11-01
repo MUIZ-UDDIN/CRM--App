@@ -156,7 +156,7 @@ export default function Dashboard() {
         const pipelines = await pipelinesResponse.json();
         
         if (pipelines.length === 0) {
-          console.error('[Dashboard] No pipelines found');
+          // No pipelines yet - normal for new companies
           return;
         }
         
