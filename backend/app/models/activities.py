@@ -47,6 +47,7 @@ class Activity(BaseModel):
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     contact_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
     deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'), index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Additional Information
     location = Column(String(255))

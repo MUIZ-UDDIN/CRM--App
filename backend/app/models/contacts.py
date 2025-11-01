@@ -65,6 +65,7 @@ class Contact(BaseModel):
     
     # Ownership
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Additional Data
     tags = Column(JSONB)  # Array of tags
