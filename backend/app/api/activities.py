@@ -65,7 +65,10 @@ def get_activities(
     if not company_id:
         return []
     
-    query = db.query(ActivityModel).filter(ActivityModel.company_id == company_id)
+    query = db.query(ActivityModel).filter(
+        ActivityModel.company_id == company_id,
+        ActivityModel.is_deleted == False
+    )
     
     # Handle type filter (accept both activity_type and type)
     filter_type = activity_type or type
