@@ -54,6 +54,12 @@ class CompanyResponse(BaseModel):
     logo_url: Optional[str] = None
     timezone: str
     currency: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    city: Optional[str] = None
+    state: Optional[str] = None
+    zip: Optional[str] = None
     created_at: datetime
     user_count: Optional[int] = 0
     subscription_status: Optional[str] = None
