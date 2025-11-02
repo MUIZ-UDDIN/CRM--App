@@ -57,7 +57,7 @@ export default function Contacts() {
     phone: '',
     company: '',
     title: '',
-    type: 'Marketing Qualified Lead',
+    type: '',
     status: 'new',
     source: '',
     owner_id: ''
@@ -81,7 +81,7 @@ export default function Contacts() {
         phone: '',
         company: '',
         title: '',
-        type: 'Marketing Qualified Lead',
+        type: contactTypes.length > 0 ? contactTypes[0] : '',
         status: 'new',
         source: '',
         owner_id: userData.id
@@ -95,7 +95,7 @@ export default function Contacts() {
         phone: '',
         company: '',
         title: '',
-        type: 'Marketing Qualified Lead',
+        type: contactTypes.length > 0 ? contactTypes[0] : '',
         status: 'new',
         source: '',
         owner_id: ''
