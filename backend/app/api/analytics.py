@@ -1092,6 +1092,8 @@ async def get_dashboard_analytics(
     activities_today = db.query(func.count(ActivityModel.id)).filter(and_(*activity_filters)).scalar() or 0
     
     # Pipeline by Stage - show ALL deals grouped by stage (not just OPEN)
+    from ..models.deals import Pipeline as PipelineModel
+    
     stage_filters = [DealModel.is_deleted == False]
     if filter_user_id:
         stage_filters.append(DealModel.owner_id == filter_user_id)
@@ -1100,12 +1102,17 @@ async def get_dashboard_analytics(
     if pipeline_id:
         stage_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
+    # Also filter pipeline by company_id
+    if company_id and not pipeline_id:
+        stage_filters.append(PipelineModel.company_id == company_id)
+    
     stage_query = db.query(
         PipelineStage.name.label('stage_name'),
         PipelineStage.order_index.label('stage_order'),
         func.count(DealModel.id).label('deal_count'),
         func.sum(DealModel.value).label('total_value')
     ).join(DealModel, DealModel.stage_id == PipelineStage.id)\
+     .join(PipelineModel, PipelineStage.pipeline_id == PipelineModel.id)\
      .filter(and_(*stage_filters))\
      .group_by(PipelineStage.name, PipelineStage.order_index)\
      .order_by(PipelineStage.order_index)\
