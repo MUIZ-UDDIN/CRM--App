@@ -905,8 +905,6 @@ async def get_dashboard_analytics(
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     is_superuser = current_user.get("is_superuser", False)
     company_id = current_user.get('company_id')
-    role = current_user.get('role')
-    is_super_admin = role == 'super_admin'
     
     # Parse dates
     today = datetime.utcnow().date()
@@ -947,9 +945,8 @@ async def get_dashboard_analytics(
             filters.append(func.date(DealModel.created_at) <= date_to_obj)
         if include_user and filter_user_id:
             filters.append(DealModel.owner_id == filter_user_id)
-        elif include_user and not is_super_admin:
-            if company_id:
-                filters.append(DealModel.company_id == company_id)
+        elif include_user and company_id:
+            filters.append(DealModel.company_id == company_id)
         if pipeline_id:
             filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
         return query.filter(and_(*filters))
@@ -966,9 +963,8 @@ async def get_dashboard_analytics(
         revenue_filters.append(func.date(DealModel.created_at) <= date_to_obj)
     if filter_user_id:
         revenue_filters.append(DealModel.owner_id == filter_user_id)
-    elif not is_super_admin:
-        if company_id:
-            revenue_filters.append(DealModel.company_id == company_id)
+    elif company_id:
+        revenue_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         revenue_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     

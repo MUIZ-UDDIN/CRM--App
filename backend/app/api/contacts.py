@@ -62,12 +62,9 @@ async def get_contacts(
 ):
     """Get all contacts with optional search, filters and pagination (company-scoped)"""
     company_id = current_user.get('company_id')
-    role = current_user.get('role')
     
-    # Super admin sees all contacts, others see only their company's contacts
-    if role == 'super_admin':
-        query = db.query(ContactModel).filter(ContactModel.is_deleted == False)
-    elif company_id:
+    # All users (including super admin) see only their company's contacts
+    if company_id:
         query = db.query(ContactModel).filter(
             ContactModel.is_deleted == False,
             ContactModel.company_id == company_id

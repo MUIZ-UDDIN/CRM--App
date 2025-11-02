@@ -50,15 +50,12 @@ def get_deals(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all deals"""
+    """Get all deals for current user's company"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
-    role = current_user.get('role')
     
-    # Super admin sees all deals, others see only their company's deals
-    if role == 'super_admin':
-        query = db.query(DealModel).filter(DealModel.is_deleted == False)
-    elif company_id:
+    # All users (including super admin) see only their company's deals
+    if company_id:
         query = db.query(DealModel).filter(
             and_(
                 DealModel.company_id == company_id,
@@ -66,6 +63,7 @@ def get_deals(
             )
         )
     else:
+        # Fallback to owner-based if no company
         query = db.query(DealModel).filter(
             and_(
                 DealModel.owner_id == user_id,

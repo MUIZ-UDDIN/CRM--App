@@ -53,14 +53,11 @@ async def get_pipelines(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all pipelines - super admin sees all, others see company pipelines"""
+    """Get all pipelines for current user's company"""
     company_id = current_user.get('company_id')
-    role = current_user.get('role')
     
-    # Super admin sees all pipelines
-    if role == 'super_admin':
-        pipelines = db.query(Pipeline).filter(Pipeline.is_deleted == False).all()
-    elif company_id:
+    # All users (including super admin) see only their company's pipelines
+    if company_id:
         pipelines = db.query(Pipeline).filter(
             Pipeline.is_deleted == False,
             Pipeline.company_id == company_id
