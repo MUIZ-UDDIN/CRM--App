@@ -10,8 +10,8 @@ from datetime import datetime
 from uuid import UUID
 
 from app.core.database import get_db
+from app.core.security import get_current_user
 from app.models import Company, User, UserRole, UserStatus, PlanType, CompanyStatus
-from app.api.auth import get_current_user
 from app.middleware.tenant import require_super_admin, require_company_admin, get_tenant_context
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
@@ -324,7 +324,7 @@ def add_company_user(
         )
     
     # Create user
-    from app.api.auth import get_password_hash
+    from app.core.security import get_password_hash
     
     new_user = User(
         email=user_data.email,
