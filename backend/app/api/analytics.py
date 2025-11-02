@@ -61,9 +61,12 @@ async def get_pipeline_analytics(
     """Get pipeline analytics with real database queries"""
     
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
     
-    # Build query filters
-    filters = [Deal.owner_id == owner_id, Deal.is_deleted == False]
+    # Build query filters - use company_id for multi-tenancy
+    filters = [Deal.is_deleted == False]
+    if company_id:
+        filters.append(Deal.company_id == company_id)
     
     if date_from:
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
@@ -147,9 +150,10 @@ async def get_activity_analytics(
     is_superuser = current_user.get("is_superuser", False)
     
     # Base filters
+    company_id = current_user.get('company_id')
     filters = [Activity.is_deleted == False]
-    if not is_superuser:
-        filters.append(Activity.owner_id == owner_id)
+    if company_id:
+        filters.append(Activity.company_id == company_id)
     if date_from:
         filters.append(Activity.created_at >= datetime.fromisoformat(date_from))
     if date_to:
@@ -276,7 +280,7 @@ async def get_revenue_analytics(
         # Get revenue for this month (won deals only)
         revenue = db.query(func.sum(Deal.value)).filter(
             and_(
-                Deal.owner_id == owner_id,
+                Deal.company_id == company_id if company_id else Deal.owner_id == owner_id,
                 Deal.is_deleted == False,
                 Deal.status == DealStatus.WON,
                 Deal.actual_close_date >= month_start,
@@ -287,7 +291,7 @@ async def get_revenue_analytics(
         # Get deal count for this month
         deal_count = db.query(func.count(Deal.id)).filter(
             and_(
-                Deal.owner_id == owner_id,
+                Deal.company_id == company_id if company_id else Deal.owner_id == owner_id,
                 Deal.is_deleted == False,
                 Deal.status == DealStatus.WON,
                 Deal.actual_close_date >= month_start,
@@ -1163,9 +1167,12 @@ async def export_analytics_csv(
 ):
     """Export analytics data to CSV"""
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
     
     # Build filters
-    filters = [Deal.owner_id == owner_id, Deal.is_deleted == False]
+    filters = [Deal.is_deleted == False]
+    if company_id:
+        filters.append(Deal.company_id == company_id)
     if date_from:
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
     if date_to:
@@ -1217,9 +1224,12 @@ async def export_analytics_pdf(
 ):
     """Export analytics data to PDF"""
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
     
     # Build filters
-    filters = [Deal.owner_id == owner_id, Deal.is_deleted == False]
+    filters = [Deal.is_deleted == False]
+    if company_id:
+        filters.append(Deal.company_id == company_id)
     if date_from:
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
     if date_to:
