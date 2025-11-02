@@ -44,6 +44,14 @@ class Company(BaseModel):
     plan = Column(String(50), default='free', nullable=False)
     status = Column(String(50), default='active', nullable=False)
     
+    # Company contact information
+    email = Column(String(255))
+    phone = Column(String(50))
+    address = Column(String(255))
+    city = Column(String(100))
+    state = Column(String(100))
+    zip = Column(String(20))
+    
     # Company settings
     domain = Column(String(255), unique=True)  # Custom domain (e.g., acme.yourcrm.com)
     logo_url = Column(String(500))
