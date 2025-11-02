@@ -135,6 +135,10 @@ def list_companies(
     
     query = db.query(Company)
     
+    # Exclude super admin's own company from the list
+    if current_user.company_id:
+        query = query.filter(Company.id != current_user.company_id)
+    
     if status:
         query = query.filter(Company.status == status)
     
