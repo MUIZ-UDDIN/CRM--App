@@ -9,7 +9,7 @@ from pydantic import BaseModel, EmailStr, field_validator
 from datetime import datetime
 from uuid import UUID
 
-from app.database import get_db
+from app.core.database import get_db
 from app.models import Company, User, UserRole, UserStatus, PlanType, CompanyStatus
 from app.api.auth import get_current_user
 from app.middleware.tenant import require_super_admin, require_company_admin, get_tenant_context
