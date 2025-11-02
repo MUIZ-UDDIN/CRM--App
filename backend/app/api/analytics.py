@@ -262,6 +262,7 @@ async def get_revenue_analytics(
 ):
     """Get revenue analytics with real monthly data"""
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
     
     # Get last 6 months of revenue data
     monthly_data = []
