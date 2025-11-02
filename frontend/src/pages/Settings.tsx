@@ -66,11 +66,8 @@ export default function Settings() {
     if (activeTab === 'team') {
       fetchTeamMembers();
     } else if (activeTab === 'company') {
-      // Load company settings from localStorage
-      const savedCompany = localStorage.getItem('companySettings');
-      if (savedCompany) {
-        setCompanyForm(JSON.parse(savedCompany));
-      }
+      // Fetch company details from backend
+      fetchCompanyDetails();
     } else if (activeTab === 'integrations') {
       // Check Twilio connection from backend
       checkTwilioConnection();
@@ -130,6 +127,39 @@ export default function Settings() {
     }
   };
 
+  const fetchCompanyDetails = async () => {
+    try {
+      const companyId = (user as any)?.company_id;
+      if (!companyId) {
+        console.error('No company_id found for user');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (response.ok) {
+        const company = await response.json();
+        setCompanyForm({
+          name: company.name || '',
+          email: company.email || '',
+          phone: company.phone || '',
+          address: company.address || '',
+          city: company.city || '',
+          state: company.state || '',
+          zip: company.zip || '',
+        });
+      } else {
+        console.error('Failed to fetch company details:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching company details:', error);
+    }
+  };
+
   const checkTwilioConnection = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
@@ -139,14 +169,22 @@ export default function Settings() {
       });
       if (response.ok) {
         const data = await response.json();
-        setTwilioDetails(data);
-        // If we get data back, Twilio is connected
-        setIntegrations(integrations.map(i =>
-          i.name === 'Twilio' ? { ...i, status: 'connected' } : i
-        ));
-        
-        // Fetch phone numbers
-        fetchPhoneNumbers();
+        // Check if data is null or empty - means no settings configured
+        if (data && data.account_sid) {
+          setTwilioDetails(data);
+          setIntegrations(integrations.map(i =>
+            i.name === 'Twilio' ? { ...i, status: 'connected' } : i
+          ));
+          // Fetch phone numbers
+          fetchPhoneNumbers();
+        } else {
+          // No settings configured
+          setTwilioDetails(null);
+          setPhoneNumbers([]);
+          setIntegrations(integrations.map(i =>
+            i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
+          ));
+        }
       } else {
         // No settings found, disconnected
         setTwilioDetails(null);
@@ -418,7 +456,7 @@ export default function Settings() {
     setShowEditTeamModal(true);
   };
 
-  const handleSaveCompanySettings = () => {
+  const handleSaveCompanySettings = async () => {
     // Validate company name
     if (!companyForm.name.trim()) {
       toast.error('Company name is required');
@@ -473,8 +511,33 @@ export default function Settings() {
       return;
     }
 
-    localStorage.setItem('companySettings', JSON.stringify(companyForm));
-    toast.success('Company settings saved successfully');
+    // Save to backend
+    try {
+      const companyId = (user as any)?.company_id;
+      if (!companyId) {
+        toast.error('No company found for user');
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/api/companies/${companyId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(companyForm),
+      });
+
+      if (response.ok) {
+        toast.success('Company settings saved successfully');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to save company settings');
+      }
+    } catch (error) {
+      console.error('Error saving company settings:', error);
+      toast.error('Failed to save company settings');
+    }
   };
 
   const handleUpdateTeamMember = async () => {
