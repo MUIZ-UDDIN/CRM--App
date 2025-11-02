@@ -194,10 +194,8 @@ async def get_all_users(
     """Get all users from current user's company (for team management)"""
     company_id = current_user.get('company_id')
     
-    # Super admin can see all users, others only see their company's users
-    if current_user.get('role') == 'super_admin':
-        users = db.query(UserModel).filter(UserModel.is_deleted == False).all()
-    elif company_id:
+    # All users (including super admin) only see their company's team members
+    if company_id:
         users = db.query(UserModel).filter(
             UserModel.is_deleted == False,
             UserModel.company_id == company_id
