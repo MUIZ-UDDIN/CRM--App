@@ -80,7 +80,24 @@ export default function Register() {
         }, 2000);
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed. Please try again.');
+      // Better error handling with user-friendly messages
+      const errorDetail = err.response?.data?.detail;
+      
+      if (typeof errorDetail === 'string') {
+        if (errorDetail.includes('already registered') || errorDetail.includes('already exists')) {
+          setError('This email is already registered. Please use a different email or try logging in.');
+        } else if (errorDetail.includes('password')) {
+          setError('Password must be at least 8 characters long and contain letters and numbers.');
+        } else if (errorDetail.includes('email')) {
+          setError('Please enter a valid email address.');
+        } else {
+          setError(errorDetail);
+        }
+      } else {
+        setError('Registration failed. Please check your information and try again.');
+      }
+      
+      console.error('Registration error:', err);
     } finally {
       setLoading(false);
     }

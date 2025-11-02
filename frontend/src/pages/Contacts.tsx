@@ -719,13 +719,19 @@ export default function Contacts() {
                 placeholder="Email"
                 value={contactForm.email}
                 onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input
                 type="tel"
-                placeholder="Phone"
+                placeholder="Phone (e.g., +1234567890)"
                 value={contactForm.phone}
-                onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                  setContactForm({...contactForm, phone: value});
+                }}
+                pattern="[\+]?[0-9\-() ]+"
+                title="Please enter a valid phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input
@@ -848,13 +854,19 @@ export default function Contacts() {
                 placeholder="Email"
                 value={contactForm.email}
                 onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                required
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input
                 type="tel"
-                placeholder="Phone"
+                placeholder="Phone (e.g., +1234567890)"
                 value={contactForm.phone}
-                onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                  setContactForm({...contactForm, phone: value});
+                }}
+                pattern="[\+]?[0-9\-() ]+"
+                title="Please enter a valid phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
               <input

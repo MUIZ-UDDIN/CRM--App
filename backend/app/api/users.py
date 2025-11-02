@@ -191,8 +191,19 @@ async def get_all_users(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all users (for team management)"""
-    users = db.query(UserModel).filter(UserModel.is_deleted == False).all()
+    """Get all users from current user's company (for team management)"""
+    company_id = current_user.get('company_id')
+    
+    # Super admin can see all users, others only see their company's users
+    if current_user.get('role') == 'super_admin':
+        users = db.query(UserModel).filter(UserModel.is_deleted == False).all()
+    elif company_id:
+        users = db.query(UserModel).filter(
+            UserModel.is_deleted == False,
+            UserModel.company_id == company_id
+        ).all()
+    else:
+        users = []
     
     return [
         UserResponse(
