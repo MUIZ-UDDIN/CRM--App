@@ -984,8 +984,8 @@ async def get_dashboard_analytics(
     ]
     if filter_user_id:
         prev_revenue_filters.append(DealModel.owner_id == filter_user_id)
-    elif not is_superuser:
-        prev_revenue_filters.append(DealModel.owner_id == owner_id)
+    elif company_id:
+        prev_revenue_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         prev_revenue_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
@@ -1027,8 +1027,8 @@ async def get_dashboard_analytics(
     ]
     if filter_user_id:
         pipeline_filters.append(DealModel.owner_id == filter_user_id)
-    elif not is_superuser:
-        pipeline_filters.append(DealModel.owner_id == owner_id)
+    elif company_id:
+        pipeline_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
@@ -1056,8 +1056,8 @@ async def get_dashboard_analytics(
     ]
     if filter_user_id:
         prev_pipeline_filters.append(DealModel.owner_id == filter_user_id)
-    elif not is_superuser:
-        prev_pipeline_filters.append(DealModel.owner_id == owner_id)
+    elif company_id:
+        prev_pipeline_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         prev_pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
@@ -1086,8 +1086,8 @@ async def get_dashboard_analytics(
     ]
     if filter_user_id:
         activity_filters.append(ActivityModel.owner_id == filter_user_id)
-    elif not is_superuser:
-        activity_filters.append(ActivityModel.owner_id == owner_id)
+    elif company_id:
+        activity_filters.append(ActivityModel.company_id == company_id)
     
     activities_today = db.query(func.count(ActivityModel.id)).filter(and_(*activity_filters)).scalar() or 0
     
@@ -1095,8 +1095,8 @@ async def get_dashboard_analytics(
     stage_filters = [DealModel.is_deleted == False]
     if filter_user_id:
         stage_filters.append(DealModel.owner_id == filter_user_id)
-    elif not is_superuser:
-        stage_filters.append(DealModel.owner_id == owner_id)
+    elif company_id:
+        stage_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         stage_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
