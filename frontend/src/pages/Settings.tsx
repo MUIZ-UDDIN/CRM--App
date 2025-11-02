@@ -129,7 +129,21 @@ export default function Settings() {
 
   const fetchCompanyDetails = async () => {
     try {
-      const companyId = (user as any)?.company_id;
+      // First fetch current user to get company_id
+      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        console.error('Failed to fetch user info');
+        return;
+      }
+
+      const userData = await userResponse.json();
+      const companyId = userData.company_id;
+
       if (!companyId) {
         console.error('No company_id found for user');
         return;
@@ -513,7 +527,21 @@ export default function Settings() {
 
     // Save to backend
     try {
-      const companyId = (user as any)?.company_id;
+      // Fetch current user to get company_id
+      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        toast.error('Failed to get user info');
+        return;
+      }
+
+      const userData = await userResponse.json();
+      const companyId = userData.company_id;
+
       if (!companyId) {
         toast.error('No company found for user');
         return;

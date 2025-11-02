@@ -121,6 +121,42 @@ async def register_company(
         db.refresh(new_company)
         db.refresh(admin_user)
         
+        # Create default pipeline and stages for the new company
+        from app.models.deals import Pipeline, PipelineStage
+        
+        default_pipeline = Pipeline(
+            name='Sales Pipeline',
+            description='Default sales pipeline',
+            is_default=True,
+            company_id=new_company.id,
+            order_index=0
+        )
+        db.add(default_pipeline)
+        db.flush()  # Get pipeline ID
+        
+        # Create default stages
+        default_stages = [
+            {'name': 'Lead', 'order_index': 0, 'probability': 10.0},
+            {'name': 'Qualified', 'order_index': 1, 'probability': 25.0},
+            {'name': 'Proposal', 'order_index': 2, 'probability': 50.0},
+            {'name': 'Negotiation', 'order_index': 3, 'probability': 75.0},
+            {'name': 'Closed Won', 'order_index': 4, 'probability': 100.0, 'is_closed': True, 'is_won': True},
+            {'name': 'Closed Lost', 'order_index': 5, 'probability': 0.0, 'is_closed': True, 'is_won': False},
+        ]
+        
+        for stage_data in default_stages:
+            stage = PipelineStage(
+                pipeline_id=default_pipeline.id,
+                name=stage_data['name'],
+                order_index=stage_data['order_index'],
+                probability=stage_data['probability'],
+                is_closed=stage_data.get('is_closed', False),
+                is_won=stage_data.get('is_won', False)
+            )
+            db.add(stage)
+        
+        db.commit()
+        
         # Create access token for immediate login
         access_token = create_access_token(data={"sub": admin_user.email})
         
