@@ -52,13 +52,26 @@ def get_deals(
 ):
     """Get all deals"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
+    role = current_user.get('role')
     
-    query = db.query(DealModel).filter(
-        and_(
-            DealModel.owner_id == user_id,
-            DealModel.is_deleted == False
+    # Super admin sees all deals, others see only their company's deals
+    if role == 'super_admin':
+        query = db.query(DealModel).filter(DealModel.is_deleted == False)
+    elif company_id:
+        query = db.query(DealModel).filter(
+            and_(
+                DealModel.company_id == company_id,
+                DealModel.is_deleted == False
+            )
         )
-    )
+    else:
+        query = db.query(DealModel).filter(
+            and_(
+                DealModel.owner_id == user_id,
+                DealModel.is_deleted == False
+            )
+        )
     
     if stage:
         query = query.filter(DealModel.stage_id == uuid.UUID(stage))
