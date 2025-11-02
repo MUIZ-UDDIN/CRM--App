@@ -283,7 +283,10 @@ def list_company_users(
             detail="Access denied to this company"
         )
     
-    users = db.query(User).filter(User.company_id == company_id).all()
+    users = db.query(User).filter(
+        User.company_id == company_id,
+        User.is_deleted == False
+    ).all()
     
     return [
         {
