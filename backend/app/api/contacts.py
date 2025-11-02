@@ -97,15 +97,22 @@ async def create_contact(
     db: Session = Depends(get_db)
 ):
     """Create a new contact"""
+    # Get company_id from current user first
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
+    # Check for existing contact with same email in the SAME company
     existing_contact = db.query(ContactModel).filter(
         and_(
             ContactModel.email == contact.email,
+            ContactModel.company_id == company_id,
             ContactModel.is_deleted == False
         )
     ).first()
     
     if existing_contact:
-        raise HTTPException(status_code=400, detail="Contact with this email already exists")
+        raise HTTPException(status_code=400, detail="Contact with this email already exists in your company")
     
     try:
         # Use provided owner_id or default to current user
@@ -114,11 +121,6 @@ async def create_contact(
         else:
             user_id = current_user["id"]
             owner_id = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
-        
-        # Get company_id from current user
-        company_id = current_user.get('company_id')
-        if not company_id:
-            raise HTTPException(status_code=400, detail="User must belong to a company")
         
         # Create contact dict without owner_id to avoid duplication
         contact_data = contact.dict(exclude={'owner_id'})
@@ -218,6 +220,9 @@ async def update_contact(
     db: Session = Depends(get_db)
 ):
     """Update a specific contact"""
+    # Get company_id from current user
+    company_id = current_user.get('company_id')
+    
     contact = db.query(ContactModel).filter(
         and_(
             ContactModel.id == contact_id,
@@ -230,17 +235,18 @@ async def update_contact(
     
     update_data = contact_update.dict(exclude_unset=True)
     if "email" in update_data:
-        # Check for duplicate email (excluding soft-deleted contacts)
+        # Check for duplicate email in the SAME company (excluding soft-deleted contacts)
         existing_contact = db.query(ContactModel).filter(
             and_(
                 ContactModel.email == update_data["email"],
+                ContactModel.company_id == company_id,
                 ContactModel.id != contact_id,
                 ContactModel.is_deleted == False
             )
         ).first()
         
         if existing_contact:
-            raise HTTPException(status_code=400, detail="Contact with this email already exists")
+            raise HTTPException(status_code=400, detail="Contact with this email already exists in your company")
     
     try:
         for field, value in update_data.items():
