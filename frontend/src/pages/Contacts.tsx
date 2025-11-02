@@ -337,8 +337,24 @@ export default function Contacts() {
       await resetContactForm();
       fetchContacts();
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.detail || 'Failed to create contact';
-      toast.error(errorMessage);
+      const errorDetail = error?.response?.data?.detail;
+      
+      // User-friendly error messages
+      if (typeof errorDetail === 'string') {
+        if (errorDetail.includes('already exists') || errorDetail.includes('duplicate')) {
+          toast.error('A contact with this email already exists in your company.');
+        } else if (errorDetail.includes('email')) {
+          toast.error('Please enter a valid email address.');
+        } else if (errorDetail.includes('required')) {
+          toast.error('Please fill in all required fields.');
+        } else {
+          toast.error(errorDetail);
+        }
+      } else {
+        toast.error('Failed to create contact. Please check your information and try again.');
+      }
+      
+      console.error('Contact creation error:', error);
     } finally {
       setSubmitting(false);
     }
@@ -365,8 +381,24 @@ export default function Contacts() {
       setShowEditModal(false);
       fetchContacts();
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.detail || 'Failed to update contact';
-      toast.error(errorMessage);
+      const errorDetail = error?.response?.data?.detail;
+      
+      // User-friendly error messages
+      if (typeof errorDetail === 'string') {
+        if (errorDetail.includes('already exists') || errorDetail.includes('duplicate')) {
+          toast.error('A contact with this email already exists in your company.');
+        } else if (errorDetail.includes('email')) {
+          toast.error('Please enter a valid email address.');
+        } else if (errorDetail.includes('required')) {
+          toast.error('Please fill in all required fields.');
+        } else {
+          toast.error(errorDetail);
+        }
+      } else {
+        toast.error('Failed to update contact. Please check your information and try again.');
+      }
+      
+      console.error('Contact update error:', error);
     } finally {
       setSubmitting(false);
     }

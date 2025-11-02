@@ -2,7 +2,7 @@
 Contact and Lead models
 """
 
-from sqlalchemy import Column, String, ForeignKey, Integer, Float, Text, Enum as SQLEnum
+from sqlalchemy import Column, String, ForeignKey, Integer, Float, Text, Enum as SQLEnum, Index
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from .base import BaseModel
@@ -35,11 +35,15 @@ class LeadSource(str, enum.Enum):
 class Contact(BaseModel):
     """Contact/Lead model"""
     __tablename__ = 'contacts'
+    __table_args__ = (
+        # Email should be unique per company, not globally
+        Index('idx_contact_email_company', 'email', 'company_id', unique=True),
+    )
     
     # Basic Information
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)
-    email = Column(String(255), unique=True, nullable=False, index=True)
+    email = Column(String(255), nullable=False, index=True)
     phone = Column(String(20))
     mobile = Column(String(20))
     
