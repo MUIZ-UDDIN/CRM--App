@@ -558,9 +558,12 @@ export default function Settings() {
 
       if (response.ok) {
         toast.success('Company settings saved successfully');
+        // Refresh company details to confirm save
+        await fetchCompanyDetails();
       } else {
         const error = await response.json();
         toast.error(error.detail || 'Failed to save company settings');
+        console.error('Save error:', error);
       }
     } catch (error) {
       console.error('Error saving company settings:', error);
@@ -1133,8 +1136,14 @@ export default function Settings() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
                 <input
                   type="tel"
+                  placeholder="+1234567890"
                   value={companyForm.phone}
-                  onChange={(e) => setCompanyForm({...companyForm, phone: e.target.value})}
+                  onChange={(e) => {
+                    // Only allow numbers, +, -, (, ), and spaces
+                    const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                    setCompanyForm({...companyForm, phone: value});
+                  }}
+                  pattern="[\+]?[0-9\-() ]+"
                   maxLength={50}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
