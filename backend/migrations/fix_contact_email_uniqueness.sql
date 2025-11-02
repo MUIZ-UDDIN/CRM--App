@@ -4,6 +4,11 @@
 -- Drop the global unique constraint on email
 ALTER TABLE contacts DROP CONSTRAINT IF EXISTS contacts_email_key;
 
+-- Drop any old unique indexes on email
+DROP INDEX IF EXISTS ix_contacts_email_active;
+DROP INDEX IF EXISTS contacts_email_idx;
+DROP INDEX IF EXISTS idx_contacts_email;
+
 -- First, find and handle duplicate emails within the same company
 -- Keep the oldest contact and mark others as deleted
 WITH duplicates AS (
