@@ -183,12 +183,18 @@ def create_deal(
         }
         deal_status = status_map.get(deal.status.lower() if deal.status else 'open', DealStatus.OPEN)
         
+        # Get company_id from current user
+        company_id = current_user.get('company_id')
+        if not company_id:
+            raise HTTPException(status_code=400, detail="User must belong to a company to create deals")
+        
         new_deal = DealModel(
             title=deal.title,
             value=deal.value,
             stage_id=stage_id,
             pipeline_id=pipeline_id,
             company=deal.company,
+            company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
             contact_id=contact_id,
             description=deal.description,
             expected_close_date=deal.expected_close_date,
