@@ -48,6 +48,7 @@ class RegisterRequest(BaseModel):
     first_name: str
     last_name: str
     role: Optional[str] = "Regular User"  # Allow role to be specified, defaults to Regular User
+    company_id: Optional[str] = None  # Company ID for team member registration
     
     @validator('first_name', 'last_name')
     def validate_name(cls, v):
@@ -154,8 +155,26 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     # Special case: admin@sunstonecrm.com always gets Super Admin
     if email_lower == "admin@sunstonecrm.com":
         role = "Super Admin"
+        user_role = "super_admin"
     else:
-        role = request.role  # Use the role provided in the request
+        role = request.role if request.role else "Regular User"
+        # Map role to user_role
+        if role.lower() in ["admin", "company admin"]:
+            user_role = "company_admin"
+        else:
+            user_role = "company_user"
+    
+    # Get company_id from request (should be provided when adding team members)
+    import uuid
+    company_id = None
+    if request.company_id:
+        try:
+            company_id = uuid.UUID(request.company_id) if isinstance(request.company_id, str) else request.company_id
+        except (ValueError, AttributeError):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid company_id format"
+            )
     
     # Create new user with lowercase email
     new_user = UserModel(
@@ -164,6 +183,8 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         first_name=request.first_name,
         last_name=request.last_name,
         role=role,
+        user_role=user_role,
+        company_id=company_id,
         email_verified=False
     )
     
