@@ -421,6 +421,7 @@ export default function Settings() {
           first_name: firstName,
           last_name: lastNameParts.join(' ') || 'User',
           role: teamForm.role,  // Send the selected role
+          company_id: user?.company_id,  // Send the current user's company_id
         }),
       });
       if (response.ok) {
