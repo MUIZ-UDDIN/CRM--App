@@ -303,10 +303,17 @@ async def update_user(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Update a user - Admin only"""
-    # Check if current user is admin
-    if current_user.get("role") not in ["Admin", "Super Admin"]:
-        raise HTTPException(status_code=403, detail="Only admins can update users")
+    """Update a user - Super Admin, Admin, or Company Admin only"""
+    current_user_role = current_user.get("role")
+    current_user_company_id = current_user.get("company_id")
+    
+    # Check if current user has permission to update users
+    allowed_roles = ["Super Admin", "Admin", "company_admin"]
+    if current_user_role not in allowed_roles:
+        raise HTTPException(
+            status_code=403, 
+            detail="Only Super Admin, Admin, or Company Admin can update users"
+        )
     
     user = db.query(UserModel).filter(
         UserModel.id == user_id,
@@ -315,6 +322,14 @@ async def update_user(
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Company Admin and Admin can only update users from their own company
+    if current_user_role in ["company_admin", "Admin"] and current_user_role != "Super Admin":
+        if str(user.company_id) != str(current_user_company_id):
+            raise HTTPException(
+                status_code=403, 
+                detail="You can only update users from your own company"
+            )
     
     # Update user fields
     if user_update.first_name is not None:
