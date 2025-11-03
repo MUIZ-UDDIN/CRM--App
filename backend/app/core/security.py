@@ -76,7 +76,8 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[UserMo
     """Authenticate user with email and password"""
     user = db.query(UserModel).filter(
         UserModel.email == email,
-        UserModel.is_deleted == False
+        UserModel.is_deleted == False,
+        UserModel.is_active == True
     ).first()
     if not user:
         return None
