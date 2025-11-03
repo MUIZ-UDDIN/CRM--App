@@ -102,11 +102,11 @@ class SMSAnalytics(BaseModel):
 
 
 # Helper Functions
-def get_next_rotation_number(db: Session, user_id: UUID) -> Optional[PhoneNumber]:
-    """Get next phone number in rotation"""
+def get_next_rotation_number(db: Session, company_id: UUID) -> Optional[PhoneNumber]:
+    """Get next phone number in rotation for company"""
     numbers = db.query(PhoneNumber).filter(
         and_(
-            PhoneNumber.user_id == user_id,
+            PhoneNumber.company_id == company_id,
             PhoneNumber.is_active == True,
             PhoneNumber.rotation_enabled == True
         )
@@ -193,10 +193,13 @@ async def get_sms_messages(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all SMS messages for current user"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get all SMS messages for current company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
-    query = db.query(SMSModel).filter(SMSModel.user_id == user_id)
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    query = db.query(SMSModel).filter(SMSModel.company_id == company_id)
     
     # Filter by type if provided
     if type:
@@ -232,6 +235,10 @@ async def send_sms(
 ):
     """Send SMS with template support and number rotation"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Validate and format recipient phone number
     to_number = request.to.strip()
@@ -270,7 +277,7 @@ async def send_sms(
         template = db.query(SMSTemplate).filter(
             and_(
                 SMSTemplate.id == uuid.UUID(request.template_id),
-                SMSTemplate.user_id == user_id
+                SMSTemplate.company_id == company_id
             )
         ).first()
         
@@ -295,13 +302,13 @@ async def send_sms(
         phone_number_record = db.query(PhoneNumber).filter(
             and_(
                 PhoneNumber.phone_number == request.from_number,
-                PhoneNumber.user_id == user_id
+                PhoneNumber.company_id == company_id
             )
         ).first()
         from_number = request.from_number
     elif request.use_rotation:
         # Use rotation
-        phone_number_record = get_next_rotation_number(db, user_id)
+        phone_number_record = get_next_rotation_number(db, company_id)
         if phone_number_record:
             from_number = phone_number_record.phone_number
     
@@ -309,7 +316,7 @@ async def send_sms(
         # Fallback to first active phone number
         first_number = db.query(PhoneNumber).filter(
             and_(
-                PhoneNumber.user_id == user_id,
+                PhoneNumber.company_id == company_id,
                 PhoneNumber.is_active == True,
                 PhoneNumber.sms_enabled == True
             )
@@ -320,7 +327,7 @@ async def send_sms(
         else:
             # Try Twilio settings default
             settings = db.query(TwilioSettings).filter(
-                TwilioSettings.user_id == user_id
+                TwilioSettings.company_id == company_id
             ).first()
             if settings and settings.phone_number:
                 from_number = settings.phone_number
@@ -335,7 +342,7 @@ async def send_sms(
         from twilio.rest import Client
         from twilio.base.exceptions import TwilioRestException
         settings = db.query(TwilioSettings).filter(
-            TwilioSettings.user_id == user_id
+            TwilioSettings.company_id == company_id
         ).first()
         
         if not settings:
@@ -360,6 +367,7 @@ async def send_sms(
             to_address=to_number,
             body=message_body,
             user_id=user_id,
+            company_id=company_id,
             contact_id=uuid.UUID(request.contact_id) if request.contact_id else None,
             twilio_sid=message.sid
         )
@@ -545,15 +553,18 @@ async def get_sms_analytics(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get SMS analytics"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get SMS analytics for company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     since_date = datetime.utcnow() - timedelta(days=days)
     
     # Total sent
     total_sent = db.query(func.count(SMSModel.id)).filter(
         and_(
-            SMSModel.user_id == user_id,
+            SMSModel.company_id == company_id,
             SMSModel.direction == SMSDirection.OUTBOUND,
             SMSModel.created_at >= since_date
         )
@@ -562,7 +573,7 @@ async def get_sms_analytics(
     # Total received
     total_received = db.query(func.count(SMSModel.id)).filter(
         and_(
-            SMSModel.user_id == user_id,
+            SMSModel.company_id == company_id,
             SMSModel.direction == SMSDirection.INBOUND,
             SMSModel.created_at >= since_date
         )
@@ -571,7 +582,7 @@ async def get_sms_analytics(
     # Total failed
     total_failed = db.query(func.count(SMSModel.id)).filter(
         and_(
-            SMSModel.user_id == user_id,
+            SMSModel.company_id == company_id,
             SMSModel.status == SMSStatus.FAILED,
             SMSModel.created_at >= since_date
         )
@@ -580,7 +591,7 @@ async def get_sms_analytics(
     # Total delivered
     total_delivered = db.query(func.count(SMSModel.id)).filter(
         and_(
-            SMSModel.user_id == user_id,
+            SMSModel.company_id == company_id,
             SMSModel.status == SMSStatus.DELIVERED,
             SMSModel.created_at >= since_date
         )
@@ -611,6 +622,10 @@ async def create_template(
 ):
     """Create SMS template"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     db_template = SMSTemplate(
         name=template.name,
@@ -620,7 +635,8 @@ async def create_template(
         variables=template.variables,
         use_ai_enhancement=template.use_ai_enhancement,
         ai_tone=template.ai_tone,
-        user_id=user_id
+        user_id=user_id,
+        company_id=company_id
     )
     
     db.add(db_template)
@@ -644,12 +660,15 @@ async def get_templates(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all SMS templates"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get all SMS templates for company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     templates = db.query(SMSTemplate).filter(
         and_(
-            SMSTemplate.user_id == user_id,
+            SMSTemplate.company_id == company_id,
             SMSTemplate.is_active == True
         )
     ).order_by(desc(SMSTemplate.usage_count)).all()
@@ -676,12 +695,15 @@ async def delete_template(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Delete SMS template"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     template = db.query(SMSTemplate).filter(
         and_(
             SMSTemplate.id == uuid.UUID(template_id),
-            SMSTemplate.user_id == user_id
+            SMSTemplate.company_id == company_id
         )
     ).first()
     
@@ -704,12 +726,15 @@ async def update_template(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Update SMS template"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     db_template = db.query(SMSTemplate).filter(
         and_(
             SMSTemplate.id == uuid.UUID(template_id),
-            SMSTemplate.user_id == user_id
+            SMSTemplate.company_id == company_id
         )
     ).first()
     
@@ -853,12 +878,15 @@ async def toggle_rotation(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Toggle number rotation"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     number = db.query(PhoneNumber).filter(
         and_(
             PhoneNumber.id == uuid.UUID(number_id),
-            PhoneNumber.user_id == user_id
+            PhoneNumber.company_id == company_id
         )
     ).first()
     
@@ -933,6 +961,10 @@ async def create_scheduled_sms(
     from app.models.scheduled_sms import ScheduledSMS
     
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Validate scheduled time is in the future
     now_utc = datetime.now(timezone.utc)
@@ -945,6 +977,7 @@ async def create_scheduled_sms(
     
     scheduled_sms = ScheduledSMS(
         user_id=user_id,
+        company_id=company_id,
         contact_id=uuid.UUID(request.contact_id) if request.contact_id else None,
         from_number=formatted_from,
         to_address=formatted_phone,
@@ -973,14 +1006,17 @@ async def get_scheduled_sms(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all scheduled SMS"""
+    """Get all scheduled SMS for company"""
     from app.models.scheduled_sms import ScheduledSMS
     
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     scheduled = db.query(ScheduledSMS).filter(
         and_(
-            ScheduledSMS.user_id == user_id,
+            ScheduledSMS.company_id == company_id,
             ScheduledSMS.is_sent == False,
             ScheduledSMS.is_cancelled == False
         )
@@ -1009,12 +1045,15 @@ async def cancel_scheduled_sms(
     """Cancel a scheduled SMS"""
     from app.models.scheduled_sms import ScheduledSMS
     
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     scheduled = db.query(ScheduledSMS).filter(
         and_(
             ScheduledSMS.id == uuid.UUID(scheduled_id),
-            ScheduledSMS.user_id == user_id
+            ScheduledSMS.company_id == company_id
         )
     ).first()
     
@@ -1038,12 +1077,15 @@ async def toggle_phone_number_active(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Toggle phone number active status"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     phone_number = db.query(PhoneNumber).filter(
         and_(
             PhoneNumber.id == uuid.UUID(number_id),
-            PhoneNumber.user_id == user_id
+            PhoneNumber.company_id == company_id
         )
     ).first()
     
