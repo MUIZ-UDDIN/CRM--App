@@ -808,13 +808,17 @@ async def get_phone_numbers(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all phone numbers"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get all phone numbers for the user's company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        return []
     
     numbers = db.query(PhoneNumber).filter(
         and_(
-            PhoneNumber.user_id == user_id,
-            PhoneNumber.is_active == True
+            PhoneNumber.company_id == company_id,
+            PhoneNumber.is_active == True,
+            PhoneNumber.is_deleted == False
         )
     ).order_by(desc(PhoneNumber.rotation_priority)).all()
     
