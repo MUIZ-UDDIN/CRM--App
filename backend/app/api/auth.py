@@ -131,18 +131,55 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         # Validate password strength
         validate_password_strength(request.password)
         
-        # Check if user already exists (case-insensitive, including deleted users)
+        # Check if user already exists (case-insensitive)
         existing_user = db.query(UserModel).filter(
             UserModel.email.ilike(email_lower)
         ).first()
         
         if existing_user:
             if existing_user.is_deleted:
-                # User was deleted, provide option to restore or use different email
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"A user with email '{email_lower}' was previously deleted. Please contact support to restore this account or use a different email address."
-                )
+                # User was deleted, restore them with new details
+                existing_user.is_deleted = False
+                existing_user.hashed_password = get_password_hash(request.password)
+                existing_user.first_name = request.first_name
+                existing_user.last_name = request.last_name
+                existing_user.role = request.role if request.role else "Regular User"
+                existing_user.user_role = existing_user.role
+                
+                # Update company_id if provided
+                if request.company_id:
+                    try:
+                        import uuid
+                        existing_user.company_id = uuid.UUID(request.company_id) if isinstance(request.company_id, str) else request.company_id
+                    except (ValueError, AttributeError):
+                        pass
+                
+                existing_user.updated_at = datetime.utcnow()
+                db.commit()
+                db.refresh(existing_user)
+                
+                # Create tokens
+                access_token = create_access_token(data={"sub": existing_user.email})
+                refresh_token = create_refresh_token(data={"sub": existing_user.email})
+                
+                # Prepare user data
+                user_data = {
+                    "id": str(existing_user.id),
+                    "email": existing_user.email,
+                    "first_name": existing_user.first_name,
+                    "last_name": existing_user.last_name,
+                    "role": existing_user.user_role.value if hasattr(existing_user.user_role, 'value') else str(existing_user.user_role),
+                    "company_id": str(existing_user.company_id) if existing_user.company_id else None,
+                    "team_id": None,
+                    "is_active": True
+                }
+                
+                return {
+                    "access_token": access_token,
+                    "refresh_token": refresh_token,
+                    "token_type": "bearer",
+                    "user": user_data
+                }
             else:
                 # User is active
                 raise HTTPException(
