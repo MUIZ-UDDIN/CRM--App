@@ -28,8 +28,8 @@ class ApiService {
     try {
       const response = await fetch(`${this.baseURL}${endpoint}`, config);
       
-      // Handle 401 Unauthorized - redirect to login
-      if (response.status === 401) {
+      // Handle 401 Unauthorized - redirect to login (but not for login/register endpoints)
+      if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         window.location.href = '/login';
