@@ -8,6 +8,7 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  company_id?: string;
   teamId?: string;
   avatarUrl?: string;
 }
