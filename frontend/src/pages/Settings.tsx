@@ -46,10 +46,11 @@ export default function Settings() {
   const { token, user } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
-  // Check if current user is super admin or company admin
+  // Check if current user is super admin, company admin, or admin
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'Super Admin';
   const isCompanyAdmin = user?.role === 'company_admin' || user?.role === 'Company Admin';
-  const isAdmin = isSuperAdmin || isCompanyAdmin;
+  const isRegularAdmin = user?.role === 'Admin' || user?.role === 'admin';
+  const isAdmin = isSuperAdmin || isCompanyAdmin || isRegularAdmin;
   
   // Default roles
   const defaultRoles = ['Super Admin', 'Admin', 'Sales Manager', 'Sales Rep', 'Regular User', 'Support'];
