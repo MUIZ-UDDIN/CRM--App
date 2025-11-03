@@ -55,6 +55,7 @@ class Call(BaseModel):
     # Relationships
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     contact_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Twilio Integration
     twilio_sid = Column(String(100), unique=True, index=True)

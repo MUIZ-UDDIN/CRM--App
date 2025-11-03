@@ -53,6 +53,7 @@ class Workflow(BaseModel):
     
     # Ownership
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Dates
     last_executed_at = Column(DateTime)
@@ -70,6 +71,7 @@ class WorkflowExecution(BaseModel):
     __tablename__ = 'workflow_executions'
     
     workflow_id = Column(UUID(as_uuid=True), ForeignKey('workflows.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Execution Details
     status = Column(String(50), nullable=False, index=True)  # success, failed, partial

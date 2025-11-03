@@ -32,6 +32,7 @@ class EmailTemplate(BaseModel):
     body_html = Column(Text, nullable=False)
     body_text = Column(Text)
     category = Column(String(100))
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Relationships
     emails = relationship('Email', back_populates='template')
@@ -44,6 +45,7 @@ class EmailCampaign(BaseModel):
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text)
     template_id = Column(UUID(as_uuid=True), ForeignKey('email_templates.id'))
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Campaign stats
     total_sent = Column(Integer, default=0)
@@ -85,6 +87,7 @@ class Email(BaseModel):
     template_id = Column(UUID(as_uuid=True), ForeignKey('email_templates.id'))
     campaign_id = Column(UUID(as_uuid=True), ForeignKey('email_campaigns.id'), index=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Tracking
     sent_at = Column(DateTime)

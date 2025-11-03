@@ -49,6 +49,7 @@ class Document(BaseModel):
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     contact_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
     deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'), index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # E-Signature Information
     requires_signature = Column(Boolean, default=False)
@@ -85,6 +86,7 @@ class DocumentSignature(BaseModel):
     __tablename__ = 'document_signatures'
     
     document_id = Column(UUID(as_uuid=True), ForeignKey('documents.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     signer_name = Column(String(255), nullable=False)
     signer_email = Column(String(255), nullable=False, index=True)
     signer_role = Column(String(100))  # e.g., "client", "witness"

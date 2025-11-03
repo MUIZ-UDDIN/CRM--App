@@ -34,6 +34,7 @@ class Quote(BaseModel):
     client_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
     deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'), index=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Dates
     valid_until = Column(Date)

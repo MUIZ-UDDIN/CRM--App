@@ -34,6 +34,7 @@ class Notification(BaseModel):
     
     # User
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Relationships
     user = relationship('User')

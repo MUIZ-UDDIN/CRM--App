@@ -32,6 +32,7 @@ class File(BaseModel):
     contact_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
     deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'), index=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Metadata
     description = Column(Text)
@@ -57,6 +58,7 @@ class Folder(BaseModel):
     description = Column(Text)
     parent_id = Column(UUID(as_uuid=True), ForeignKey('folders.id'), index=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Metadata
     status = Column(String(50), default='active')  # active, inactive, archived
