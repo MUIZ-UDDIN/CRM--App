@@ -24,6 +24,7 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str
     role: str
+    user_role: Optional[str] = None  # Add user_role field
     company_id: Optional[str] = None
     phone: Optional[str] = None
     title: Optional[str] = None
@@ -34,6 +35,7 @@ class UserResponse(BaseModel):
     team_id: Optional[str] = None
     is_active: bool = True
     created_at: datetime
+    status: Optional[str] = None  # Add status field
     
     class Config:
         from_attributes = True
@@ -210,6 +212,8 @@ async def get_all_users(
             first_name=user.first_name,
             last_name=user.last_name,
             role=user.role,
+            user_role=user.user_role if hasattr(user, 'user_role') else None,
+            company_id=str(user.company_id) if user.company_id else None,
             phone=user.phone,
             title=user.title,
             department=user.department,
@@ -217,7 +221,8 @@ async def get_all_users(
             bio=user.bio,
             avatar=user.avatar_url,
             team_id=str(user.team_id) if user.team_id else None,
-            is_active=True,
+            is_active=user.is_active if hasattr(user, 'is_active') else True,
+            status=user.status if hasattr(user, 'status') else 'active',
             created_at=user.created_at
         )
         for user in users

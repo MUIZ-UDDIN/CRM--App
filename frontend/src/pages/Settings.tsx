@@ -429,7 +429,10 @@ export default function Settings() {
         setShowAddTeamModal(false);
         setTeamForm({ name: '', email: '', role: 'Regular User' });
         setRoleSearchTerm('');
-        fetchTeamMembers();
+        // Wait a bit for database to update, then refresh
+        setTimeout(() => {
+          fetchTeamMembers();
+        }, 500);
       } else {
         try {
           const errorData = await response.json();
