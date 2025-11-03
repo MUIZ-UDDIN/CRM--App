@@ -364,10 +364,17 @@ async def delete_user(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a user (soft delete) - Admin only"""
-    # Check if current user is admin
-    if current_user.get("role") not in ["Admin", "Super Admin"]:
-        raise HTTPException(status_code=403, detail="Only admins can delete users")
+    """Delete a user (soft delete) - Super Admin, Admin, or Company Admin only"""
+    current_user_role = current_user.get("role")
+    current_user_company_id = current_user.get("company_id")
+    
+    # Check if current user has permission to delete users
+    allowed_roles = ["Super Admin", "Admin", "company_admin"]
+    if current_user_role not in allowed_roles:
+        raise HTTPException(
+            status_code=403, 
+            detail="Only Super Admin, Admin, or Company Admin can delete users"
+        )
     
     # Prevent self-deletion
     if str(current_user["id"]) == user_id:
@@ -380,6 +387,31 @@ async def delete_user(
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Company Admin can only delete users from their own company
+    if current_user_role == "company_admin":
+        if str(user.company_id) != str(current_user_company_id):
+            raise HTTPException(
+                status_code=403, 
+                detail="You can only delete users from your own company"
+            )
+    
+    # Admin (assigned by super admin) can only delete users from their own company
+    if current_user_role == "Admin" and current_user_role != "Super Admin":
+        if str(user.company_id) != str(current_user_company_id):
+            raise HTTPException(
+                status_code=403, 
+                detail="You can only delete users from your own company"
+            )
+    
+    # Super Admin can delete any user from their company
+    # (Super Admin should not delete users from other companies via team page)
+    if current_user_role == "Super Admin":
+        if str(user.company_id) != str(current_user_company_id):
+            raise HTTPException(
+                status_code=403, 
+                detail="You can only delete users from your own company"
+            )
     
     # Soft delete
     user.is_deleted = True
