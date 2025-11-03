@@ -30,6 +30,7 @@ class SMSTemplate(BaseModel):
     
     # Ownership
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)
     
     # Status
     is_active = Column(Boolean, default=True)

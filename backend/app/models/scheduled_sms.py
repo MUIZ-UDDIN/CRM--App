@@ -17,6 +17,7 @@ class ScheduledSMS(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     contact_id = Column(UUID(as_uuid=True), ForeignKey("contacts.id"), nullable=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True, index=True)
     to_address = Column(String(20), nullable=False)
     from_address = Column(String(20), nullable=True)
     body = Column(Text, nullable=False)
