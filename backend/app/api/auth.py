@@ -131,16 +131,24 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         # Validate password strength
         validate_password_strength(request.password)
         
-        # Check if user already exists (case-insensitive, only active users)
+        # Check if user already exists (case-insensitive, including deleted users)
         existing_user = db.query(UserModel).filter(
-            UserModel.email.ilike(email_lower),
-            UserModel.is_deleted == False
+            UserModel.email.ilike(email_lower)
         ).first()
+        
         if existing_user:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"A user with email '{email_lower}' is already registered. Please use a different email address."
-            )
+            if existing_user.is_deleted:
+                # User was deleted, provide option to restore or use different email
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A user with email '{email_lower}' was previously deleted. Please contact support to restore this account or use a different email address."
+                )
+            else:
+                # User is active
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"A user with email '{email_lower}' is already registered. Please use a different email address."
+                )
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
