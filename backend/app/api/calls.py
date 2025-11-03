@@ -52,9 +52,15 @@ async def get_calls(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all calls for current user"""
+    """Get all calls for current company"""
+    import uuid
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     calls = db.query(CallModel).filter(
-        CallModel.user_id == current_user["id"]
+        CallModel.company_id == company_id
     ).order_by(CallModel.created_at.desc()).offset(skip).limit(limit).all()
     
     return [
@@ -92,8 +98,14 @@ async def make_call(
         from ..models.twilio_settings import TwilioSettings
         
         # Get Twilio settings from database
+        import uuid
+        company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+        
+        if not company_id:
+            raise HTTPException(status_code=403, detail="No company associated with user")
+        
         settings = db.query(TwilioSettings).filter(
-            TwilioSettings.user_id == current_user["id"]
+            TwilioSettings.company_id == company_id
         ).first()
         
         if not settings:
@@ -110,7 +122,7 @@ async def make_call(
         if not from_number:
             from ..models.phone_numbers import PhoneNumber
             phone_number = db.query(PhoneNumber).filter(
-                PhoneNumber.user_id == current_user["id"],
+                PhoneNumber.company_id == company_id,
                 PhoneNumber.is_active == True
             ).first()
             
@@ -138,6 +150,7 @@ async def make_call(
             from_address=from_number,
             to_address=request.to,
             user_id=current_user["id"],
+            company_id=company_id,
             contact_id=request.contact_id,
             notes=request.notes,
             twilio_sid=call.sid,
@@ -181,9 +194,15 @@ async def delete_call(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Delete call record"""
+    import uuid
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     call = db.query(CallModel).filter(
         CallModel.id == call_id,
-        CallModel.user_id == current_user["id"]
+        CallModel.company_id == company_id
     ).first()
     
     if not call:
@@ -203,9 +222,15 @@ async def update_call_notes(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Update call notes"""
+    import uuid
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     call = db.query(CallModel).filter(
         CallModel.id == call_id,
-        CallModel.user_id == current_user["id"]
+        CallModel.company_id == company_id
     ).first()
     
     if not call:
