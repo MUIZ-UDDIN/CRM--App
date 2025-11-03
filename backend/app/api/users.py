@@ -308,7 +308,8 @@ async def update_user(
     current_user_company_id = current_user.get("company_id")
     
     # Check if current user has permission to update users
-    allowed_roles = ["Super Admin", "Admin", "company_admin"]
+    # Support both old role names and new ones
+    allowed_roles = ["Super Admin", "Admin", "company_admin", "super_admin", "admin"]
     if current_user_role not in allowed_roles:
         raise HTTPException(
             status_code=403, 
@@ -384,7 +385,8 @@ async def delete_user(
     current_user_company_id = current_user.get("company_id")
     
     # Check if current user has permission to delete users
-    allowed_roles = ["Super Admin", "Admin", "company_admin"]
+    # Support both old role names and new ones
+    allowed_roles = ["Super Admin", "Admin", "company_admin", "super_admin", "admin"]
     if current_user_role not in allowed_roles:
         raise HTTPException(
             status_code=403, 
