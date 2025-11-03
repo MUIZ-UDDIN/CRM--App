@@ -356,6 +356,8 @@ async def update_user(
         user.email = email_lower
     if user_update.role is not None:
         user.role = user_update.role
+        # Also update user_role to match
+        user.user_role = user_update.role
     
     user.updated_at = datetime.utcnow()
     db.commit()
