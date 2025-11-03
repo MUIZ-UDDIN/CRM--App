@@ -166,11 +166,9 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         user_role = "super_admin"
     else:
         role = request.role if request.role else "Regular User"
-        # Map role to user_role
-        if role.lower() in ["admin", "company admin"]:
-            user_role = "company_admin"
-        else:
-            user_role = "company_user"
+        # user_role is the same as role for consistency
+        # Both fields will store the same value (the role name)
+        user_role = role
     
     # Get company_id from request (should be provided when adding team members)
     import uuid
