@@ -137,6 +137,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
               firstName: userData.first_name || userData.firstName,
               lastName: userData.last_name || userData.lastName,
               role: userData.role || 'User',
+              company_id: userData.company_id,
               teamId: userData.team_id,
             };
             
@@ -174,6 +175,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           firstName: response.user.first_name || response.user.firstName,
           lastName: response.user.last_name || response.user.lastName,
           role: response.user.role || 'User',
+          company_id: response.user.company_id,
           teamId: response.user.team_id,
         };
         
