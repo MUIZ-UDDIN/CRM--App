@@ -1361,16 +1361,20 @@ export default function Settings() {
                     }`}>
                       {integration.status}
                     </span>
-                    <button
-                      onClick={() => handleToggleIntegration(integration)}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg ${
-                        integration.status === 'connected'
-                          ? 'text-red-600 hover:bg-red-50'
-                          : 'text-white bg-primary-600 hover:bg-primary-700'
-                      }`}
-                    >
-                      {integration.status === 'connected' ? 'Disconnect' : 'Connect'}
-                    </button>
+                    {isAdmin ? (
+                      <button
+                        onClick={() => handleToggleIntegration(integration)}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg ${
+                          integration.status === 'connected'
+                            ? 'text-red-600 hover:bg-red-50'
+                            : 'text-white bg-primary-600 hover:bg-primary-700'
+                        }`}
+                      >
+                        {integration.status === 'connected' ? 'Disconnect' : 'Connect'}
+                      </button>
+                    ) : (
+                      <span className="px-4 py-2 text-sm text-gray-400">Admin only</span>
+                    )}
                   </div>
                   
                   {/* Show details when connected */}
@@ -1381,19 +1385,23 @@ export default function Settings() {
                         <p className="mt-1"><strong>Status:</strong> {twilioDetails.is_verified ? '✓ Verified' : '⚠ Not Verified'}</p>
                         <p className="mt-1"><strong>Phone Numbers:</strong> {phoneNumbers.length}</p>
                       </div>
-                      <button
-                        onClick={handleSyncPhoneNumbers}
-                        className="w-full px-3 py-2 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100"
-                      >
-                        🔄 Sync Phone Numbers
-                      </button>
-                      {phoneNumbers.length > 0 && (
-                        <button
-                          onClick={() => window.location.href = '/phone-numbers'}
-                          className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-                        >
-                          📱 Manage Phone Numbers
-                        </button>
+                      {isAdmin && (
+                        <>
+                          <button
+                            onClick={handleSyncPhoneNumbers}
+                            className="w-full px-3 py-2 text-xs font-medium text-primary-600 bg-primary-50 rounded-lg hover:bg-primary-100"
+                          >
+                            🔄 Sync Phone Numbers
+                          </button>
+                          {phoneNumbers.length > 0 && (
+                            <button
+                              onClick={() => window.location.href = '/phone-numbers'}
+                              className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                            >
+                              📱 Manage Phone Numbers
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   )}
