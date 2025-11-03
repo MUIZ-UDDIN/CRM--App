@@ -85,13 +85,22 @@ class UserResponse(BaseModel):
 @router.post("/login", response_model=LoginResponse)
 async def login(request: LoginRequest, db: Session = Depends(get_db)):
     """Login endpoint"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    # Log login attempt
+    logger.info(f"Login attempt for email: {request.email}")
+    
     user = authenticate_user(db, request.email, request.password)
     if not user:
+        logger.warning(f"Failed login attempt for email: {request.email}")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    logger.info(f"Successful login for email: {request.email}, role: {user.user_role}")
     
     # Create tokens
     access_token = create_access_token(data={"sub": user.email})
