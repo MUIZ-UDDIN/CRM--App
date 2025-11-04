@@ -355,6 +355,14 @@ async def update_user(
             raise HTTPException(status_code=400, detail="Email already in use")
         user.email = email_lower
     if user_update.role is not None:
+        # Prevent assigning super_admin role
+        # Only admin@sunstonecrm.com can be super_admin
+        if user_update.role.lower() in ['super_admin', 'super admin']:
+            raise HTTPException(
+                status_code=403,
+                detail="Super Admin role cannot be assigned. Only the system super admin (admin@sunstonecrm.com) has this role."
+            )
+        
         user.role = user_update.role
         # Also update user_role to match
         user.user_role = user_update.role

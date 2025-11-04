@@ -23,7 +23,7 @@ class InvitationCreate(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
-    user_role: str = "company_user"  # company_admin or company_user
+    user_role: str = "company_user"  # company_admin, company_user, Admin, Sales Rep, etc. (NOT super_admin)
 
 
 class InvitationAccept(BaseModel):
@@ -60,6 +60,13 @@ async def send_invitation(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can invite users"
+        )
+    
+    # Prevent inviting super_admin role
+    if invitation.user_role.lower() in ['super_admin', 'super admin']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Super Admin role cannot be assigned via invitation. Only admin@sunstonecrm.com has this role."
         )
     
     # Check if email already exists
