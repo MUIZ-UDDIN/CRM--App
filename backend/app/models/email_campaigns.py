@@ -17,6 +17,7 @@ class BulkEmailCampaign(BaseModel):
     __tablename__ = "bulk_email_campaigns"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True, index=True)
     campaign_name = Column(String(255), nullable=False)
     subject = Column(String(255), nullable=False)
     body = Column(Text, nullable=False)

@@ -18,6 +18,7 @@ class UserConversation(BaseModel):
     __tablename__ = "user_conversations"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True, index=True)
     to_number = Column(String(20), nullable=False, index=True)
     from_twilio_number = Column(String(20), nullable=False, index=True)
     conversation_status = Column(String(20), default='active')  # active, inactive, blocked
