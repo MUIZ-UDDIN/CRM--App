@@ -86,12 +86,15 @@ async def get_files(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all files for the current user"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get all files for the current company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(File).filter(
         and_(
-            File.owner_id == user_id,
+            File.company_id == company_id,
             File.is_deleted == False
         )
     )
@@ -140,8 +143,12 @@ async def upload_file(
     import json
     
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
-    # Check for duplicate file with same name in the same folder for this user
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    # Check for duplicate file with same name in the same folder for this company
     folder_uuid = None
     if folder_id and folder_id.strip():
         try:
@@ -153,7 +160,7 @@ async def upload_file(
         and_(
             File.name == file.filename,
             File.folder_id == folder_uuid,
-            File.owner_id == user_id,
+            File.company_id == company_id,
             File.is_deleted == False
         )
     ).first()
@@ -203,7 +210,8 @@ async def upload_file(
         storage_path=str(file_path),
         url=str(file_path),
         folder_id=folder_uuid,
-        owner_id=user_id
+        owner_id=user_id,
+        company_id=company_id
     )
     
     db.add(new_file)
@@ -237,12 +245,15 @@ async def update_file(
     db: Session = Depends(get_db)
 ):
     """Update a file's metadata"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     file = db.query(File).filter(
         and_(
             File.id == uuid.UUID(file_id),
-            File.owner_id == user_id,
+            File.company_id == company_id,
             File.is_deleted == False
         )
     ).first()
@@ -302,12 +313,15 @@ async def get_folders(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all folders, optionally filtered by parent_id"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get all folders for company, optionally filtered by parent_id"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(Folder).filter(
         and_(
-            Folder.owner_id == user_id,
+            Folder.company_id == company_id,
             Folder.is_deleted == False
         )
     )
@@ -356,6 +370,10 @@ async def create_folder(
 ):
     """Create a new folder"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     parent_uuid = uuid.UUID(folder_data.parent_id) if folder_data.parent_id else None
     print(f"Creating folder '{folder_data.name}' with parent_id: {parent_uuid}")
@@ -366,7 +384,8 @@ async def create_folder(
         status=folder_data.status,
         tags=folder_data.tags,
         parent_id=parent_uuid,
-        owner_id=user_id
+        owner_id=user_id,
+        company_id=company_id
     )
     
     db.add(new_folder)
@@ -392,12 +411,15 @@ async def update_folder(
     db: Session = Depends(get_db)
 ):
     """Update a folder (e.g., move to different parent)"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     folder = db.query(Folder).filter(
         and_(
             Folder.id == uuid.UUID(folder_id),
-            Folder.owner_id == user_id,
+            Folder.company_id == company_id,
             Folder.is_deleted == False
         )
     ).first()
@@ -448,12 +470,15 @@ async def delete_folder(
     db: Session = Depends(get_db)
 ):
     """Delete a folder"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     folder = db.query(Folder).filter(
         and_(
             Folder.id == uuid.UUID(folder_id),
-            Folder.owner_id == user_id,
+            Folder.company_id == company_id,
             Folder.is_deleted == False
         )
     ).first()
@@ -475,6 +500,10 @@ async def create_file(
 ):
     """Create a new file record"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     new_file = File(
         name=file_data.name,
@@ -484,7 +513,8 @@ async def create_file(
         folder_id=uuid.UUID(file_data.folder_id) if file_data.folder_id else None,
         contact_id=uuid.UUID(file_data.contact_id) if file_data.contact_id else None,
         deal_id=uuid.UUID(file_data.deal_id) if file_data.deal_id else None,
-        owner_id=user_id
+        owner_id=user_id,
+        company_id=company_id
     )
     
     db.add(new_file)
@@ -512,12 +542,15 @@ async def download_file(
     db: Session = Depends(get_db)
 ):
     """Download a file"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     file = db.query(File).filter(
         and_(
             File.id == uuid.UUID(file_id),
-            File.owner_id == user_id,
+            File.company_id == company_id,
             File.is_deleted == False
         )
     ).first()
@@ -543,12 +576,15 @@ async def get_file(
     db: Session = Depends(get_db)
 ):
     """Get a specific file"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     file = db.query(File).filter(
         and_(
             File.id == uuid.UUID(file_id),
-            File.owner_id == user_id,
+            File.company_id == company_id,
             File.is_deleted == False
         )
     ).first()
@@ -577,12 +613,15 @@ async def delete_file(
     db: Session = Depends(get_db)
 ):
     """Delete a file"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     file = db.query(File).filter(
         and_(
             File.id == uuid.UUID(file_id),
-            File.owner_id == user_id,
+            File.company_id == company_id,
             File.is_deleted == False
         )
     ).first()
