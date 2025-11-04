@@ -79,12 +79,15 @@ async def get_quotes(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all quotes"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get all quotes for company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(QuoteModel).filter(
         and_(
-            QuoteModel.owner_id == user_id,
+            QuoteModel.company_id == company_id,
             QuoteModel.is_deleted == False
         )
     )
@@ -119,12 +122,15 @@ async def get_quote(
     db: Session = Depends(get_db)
 ):
     """Get single quote"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     quote = db.query(QuoteModel).filter(
         and_(
             QuoteModel.id == uuid.UUID(quote_id),
-            QuoteModel.owner_id == user_id,
+            QuoteModel.company_id == company_id,
             QuoteModel.is_deleted == False
         )
     ).first()
@@ -155,12 +161,16 @@ async def create_quote(
 ):
     """Create new quote"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
-    # Check for duplicate quote with same title for this user
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    # Check for duplicate quote with same title for this company
     existing_quote = db.query(QuoteModel).filter(
         and_(
             QuoteModel.title == quote_data.title,
-            QuoteModel.owner_id == user_id,
+            QuoteModel.company_id == company_id,
             QuoteModel.is_deleted == False
         )
     ).first()
@@ -200,6 +210,7 @@ async def create_quote(
         client_id=client_uuid,
         deal_id=deal_uuid,
         owner_id=user_id,
+        company_id=company_id,
         valid_until=quote_data.valid_until,
         description=quote_data.description,
         terms=quote_data.terms,
@@ -234,12 +245,15 @@ async def update_quote(
     db: Session = Depends(get_db)
 ):
     """Update quote"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     quote = db.query(QuoteModel).filter(
         and_(
             QuoteModel.id == uuid.UUID(quote_id),
-            QuoteModel.owner_id == user_id,
+            QuoteModel.company_id == company_id,
             QuoteModel.is_deleted == False
         )
     ).first()
@@ -308,12 +322,15 @@ async def delete_quote(
     db: Session = Depends(get_db)
 ):
     """Delete quote"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     quote = db.query(QuoteModel).filter(
         and_(
             QuoteModel.id == uuid.UUID(quote_id),
-            QuoteModel.owner_id == user_id,
+            QuoteModel.company_id == company_id,
             QuoteModel.is_deleted == False
         )
     ).first()
@@ -334,12 +351,15 @@ async def download_quote(
     db: Session = Depends(get_db)
 ):
     """Download quote as PDF"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     quote = db.query(QuoteModel).filter(
         and_(
             QuoteModel.id == uuid.UUID(quote_id),
-            QuoteModel.owner_id == user_id,
+            QuoteModel.company_id == company_id,
             QuoteModel.is_deleted == False
         )
     ).first()
