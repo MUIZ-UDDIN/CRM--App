@@ -52,8 +52,8 @@ export default function Settings() {
   const isRegularAdmin = user?.role === 'Admin' || user?.role === 'admin';
   const isAdmin = isSuperAdmin || isCompanyAdmin || isRegularAdmin;
   
-  // Default roles
-  const defaultRoles = ['Super Admin', 'Admin', 'Sales Manager', 'Sales Rep', 'Regular User', 'Support'];
+  // Default roles (Super Admin removed - only admin@sunstonecrm.com can be super_admin)
+  const defaultRoles = ['Admin', 'Sales Manager', 'Sales Rep', 'Regular User', 'Support'];
 
   useEffect(() => {
     // Load custom roles from localStorage
