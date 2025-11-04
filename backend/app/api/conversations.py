@@ -55,14 +55,15 @@ async def list_conversations(
     db: Session = Depends(get_db)
 ):
     """
-    List all conversations for the current user
+    List all conversations for the company
     """
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(UserConversation).filter(
-        UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         UserConversation.is_deleted == False
     )
     
@@ -106,13 +107,14 @@ async def get_conversation(
     """
     Get conversation details with recent messages
     """
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     conversation = db.query(UserConversation).filter(
         UserConversation.id == uuid.UUID(conversation_id),
-        UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         UserConversation.is_deleted == False
     ).first()
     
@@ -217,13 +219,14 @@ async def update_conversation_status(
     """
     Update conversation status (active, inactive, blocked)
     """
-    user_id = current_user["id"]
-    if isinstance(user_id, str):
-        user_id = uuid.UUID(user_id)
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     conversation = db.query(UserConversation).filter(
         UserConversation.id == uuid.UUID(conversation_id),
-        UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         UserConversation.is_deleted == False
     ).first()
     
@@ -255,11 +258,16 @@ async def get_conversation_stats(
     db: Session = Depends(get_db)
 ):
     """
-    Get overview statistics for user's conversations
+    Get overview statistics for company's conversations
     """
     user_id = current_user["id"]
     if isinstance(user_id, str):
         user_id = uuid.UUID(user_id)
+    
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Use phone rotation service for stats
     rotation_service = PhoneRotationService(db)
@@ -267,18 +275,18 @@ async def get_conversation_stats(
     
     # Get conversation counts by status
     total_conversations = db.query(UserConversation).filter(
-        UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         UserConversation.is_deleted == False
     ).count()
     
     active_conversations = db.query(UserConversation).filter(
-        UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         UserConversation.conversation_status == 'active',
         UserConversation.is_deleted == False
     ).count()
     
     blocked_conversations = db.query(UserConversation).filter(
-        UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         UserConversation.conversation_status == 'blocked',
         UserConversation.is_deleted == False
     ).count()

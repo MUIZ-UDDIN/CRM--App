@@ -12,6 +12,7 @@ from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models.inbox import Inbox as InboxModel, MessageType, MessageStatus, MessageDirection
 from ..services.twilio_service import TwilioService
+import uuid
 
 router = APIRouter()
 twilio_service = TwilioService()
@@ -60,7 +61,12 @@ async def get_inbox(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get inbox messages with filters"""
-    query = db.query(InboxModel).filter(InboxModel.user_id == current_user["id"])
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    query = db.query(InboxModel).filter(InboxModel.company_id == company_id)
     
     if message_type:
         query = query.filter(InboxModel.message_type == message_type)
@@ -82,8 +88,13 @@ async def get_sms_inbox(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get SMS messages only"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     query = db.query(InboxModel).filter(
-        InboxModel.user_id == current_user["id"],
+        InboxModel.company_id == company_id,
         InboxModel.message_type == MessageType.SMS
     )
     
@@ -103,8 +114,13 @@ async def get_email_inbox(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get Email messages only"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     query = db.query(InboxModel).filter(
-        InboxModel.user_id == current_user["id"],
+        InboxModel.company_id == company_id,
         InboxModel.message_type == MessageType.EMAIL
     )
     
@@ -122,6 +138,11 @@ async def send_sms(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Send SMS via Twilio"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     # Send SMS
     result = await twilio_service.send_sms(request.to_number, request.message)
     
@@ -134,6 +155,7 @@ async def send_sms(
         to_address=request.to_number,
         body=request.message,
         user_id=current_user["id"],
+        company_id=company_id,
         contact_id=request.contact_id,
         provider_message_id=result.get("message_sid"),
         provider_data=result
@@ -155,6 +177,11 @@ async def send_email(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Send Email via SendGrid"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     # Send Email
     result = await twilio_service.send_email(
         request.to_email,
@@ -174,6 +201,7 @@ async def send_email(
         body=request.text_content or request.html_content,
         html_body=request.html_content,
         user_id=current_user["id"],
+        company_id=company_id,
         contact_id=request.contact_id,
         provider_message_id=result.get("message_id"),
         provider_data=result
@@ -195,9 +223,14 @@ async def mark_message_read(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Mark message as read"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     message = db.query(InboxModel).filter(
         InboxModel.id == message_id,
-        InboxModel.user_id == current_user["id"]
+        InboxModel.company_id == company_id
     ).first()
     
     if not message:
@@ -217,9 +250,14 @@ async def delete_message(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Delete message"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
     message = db.query(InboxModel).filter(
         InboxModel.id == message_id,
-        InboxModel.user_id == current_user["id"]
+        InboxModel.company_id == company_id
     ).first()
     
     if not message:

@@ -70,11 +70,14 @@ async def list_campaigns(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """List all email campaigns"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """List all email campaigns for company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(BulkEmailCampaign).filter(
-        BulkEmailCampaign.user_id == user_id,
+        BulkEmailCampaign.company_id == company_id,
         BulkEmailCampaign.is_deleted == False
     )
     
@@ -113,12 +116,17 @@ async def create_campaign(
 ):
     """Create a new email campaign"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Determine status
     status = "scheduled" if request.scheduled_at else "draft"
     
     campaign = BulkEmailCampaign(
         user_id=user_id,
+        company_id=company_id,
         campaign_name=request.campaign_name,
         subject=request.subject,
         body=request.body,
@@ -167,11 +175,14 @@ async def get_campaign(
     db: Session = Depends(get_db)
 ):
     """Get campaign details"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     campaign = db.query(BulkEmailCampaign).filter(
         BulkEmailCampaign.id == uuid.UUID(campaign_id),
-        BulkEmailCampaign.user_id == user_id,
+        BulkEmailCampaign.company_id == company_id,
         BulkEmailCampaign.is_deleted == False
     ).first()
     
@@ -202,11 +213,14 @@ async def send_campaign(
     db: Session = Depends(get_db)
 ):
     """Send or schedule campaign"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     campaign = db.query(BulkEmailCampaign).filter(
         BulkEmailCampaign.id == uuid.UUID(campaign_id),
-        BulkEmailCampaign.user_id == user_id,
+        BulkEmailCampaign.company_id == company_id,
         BulkEmailCampaign.is_deleted == False
     ).first()
     
@@ -241,12 +255,15 @@ async def get_campaign_analytics(
     db: Session = Depends(get_db)
 ):
     """Get detailed analytics for a campaign"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Verify campaign ownership
     campaign = db.query(BulkEmailCampaign).filter(
         BulkEmailCampaign.id == uuid.UUID(campaign_id),
-        BulkEmailCampaign.user_id == user_id
+        BulkEmailCampaign.company_id == company_id
     ).first()
     
     if not campaign:
@@ -280,11 +297,14 @@ async def delete_campaign(
     db: Session = Depends(get_db)
 ):
     """Delete a campaign"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     campaign = db.query(BulkEmailCampaign).filter(
         BulkEmailCampaign.id == uuid.UUID(campaign_id),
-        BulkEmailCampaign.user_id == user_id
+        BulkEmailCampaign.company_id == company_id
     ).first()
     
     if not campaign:
