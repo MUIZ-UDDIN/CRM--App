@@ -102,25 +102,13 @@ ORDER BY c.name;
 
 -- Check PIPELINES
 \echo '5. PIPELINES - Cross-Company Check:'
-\echo 'Users creating pipelines in wrong companies:'
-SELECT 
-    u.email as user_email,
-    uc.name as user_company,
-    p.name as pipeline_name,
-    pc.name as pipeline_company,
-    'MISMATCH!' as status
-FROM pipelines p
-JOIN users u ON p.created_by = u.id
-JOIN companies uc ON u.company_id = uc.id
-JOIN companies pc ON p.company_id = pc.id
-WHERE u.company_id != p.company_id;
+\echo 'Note: Pipelines do not track creator, only company_id'
 
 \echo ''
 \echo 'Pipelines summary by company:'
 SELECT 
     c.name as company,
-    COUNT(p.id) as total_pipelines,
-    COUNT(DISTINCT p.created_by) as unique_creators
+    COUNT(p.id) as total_pipelines
 FROM pipelines p
 JOIN companies c ON p.company_id = c.id
 GROUP BY c.name
@@ -136,13 +124,13 @@ ORDER BY c.name;
 SELECT 
     u.email as user_email,
     uc.name as user_company,
-    a.title as activity_title,
+    a.subject as activity_subject,
     ac.name as activity_company,
     'MISMATCH!' as status
 FROM activities a
 JOIN users u ON a.owner_id = u.id
 JOIN companies uc ON u.company_id = uc.id
-JOIN companies cc ON a.company_id = cc.id
+JOIN companies ac ON a.company_id = ac.id
 WHERE u.company_id != a.company_id;
 
 \echo ''
@@ -297,13 +285,6 @@ SELECT
 FROM contacts co
 JOIN users u ON co.owner_id = u.id
 WHERE u.company_id != co.company_id
-UNION ALL
-SELECT 
-    'Pipelines',
-    COUNT(*)
-FROM pipelines p
-JOIN users u ON p.created_by = u.id
-WHERE u.company_id != p.company_id
 UNION ALL
 SELECT 
     'Activities',
