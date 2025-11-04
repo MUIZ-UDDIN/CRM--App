@@ -55,12 +55,15 @@ async def get_workflows(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all workflows for the current user"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get all workflows for the company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(Workflow).filter(
         and_(
-            Workflow.owner_id == user_id,
+            Workflow.company_id == company_id,
             Workflow.is_deleted == False
         )
     )
@@ -94,11 +97,15 @@ async def create_workflow(
 ):
     """Create a new workflow"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Check for duplicate workflow name
     existing_workflow = db.query(Workflow).filter(
         and_(
-            Workflow.owner_id == user_id,
+            Workflow.company_id == company_id,
             Workflow.name.ilike(workflow_data.name.strip()),
             Workflow.is_deleted == False
         )
@@ -125,7 +132,8 @@ async def create_workflow(
         trigger_type=trigger_type,
         status=status,
         actions=[],  # Empty actions array
-        owner_id=user_id
+        owner_id=user_id,
+        company_id=company_id
     )
     
     db.add(new_workflow)
@@ -152,12 +160,15 @@ async def get_workflow(
     db: Session = Depends(get_db)
 ):
     """Get a specific workflow"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     workflow = db.query(Workflow).filter(
         and_(
             Workflow.id == uuid.UUID(workflow_id),
-            Workflow.owner_id == user_id,
+            Workflow.company_id == company_id,
             Workflow.is_deleted == False
         )
     ).first()
@@ -186,12 +197,15 @@ async def update_workflow(
     db: Session = Depends(get_db)
 ):
     """Update a workflow"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     workflow = db.query(Workflow).filter(
         and_(
             Workflow.id == uuid.UUID(workflow_id),
-            Workflow.owner_id == user_id,
+            Workflow.company_id == company_id,
             Workflow.is_deleted == False
         )
     ).first()
@@ -203,7 +217,7 @@ async def update_workflow(
     if workflow_data.name:
         existing_workflow = db.query(Workflow).filter(
             and_(
-                Workflow.owner_id == user_id,
+                Workflow.company_id == company_id,
                 Workflow.id != uuid.UUID(workflow_id),
                 Workflow.name.ilike(workflow_data.name.strip()),
                 Workflow.is_deleted == False
@@ -253,12 +267,15 @@ async def delete_workflow(
     db: Session = Depends(get_db)
 ):
     """Delete a workflow"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     workflow = db.query(Workflow).filter(
         and_(
             Workflow.id == uuid.UUID(workflow_id),
-            Workflow.owner_id == user_id,
+            Workflow.company_id == company_id,
             Workflow.is_deleted == False
         )
     ).first()
@@ -279,12 +296,15 @@ async def toggle_workflow(
     db: Session = Depends(get_db)
 ):
     """Toggle workflow status between active and inactive"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     workflow = db.query(Workflow).filter(
         and_(
             Workflow.id == uuid.UUID(workflow_id),
-            Workflow.owner_id == user_id,
+            Workflow.company_id == company_id,
             Workflow.is_deleted == False
         )
     ).first()
@@ -313,12 +333,16 @@ async def execute_workflow_manually(
     from app.services.workflow_executor import WorkflowExecutor
     
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
-    # Verify workflow belongs to user
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    # Verify workflow belongs to company
     workflow = db.query(Workflow).filter(
         and_(
             Workflow.id == uuid.UUID(workflow_id),
-            Workflow.owner_id == user_id,
+            Workflow.company_id == company_id,
             Workflow.is_deleted == False
         )
     ).first()
