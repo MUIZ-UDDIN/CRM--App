@@ -63,15 +63,15 @@ COMMIT;
 
 \echo 'A. Users with super_admin role (should be only 1):'
 SELECT 
-    email,
-    first_name || ' ' || last_name as name,
-    user_role,
-    role as legacy_role,
+    u.email,
+    u.first_name || ' ' || u.last_name as name,
+    u.user_role,
+    u.role as legacy_role,
     c.name as company
 FROM users u
 LEFT JOIN companies c ON u.company_id = c.id
-WHERE user_role = 'super_admin'
-ORDER BY email;
+WHERE u.user_role = 'super_admin'
+ORDER BY u.email;
 
 \echo ''
 \echo 'B. All users by company:'
