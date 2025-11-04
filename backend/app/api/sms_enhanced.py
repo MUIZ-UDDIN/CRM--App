@@ -194,12 +194,19 @@ async def get_sms_messages(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get all SMS messages for current company"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    query = db.query(SMSModel).filter(SMSModel.company_id == company_id)
+    # Include records with matching company_id OR NULL company_id for this user (backward compatibility)
+    query = db.query(SMSModel).filter(
+        or_(
+            SMSModel.company_id == company_id,
+            and_(SMSModel.company_id.is_(None), SMSModel.user_id == user_id)
+        )
+    )
     
     # Filter by type if provided
     if type:

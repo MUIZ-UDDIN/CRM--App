@@ -54,13 +54,20 @@ async def get_calls(
 ):
     """Get all calls for current company"""
     import uuid
+    from sqlalchemy import or_, and_
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
+    # Include records with matching company_id OR NULL company_id for this user (backward compatibility)
     calls = db.query(CallModel).filter(
-        CallModel.company_id == company_id
+        or_(
+            CallModel.company_id == company_id,
+            and_(CallModel.company_id.is_(None), CallModel.user_id == user_id)
+        )
     ).order_by(CallModel.created_at.desc()).offset(skip).limit(limit).all()
     
     return [
