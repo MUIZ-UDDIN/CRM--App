@@ -28,7 +28,12 @@ async def get_message_performance(
     db: Session = Depends(get_db)
 ):
     """Get message performance metrics"""
+    from fastapi import HTTPException
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Default to last 30 days
     if not start_date:
@@ -42,6 +47,7 @@ async def get_message_performance(
         MessageAnalytics.conversation_id == UserConversation.id
     ).filter(
         UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         MessageAnalytics.timestamp >= start_date,
         MessageAnalytics.timestamp <= end_date
     )
@@ -75,7 +81,12 @@ async def get_number_performance(
     db: Session = Depends(get_db)
 ):
     """Get performance stats for all phone numbers"""
+    from fastapi import HTTPException
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     if not date:
         date = datetime.utcnow().strftime("%Y-%m-%d")
@@ -112,12 +123,18 @@ async def get_number_details(
     db: Session = Depends(get_db)
 ):
     """Get detailed analytics for a specific phone number"""
+    from fastapi import HTTPException
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     # Get phone number info
     phone = db.query(PhoneNumber).filter(
         PhoneNumber.phone_number == phone_number,
-        PhoneNumber.user_id == user_id
+        PhoneNumber.user_id == user_id,
+        PhoneNumber.company_id == company_id
     ).first()
     
     if not phone:
@@ -135,6 +152,7 @@ async def get_number_details(
     active_convos = db.query(UserConversation).filter(
         UserConversation.from_twilio_number == phone_number,
         UserConversation.user_id == user_id,
+        UserConversation.company_id == company_id,
         UserConversation.conversation_status == 'active'
     ).count()
     
