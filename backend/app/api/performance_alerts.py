@@ -59,9 +59,14 @@ async def list_alerts(
 ):
     """List all alerts for current user"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(PerformanceAlert).filter(
         PerformanceAlert.user_id == user_id,
+        PerformanceAlert.company_id == company_id,
         PerformanceAlert.is_deleted == False
     )
     
@@ -103,9 +108,14 @@ async def get_unread_count(
 ):
     """Get count of unread alerts"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     count = db.query(PerformanceAlert).filter(
         PerformanceAlert.user_id == user_id,
+        PerformanceAlert.company_id == company_id,
         PerformanceAlert.is_read == False,
         PerformanceAlert.is_deleted == False
     ).count()
@@ -121,9 +131,14 @@ async def create_alert(
 ):
     """Create a new performance alert"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     alert = PerformanceAlert(
         user_id=user_id,
+        company_id=company_id,
         alert_type=request.alert_type,
         severity=request.severity,
         title=request.title,
@@ -163,10 +178,15 @@ async def mark_as_read(
 ):
     """Mark alert as read"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     alert = db.query(PerformanceAlert).filter(
         PerformanceAlert.id == uuid.UUID(alert_id),
-        PerformanceAlert.user_id == user_id
+        PerformanceAlert.user_id == user_id,
+        PerformanceAlert.company_id == company_id
     ).first()
     
     if not alert:
@@ -187,10 +207,15 @@ async def resolve_alert(
 ):
     """Resolve an alert"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     alert = db.query(PerformanceAlert).filter(
         PerformanceAlert.id == uuid.UUID(alert_id),
-        PerformanceAlert.user_id == user_id
+        PerformanceAlert.user_id == user_id,
+        PerformanceAlert.company_id == company_id
     ).first()
     
     if not alert:
@@ -212,10 +237,15 @@ async def delete_alert(
 ):
     """Delete an alert"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     alert = db.query(PerformanceAlert).filter(
         PerformanceAlert.id == uuid.UUID(alert_id),
-        PerformanceAlert.user_id == user_id
+        PerformanceAlert.user_id == user_id,
+        PerformanceAlert.company_id == company_id
     ).first()
     
     if not alert:

@@ -40,10 +40,15 @@ async def get_notifications(
 ):
     """Get user notifications"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     query = db.query(NotificationModel).filter(
         and_(
             NotificationModel.user_id == user_id,
+            NotificationModel.company_id == company_id,
             NotificationModel.is_deleted == False
         )
     )
@@ -74,10 +79,15 @@ async def get_unread_count(
 ):
     """Get count of unread notifications"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     unread = db.query(NotificationModel).filter(
         and_(
             NotificationModel.user_id == user_id,
+            NotificationModel.company_id == company_id,
             NotificationModel.read == False,
             NotificationModel.is_deleted == False
         )
@@ -94,11 +104,16 @@ async def mark_as_read(
 ):
     """Mark notification as read"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     notification = db.query(NotificationModel).filter(
         and_(
             NotificationModel.id == uuid.UUID(notification_id),
             NotificationModel.user_id == user_id,
+            NotificationModel.company_id == company_id,
             NotificationModel.is_deleted == False
         )
     ).first()
@@ -118,10 +133,15 @@ async def mark_all_read(
 ):
     """Mark all notifications as read"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     db.query(NotificationModel).filter(
         and_(
             NotificationModel.user_id == user_id,
+            NotificationModel.company_id == company_id,
             NotificationModel.is_deleted == False
         )
     ).update({"read": True})
@@ -137,11 +157,16 @@ async def delete_notification(
 ):
     """Delete a notification"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     notification = db.query(NotificationModel).filter(
         and_(
             NotificationModel.id == uuid.UUID(notification_id),
             NotificationModel.user_id == user_id,
+            NotificationModel.company_id == company_id,
             NotificationModel.is_deleted == False
         )
     ).first()
@@ -161,10 +186,15 @@ async def delete_all_notifications(
 ):
     """Delete all notifications"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     db.query(NotificationModel).filter(
         and_(
             NotificationModel.user_id == user_id,
+            NotificationModel.company_id == company_id,
             NotificationModel.is_deleted == False
         )
     ).update({"is_deleted": True})

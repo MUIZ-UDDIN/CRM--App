@@ -17,6 +17,7 @@ class PerformanceAlert(BaseModel):
     __tablename__ = "performance_alerts"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False, index=True)
+    company_id = Column(UUID(as_uuid=True), ForeignKey("companies.id"), nullable=True, index=True)
     alert_type = Column(String(50), nullable=False, index=True)  # low_response_rate, high_bounce_rate, etc.
     severity = Column(String(20), default='medium')  # low, medium, high, critical
     title = Column(String(255), nullable=False)
