@@ -65,10 +65,13 @@ async def get_emails(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get emails by type (inbox, sent, draft, trash)"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get emails by type (inbox, sent, draft, trash) for company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
-    query = db.query(EmailModel).filter(EmailModel.owner_id == user_id)
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    query = db.query(EmailModel).filter(EmailModel.company_id == company_id)
     
     # Filter by type
     if type == "inbox":
@@ -100,12 +103,15 @@ async def get_email(
     db: Session = Depends(get_db)
 ):
     """Get a single email by ID"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     email = db.query(EmailModel).filter(
         and_(
             EmailModel.id == email_id,
-            EmailModel.user_id == user_id
+            EmailModel.company_id == company_id
         )
     ).first()
     
@@ -128,12 +134,16 @@ async def create_email(
     from sendgrid.helpers.mail import Mail, Email, To, Content
     
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     try:
         # Get SendGrid settings from Twilio settings
         from app.models.twilio_settings import TwilioSettings
         settings = db.query(TwilioSettings).filter(
-            TwilioSettings.user_id == user_id
+            TwilioSettings.company_id == company_id
         ).first()
         
         if not settings or not settings.sendgrid_api_key:
@@ -155,6 +165,7 @@ async def create_email(
             bcc=email_data.bcc,
             contact_id=email_data.contact_id,
             user_id=user_id,
+            company_id=company_id,
             status=EmailStatus.DRAFT,  # Start as draft
             sent_at=None
         )
@@ -217,6 +228,10 @@ async def create_draft(
 ):
     """Save email as draft"""
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     email = EmailModel(
         from_email=current_user["email"],
@@ -227,6 +242,7 @@ async def create_draft(
         bcc=email_data.bcc,
         contact_id=email_data.contact_id,
         user_id=user_id,
+        company_id=company_id,
         status=EmailStatus.DRAFT
     )
     
@@ -245,12 +261,15 @@ async def update_email(
     db: Session = Depends(get_db)
 ):
     """Update an email (mainly for drafts)"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     email = db.query(EmailModel).filter(
         and_(
             EmailModel.id == email_id,
-            EmailModel.user_id == user_id
+            EmailModel.company_id == company_id
         )
     ).first()
     
@@ -276,12 +295,15 @@ async def mark_as_read(
     db: Session = Depends(get_db)
 ):
     """Mark email as read"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     email = db.query(EmailModel).filter(
         and_(
             EmailModel.id == email_id,
-            EmailModel.user_id == user_id
+            EmailModel.company_id == company_id
         )
     ).first()
     
@@ -302,12 +324,15 @@ async def mark_as_unread(
     db: Session = Depends(get_db)
 ):
     """Mark email as unread"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     email = db.query(EmailModel).filter(
         and_(
             EmailModel.id == email_id,
-            EmailModel.user_id == user_id
+            EmailModel.company_id == company_id
         )
     ).first()
     
@@ -328,12 +353,15 @@ async def delete_email(
     db: Session = Depends(get_db)
 ):
     """Soft delete an email (move to trash)"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     email = db.query(EmailModel).filter(
         and_(
             EmailModel.id == email_id,
-            EmailModel.user_id == user_id
+            EmailModel.company_id == company_id
         )
     ).first()
     
@@ -354,12 +382,15 @@ async def restore_email(
     db: Session = Depends(get_db)
 ):
     """Restore email from trash"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     email = db.query(EmailModel).filter(
         and_(
             EmailModel.id == email_id,
-            EmailModel.user_id == user_id
+            EmailModel.company_id == company_id
         )
     ).first()
     
@@ -378,19 +409,22 @@ async def get_email_stats(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get email statistics"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    """Get email statistics for company"""
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
     
     total = db.query(EmailModel).filter(
         and_(
-            EmailModel.user_id == user_id,
+            EmailModel.company_id == company_id,
             EmailModel.is_deleted == False
         )
     ).count()
     
     unread = db.query(EmailModel).filter(
         and_(
-            EmailModel.user_id == user_id,
+            EmailModel.company_id == company_id,
             EmailModel.read_at == None,
             EmailModel.from_email != current_user["email"],
             EmailModel.is_deleted == False
@@ -399,7 +433,7 @@ async def get_email_stats(
     
     sent = db.query(EmailModel).filter(
         and_(
-            EmailModel.user_id == user_id,
+            EmailModel.company_id == company_id,
             EmailModel.status == EmailStatus.SENT,
             EmailModel.from_email == current_user["email"],
             EmailModel.is_deleted == False
@@ -408,7 +442,7 @@ async def get_email_stats(
     
     drafts = db.query(EmailModel).filter(
         and_(
-            EmailModel.user_id == user_id,
+            EmailModel.company_id == company_id,
             EmailModel.status == EmailStatus.DRAFT,
             EmailModel.is_deleted == False
         )
