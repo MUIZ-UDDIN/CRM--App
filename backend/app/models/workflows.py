@@ -37,7 +37,7 @@ class Workflow(BaseModel):
     # Basic Information
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text)
-    status = Column(SQLEnum(WorkflowStatus), default=WorkflowStatus.ACTIVE, nullable=False, index=True)
+    status = Column(SQLEnum(WorkflowStatus), default=WorkflowStatus.INACTIVE, nullable=False, index=True)
     
     # Trigger Configuration
     trigger_type = Column(SQLEnum(WorkflowTrigger), nullable=False, index=True)
