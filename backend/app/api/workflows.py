@@ -289,9 +289,14 @@ async def delete_workflow(
     return {"message": "Workflow deleted successfully"}
 
 
+class WorkflowToggleRequest(BaseModel):
+    is_active: bool
+
+
 @router.post("/{workflow_id}/toggle")
 async def toggle_workflow(
     workflow_id: str,
+    toggle_data: WorkflowToggleRequest,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -312,10 +317,11 @@ async def toggle_workflow(
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
     
-    if workflow.status == WorkflowStatus.ACTIVE:
-        workflow.status = WorkflowStatus.INACTIVE
-    else:
+    # Set status based on the request
+    if toggle_data.is_active:
         workflow.status = WorkflowStatus.ACTIVE
+    else:
+        workflow.status = WorkflowStatus.INACTIVE
     
     db.commit()
     db.refresh(workflow)
