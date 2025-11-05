@@ -44,6 +44,7 @@ export default function Analytics() {
   const [pipelineSearch, setPipelineSearch] = useState('');
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showPipelineDropdown, setShowPipelineDropdown] = useState(false);
+  const [filterApplied, setFilterApplied] = useState(false);
   
   // State for API data
   const [loading, setLoading] = useState(false);
@@ -60,6 +61,19 @@ export default function Analytics() {
   useEffect(() => {
     fetchUsersAndPipelines();
   }, []);
+
+  // Prevent background scroll when modals are open
+  useEffect(() => {
+    if (showPipelineModal || showReportModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showPipelineModal, showReportModal]);
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -80,6 +94,7 @@ export default function Analytics() {
   useEffect(() => {
     // Only fetch if not in custom date mode, or if custom dates are applied
     if (dateRange !== 'custom' || (customDateFrom && customDateTo)) {
+      setFilterApplied(true);
       fetchAllAnalytics();
     }
   }, [dateRange, selectedUser, selectedPipeline]);
@@ -491,7 +506,44 @@ export default function Analytics() {
         {loading && (
           <div className="flex justify-center items-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-            <span className="ml-3 text-gray-600">Loading analytics...</span>
+            <span className="ml-3 text-gray-600">Updating analytics with filters...</span>
+          </div>
+        )}
+        
+        {/* Filter Applied Indicator */}
+        {!loading && filterApplied && (dateRange !== 'last30days' || selectedUser !== 'all' || selectedPipeline !== 'all') && (
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <FunnelIcon className="h-5 w-5 text-blue-600 mr-2" />
+                <span className="text-sm text-blue-800 font-medium">
+                  Filters Applied: 
+                  {dateRange !== 'last30days' && <span className="ml-2 px-2 py-0.5 bg-blue-100 rounded">
+                    {dateRange === 'last7days' ? 'Last 7 days' : 
+                     dateRange === 'last90days' ? 'Last 90 days' : 
+                     dateRange === 'thisyear' ? 'This year' : 
+                     dateRange === 'custom' ? 'Custom range' : 'Last 30 days'}
+                  </span>}
+                  {selectedUser !== 'all' && <span className="ml-2 px-2 py-0.5 bg-blue-100 rounded">
+                    {users.find(u => u.id === selectedUser)?.first_name} {users.find(u => u.id === selectedUser)?.last_name}
+                  </span>}
+                  {selectedPipeline !== 'all' && <span className="ml-2 px-2 py-0.5 bg-blue-100 rounded">
+                    {pipelines.find(p => p.id === selectedPipeline)?.name}
+                  </span>}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  setDateRange('last30days');
+                  setSelectedUser('all');
+                  setSelectedPipeline('all');
+                  setFilterApplied(false);
+                }}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+              >
+                Clear All Filters
+              </button>
+            </div>
           </div>
         )}
         
@@ -756,23 +808,31 @@ export default function Analytics() {
             <h3 className="text-base sm:text-lg font-medium text-gray-900">Revenue Trend</h3>
           </div>
           <div className="p-4 sm:p-6">
-            <ResponsiveContainer width="100%" height={250} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ fontSize: '11px' }} />
-                <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#colorRevenue)" />
-                <Area type="monotone" dataKey="target" stroke="#10B981" fillOpacity={0} strokeDasharray="5 5" />
-              </AreaChart>
-            </ResponsiveContainer>
+            {revenueAnalytics?.monthly_revenue && revenueAnalytics.monthly_revenue.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+                <AreaChart data={revenueData}>
+                  <defs>
+                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: '11px' }} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#colorRevenue)" />
+                  <Area type="monotone" dataKey="target" stroke="#10B981" fillOpacity={0} strokeDasharray="5 5" />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                <ChartBarIcon className="h-16 w-16 mb-3" />
+                <p className="text-lg font-medium">No Revenue Data Available</p>
+                <p className="text-sm mt-1">Revenue data will appear here once deals are won</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -816,18 +876,26 @@ export default function Analytics() {
               <h3 className="text-base sm:text-lg font-medium text-gray-900">Weekly Activities</h3>
             </div>
             <div className="p-4 sm:p-6">
-              <ResponsiveContainer width="100%" height={250} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                <BarChart data={activityData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="day" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ fontSize: '11px' }} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="calls" fill="#10B981" />
-                  <Bar dataKey="emails" fill="#3B82F6" />
-                  <Bar dataKey="meetings" fill="#8B5CF6" />
-                </BarChart>
-              </ResponsiveContainer>
+              {activityAnalytics?.activities_by_user && activityAnalytics.activities_by_user.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+                  <BarChart data={activityData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="day" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                    <Tooltip contentStyle={{ fontSize: '11px' }} />
+                    <Legend wrapperStyle={{ fontSize: '11px' }} />
+                    <Bar dataKey="calls" fill="#10B981" />
+                    <Bar dataKey="emails" fill="#3B82F6" />
+                    <Bar dataKey="meetings" fill="#8B5CF6" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                  <CalendarIcon className="h-16 w-16 mb-3" />
+                  <p className="text-lg font-medium">No Activity Data Available</p>
+                  <p className="text-sm mt-1">Activity data will appear here once you log calls, emails, and meetings</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1048,11 +1116,11 @@ export default function Analytics() {
                   onChange={(e) => setReportType(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 >
-                  <option value="sales">Sales Performance</option>
-                  <option value="pipeline">Pipeline Analysis</option>
-                  <option value="activity">Activity Summary</option>
+                  <option value="sales">Sales Performance Report</option>
+                  <option value="pipeline">Pipeline Analysis Report</option>
+                  <option value="activity">Activity Summary Report</option>
                   <option value="contacts">Contact Report</option>
-                  <option value="revenue">Revenue Forecast</option>
+                  <option value="revenue">Revenue Forecast Report</option>
                 </select>
               </div>
               

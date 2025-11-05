@@ -60,6 +60,20 @@ export default function Dashboard() {
     status: 'open'
   });
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (showAddDealModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddDealModal]);
+
   // Get today's date in YYYY-MM-DD format for min date
   const getTodayDate = () => {
     const today = new Date();
@@ -579,6 +593,8 @@ export default function Dashboard() {
       expectedCloseDate: '',
       status: 'open'
     });
+    // Re-enable body scroll
+    document.body.style.overflow = 'unset';
   };
 
   return (

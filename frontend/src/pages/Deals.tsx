@@ -271,6 +271,20 @@ export default function Deals() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [stageMapping]);
 
+  // Prevent background scroll when modals are open
+  useEffect(() => {
+    if (showAddDealModal || showEditModal || showViewModal || showDeleteModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddDealModal, showEditModal, showViewModal, showDeleteModal]);
+
   const fetchDeals = async () => {
     setLoading(true);
     try {
@@ -422,11 +436,15 @@ export default function Deals() {
   const handleCloseAddModal = () => {
     setShowAddDealModal(false);
     resetDealForm();
+    // Re-enable body scroll
+    document.body.style.overflow = 'unset';
   };
 
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     resetDealForm();
+    // Re-enable body scroll
+    document.body.style.overflow = 'unset';
   };
 
   const [isSubmitting, handleAddDeal] = useSubmitOnce(async (e: React.FormEvent) => {
