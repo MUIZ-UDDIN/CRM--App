@@ -268,15 +268,19 @@ export default function Workflows() {
   const filteredWorkflows = workflows.filter(workflow => {
     const query = searchQuery.toLowerCase().trim();
     
-    // For status search, use exact match to avoid "active" matching "inactive"
-    const statusMatch = workflow.status.toLowerCase() === query;
+    if (!query) return true; // Show all if no search query
     
-    // For other fields, use includes
+    // Check if query is a status keyword (exact match only for status)
+    if (query === 'active' || query === 'inactive') {
+      return workflow.status.toLowerCase() === query;
+    }
+    
+    // For non-status searches, search in name, description, and trigger only
     const nameMatch = workflow.name.toLowerCase().includes(query);
     const descMatch = workflow.description.toLowerCase().includes(query);
     const triggerMatch = workflow.trigger.toLowerCase().includes(query);
     
-    return nameMatch || descMatch || triggerMatch || statusMatch;
+    return nameMatch || descMatch || triggerMatch;
   });
 
   const formatDate = (dateString?: string) => {
