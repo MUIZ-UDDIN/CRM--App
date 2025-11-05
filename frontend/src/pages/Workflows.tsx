@@ -270,17 +270,13 @@ export default function Workflows() {
     
     if (!query) return true; // Show all if no search query
     
-    // Check if query is a status keyword (exact match only for status)
-    if (query === 'active' || query === 'inactive') {
-      return workflow.status.toLowerCase() === query;
-    }
-    
-    // For non-status searches, search in name, description, and trigger only
+    // Search in all fields including status
     const nameMatch = workflow.name.toLowerCase().includes(query);
     const descMatch = workflow.description.toLowerCase().includes(query);
     const triggerMatch = workflow.trigger.toLowerCase().includes(query);
+    const statusMatch = workflow.status.toLowerCase().includes(query);
     
-    return nameMatch || descMatch || triggerMatch;
+    return nameMatch || descMatch || triggerMatch || statusMatch;
   });
 
   const formatDate = (dateString?: string) => {

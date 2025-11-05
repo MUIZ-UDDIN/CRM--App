@@ -286,6 +286,11 @@ export default function Files() {
       formData.append('file', file);
       formData.append('category', fileForm.category);
       
+      // Add description if provided
+      if (fileForm.description) {
+        formData.append('description', fileForm.description);
+      }
+      
       // Add tags if provided
       if (fileForm.tags) {
         const tagsArray = fileForm.tags.split(',').map(t => t.trim()).filter(t => t);
