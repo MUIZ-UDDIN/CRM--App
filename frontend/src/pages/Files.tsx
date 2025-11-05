@@ -650,13 +650,16 @@ export default function Files() {
                 <React.Fragment key={folder.id}>
                   <span className="text-gray-400">/</span>
                   {index === folderPath.length - 1 ? (
-                    <span className="text-gray-900 font-medium">{folder.name}</span>
+                    <span className="text-gray-900 font-medium max-w-xs truncate inline-block" title={folder.name}>
+                      {folder.name.length > 50 ? folder.name.substring(0, 50) + '...' : folder.name}
+                    </span>
                   ) : (
                     <button
                       onClick={() => handleNavigateToFolder(folder.id, folder.name, index + 1)}
-                      className="text-primary-600 hover:text-primary-700 font-medium"
+                      className="text-primary-600 hover:text-primary-700 font-medium max-w-xs truncate inline-block"
+                      title={folder.name}
                     >
-                      {folder.name}
+                      {folder.name.length > 50 ? folder.name.substring(0, 50) + '...' : folder.name}
                     </button>
                   )}
                 </React.Fragment>
@@ -787,8 +790,8 @@ export default function Files() {
                   </div>
                 )}
 
-                {/* Action Buttons - Different position for folders vs files */}
-                <div className={`mt-3 pt-3 border-t border-gray-200 flex ${file.type === 'folder' ? 'justify-center' : 'justify-end'}`} onClick={(e) => e.stopPropagation()}>
+                {/* Action Buttons - Centered for both folders and files */}
+                <div className="mt-3 pt-3 border-t border-gray-200 flex justify-center" onClick={(e) => e.stopPropagation()}>
                   {file.type === 'file' && (
                     <button
                       onClick={() => handleDownload(file)}

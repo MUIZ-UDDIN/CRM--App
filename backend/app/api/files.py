@@ -336,17 +336,34 @@ async def get_folders(
     
     folders = query.order_by(Folder.name).all()
     
-    result = []
-    for folder in folders:
-        # Calculate total size of files in this folder
-        total_size = db.query(File).filter(
+    def calculate_folder_size(folder_id: uuid.UUID) -> int:
+        """Recursively calculate total size of folder including all nested folders and files"""
+        # Get direct files size
+        files_size = db.query(File).filter(
             and_(
-                File.folder_id == folder.id,
+                File.folder_id == folder_id,
                 File.is_deleted == False
             )
         ).with_entities(File.size).all()
         
-        folder_size = sum(size[0] for size in total_size if size[0] is not None)
+        total = sum(size[0] for size in files_size if size[0] is not None)
+        
+        # Get nested folders and recursively calculate their sizes
+        nested_folders = db.query(Folder).filter(
+            and_(
+                Folder.parent_id == folder_id,
+                Folder.is_deleted == False
+            )
+        ).all()
+        
+        for nested_folder in nested_folders:
+            total += calculate_folder_size(nested_folder.id)
+        
+        return total
+    
+    result = []
+    for folder in folders:
+        folder_size = calculate_folder_size(folder.id)
         
         result.append(
             FolderResponse(
