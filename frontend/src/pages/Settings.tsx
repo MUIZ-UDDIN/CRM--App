@@ -405,7 +405,7 @@ export default function Settings() {
     
     // Check for any HTML tags or script tags
     if (/<[^>]+>/gi.test(teamForm.name)) {
-      toast.error('Invalid characters in name. HTML tags and script tags are not allowed.');
+      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
     }
     
@@ -595,7 +595,7 @@ export default function Settings() {
     
     // Check for any HTML tags or script tags
     if (/<[^>]+>/gi.test(teamForm.name)) {
-      toast.error('Invalid characters in name. HTML tags and script tags are not allowed.');
+      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
     }
     
@@ -1445,14 +1445,14 @@ export default function Settings() {
                     if (!/<[^>]*>/gi.test(value)) {
                       setTeamForm({...teamForm, name: value});
                     } else {
-                      toast.error('Please enter a valid name');
+                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                     }
                   }}
                   onPaste={(e) => {
                     const pastedText = e.clipboardData.getData('text');
                     if (/<[^>]*>/gi.test(pastedText)) {
                       e.preventDefault();
-                      toast.error('Please enter a valid name');
+                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                     }
                   }}
                   maxLength={255}
