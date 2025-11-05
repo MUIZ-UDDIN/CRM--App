@@ -327,7 +327,21 @@ export default function TeamManagement() {
                   type="text"
                   required
                   value={inviteForm.first_name}
-                  onChange={(e) => setInviteForm({ ...inviteForm, first_name: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setInviteForm({ ...inviteForm, first_name: value });
+                    } else {
+                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="John"
                 />
@@ -342,7 +356,21 @@ export default function TeamManagement() {
                   type="text"
                   required
                   value={inviteForm.last_name}
-                  onChange={(e) => setInviteForm({ ...inviteForm, last_name: e.target.value })}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/<[^>]*>/gi.test(value)) {
+                      setInviteForm({ ...inviteForm, last_name: value });
+                    } else {
+                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+                    }
+                  }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData('text');
+                    if (/<[^>]*>/gi.test(pastedText)) {
+                      e.preventDefault();
+                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+                    }
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Doe"
                 />

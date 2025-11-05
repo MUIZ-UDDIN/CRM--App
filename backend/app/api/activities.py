@@ -175,6 +175,21 @@ def create_activity(
     if not company_id:
         raise HTTPException(status_code=400, detail="User must belong to a company")
     
+    # Convert contact_id and deal_id to UUID if provided
+    contact_uuid = None
+    if activity.contact_id:
+        try:
+            contact_uuid = uuid.UUID(activity.contact_id) if isinstance(activity.contact_id, str) else activity.contact_id
+        except (ValueError, AttributeError):
+            pass
+    
+    deal_uuid = None
+    if activity.deal_id:
+        try:
+            deal_uuid = uuid.UUID(activity.deal_id) if isinstance(activity.deal_id, str) else activity.deal_id
+        except (ValueError, AttributeError):
+            pass
+    
     db_activity = ActivityModel(
         subject=activity.subject,
         description=activity.description,
@@ -184,8 +199,8 @@ def create_activity(
         duration_minutes=activity.duration_minutes,
         priority=activity.priority or 0,
         owner_id=user_id,
-        contact_id=activity.contact_id,
-        deal_id=activity.deal_id,
+        contact_id=contact_uuid,
+        deal_id=deal_uuid,
         company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id
     )
     

@@ -270,23 +270,16 @@ export default function Workflows() {
     
     if (!query) return true; // Show all if no search query
     
-    // For status field, prioritize startsWith over includes
-    // This ensures "a" matches "active" but not "inactive"
-    const statusStartsWith = workflow.status.toLowerCase().startsWith(query);
-    const statusIncludes = workflow.status.toLowerCase().includes(query);
-    
     // Search in other fields with includes
     const nameMatch = workflow.name.toLowerCase().includes(query);
     const descMatch = workflow.description.toLowerCase().includes(query);
     const triggerMatch = workflow.trigger.toLowerCase().includes(query);
     
-    // If status starts with query, prioritize it (e.g., "a" -> "active", not "inactive")
-    // Otherwise, use includes for all fields
-    if (statusStartsWith) {
-      return true;
-    }
+    // For status field, use startsWith to avoid "a" matching "inactive"
+    // Only match status if it starts with the query
+    const statusMatch = workflow.status.toLowerCase().startsWith(query);
     
-    return nameMatch || descMatch || triggerMatch || statusIncludes;
+    return nameMatch || descMatch || triggerMatch || statusMatch;
   });
 
   const formatDate = (dateString?: string) => {

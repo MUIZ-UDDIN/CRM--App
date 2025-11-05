@@ -58,9 +58,9 @@ class RegisterRequest(BaseModel):
             raise ValueError('Name cannot exceed 255 characters')
         # Check for script tags
         if re.search(r'<script[^>]*>.*?</script>', v, re.IGNORECASE | re.DOTALL):
-            raise ValueError('Invalid characters in name')
+            raise ValueError('HTML tags and scripts are not allowed. Please enter plain text only.')
         if re.search(r'<[^>]+>', v):
-            raise ValueError('HTML tags are not allowed in name')
+            raise ValueError('HTML tags and scripts are not allowed. Please enter plain text only.')
         return sanitize_input(v)
 
 
