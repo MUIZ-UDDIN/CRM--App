@@ -49,10 +49,11 @@ class CallResponse(BaseModel):
 async def get_calls(
     skip: int = 0,
     limit: int = 100,
+    type: Optional[str] = None,  # Filter by type: 'all', 'incoming', 'outgoing'
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all calls for current company"""
+    """Get all calls for current company, optionally filtered by direction"""
     import uuid
     from sqlalchemy import or_, and_
     
@@ -62,13 +63,22 @@ async def get_calls(
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    # Include records with matching company_id OR NULL company_id for this user (backward compatibility)
-    calls = db.query(CallModel).filter(
+    # Base query - Include records with matching company_id OR NULL company_id for this user (backward compatibility)
+    query = db.query(CallModel).filter(
         or_(
             CallModel.company_id == company_id,
             and_(CallModel.company_id.is_(None), CallModel.user_id == user_id)
         )
-    ).order_by(CallModel.created_at.desc()).offset(skip).limit(limit).all()
+    )
+    
+    # Filter by direction if type parameter is provided
+    if type == 'incoming':
+        query = query.filter(CallModel.direction == CallDirection.INBOUND)
+    elif type == 'outgoing':
+        query = query.filter(CallModel.direction == CallDirection.OUTBOUND)
+    # If type == 'all' or None, show all calls
+    
+    calls = query.order_by(CallModel.created_at.desc()).offset(skip).limit(limit).all()
     
     return [
         CallResponse(
