@@ -19,6 +19,7 @@ from app.core.config import settings
 from app.core.database import init_db
 from app.core.security import get_current_user
 from app.core.redis import init_redis
+from app.core.security_headers import SecurityHeadersMiddleware
 
 # Import API routers
 from app.api.auth import router as auth_router
@@ -137,6 +138,9 @@ app = FastAPI(
 # Security
 security = HTTPBearer()
 
+# Add Security Headers Middleware (FIRST - before CORS)
+app.add_middleware(SecurityHeadersMiddleware)
+
 # CORS settings
 app.add_middleware(
     CORSMiddleware,
@@ -151,6 +155,7 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Data-Classification", "X-Content-Type-Options"]  # Expose security headers
 )
 
 # Health check endpoint
