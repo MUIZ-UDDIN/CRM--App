@@ -62,6 +62,7 @@ export default function Workflows() {
     setLoading(true);
     try {
       const data = await workflowsService.getWorkflows();
+      console.log('Fetched workflows:', data.map((w: Workflow) => ({ id: w.id, name: w.name, status: w.status })));
       setWorkflows(data);
     } catch (error) {
       console.error('Error fetching workflows:', error);
@@ -146,8 +147,16 @@ export default function Workflows() {
     }
 
     const newStatus = workflow.status === 'active' ? 'inactive' : 'active';
+    console.log('Toggle workflow:', {
+      workflowId: workflow.id,
+      currentStatus: workflow.status,
+      newStatus: newStatus,
+      sendingIsActive: newStatus === 'active'
+    });
+    
     try {
-      await workflowsService.toggleWorkflow(workflow.id, newStatus === 'active');
+      const response = await workflowsService.toggleWorkflow(workflow.id, newStatus === 'active');
+      console.log('Toggle response:', response);
       toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
       fetchWorkflows();
     } catch (error: any) {
