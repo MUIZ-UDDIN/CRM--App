@@ -41,6 +41,19 @@ export default function Workflows() {
   });
   const [isCreating, setIsCreating] = useState(false);
 
+  // Prevent background scroll when modals are open
+  useEffect(() => {
+    if (showAddModal || showEditModal || showViewModal || showDeleteModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddModal, showEditModal, showViewModal, showDeleteModal]);
+
   useEffect(() => {
     fetchWorkflows();
   }, []);

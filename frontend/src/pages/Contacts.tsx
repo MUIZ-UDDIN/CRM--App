@@ -65,6 +65,19 @@ export default function Contacts() {
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Prevent background scroll when modals are open
+  useEffect(() => {
+    if (showAddModal || showEditModal || showViewModal || showUploadModal || showAddTypeModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddModal, showEditModal, showViewModal, showUploadModal, showAddTypeModal]);
+
   const resetContactForm = async () => {
     // Get current user ID for default owner
     try {

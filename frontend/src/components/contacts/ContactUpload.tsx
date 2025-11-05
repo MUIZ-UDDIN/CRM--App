@@ -19,12 +19,12 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
   const [result, setResult] = useState<UploadResult | null>(null);
   const { user, token } = useAuth();
 
-  // Check if user is Super Admin
-  const canUpload = user?.role === 'Super Admin';
+  // Check if user is Super Admin, Company Admin, or Admin
+  const canUpload = user?.role === 'Super Admin' || user?.role === 'Company Admin' || user?.role === 'Admin';
 
   const onDrop = async (acceptedFiles: File[]) => {
     if (!canUpload) {
-      toast.error('Only Super Admin can upload contacts');
+      toast.error('Only Super Admin, Company Admin, and Admin can upload contacts');
       return;
     }
 
@@ -94,7 +94,7 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
         <div className="flex items-center">
           <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 mr-2" />
           <p className="text-sm text-yellow-800">
-            Only Super Admin users can upload contacts.
+            Only Super Admin, Company Admin, and Admin users can upload contacts.
           </p>
         </div>
       </div>

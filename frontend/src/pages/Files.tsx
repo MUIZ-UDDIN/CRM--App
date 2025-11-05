@@ -63,6 +63,19 @@ export default function Files() {
   const [isUploading, setIsUploading] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
+  // Prevent background scroll when modals are open
+  useEffect(() => {
+    if (showUploadModal || showCreateFolderModal || showViewModal || showEditModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showUploadModal, showCreateFolderModal, showViewModal, showEditModal]);
+
   // Check for action query parameter
   useEffect(() => {
     const action = searchParams.get('action');

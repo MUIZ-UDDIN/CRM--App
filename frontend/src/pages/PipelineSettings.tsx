@@ -58,6 +58,19 @@ export default function PipelineSettings() {
 
   const currentPipeline = pipelines.find(p => p.id === selectedPipeline);
 
+  // Prevent background scroll when modals are open
+  useEffect(() => {
+    if (showAddStageModal || showEditStageModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddStageModal, showEditStageModal]);
+
   // Fetch pipelines on mount
   useEffect(() => {
     fetchPipelines();

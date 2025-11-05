@@ -35,6 +35,19 @@ export default function SMSTemplates() {
 
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showModal]);
+
   useEffect(() => {
     fetchTemplates();
   }, []);

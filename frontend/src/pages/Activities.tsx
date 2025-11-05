@@ -52,6 +52,19 @@ export default function Activities() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
+  // Prevent background scroll when modals are open
+  useEffect(() => {
+    if (showAddModal || showEditModal || showViewModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showAddModal, showEditModal, showViewModal]);
+  
   // Check for action query parameter
   useEffect(() => {
     const action = searchParams.get('action');

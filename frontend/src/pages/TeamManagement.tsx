@@ -42,6 +42,19 @@ export default function TeamManagement() {
     user_role: 'company_user'
   });
 
+  // Prevent background scroll when modal is open
+  useEffect(() => {
+    if (showInviteModal) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [showInviteModal]);
+
   useEffect(() => {
     fetchTeamMembers();
   }, []);

@@ -103,8 +103,8 @@ export const getDashboardAnalytics = async (filters?: AnalyticsFilters) => {
 };
 
 // Revenue Analytics
-export const getRevenueAnalytics = async () => {
-  const response = await apiClient.get('/analytics/revenue');
+export const getRevenueAnalytics = async (filters?: AnalyticsFilters) => {
+  const response = await apiClient.get('/analytics/revenue', { params: filters });
   return response.data;
 };
 

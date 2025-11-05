@@ -152,8 +152,8 @@ export default function Analytics() {
         analyticsService.getCallAnalytics(filters),
         analyticsService.getContactAnalytics(filters),
         analyticsService.getDocumentAnalytics(filters),
-        analyticsService.getRevenueAnalytics(),
-        analyticsService.getDashboardAnalytics(filters), // Now passing filters to dashboard
+        analyticsService.getRevenueAnalytics(filters),
+        analyticsService.getDashboardAnalytics(filters),
       ]);
       
       setPipelineAnalytics(pipeline);
