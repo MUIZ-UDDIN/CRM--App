@@ -20,7 +20,12 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
   const { user, token } = useAuth();
 
   // Check if user is Super Admin, Company Admin, or Admin
-  const canUpload = user?.role === 'Super Admin' || user?.role === 'Company Admin' || user?.role === 'Admin';
+  // Backend returns: super_admin, company_admin, company_user
+  const canUpload = user?.role === 'super_admin' || 
+                    user?.role === 'company_admin' || 
+                    user?.role === 'Super Admin' || 
+                    user?.role === 'Company Admin' || 
+                    user?.role === 'Admin';
 
   const onDrop = async (acceptedFiles: File[]) => {
     if (!canUpload) {
