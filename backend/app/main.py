@@ -20,6 +20,7 @@ from app.core.database import init_db
 from app.core.security import get_current_user
 from app.core.redis import init_redis
 from app.core.security_headers import SecurityHeadersMiddleware
+from app.core.error_handlers import register_error_handlers
 
 # Import API routers
 from app.api.auth import router as auth_router
@@ -376,6 +377,10 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 logger.info("✅ Company Management routes registered")
+
+# Register custom error handlers to prevent database query exposure
+register_error_handlers(app)
+logger.info("✅ Error handlers registered - Database queries protected")
 
 
 if __name__ == "__main__":
