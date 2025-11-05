@@ -29,7 +29,8 @@ class DealCreate(BaseModel):
     status: Optional[str] = 'open'
 
 
-class Deal(BaseModel):
+class DealResponse(BaseModel):
+    """Secure response model - only exposes necessary fields"""
     id: str
     title: str
     value: float
@@ -37,14 +38,31 @@ class Deal(BaseModel):
     pipeline_id: str
     company: Optional[str] = None
     contact: Optional[str] = None
+    contact_id: Optional[str] = None
     description: Optional[str] = None
-    expected_close_date: Optional[datetime] = None
-    status: Optional[str] = None
-    created_at: datetime
-    updated_at: datetime
+    expected_close_date: Optional[str] = None
+    status: str
+    company_id: str  # Include for verification
+
+    class Config:
+        from_attributes = True
 
 
-@router.get("/", response_model=List[Deal])
+class DealCreateResponse(BaseModel):
+    """Response for deal creation - minimal fields"""
+    id: str
+    title: str
+    value: float
+    stage_id: str
+    pipeline_id: str
+    company_id: str
+    message: str
+
+    class Config:
+        from_attributes = True
+
+
+@router.get("/", response_model=List[DealResponse])
 def get_deals(
     stage: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user),
@@ -76,22 +94,22 @@ def get_deals(
     
     deals = query.all()
     
+    # Return only necessary fields - no internal timestamps or database metadata
     return [
-        {
-            "id": str(deal.id),
-            "title": deal.title,
-            "value": deal.value,
-            "stage_id": str(deal.stage_id),
-            "pipeline_id": str(deal.pipeline_id),
-            "company": deal.company,
-            "contact": f"{deal.contact.first_name} {deal.contact.last_name}" if deal.contact else None,
-            "contact_id": str(deal.contact_id) if deal.contact_id else None,
-            "description": deal.description,
-            "expected_close_date": deal.expected_close_date.isoformat() if deal.expected_close_date else None,
-            "status": deal.status.value if deal.status else 'open',
-            "created_at": deal.created_at,
-            "updated_at": deal.updated_at
-        }
+        DealResponse(
+            id=str(deal.id),
+            title=deal.title,
+            value=deal.value,
+            stage_id=str(deal.stage_id),
+            pipeline_id=str(deal.pipeline_id),
+            company=deal.company,
+            contact=f"{deal.contact.first_name} {deal.contact.last_name}" if deal.contact else None,
+            contact_id=str(deal.contact_id) if deal.contact_id else None,
+            description=deal.description,
+            expected_close_date=deal.expected_close_date.isoformat() if deal.expected_close_date else None,
+            status=deal.status.value if deal.status else 'open',
+            company_id=str(deal.company_id)
+        )
         for deal in deals
     ]
 
@@ -248,18 +266,16 @@ def create_deal(
             # Don't fail the deal creation if workflows fail
             print(f"Workflow trigger error: {workflow_error}")
         
-        return {
-            "id": str(new_deal.id),
-            "title": new_deal.title,
-            "value": new_deal.value,
-            "stage_id": str(new_deal.stage_id),
-            "pipeline_id": str(new_deal.pipeline_id),
-            "company": new_deal.company,
-            "contact": f"{new_deal.contact.first_name} {new_deal.contact.last_name}" if new_deal.contact else None,
-            "contact_id": str(new_deal.contact_id) if new_deal.contact_id else None,
-            "created_at": new_deal.created_at,
-            "message": "Deal created successfully"
-        }
+        # Return minimal response - no internal timestamps or sensitive data
+        return DealCreateResponse(
+            id=str(new_deal.id),
+            title=new_deal.title,
+            value=new_deal.value,
+            stage_id=str(new_deal.stage_id),
+            pipeline_id=str(new_deal.pipeline_id),
+            company_id=str(new_deal.company_id),
+            message="Deal created successfully"
+        )
     except HTTPException:
         # Re-raise HTTPException (like duplicate check) without modification
         db.rollback()
