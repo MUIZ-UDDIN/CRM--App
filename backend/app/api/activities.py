@@ -4,10 +4,12 @@ Activities API endpoints
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import and_
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
+import uuid
 
 from ..core.security import get_current_active_user
 from ..core.database import get_db
