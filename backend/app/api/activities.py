@@ -183,7 +183,7 @@ def create_activity(
         due_date=due_date,
         duration_minutes=activity.duration_minutes,
         priority=activity.priority or 0,
-        owner_id=current_user["id"],
+        owner_id=user_id,
         contact_id=activity.contact_id,
         deal_id=activity.deal_id,
         company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id

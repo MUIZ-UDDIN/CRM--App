@@ -131,6 +131,7 @@ async def get_files(
 async def upload_file(
     file: UploadFile = FastAPIFile(...),
     category: Optional[str] = Form(None),
+    description: Optional[str] = Form(None),
     folder_id: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_active_user),
@@ -206,6 +207,7 @@ async def upload_file(
         file_type=file.content_type,
         size=file_size,
         category=category,
+        description=description,
         tags=tags_list,
         storage_path=str(file_path),
         url=str(file_path),
