@@ -101,7 +101,11 @@ def create_activity(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Create a new activity"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    try:
+        user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    except Exception as e:
+        print(f"ERROR converting user_id: {e}, current_user: {current_user}")
+        raise HTTPException(status_code=500, detail=f"Invalid user ID: {str(e)}")
     
     # Check for duplicate activity with same subject and due_date for this user
     if activity.due_date:
@@ -204,9 +208,16 @@ def create_activity(
         company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id
     )
     
-    db.add(db_activity)
-    db.commit()
-    db.refresh(db_activity)
+    try:
+        db.add(db_activity)
+        db.commit()
+        db.refresh(db_activity)
+    except Exception as e:
+        db.rollback()
+        print(f"ERROR creating activity: {e}")
+        print(f"Activity data: subject={activity.subject}, type={activity_type_enum}, status={status_enum}")
+        print(f"IDs: owner_id={user_id}, contact_id={contact_uuid}, deal_id={deal_uuid}, company_id={company_id}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
     
     # Return simple dict to avoid validation issues
     return {

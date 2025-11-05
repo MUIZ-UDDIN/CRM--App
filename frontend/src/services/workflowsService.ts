@@ -53,6 +53,12 @@ export const toggleWorkflow = async (id: string, isActive: boolean) => {
   return response.data;
 };
 
+// Execute workflow manually
+export const executeWorkflow = async (id: string) => {
+  const response = await apiClient.post(`/workflows/${id}/execute`);
+  return response.data;
+};
+
 export default {
   getWorkflows,
   getWorkflow,
@@ -60,4 +66,5 @@ export default {
   updateWorkflow,
   deleteWorkflow,
   toggleWorkflow,
+  executeWorkflow,
 };

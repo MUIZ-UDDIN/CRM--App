@@ -1174,9 +1174,14 @@ export default function Settings() {
                 <input
                   type="text"
                   value={companyForm.city}
-                  onChange={(e) => setCompanyForm({...companyForm, city: e.target.value})}
+                  onChange={(e) => {
+                    // Only allow letters, spaces, hyphens, and apostrophes
+                    const value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
+                    setCompanyForm({...companyForm, city: value});
+                  }}
                   maxLength={100}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="Enter city name (letters only)"
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {companyForm.city.length}/100 characters
@@ -1187,9 +1192,14 @@ export default function Settings() {
                 <input
                   type="text"
                   value={companyForm.state}
-                  onChange={(e) => setCompanyForm({...companyForm, state: e.target.value})}
+                  onChange={(e) => {
+                    // Only allow letters, spaces, hyphens, and apostrophes
+                    const value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
+                    setCompanyForm({...companyForm, state: value});
+                  }}
                   maxLength={100}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="Enter state name (letters only)"
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {companyForm.state.length}/100 characters
@@ -1200,9 +1210,14 @@ export default function Settings() {
                 <input
                   type="text"
                   value={companyForm.zip}
-                  onChange={(e) => setCompanyForm({...companyForm, zip: e.target.value})}
+                  onChange={(e) => {
+                    // Only allow numbers, hyphens, and spaces
+                    const value = e.target.value.replace(/[^0-9\-\s]/g, '');
+                    setCompanyForm({...companyForm, zip: value});
+                  }}
                   maxLength={20}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  placeholder="Enter ZIP code (numbers only)"
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {companyForm.zip.length}/20 characters

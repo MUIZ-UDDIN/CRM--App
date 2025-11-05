@@ -157,6 +157,23 @@ export default function Workflows() {
     }
   };
 
+  const handleRunWorkflow = async (workflow: Workflow) => {
+    if (workflow.actions_count === 0) {
+      toast.error('Cannot run workflow without actions. Please add actions first.');
+      return;
+    }
+
+    try {
+      const result = await workflowsService.executeWorkflow(workflow.id);
+      toast.success(`Workflow executed successfully! ${result.success_count || 0} actions completed.`);
+      fetchWorkflows(); // Refresh to update execution count
+    } catch (error: any) {
+      console.error('Execute error:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to execute workflow';
+      toast.error(errorMessage);
+    }
+  };
+
   const handleCreate = async () => {
     if (isCreating) return;
     
@@ -377,6 +394,18 @@ export default function Workflows() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {/* Run/Execute Button */}
+                    {workflow.actions_count > 0 && (
+                      <button
+                        onClick={() => handleRunWorkflow(workflow)}
+                        className="p-2 rounded-lg transition-colors text-blue-600 hover:bg-blue-50"
+                        title="Run Workflow"
+                      >
+                        <BoltIcon className="h-5 w-5" />
+                      </button>
+                    )}
+                    
+                    {/* Activate/Deactivate Buttons */}
                     {workflow.status === 'active' && (
                       <button
                         onClick={() => handleToggleStatus(workflow)}
