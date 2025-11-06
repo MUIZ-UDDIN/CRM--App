@@ -364,6 +364,7 @@ async def get_folders(
     result = []
     for folder in folders:
         folder_size = calculate_folder_size(folder.id)
+        print(f"Folder {folder.name} (ID: {folder.id}) calculated size: {folder_size} bytes")
         
         result.append(
             FolderResponse(
