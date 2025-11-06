@@ -197,7 +197,6 @@ export default function Dashboard() {
       } catch (error) {
         console.error('[Dashboard] Error fetching pipelines/stages:', error);
       }
-    }
   };
 
   // Fetch pipeline stages to get UUID mapping
