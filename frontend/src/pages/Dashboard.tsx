@@ -16,6 +16,8 @@ import {
 } from '@heroicons/react/24/outline';
 import * as dealsService from '../services/dealsService';
 import * as activitiesService from '../services/activitiesService';
+import * as pipelinesService from '../services/pipelinesService';
+import * as analyticsService from '../services/analyticsService';
 
 interface RecentActivity {
   id: string;
@@ -154,20 +156,8 @@ export default function Dashboard() {
   // Fetch pipelines and stages
   const fetchPipelinesAndStages = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        
-        // First, fetch all pipelines to get the default pipeline UUID
-        const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!pipelinesResponse.ok) {
-          console.error('[Dashboard] Failed to fetch pipelines:', pipelinesResponse.status);
-          return;
-        }
-        
-        const pipelines = await pipelinesResponse.json();
+        // Fetch all pipelines using service
+        const pipelines = await pipelinesService.getPipelines();
         
         if (pipelines.length === 0) {
           // No pipelines yet - normal for new companies
@@ -182,38 +172,31 @@ export default function Dashboard() {
         setPipelineId(defaultPipelineId);
         setDealFormData(prev => ({ ...prev, pipeline_id: defaultPipelineId }));
         
-        // Fetch stages from the default pipeline
-        const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
-          headers: { 'Authorization': `Bearer ${token}` }
+        // Fetch stages from the default pipeline using service
+        const stages = await pipelinesService.getPipelineStages(defaultPipelineId);
+        
+        const mapping: Record<string, string> = {};
+        const stagesData: any[] = [];
+        
+        stages.forEach((stage: any) => {
+          // Map stage ID to stage ID (for consistency)
+          mapping[stage.id] = stage.id;
+          stagesData.push({
+            id: stage.id,
+            name: stage.name
+          });
         });
         
-        if (stagesResponse.ok) {
-          const stages = await stagesResponse.json();
-          
-          const mapping: Record<string, string> = {};
-          const stagesData: any[] = [];
-          
-          stages.forEach((stage: any) => {
-            // Map stage ID to stage ID (for consistency)
-            mapping[stage.id] = stage.id;
-            stagesData.push({
-              id: stage.id,
-              name: stage.name
-            });
-          });
-          
-          setStageMapping(mapping);
-          setDynamicStages(stagesData);
-          
-          // Set first stage as default if form is empty
-          if (stages.length > 0 && !dealFormData.stage_id) {
-            setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
-          }
-        } else {
-          console.error('[Dashboard] Failed to fetch stages:', stagesResponse.status);
+        setStageMapping(mapping);
+        setDynamicStages(stagesData);
+        
+        // Set first stage as default if form is empty
+        if (stages.length > 0 && !dealFormData.stage_id) {
+          setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
         }
       } catch (error) {
-        console.error('[Dashboard] Error fetching stages:', error);
+        console.error('[Dashboard] Error fetching pipelines/stages:', error);
+      }
     }
   };
 
@@ -285,18 +268,8 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${API_BASE_URL}/api/analytics/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      }
+      const data = await analyticsService.getDashboardAnalytics();
+      setDashboardData(data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     }
@@ -558,35 +531,27 @@ export default function Dashboard() {
     setDealFormData(prev => ({ ...prev, pipeline_id: newPipelineId }));
     setPipelineId(newPipelineId);
 
-    // Fetch stages for the selected pipeline
+    // Fetch stages for the selected pipeline using service
     try {
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${newPipelineId}/stages`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (stagesResponse.ok) {
-        const stages = await stagesResponse.json();
-        const mapping: Record<string, string> = {};
-        const dynamicStagesData: any[] = [];
-        
-        stages.forEach((stage: any) => {
-          // Map stage ID to stage ID
-          mapping[stage.id] = stage.id;
-          dynamicStagesData.push({
-            id: stage.id,
-            name: stage.name
-          });
+      const stages = await pipelinesService.getPipelineStages(newPipelineId);
+      const mapping: Record<string, string> = {};
+      const dynamicStagesData: any[] = [];
+      
+      stages.forEach((stage: any) => {
+        // Map stage ID to stage ID
+        mapping[stage.id] = stage.id;
+        dynamicStagesData.push({
+          id: stage.id,
+          name: stage.name
         });
-        
-        setStageMapping(mapping);
-        setDynamicStages(dynamicStagesData);
-        
-        // Set first stage as default
-        if (stages.length > 0) {
-          setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
-        }
+      });
+      
+      setStageMapping(mapping);
+      setDynamicStages(dynamicStagesData);
+      
+      // Set first stage as default
+      if (stages.length > 0) {
+        setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
       }
     } catch (error) {
       console.error('Error fetching stages:', error);
