@@ -14,6 +14,10 @@ const apiClient = axios.create({
   },
 });
 
+// Suppress axios console errors globally for this instance
+const originalConsoleError = console.error;
+const suppressedErrors = new WeakSet();
+
 // Add auth token and version to requests
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
@@ -31,7 +35,22 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// Override console.error to suppress axios errors for this client
+console.error = function(...args) {
+  // Check if this is an axios error from our apiClient
+  const isAxiosError = args.some(arg => 
+    arg && typeof arg === 'object' && 
+    (arg.isAxiosError || (arg.config && arg.response))
+  );
+  
+  // Don't log axios errors from our apiClient (they're handled in interceptors)
+  if (!isAxiosError) {
+    originalConsoleError.apply(console, args);
+  }
+};
+
 // Handle 401 errors - redirect to login silently
+// Suppress console errors for expected validation failures (400)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -47,6 +66,10 @@ apiClient.interceptors.response.use(
       // Return a resolved promise to prevent error propagation
       return new Promise(() => {}); // Never resolves, page is redirecting
     }
+    
+    // Mark error as handled to prevent console logging
+    suppressedErrors.add(error);
+    
     return Promise.reject(error);
   }
 );

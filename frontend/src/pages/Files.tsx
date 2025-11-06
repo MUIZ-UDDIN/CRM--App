@@ -378,20 +378,24 @@ export default function Files() {
   };
 
   const handleCreateFolder = async () => {
+    // Prevent multiple submissions
+    if (isCreatingFolder) return;
+    
+    // Validate name
     if (!fileForm.name.trim()) {
       toast.error('Please enter a folder name');
       return;
     }
 
-    // Check for HTML/script tags in name
+    // Check for HTML/script tags
     if (/<[^>]*>/gi.test(fileForm.name)) {
-      toast.error('HTML tags and script tags are not allowed in name');
+      toast.error('HTML tags and script tags are not allowed in folder name');
       return;
     }
 
-    // Check name length
+    // Check name character limit (255 characters)
     if (fileForm.name.length > 255) {
-      toast.error('Name cannot exceed 255 characters');
+      toast.error(`Folder name cannot exceed 255 characters. Current: ${fileForm.name.length} characters`);
       return;
     }
 
@@ -416,6 +420,7 @@ export default function Files() {
       }
     }
 
+    setIsCreatingFolder(true);
     try {
       const folderData: any = {
         name: fileForm.name.trim(),
@@ -437,6 +442,8 @@ export default function Files() {
       console.error('Create folder error:', error);
       const errorMessage = error?.response?.data?.detail || 'Failed to create folder';
       toast.error(errorMessage);
+    } finally {
+      setIsCreatingFolder(false);
     }
   };
 
@@ -1033,9 +1040,10 @@ export default function Files() {
                 </button>
                 <button
                   onClick={handleCreateFolder}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isCreatingFolder}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create
+                  {isCreatingFolder ? 'Creating...' : 'Create'}
                 </button>
               </div>
             </div>
@@ -1250,3 +1258,4 @@ export default function Files() {
     </div>
   );
 }
+
