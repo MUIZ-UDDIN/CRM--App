@@ -101,12 +101,15 @@ export default function Files() {
         filesService.getFolders(currentFolderId || undefined)
       ]);
       
+      // Debug: Log folder sizes from backend
+      console.log('Folders from backend:', foldersData.map((f: any) => ({ name: f.name, size: f.size })));
+      
       // Combine files and folders, marking their type
       const allItems = [
         ...foldersData.map((folder: any) => ({
           ...folder,
           type: 'folder' as const,
-          size: undefined,
+          // Keep the size from backend (calculated recursively)
         })),
         ...filesData.map((file: any) => ({
           ...file,
