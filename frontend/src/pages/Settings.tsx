@@ -779,19 +779,29 @@ export default function Settings() {
         })
       });
 
-      // If settings already exist (400), use PUT to update
+      // If settings already exist (400 with specific message), use PUT to update
       if (response.status === 400) {
-        response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            account_sid: twilioForm.accountSid,
-            auth_token: twilioForm.authToken
-          })
-        });
+        const errorData = await response.json();
+        
+        // Check if error is about existing settings or invalid credentials
+        if (errorData.detail && errorData.detail.includes('already exist')) {
+          // Settings exist, try PUT to update
+          response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              account_sid: twilioForm.accountSid,
+              auth_token: twilioForm.authToken
+            })
+          });
+        } else {
+          // Invalid credentials or other error
+          toast.error(errorData.detail || 'Failed to connect Twilio');
+          return;
+        }
       }
 
       if (response.ok) {
