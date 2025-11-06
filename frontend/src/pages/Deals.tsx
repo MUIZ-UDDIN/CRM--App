@@ -596,11 +596,9 @@ export default function Deals() {
     }
     
     const destStageId = destination.droppableId;
-    console.log('Dragging over stage:', destStageId, 'Expanded stages:', expandedStages);
     
     // Auto-expand the destination stage if it's collapsed
     if (!expandedStages.includes(destStageId)) {
-      console.log('Auto-expanding stage:', destStageId);
       setExpandedStages(prev => [...prev, destStageId]);
     }
   };
@@ -751,15 +749,15 @@ export default function Deals() {
                     </div>
                   </button>
 
-                  {/* Droppable Area - Always rendered but visually hidden when collapsed */}
+                  {/* Droppable Area - Always rendered, collapsed when not expanded */}
                   <Droppable droppableId={stage.id}>
                     {(provided, snapshot) => (
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`min-h-[50px] md:min-h-[200px] space-y-3 p-4 pt-0 md:p-4 ${
+                        className={`space-y-3 p-4 pt-0 md:p-4 transition-all overflow-hidden ${
                           snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
-                        } ${isExpanded ? 'block' : 'hidden'}`}
+                        } ${isExpanded ? 'min-h-[50px] md:min-h-[200px] max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 p-0'}`}
                       >
                         {(deals[stage.id] || [])
                           .filter(deal => {
