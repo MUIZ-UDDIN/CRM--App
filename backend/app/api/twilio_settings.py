@@ -166,6 +166,13 @@ async def create_twilio_settings(
         settings_data.auth_token
     )
     
+    # Reject invalid credentials
+    if not is_verified:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid Twilio credentials. Please check your Account SID and Auth Token."
+        )
+    
     # Create new settings
     db_settings = TwilioSettingsModel(
         company_id=company_id,
@@ -216,6 +223,14 @@ async def update_twilio_settings(
         auth_token = update_data.get('auth_token', settings.auth_token)
         
         is_verified = verify_twilio_credentials(account_sid, auth_token)
+        
+        # Reject invalid credentials
+        if not is_verified:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid Twilio credentials. Please check your Account SID and Auth Token."
+            )
+        
         update_data['is_verified'] = is_verified
         if is_verified:
             update_data['last_verified_at'] = datetime.utcnow()

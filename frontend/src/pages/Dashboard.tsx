@@ -617,9 +617,17 @@ export default function Dashboard() {
               </dt>
               <dd className="ml-14 sm:ml-16 pb-4 sm:pb-6 flex items-baseline">
                 <p className="text-xl sm:text-2xl font-semibold text-gray-900 truncate" title={item.value}>{item.value}</p>
-                <p className={`ml-2 flex items-baseline text-sm font-semibold flex-shrink-0 ${item.changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
-                  {item.changeType === 'positive' ? <ArrowTrendingUpIcon className="self-center flex-shrink-0 h-4 w-4 text-green-500" /> : <ArrowTrendingDownIcon className="self-center flex-shrink-0 h-4 w-4 text-red-500" />}
-                  <span className="ml-1">{item.change}</span>
+                <p className={`ml-2 flex items-baseline text-sm font-semibold flex-shrink-0 ${
+                  item.change.includes('%') 
+                    ? (item.changeType === 'positive' ? 'text-green-600' : 'text-red-600')
+                    : 'text-gray-500'
+                }`}>
+                  {item.change.includes('%') && (
+                    item.changeType === 'positive' 
+                      ? <ArrowTrendingUpIcon className="self-center flex-shrink-0 h-4 w-4 text-green-500" /> 
+                      : <ArrowTrendingDownIcon className="self-center flex-shrink-0 h-4 w-4 text-red-500" />
+                  )}
+                  <span className={item.change.includes('%') ? 'ml-1' : ''}>{item.change}</span>
                 </p>
               </dd>
             </div>

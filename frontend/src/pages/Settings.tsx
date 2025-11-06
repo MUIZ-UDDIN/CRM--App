@@ -1302,7 +1302,15 @@ export default function Settings() {
 
         {activeTab === 'billing' && (
           <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Billing & Subscription</h2>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Billing & Subscription</h2>
+              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Demo Mode</span>
+            </div>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Note:</strong> This is a demo billing interface. Payment information is stored locally for demonstration purposes only.
+              </p>
+            </div>
             <div className="space-y-6">
               <div className="border border-gray-200 rounded-lg p-6">
                 <div className="flex justify-between items-start">
