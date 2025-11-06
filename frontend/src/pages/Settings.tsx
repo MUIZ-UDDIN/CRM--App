@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import ActionButtons from '../components/common/ActionButtons';
 import { useAuth } from '../contexts/AuthContext';
+import * as twilioService from '../services/twilioService';
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -177,31 +178,17 @@ export default function Settings() {
 
   const checkTwilioConnection = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      if (response.ok) {
-        const data = await response.json();
-        // Check if data is null or empty - means no settings configured
-        if (data && data.account_sid) {
-          setTwilioDetails(data);
-          setIntegrations(integrations.map(i =>
-            i.name === 'Twilio' ? { ...i, status: 'connected' } : i
-          ));
-          // Fetch phone numbers
-          fetchPhoneNumbers();
-        } else {
-          // No settings configured
-          setTwilioDetails(null);
-          setPhoneNumbers([]);
-          setIntegrations(integrations.map(i =>
-            i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
-          ));
-        }
+      const data = await twilioService.getTwilioSettings();
+      
+      if (data && data.account_sid) {
+        setTwilioDetails(data);
+        setIntegrations(integrations.map(i =>
+          i.name === 'Twilio' ? { ...i, status: 'connected' } : i
+        ));
+        // Fetch phone numbers
+        fetchPhoneNumbers();
       } else {
-        // No settings found, disconnected
+        // No settings configured
         setTwilioDetails(null);
         setPhoneNumbers([]);
         setIntegrations(integrations.map(i =>
@@ -209,7 +196,12 @@ export default function Settings() {
         ));
       }
     } catch (error) {
-      console.error('Error checking Twilio connection:', error);
+      // No settings found or error, set as disconnected
+      setTwilioDetails(null);
+      setPhoneNumbers([]);
+      setIntegrations(integrations.map(i =>
+        i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
+      ));
     }
   };
   
@@ -264,6 +256,7 @@ export default function Settings() {
   const [phoneNumbers, setPhoneNumbers] = useState<any[]>([]);
   
   const [showTwilioModal, setShowTwilioModal] = useState(false);
+  const [isSavingTwilio, setIsSavingTwilio] = useState(false);
   const [twilioForm, setTwilioForm] = useState({
     accountSid: '',
     authToken: ''
@@ -713,31 +706,24 @@ export default function Settings() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        }
-      });
-
-      if (response.ok) {
-        setIntegrations(integrations.map(i =>
-          i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
-        ));
-        setTwilioDetails(null);
-        setPhoneNumbers([]);
-        toast.success('Twilio disconnected successfully');
-      } else {
-        const error = await response.json();
-        toast.error(error.detail || 'Failed to disconnect Twilio');
-      }
-    } catch (error) {
-      console.error('Error disconnecting Twilio:', error);
-      toast.error('Failed to disconnect Twilio');
+      await twilioService.deleteTwilioSettings();
+      
+      setIntegrations(integrations.map(i =>
+        i.name === 'Twilio' ? { ...i, status: 'disconnected' } : i
+      ));
+      setTwilioDetails(null);
+      setPhoneNumbers([]);
+      toast.success('Twilio disconnected successfully');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to disconnect Twilio';
+      toast.error(errorMessage);
     }
   };
 
   const handleSaveTwilio = async () => {
+    // Prevent multiple submissions
+    if (isSavingTwilio) return;
+    
     if (!twilioForm.accountSid || !twilioForm.authToken) {
       toast.error('Please fill in all Twilio credentials');
       return;
@@ -765,67 +751,47 @@ export default function Settings() {
       return;
     }
 
+    setIsSavingTwilio(true);
+    
     try {
-      // Try POST first (create new settings)
-      let response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          account_sid: twilioForm.accountSid,
-          auth_token: twilioForm.authToken
-        })
-      });
-
-      // If settings already exist (400 with specific message), use PUT to update
-      if (response.status === 400) {
-        const errorData = await response.json();
-        
-        // Check if error is about existing settings or invalid credentials
-        if (errorData.detail && errorData.detail.includes('already exist')) {
-          // Settings exist, try PUT to update
-          response = await fetch(`${API_BASE_URL}/api/twilio-settings/`, {
-            method: 'PUT',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              account_sid: twilioForm.accountSid,
-              auth_token: twilioForm.authToken
-            })
-          });
+      const settings = {
+        account_sid: twilioForm.accountSid,
+        auth_token: twilioForm.authToken
+      };
+      
+      // Try to create first
+      try {
+        await twilioService.createTwilioSettings(settings);
+      } catch (error: any) {
+        // If settings already exist, try to update
+        if (error.response?.status === 400 && error.response?.data?.detail?.includes('already exist')) {
+          await twilioService.updateTwilioSettings(settings);
         } else {
-          // Invalid credentials or other error
-          toast.error(errorData.detail || 'Failed to connect Twilio');
-          return;
+          // Re-throw other errors (like invalid credentials)
+          throw error;
         }
       }
-
-      if (response.ok) {
-        setShowTwilioModal(false);
-        toast.success('Twilio connected successfully!');
-        
-        // Sync phone numbers
-        toast.loading('Syncing phone numbers...');
-        await fetch(`${API_BASE_URL}/api/twilio/sync/phone-numbers`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        toast.dismiss();
-        toast.success('Phone numbers synced!');
-        
-        // Refresh Twilio connection status and details
-        await checkTwilioConnection();
-      } else {
-        const error = await response.json();
-        toast.error(error.detail || 'Failed to connect Twilio');
+      
+      setShowTwilioModal(false);
+      toast.success('Twilio connected successfully!');
+      
+      // Sync phone numbers
+      const syncToast = toast.loading('Syncing phone numbers...');
+      try {
+        await twilioService.syncPhoneNumbers();
+        toast.success('Phone numbers synced!', { id: syncToast });
+      } catch (error) {
+        toast.dismiss(syncToast);
+        // Don't show error for sync failure, connection is already successful
       }
-    } catch (error) {
-      console.error('Error saving Twilio settings:', error);
-      toast.error('Failed to connect Twilio');
+      
+      // Refresh Twilio connection status and details
+      await checkTwilioConnection();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to connect Twilio';
+      toast.error(errorMessage);
+    } finally {
+      setIsSavingTwilio(false);
     }
   };
   
@@ -1865,9 +1831,10 @@ export default function Settings() {
                 </button>
                 <button
                   onClick={handleSaveTwilio}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={isSavingTwilio}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Connect Twilio
+                  {isSavingTwilio ? 'Connecting...' : 'Connect Twilio'}
                 </button>
               </div>
             </div>
