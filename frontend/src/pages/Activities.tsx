@@ -492,8 +492,12 @@ export default function Activities() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{activity.subject}</div>
-                        <div className="text-sm text-gray-500 truncate max-w-xs">{activity.description}</div>
+                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={activity.subject}>
+                          {activity.subject}
+                        </div>
+                        <div className="text-sm text-gray-500 truncate max-w-xs" title={activity.description}>
+                          {activity.description}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatDate(activity.due_date)}
@@ -568,11 +572,13 @@ export default function Activities() {
                               {activity.status}
                             </span>
                           </div>
-                          <h3 className="text-sm font-medium text-gray-900">
+                          <h3 className="text-sm font-medium text-gray-900 truncate" title={activity.subject}>
                             {activity.subject}
                           </h3>
                           {activity.description && (
-                            <p className="text-xs text-gray-500 mt-1 line-clamp-2">{activity.description}</p>
+                            <p className="text-xs text-gray-500 mt-1 line-clamp-2" title={activity.description}>
+                              {activity.description}
+                            </p>
                           )}
                           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
                             <div className="flex items-center">
