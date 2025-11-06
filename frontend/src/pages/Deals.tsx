@@ -751,17 +751,16 @@ export default function Deals() {
                     </div>
                   </button>
 
-                  {/* Droppable Area - Collapsible on All Devices */}
-                  <div className={`${isExpanded ? 'block' : 'hidden'}`}>
-                    <Droppable droppableId={stage.id}>
-                      {(provided, snapshot) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.droppableProps}
-                          className={`min-h-[50px] md:min-h-[200px] space-y-3 p-4 pt-0 md:p-4 ${
-                            snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
-                          }`}
-                        >
+                  {/* Droppable Area - Always rendered but visually hidden when collapsed */}
+                  <Droppable droppableId={stage.id}>
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`min-h-[50px] md:min-h-[200px] space-y-3 p-4 pt-0 md:p-4 ${
+                          snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
+                        } ${isExpanded ? 'block' : 'hidden'}`}
+                      >
                         {(deals[stage.id] || [])
                           .filter(deal => {
                             if (!searchQuery.trim()) return true;
@@ -861,7 +860,6 @@ export default function Deals() {
                       </div>
                     )}
                   </Droppable>
-                  </div>
                 </div>
                 );
               })}

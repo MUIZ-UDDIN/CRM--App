@@ -31,7 +31,7 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
-// Handle 401 errors - redirect to login
+// Handle 401 errors - redirect to login silently
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -39,8 +39,13 @@ apiClient.interceptors.response.use(
       // Clear auth data
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Redirect to login
-      window.location.href = '/login';
+      
+      // Redirect to login immediately without showing error
+      // Use replace to prevent back button from returning to protected page
+      window.location.replace('/login');
+      
+      // Return a resolved promise to prevent error propagation
+      return new Promise(() => {}); // Never resolves, page is redirecting
     }
     return Promise.reject(error);
   }
