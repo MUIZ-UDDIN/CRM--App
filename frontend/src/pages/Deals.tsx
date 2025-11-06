@@ -53,7 +53,7 @@ export default function Deals() {
     value: '',
     company: '',
     contact: '',
-    stage_id: 'qualification',
+    stage_id: '',
     pipeline_id: '',
     expectedCloseDate: '',
     status: 'open'
@@ -375,7 +375,7 @@ export default function Deals() {
       value: '',
       company: '',
       contact: '',
-      stage_id: 'qualification',
+      stage_id: stages.length > 0 ? stages[0].id : '',
       pipeline_id: pipelineId,
       expectedCloseDate: '',
       status: 'open'
@@ -462,10 +462,22 @@ export default function Deals() {
       return;
     }
 
-    // Convert stage name to UUID
-    const stageUUID = stageMapping[dealFormData.stage_id];
-    if (!stageUUID) {
-      toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
+    // Check if stage_id is already a UUID or needs mapping
+    let stageUUID = dealFormData.stage_id;
+    
+    // If stage_id is not a UUID format, try to map it
+    if (!dealFormData.stage_id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      stageUUID = stageMapping[dealFormData.stage_id];
+      if (!stageUUID) {
+        toast.error(`Stage "${dealFormData.stage_id}" not found. Please refresh the page or select a different stage.`);
+        return;
+      }
+    }
+    
+    // Validate that the stage exists in current stages
+    const stageExists = stages.some(stage => stage.id === stageUUID);
+    if (!stageExists) {
+      toast.error('Selected stage not found. Please refresh the page.');
       return;
     }
 
@@ -493,7 +505,7 @@ export default function Deals() {
         value: '',
         company: '',
         contact: '',
-        stage_id: 'qualification',
+        stage_id: stages.length > 0 ? stages[0].id : '',
         pipeline_id: pipelineId,
         expectedCloseDate: '',
         status: 'open'
