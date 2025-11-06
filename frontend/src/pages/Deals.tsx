@@ -596,9 +596,11 @@ export default function Deals() {
     }
     
     const destStageId = destination.droppableId;
+    console.log('Dragging over stage:', destStageId, 'Expanded stages:', expandedStages);
     
     // Auto-expand the destination stage if it's collapsed
     if (!expandedStages.includes(destStageId)) {
+      console.log('Auto-expanding stage:', destStageId);
       setExpandedStages(prev => [...prev, destStageId]);
     }
   };
