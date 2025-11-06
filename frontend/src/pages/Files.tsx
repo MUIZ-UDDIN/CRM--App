@@ -576,7 +576,8 @@ export default function Files() {
   });
 
   const formatFileSize = (bytes?: number) => {
-    if (!bytes) return 'N/A';
+    if (bytes === undefined || bytes === null) return 'N/A';
+    if (bytes === 0) return '0 KB';
     const kb = bytes / 1024;
     const mb = bytes / (1024 * 1024);
     
@@ -761,7 +762,7 @@ export default function Files() {
                       <p className="text-center">Category: {file.category || 'N/A'}</p>
                     </>
                   )}
-                  {file.type === 'folder' && file.size && (
+                  {file.type === 'folder' && file.size !== undefined && file.size !== null && (
                     <p className="text-center">Size: {formatFileSize(file.size)}</p>
                   )}
                   <p>Status: <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${

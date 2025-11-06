@@ -587,6 +587,22 @@ export default function Deals() {
     }).format(value);
   };
 
+  // Handle drag update - auto-expand collapsed stages when dragging over them
+  const onDragUpdate = (update: any) => {
+    const { destination } = update;
+    
+    if (!destination) {
+      return;
+    }
+    
+    const destStageId = destination.droppableId;
+    
+    // Auto-expand the destination stage if it's collapsed
+    if (!expandedStages.includes(destStageId)) {
+      setExpandedStages(prev => [...prev, destStageId]);
+    }
+  };
+
   // Handle drag and drop
   const onDragEnd = async (result: any) => {
     const { source, destination, draggableId } = result;
@@ -693,7 +709,7 @@ export default function Deals() {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
           </div>
         ) : (
-          <DragDropContext onDragEnd={onDragEnd}>
+          <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
             {/* Mobile: Vertical Accordion, Desktop: Grid */}
             <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 space-y-3 md:space-y-0">
               {stages.map((stage) => {
