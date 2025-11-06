@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { DocumentDuplicateIcon, PlusIcon, TrashIcon, SparklesIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import ActionButtons from '../components/common/ActionButtons';
+import Pagination from '../components/Pagination';
 
 interface SMSTemplate {
   id: string;
@@ -19,6 +21,7 @@ export default function SMSTemplates() {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<any>(null);
@@ -164,6 +167,13 @@ export default function SMSTemplates() {
     'other'
   ];
 
+  // Pagination
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(templates.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedTemplates = templates.slice(startIndex, endIndex);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -221,7 +231,7 @@ export default function SMSTemplates() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map((template) => (
+            {paginatedTemplates.map((template) => (
               <div
                 key={template.id}
                 className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow"
@@ -267,6 +277,17 @@ export default function SMSTemplates() {
               </div>
             ))}
           </div>
+        )}
+
+        {/* Pagination */}
+        {templates.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={templates.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
 

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as workflowsService from '../services/workflowsService';
+import Pagination from '../components/Pagination';
 import ActionButtons from '../components/common/ActionButtons';
 import { 
   BoltIcon, 
@@ -24,7 +26,9 @@ interface Workflow {
 }
 
 export default function Workflows() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -299,6 +303,18 @@ export default function Workflows() {
     return nameMatch || descMatch || triggerMatch || statusMatch;
   });
 
+  // Pagination
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(filteredWorkflows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedWorkflows = filteredWorkflows.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Never';
     return new Date(dateString).toLocaleString('en-US', {
@@ -354,7 +370,7 @@ export default function Workflows() {
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredWorkflows.map((workflow) => (
+            {paginatedWorkflows.map((workflow) => (
               <div key={workflow.id} className="bg-white rounded-lg shadow p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   {/* Workflow Info */}
@@ -442,6 +458,17 @@ export default function Workflows() {
             <h3 className="mt-2 text-sm font-medium text-gray-900">No workflows</h3>
             <p className="mt-1 text-sm text-gray-500">Get started by creating your first workflow.</p>
           </div>
+        )}
+
+        {/* Pagination */}
+        {filteredWorkflows.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredWorkflows.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
 

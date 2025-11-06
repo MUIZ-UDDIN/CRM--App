@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import * as quotesService from '../services/quotesService';
 import SearchableSelect from '../components/common/SearchableSelect';
 import ActionButtons from '../components/common/ActionButtons';
+import Pagination from '../components/Pagination';
 import { 
   DocumentTextIcon, 
   PlusIcon, 
@@ -28,6 +29,7 @@ interface Quote {
 export default function Quotes() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
@@ -445,6 +447,18 @@ export default function Quotes() {
     return matchesSearch && matchesStatus;
   });
 
+  // Pagination
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(filteredQuotes.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedQuotes = filteredQuotes.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterStatus]);
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -542,7 +556,7 @@ export default function Quotes() {
               <p className="mt-1 text-sm text-gray-500">Get started by creating a new quote.</p>
             </div>
           ) : (
-            filteredQuotes.map((quote) => (
+            paginatedQuotes.map((quote) => (
               <div key={quote.id} className="bg-white rounded-lg shadow p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                   {/* Quote Info */}
@@ -645,6 +659,17 @@ export default function Quotes() {
                 </div>
               </div>
             ))
+          )}
+
+          {/* Pagination */}
+          {filteredQuotes.length > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredQuotes.length}
+              itemsPerPage={itemsPerPage}
+              onPageChange={setCurrentPage}
+            />
           )}
         </div>
       </div>

@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import * as filesService from '../services/filesService';
 import ActionButtons from '../components/common/ActionButtons';
 import SearchableCategorySelect from '../components/common/SearchableCategorySelect';
+import Pagination from '../components/Pagination';
 import { 
   FolderIcon, 
   DocumentIcon,
@@ -45,6 +46,7 @@ export default function Files() {
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
   const [files, setFiles] = useState<FileItem[]>([]); 
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
@@ -582,6 +584,18 @@ export default function Files() {
     return matchesSearch && matchesCategory && matchesStatus;
   });
 
+  // Pagination
+  const itemsPerPage = 15;
+  const totalPages = Math.ceil(filteredFiles.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedFiles = filteredFiles.slice(startIndex, endIndex);
+
+  // Reset to page 1 when search/filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, filterCategory, filterStatus, currentFolderId]);
+
   const formatFileSize = (bytes?: number) => {
     if (bytes === undefined || bytes === null) return 'N/A';
     if (bytes === 0) return '0 KB';
@@ -737,7 +751,7 @@ export default function Files() {
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 sm:gap-3 md:gap-4">
-            {filteredFiles.map((file) => (
+            {paginatedFiles.map((file) => (
               <div 
                 key={file.id} 
                 draggable={true}
@@ -827,6 +841,17 @@ export default function Files() {
             <h3 className="mt-2 text-sm font-medium text-gray-900">No files</h3>
             <p className="mt-1 text-sm text-gray-500">Get started by uploading a file or creating a folder.</p>
           </div>
+        )}
+
+        {/* Pagination */}
+        {filteredFiles.length > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredFiles.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         )}
       </div>
 
