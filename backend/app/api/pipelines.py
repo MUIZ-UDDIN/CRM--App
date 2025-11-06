@@ -5,7 +5,7 @@ Pipeline and Pipeline Stage API endpoints
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, validator
 from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models import Pipeline, PipelineStage, Deal
@@ -22,6 +22,14 @@ class StageCreate(BaseModel):
     order_index: int
     is_closed: bool = False
     is_won: bool = False
+    
+    @validator('name')
+    def validate_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Stage name is required')
+        if len(v) > 100:
+            raise ValueError('Stage name cannot exceed 100 characters')
+        return v.strip()
 
 
 class StageUpdate(BaseModel):
@@ -194,21 +202,30 @@ async def create_stage(
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
     
-    new_stage = PipelineStage(
-        pipeline_id=pipeline_id,
-        name=stage.name,
-        description=stage.description,
-        probability=stage.probability,
-        order_index=stage.order_index,
-        is_closed=stage.is_closed,
-        is_won=stage.is_won
-    )
+    # Additional validation
+    if len(stage.name) > 100:
+        raise HTTPException(status_code=400, detail="Stage name cannot exceed 100 characters")
     
-    db.add(new_stage)
-    db.commit()
-    db.refresh(new_stage)
-    
-    return new_stage
+    try:
+        new_stage = PipelineStage(
+            pipeline_id=pipeline_id,
+            name=stage.name,
+            description=stage.description,
+            probability=stage.probability,
+            order_index=stage.order_index,
+            is_closed=stage.is_closed,
+            is_won=stage.is_won
+        )
+        
+        db.add(new_stage)
+        db.commit()
+        db.refresh(new_stage)
+        
+        return new_stage
+    except Exception as e:
+        db.rollback()
+        print(f"Error creating stage: {e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.patch("/pipeline-stages/{stage_id}")

@@ -163,8 +163,8 @@ export default function PipelineSettings() {
     }
 
     // Validate character limit
-    if (newStageName.length > 255) {
-      toast.error('Stage Name cannot exceed 255 characters');
+    if (newStageName.length > 100) {
+      toast.error('Stage Name cannot exceed 100 characters');
       return;
     }
 
@@ -222,8 +222,8 @@ export default function PipelineSettings() {
     }
 
     // Validate character limit
-    if (editingStage.name.length > 255) {
-      toast.error('Stage Name cannot exceed 255 characters');
+    if (editingStage.name.length > 100) {
+      toast.error('Stage Name cannot exceed 100 characters');
       return;
     }
 
@@ -440,7 +440,7 @@ export default function PipelineSettings() {
                   value={newStageName}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (value.length <= 255) {
+                    if (value.length <= 100) {
                       if (containsHTMLOrScript(value)) {
                         toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                         return;
@@ -448,12 +448,12 @@ export default function PipelineSettings() {
                       setNewStageName(value);
                     }
                   }}
-                  maxLength={255}
+                  maxLength={100}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   placeholder="e.g., Demo Scheduled"
                   required
                 />
-                <p className="text-xs text-gray-400 mt-1">{newStageName.length}/255</p>
+                <p className="text-xs text-gray-400 mt-1">{newStageName.length}/100 characters</p>
               </div>
 
               <div>
@@ -532,7 +532,7 @@ export default function PipelineSettings() {
                   value={editingStage.name}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (value.length <= 255) {
+                    if (value.length <= 100) {
                       if (containsHTMLOrScript(value)) {
                         toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                         return;
@@ -540,11 +540,11 @@ export default function PipelineSettings() {
                       setEditingStage({ ...editingStage, name: value });
                     }
                   }}
-                  maxLength={255}
+                  maxLength={100}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
-                <p className="text-xs text-gray-400 mt-1">{editingStage.name.length}/255</p>
+                <p className="text-xs text-gray-400 mt-1">{editingStage.name.length}/100 characters</p>
               </div>
 
               <div>
