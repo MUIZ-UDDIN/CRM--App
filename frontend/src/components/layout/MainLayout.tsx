@@ -226,7 +226,11 @@ export default function MainLayout() {
   const handleSearch = (query: string) => {
     if (query.trim()) {
       setShowSearchSuggestions(false);
-      // Navigate to search results or specific page based on query
+      setSearchQuery('');
+      
+      // Navigate to contacts page with search query
+      // The contacts page will handle the search filtering
+      navigate(`/contacts?search=${encodeURIComponent(query)}`);
     }
   };
 

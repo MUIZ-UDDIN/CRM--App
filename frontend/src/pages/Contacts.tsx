@@ -168,13 +168,22 @@ export default function Contacts() {
     fetchUsers();
   }, []);
   
-  // Check for action query parameter
+  // Check for action and search query parameters
   useEffect(() => {
     const action = searchParams.get('action');
+    const search = searchParams.get('search');
+    
     if (action === 'add') {
       setShowAddModal(true);
       // Remove the action parameter from URL
       searchParams.delete('action');
+      setSearchParams(searchParams);
+    }
+    
+    if (search) {
+      setSearchQuery(search);
+      // Remove the search parameter from URL after setting it
+      searchParams.delete('search');
       setSearchParams(searchParams);
     }
   }, [searchParams]);

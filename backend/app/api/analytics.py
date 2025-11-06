@@ -1040,46 +1040,47 @@ async def get_dashboard_analytics(
     total_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*pipeline_filters)).scalar() or 0.0
     active_deals = db.query(func.count(DealModel.id)).filter(and_(*pipeline_filters)).scalar() or 0
     
-    # For growth: Compare total open deals now vs 30 days ago
-    # Get deals that were open 30 days ago (created before prev_period_end and still open OR were closed after prev_period_end)
-    # Simplified: Just compare deals created in last 30 days vs previous 30 days
+    # For growth: Compare current pipeline with pipeline from 30 days ago
+    # Get what the pipeline looked like 30 days ago (deals that were open then)
     thirty_days_ago = today - timedelta(days=30)
-    sixty_days_ago = today - timedelta(days=60)
     
-    # Open deals created in last 30 days
-    recent_pipeline_filters = pipeline_filters.copy()
-    recent_pipeline_filters.append(func.date(DealModel.created_at) >= thirty_days_ago)
-    recent_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*recent_pipeline_filters)).scalar() or 0.0
-    recent_deals = db.query(func.count(DealModel.id)).filter(and_(*recent_pipeline_filters)).scalar() or 0
-    
-    # Open deals created 30-60 days ago (that are still open)
-    prev_pipeline_filters = [
+    # Deals that were open 30 days ago = created before 30 days ago AND (still open OR closed after 30 days ago)
+    prev_pipeline_filters_open = [
         DealModel.is_deleted == False,
-        DealModel.status == DealStatus.OPEN,
-        func.date(DealModel.created_at) >= sixty_days_ago,
-        func.date(DealModel.created_at) < thirty_days_ago
+        func.date(DealModel.created_at) < thirty_days_ago,
+        or_(
+            DealModel.status == DealStatus.OPEN,  # Still open
+            and_(
+                or_(DealModel.status == DealStatus.WON, DealModel.status == DealStatus.LOST),
+                func.date(DealModel.updated_at) >= thirty_days_ago  # Closed after 30 days ago
+            )
+        )
     ]
     if filter_user_id:
-        prev_pipeline_filters.append(DealModel.owner_id == filter_user_id)
+        prev_pipeline_filters_open.append(DealModel.owner_id == filter_user_id)
     elif company_id:
-        prev_pipeline_filters.append(DealModel.company_id == company_id)
+        prev_pipeline_filters_open.append(DealModel.company_id == company_id)
     if pipeline_id:
-        prev_pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
+        prev_pipeline_filters_open.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
-    prev_pipeline = db.query(func.sum(DealModel.value)).filter(and_(*prev_pipeline_filters)).scalar() or 0.0
-    prev_active_deals = db.query(func.count(DealModel.id)).filter(and_(*prev_pipeline_filters)).scalar() or 0
+    # Get pipeline value from 30 days ago
+    prev_pipeline_query = db.query(func.sum(DealModel.value)).filter(and_(*prev_pipeline_filters_open))
+    prev_pipeline = prev_pipeline_query.scalar() or 0.0
     
-    # Calculate growth: Compare new deals added in last 30 days vs previous 30 days
+    prev_deals_query = db.query(func.count(DealModel.id)).filter(and_(*prev_pipeline_filters_open))
+    prev_active_deals = prev_deals_query.scalar() or 0
+    
+    # Calculate growth: Compare current pipeline with 30 days ago
     if prev_pipeline > 0:
-        pipeline_growth = ((recent_pipeline - prev_pipeline) / prev_pipeline * 100)
-    elif recent_pipeline > 0:
+        pipeline_growth = ((total_pipeline - prev_pipeline) / prev_pipeline * 100)
+    elif total_pipeline > 0:
         pipeline_growth = 100  # Growing from zero
     else:
         pipeline_growth = 0
     
     if prev_active_deals > 0:
-        deal_growth = ((recent_deals - prev_active_deals) / prev_active_deals * 100)
-    elif recent_deals > 0:
+        deal_growth = ((active_deals - prev_active_deals) / prev_active_deals * 100)
+    elif active_deals > 0:
         deal_growth = 100  # Growing from zero
     else:
         deal_growth = 0
