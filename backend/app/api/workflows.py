@@ -38,7 +38,8 @@ class WorkflowCreate(BaseModel):
     description: Optional[str] = None
     trigger: Optional[str] = None  # For backward compatibility
     trigger_type: Optional[str] = None  # New field from frontend
-    is_active: bool = False
+    status: Optional[str] = None  # For 3-state support: 'active', 'paused', 'inactive'
+    is_active: Optional[bool] = None  # For backward compatibility
 
 
 class WorkflowUpdate(BaseModel):
