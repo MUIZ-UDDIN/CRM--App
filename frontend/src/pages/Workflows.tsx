@@ -70,10 +70,10 @@ export default function Workflows() {
     setLoading(true);
     try {
       const data = await workflowsService.getWorkflows();
-      // Map backend data and initialize is_running based on is_active
+      // Map backend data and initialize is_running to false (workflows start in stopped state)
       const mappedWorkflows = data.map((workflow: any) => ({
         ...workflow,
-        is_running: workflow.is_active || false // If backend says active, it's running
+        is_running: false // All workflows start in stopped state, user must click Play
       }));
       setWorkflows(mappedWorkflows);
     } catch (error) {
@@ -158,7 +158,15 @@ export default function Workflows() {
       try {
         await workflowsService.toggleWorkflow(workflow.id, newRunningState);
         toast.success(`Workflow ${newRunningState ? 'started' : 'stopped'}`);
-        fetchWorkflows();
+        
+        // Update local state instead of refetching
+        setWorkflows(prevWorkflows => 
+          prevWorkflows.map(w => 
+            w.id === workflow.id 
+              ? { ...w, is_running: newRunningState }
+              : w
+          )
+        );
       } catch (error: any) {
         console.error('Toggle error:', error);
         const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update workflow status';

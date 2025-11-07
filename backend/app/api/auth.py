@@ -180,9 +180,9 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
                     "email": existing_user.email,
                     "first_name": existing_user.first_name,
                     "last_name": existing_user.last_name,
-                    "role": existing_user.user_role.value if hasattr(existing_user.user_role, 'value') else str(existing_user.user_role),
+                    "role": str(existing_user.user_role) if existing_user.user_role else "Regular User",
                     "company_id": str(existing_user.company_id) if existing_user.company_id else None,
-                    "team_id": None,
+                    "team_id": str(existing_user.team_id) if existing_user.team_id else None,
                     "is_active": True
                 }
                 
@@ -248,9 +248,9 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
             "email": new_user.email,
             "first_name": new_user.first_name,
             "last_name": new_user.last_name,
-            "role": new_user.user_role.value if hasattr(new_user.user_role, 'value') else str(new_user.user_role),
+            "role": str(new_user.user_role) if new_user.user_role else "Regular User",
             "company_id": str(new_user.company_id) if new_user.company_id else None,
-            "team_id": None,
+            "team_id": str(new_user.team_id) if new_user.team_id else None,
             "is_active": True
         }
         
