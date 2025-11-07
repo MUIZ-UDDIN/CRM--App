@@ -153,20 +153,24 @@ export default function Workflows() {
   };
 
   const handleToggleStatus = async (workflow: Workflow) => {
-    // Toggle between running (active) and stopped (paused)
-    const newRunningState = !workflow.is_running;
+    // Toggle between Active and Inactive (paused)
+    const newStatus = workflow.status === 'active' ? 'paused' : 'active';
+    
     try {
-      const response = await workflowsService.toggleWorkflow(workflow.id, newRunningState);
-      toast.success(`Workflow ${newRunningState ? 'started' : 'stopped'}`);
+      await workflowsService.updateWorkflow(workflow.id, {
+        status: newStatus,
+      });
       
-      // Update local state with new status from backend
+      toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'paused'}`);
+      
+      // Update local state
       setWorkflows(prevWorkflows => 
         prevWorkflows.map(w => 
           w.id === workflow.id 
             ? { 
                 ...w, 
-                is_running: newRunningState,
-                status: newRunningState ? 'active' : 'paused' // Update status too
+                status: newStatus,
+                is_running: newStatus === 'active'
               }
             : w
         )
@@ -464,24 +468,26 @@ export default function Workflows() {
                       </button>
                     )}
                     
-                    {/* Status Indicator Icons - Display only, not clickable */}
+                    {/* Status Toggle Buttons - Click to toggle between Active/Inactive */}
                     {workflow.status === 'active' && (
-                      <div
-                        className="p-2 rounded-lg text-green-600 bg-green-50"
-                        title="Active - Workflow is running"
+                      <button
+                        onClick={() => handleToggleStatus(workflow)}
+                        className="p-2 rounded-lg transition-colors text-green-600 bg-green-50 hover:bg-green-100"
+                        title="Active - Click to pause"
                       >
                         <PlayIcon className="h-5 w-5" />
-                      </div>
+                      </button>
                     )}
                     {workflow.status === 'paused' && (
-                      <div
-                        className="p-2 rounded-lg text-yellow-600 bg-yellow-50"
-                        title="Inactive - Workflow is paused"
+                      <button
+                        onClick={() => handleToggleStatus(workflow)}
+                        className="p-2 rounded-lg transition-colors text-yellow-600 bg-yellow-50 hover:bg-yellow-100"
+                        title="Inactive - Click to activate"
                       >
                         <PauseIcon className="h-5 w-5" />
-                      </div>
+                      </button>
                     )}
-                    {/* No icons shown for 'inactive' (deactivated) workflows */}
+                    {/* No buttons shown for 'inactive' (deactivated) workflows */}
                     <ActionButtons
                       onView={() => handleView(workflow)}
                       onEdit={() => handleEdit(workflow)}
