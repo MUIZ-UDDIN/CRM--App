@@ -330,12 +330,15 @@ def update_deal(
     db: Session = Depends(get_db)
 ):
     """Update a specific deal"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="User must belong to a company")
     
     deal = db.query(DealModel).filter(
         and_(
             DealModel.id == uuid.UUID(deal_id),
-            DealModel.owner_id == user_id,
+            DealModel.company_id == uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
             DealModel.is_deleted == False
         )
     ).first()
@@ -458,12 +461,15 @@ def delete_deal(
     db: Session = Depends(get_db)
 ):
     """Delete a specific deal"""
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="User must belong to a company")
     
     deal = db.query(DealModel).filter(
         and_(
             DealModel.id == uuid.UUID(deal_id),
-            DealModel.owner_id == user_id,
+            DealModel.company_id == uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
             DealModel.is_deleted == False
         )
     ).first()
