@@ -45,7 +45,7 @@ export default function Workflows() {
     name: '',
     description: '',
     trigger: 'contact_created',
-    status: 'inactive',
+    status: 'active',
   });
   const [isCreating, setIsCreating] = useState(false);
 
@@ -91,7 +91,7 @@ export default function Workflows() {
       name: '',
       description: '',
       trigger: 'contact_created',
-      status: 'inactive',
+      status: 'active',
     });
   };
 
@@ -602,11 +602,11 @@ export default function Workflows() {
                   onChange={(e) => setWorkflowForm({...workflowForm, status: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
-                  <option value="inactive">Inactive</option>
                   <option value="active">Active</option>
+                  <option value="inactive">Deactivate</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Set to Active to start executing this workflow automatically
+                  Active workflows show Play/Stop buttons. Deactivated workflows are hidden.
                 </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -717,11 +717,11 @@ export default function Workflows() {
                   onChange={(e) => setWorkflowForm({...workflowForm, status: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
-                  <option value="inactive">Inactive</option>
                   <option value="active">Active</option>
+                  <option value="inactive">Deactivate</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Set to Active to start executing this workflow automatically
+                  Active workflows show Play/Stop buttons. Deactivated workflows are hidden.
                 </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
