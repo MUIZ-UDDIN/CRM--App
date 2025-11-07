@@ -384,8 +384,8 @@ export default function Settings() {
       toast.error('Please select a role');
       return;
     }
-    if (teamForm.name.length > 255) {
-      toast.error('Name cannot exceed 255 characters');
+    if (teamForm.name.length > 100) {
+      toast.error('Name cannot exceed 100 characters (50 for first name + 50 for last name)');
       return;
     }
     
@@ -939,7 +939,7 @@ export default function Settings() {
                 <div key={member.id} className="bg-white shadow rounded-lg p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate">{member.name}</h3>
+                      <h3 className="text-sm font-semibold text-gray-900 truncate" title={member.name}>{member.name}</h3>
                       <p className="text-xs text-gray-600 truncate mt-1">{member.email}</p>
                     </div>
                     {isAdmin && (
@@ -972,7 +972,7 @@ export default function Settings() {
                 <tbody className="divide-y divide-gray-200">
                   {teamMembers.map((member) => (
                     <tr key={member.id}>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">{member.name}</td>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900"><div className="truncate max-w-xs" title={member.name}>{member.name}</div></td>
                       <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
                       <td className="px-6 py-4 text-sm text-gray-600">{member.role}</td>
                       <td className="px-6 py-4 text-right">
@@ -1344,8 +1344,13 @@ export default function Settings() {
                   type="text"
                   placeholder="Enter full name"
                   value={teamForm.name}
+                  maxLength={100}
                   onChange={(e) => {
                     const value = e.target.value;
+                    if (value.length > 100) {
+                      toast.error('Name cannot exceed 100 characters');
+                      return;
+                    }
                     if (!/<[^>]*>/gi.test(value)) {
                       setTeamForm({...teamForm, name: value});
                     } else {
@@ -1359,12 +1364,11 @@ export default function Settings() {
                       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                     }
                   }}
-                  maxLength={255}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  {teamForm.name.length}/255 characters
+                  {teamForm.name.length}/100 characters
                 </div>
               </div>
               <div>

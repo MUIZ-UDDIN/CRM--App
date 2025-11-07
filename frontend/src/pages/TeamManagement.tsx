@@ -261,8 +261,8 @@ export default function TeamManagement() {
                           {member.first_name[0]}{member.last_name[0]}
                         </span>
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
+                      <div className="ml-4 min-w-0 flex-1">
+                        <div className="text-sm font-medium text-gray-900 truncate" title={`${member.first_name} ${member.last_name}`}>
                           {member.first_name} {member.last_name}
                         </div>
                       </div>
