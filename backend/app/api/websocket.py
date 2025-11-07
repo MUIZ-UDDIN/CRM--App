@@ -4,7 +4,7 @@ WebSocket API for Real-time Updates
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
 from app.services.websocket_manager import manager
-from app.core.auth import get_current_user_ws
+from app.core.security import get_current_user_ws
 import logging
 
 logger = logging.getLogger(__name__)
