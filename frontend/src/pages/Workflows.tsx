@@ -237,7 +237,7 @@ export default function Workflows() {
         name: workflowForm.name,
         description: workflowForm.description,
         trigger_type: workflowForm.trigger,
-        is_active: workflowForm.status === 'active',
+        status: workflowForm.status,
       });
       toast.success('Workflow created successfully');
       handleCloseAddModal();
@@ -292,7 +292,7 @@ export default function Workflows() {
         name: workflowForm.name,
         description: workflowForm.description,
         trigger_type: workflowForm.trigger,
-        is_active: workflowForm.status === 'active',
+        status: workflowForm.status,
       });
       toast.success('Workflow updated successfully');
       handleCloseEditModal();

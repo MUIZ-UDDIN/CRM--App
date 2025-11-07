@@ -123,10 +123,17 @@ async def create_workflow(
     except ValueError:
         trigger_type = WorkflowTrigger.SCHEDULED
     
-    # Determine status from is_active
-    # When enabled (is_active=true), start as PAUSED (stopped but ready to run)
-    # When disabled (is_active=false), set as INACTIVE
-    status = WorkflowStatus.PAUSED if workflow_data.is_active else WorkflowStatus.INACTIVE
+    # Determine status - prioritize status field for 3-state support
+    if workflow_data.status:
+        try:
+            status = WorkflowStatus(workflow_data.status)
+        except ValueError:
+            status = WorkflowStatus.PAUSED  # Default to paused if invalid
+    elif workflow_data.is_active is not None:
+        # Fallback to is_active for backward compatibility
+        status = WorkflowStatus.PAUSED if workflow_data.is_active else WorkflowStatus.INACTIVE
+    else:
+        status = WorkflowStatus.PAUSED  # Default status
     
     new_workflow = Workflow(
         name=workflow_data.name,
@@ -238,15 +245,15 @@ async def update_workflow(
             workflow.trigger_type = WorkflowTrigger(workflow_data.trigger_type)
         except ValueError:
             pass
-    if workflow_data.is_active is not None:
-        # When enabling (is_active=true), set to PAUSED (stopped but ready)
-        # When disabling (is_active=false), set to INACTIVE
-        workflow.status = WorkflowStatus.PAUSED if workflow_data.is_active else WorkflowStatus.INACTIVE
-    elif workflow_data.status:
+    # Prioritize status field over is_active for 3-state support
+    if workflow_data.status:
         try:
             workflow.status = WorkflowStatus(workflow_data.status)
         except ValueError:
             pass
+    elif workflow_data.is_active is not None:
+        # Fallback to is_active for backward compatibility
+        workflow.status = WorkflowStatus.PAUSED if workflow_data.is_active else WorkflowStatus.INACTIVE
     
     db.commit()
     db.refresh(workflow)
