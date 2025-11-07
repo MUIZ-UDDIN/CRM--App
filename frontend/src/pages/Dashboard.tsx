@@ -205,18 +205,24 @@ export default function Dashboard() {
   }, []);
 
 
-  // Fetch activities, dashboard data, user info, and contacts on component mount
+  // Fetch user info and contacts on component mount
   useEffect(() => {
     fetchActivities();
-    fetchDashboardData();
     fetchCurrentUser();
     fetchContacts();
   }, []);
 
+  // Fetch dashboard data when currentUser is loaded
+  useEffect(() => {
+    if (currentUser) {
+      fetchDashboardData();
+    }
+  }, [currentUser]);
+
   // Refresh data when user navigates back to dashboard
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
+      if (!document.hidden && currentUser) {
         fetchDashboardData();
         fetchPipelinesAndStages();
       }
@@ -224,7 +230,7 @@ export default function Dashboard() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, []);
+  }, [currentUser]);
 
 
   const fetchCurrentUser = async () => {
@@ -267,7 +273,23 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const data = await analyticsService.getDashboardAnalytics();
+      // Calculate date range for last 30 days
+      const today = new Date();
+      const thirtyDaysAgo = new Date(today);
+      thirtyDaysAgo.setDate(today.getDate() - 30);
+      
+      const filters: any = {
+        date_from: thirtyDaysAgo.toISOString().split('T')[0],
+        date_to: today.toISOString().split('T')[0]
+      };
+      
+      // Only add user_id filter if user is NOT a super admin
+      // Super admins should see company-wide data
+      if (currentUser && currentUser.user_role !== 'Super Admin') {
+        filters.user_id = currentUser.id;
+      }
+      
+      const data = await analyticsService.getDashboardAnalytics(filters);
       setDashboardData(data);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
