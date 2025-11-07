@@ -228,9 +228,8 @@ export default function MainLayout() {
       setShowSearchSuggestions(false);
       setSearchQuery('');
       
-      // Navigate to contacts page with search query
-      // The contacts page will handle the search filtering
-      navigate(`/contacts?search=${encodeURIComponent(query)}`);
+      // Navigate to global search results page
+      navigate(`/search?q=${encodeURIComponent(query)}`);
     }
   };
 

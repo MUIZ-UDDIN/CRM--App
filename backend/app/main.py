@@ -43,6 +43,7 @@ from app.api.bulk_email_campaigns import router as bulk_email_campaigns_router
 from app.api.companies import router as companies_router
 from app.api.registration import router as registration_router
 from app.api.invitations import router as invitations_router
+from app.api.search import router as search_router
 
 # Import with error handling for debugging
 try:
@@ -377,6 +378,15 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 logger.info("✅ Company Management routes registered")
+
+# Global Search
+app.include_router(
+    search_router,
+    prefix="/api/search",
+    tags=["Search"],
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Global Search routes registered")
 
 # Register custom error handlers to prevent database query exposure
 register_error_handlers(app)

@@ -30,6 +30,7 @@ import SMSAnalytics from './pages/SMSAnalytics';
 import ScheduledSMS from './pages/ScheduledSMS';
 import PhoneNumbers from './pages/PhoneNumbers';
 import Calls from './pages/Calls';
+import SearchResults from './pages/SearchResults';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
@@ -122,6 +123,7 @@ function App() {
                 <Route path="sms-scheduled" element={<ScheduledSMS />} />
                 <Route path="phone-numbers" element={<PhoneNumbers />} />
                 <Route path="calls" element={<Calls />} />
+                <Route path="search" element={<SearchResults />} />
               </Route>
 
               {/* Catch all route */}
