@@ -77,6 +77,8 @@ export default function MainLayout() {
   const [showProfile, setShowProfile] = useState(false);
   const [showQuickAdd, setShowQuickAdd] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
+  const [searchSuggestions, setSearchSuggestions] = useState<any[]>([]);
+  const [loadingSearch, setLoadingSearch] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userAvatar, setUserAvatar] = useState<string>('');
@@ -212,15 +214,45 @@ export default function MainLayout() {
 
   // unreadCount is now fetched from API
 
-  // Search suggestions will be fetched from API when implemented
-  const searchSuggestions: any[] = [];
+  // Fetch navigation suggestions from API
+  useEffect(() => {
+    const fetchSearchSuggestions = async () => {
+      if (searchQuery.length < 1) {
+        setSearchSuggestions([]);
+        return;
+      }
 
-  const filteredSuggestions = searchQuery.length > 1 
-    ? searchSuggestions.filter(item => 
-        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.description.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+      setLoadingSearch(true);
+      try {
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const response = await fetch(
+          `${API_BASE_URL}/api/search/?q=${encodeURIComponent(searchQuery)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          setSearchSuggestions(data.results || []);
+        }
+      } catch (error) {
+        console.error('Error fetching search suggestions:', error);
+      } finally {
+        setLoadingSearch(false);
+      }
+    };
+
+    // Debounce the search
+    const timeoutId = setTimeout(() => {
+      fetchSearchSuggestions();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
 
   // Handle search functionality
   const handleSearch = (query: string) => {
@@ -237,26 +269,8 @@ export default function MainLayout() {
     setSearchQuery('');
     setShowSearchSuggestions(false);
     
-    // Navigate based on suggestion type
-    switch (suggestion.type.toLowerCase()) {
-      case 'contact':
-        navigate('/contacts');
-        break;
-      case 'deal':
-        navigate('/deals');
-        break;
-      case 'activity':
-        navigate('/activities');
-        break;
-      case 'file':
-        navigate('/files');
-        break;
-      case 'quote':
-        navigate('/quotes');
-        break;
-      default:
-        break;
-    }
+    // Navigate to the page path
+    navigate(suggestion.path);
   };
 
   // Handle quick actions
@@ -481,11 +495,11 @@ export default function MainLayout() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search deals, contacts..."
+                  placeholder="Search pages..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setShowSearchSuggestions(e.target.value.length > 1);
+                    setShowSearchSuggestions(e.target.value.length > 0);
                   }}
                   onKeyPress={(e) => {
                     if (e.key === 'Enter') {
@@ -493,33 +507,62 @@ export default function MainLayout() {
                     }
                   }}
                   onFocus={() => {
-                    if (searchQuery.length > 1) {
+                    if (searchQuery.length > 0) {
                       setShowSearchSuggestions(true);
                     }
+                  }}
+                  onBlur={() => {
+                    // Delay to allow click on suggestion
+                    setTimeout(() => setShowSearchSuggestions(false), 200);
                   }}
                   className="block w-40 lg:w-48 pl-10 pr-3 py-2 border border-gray-300 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
                 />
                 
                 {/* Search Suggestions Dropdown */}
-                {showSearchSuggestions && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-64 overflow-y-auto">
-                    {filteredSuggestions.map((suggestion) => (
-                      <div
-                        key={suggestion.id}
-                        onClick={() => handleSuggestionClick(suggestion)}
-                        className="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
-                      >
-                        <div className="flex items-center justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{suggestion.title}</p>
-                            <p className="text-xs text-gray-500 truncate">{suggestion.description}</p>
-                          </div>
-                          <span className="ml-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-600 rounded-full">
-                            {suggestion.type}
-                          </span>
-                        </div>
+                {showSearchSuggestions && (
+                  <div className="absolute top-full left-0 w-80 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-y-auto">
+                    {loadingSearch ? (
+                      <div className="px-4 py-3 text-center text-sm text-gray-500">
+                        <div className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-primary-600"></div>
+                        <span className="ml-2">Searching...</span>
                       </div>
-                    ))}
+                    ) : searchSuggestions.length > 0 ? (
+                      <>
+                        <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
+                          <p className="text-xs font-semibold text-gray-600 uppercase">Pages & Sections</p>
+                        </div>
+                        {searchSuggestions.map((suggestion, index) => (
+                          <div
+                            key={index}
+                            onClick={() => handleSuggestionClick(suggestion)}
+                            className="px-4 py-3 hover:bg-primary-50 cursor-pointer border-b border-gray-100 last:border-b-0 transition-colors"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{suggestion.name}</p>
+                                <p className="text-xs text-gray-500 truncate mt-0.5">{suggestion.description}</p>
+                              </div>
+                              <span className="ml-2 px-2 py-1 text-xs font-medium bg-primary-100 text-primary-700 rounded-full flex-shrink-0">
+                                {suggestion.category}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-center">
+                          <button
+                            onClick={() => handleSearch(searchQuery)}
+                            className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                          >
+                            View all results →
+                          </button>
+                        </div>
+                      </>
+                    ) : searchQuery.length > 0 ? (
+                      <div className="px-4 py-8 text-center text-sm text-gray-500">
+                        <p>No pages found</p>
+                        <p className="text-xs mt-1">Try: Contacts, Deals, SMS, Settings</p>
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
