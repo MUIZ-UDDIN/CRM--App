@@ -284,7 +284,7 @@ export default function Dashboard() {
       };
       
       // Check if user is admin (Super Admin, Company Admin, or Admin)
-      const isAdmin = currentUser && ['Super Admin', 'Company Admin', 'Admin'].includes(currentUser.user_role);
+      const isAdmin = currentUser && ['Super Admin', 'Company Admin', 'Admin'].includes(currentUser.role);
       
       // Only add user_id filter for regular users
       // Admins see company-wide data by default

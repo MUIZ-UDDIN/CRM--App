@@ -60,7 +60,7 @@ export default function Analytics() {
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
   
   // Check if user is admin (can see all company data and filter by user)
-  const isAdmin = currentUser && ['Super Admin', 'Company Admin', 'Admin'].includes(currentUser.user_role);
+  const isAdmin = currentUser && ['Super Admin', 'Company Admin', 'Admin'].includes(currentUser.role);
   
   // Auto-set user filter for regular users
   useEffect(() => {
