@@ -75,7 +75,6 @@ export default function Workflows() {
         ...workflow,
         is_running: false // All workflows start in stopped state, user must click Play
       }));
-      console.log('Fetched workflows:', mappedWorkflows); // Debug log
       setWorkflows(mappedWorkflows);
     } catch (error) {
       console.error('Error fetching workflows:', error);
@@ -459,7 +458,7 @@ export default function Workflows() {
                     )}
                     
                     {/* Play/Stop Buttons - Only show when status is Active */}
-                    {workflow.status === 'active' && workflow.actions_count > 0 && (
+                    {workflow.status === 'active' && (
                       <>
                         {workflow.is_running ? (
                           <button
