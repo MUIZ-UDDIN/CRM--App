@@ -85,7 +85,7 @@ export default function Activities() {
     try {
       const params: any = {};
       if (filterType !== 'all') params.type = filterType;
-      if (filterStatus !== 'all') params.status = filterStatus;
+      // Don't send status filter to backend - we'll filter on client side after overdue conversion
       
       const data = await activitiesService.getActivities(params);
       
@@ -339,6 +339,12 @@ export default function Activities() {
   // Filter and sort activities
   const filteredActivities = activities
     .filter(activity => {
+      // Status filter (after overdue conversion)
+      if (filterStatus !== 'all' && activity.status !== filterStatus) {
+        return false;
+      }
+      
+      // Search filter
       if (!searchQuery.trim()) return true;
       
       const query = searchQuery.toLowerCase().trim();
@@ -937,7 +943,7 @@ export default function Activities() {
       {/* View Modal */}
       {showViewModal && selectedActivity && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Activity Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -951,11 +957,11 @@ export default function Activities() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Subject</label>
-                <p className="text-gray-900">{selectedActivity.subject}</p>
+                <p className="text-gray-900 break-words">{selectedActivity.subject}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Description</label>
-                <p className="text-gray-900">{selectedActivity.description || 'N/A'}</p>
+                <p className="text-gray-900 break-words whitespace-pre-wrap max-h-48 overflow-y-auto">{selectedActivity.description || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Due Date</label>
