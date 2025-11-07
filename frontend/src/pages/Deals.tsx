@@ -794,9 +794,10 @@ export default function Deals() {
                                 <div className="flex items-start justify-between mb-2">
                                   <div
                                     {...provided.dragHandleProps}
-                                    className="cursor-grab active:cursor-grabbing p-1 hover:bg-gray-100 rounded"
+                                    className="cursor-grab active:cursor-grabbing p-2 md:p-1 hover:bg-gray-100 rounded touch-none"
+                                    style={{ touchAction: 'none' }}
                                   >
-                                    <Bars3Icon className="h-4 w-4 text-gray-400" />
+                                    <Bars3Icon className="h-6 w-6 md:h-4 md:w-4 text-gray-400" />
                                   </div>
                                   <ActionButtons
                                     onView={() => handleView(deal)}
