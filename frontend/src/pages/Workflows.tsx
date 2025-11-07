@@ -11,6 +11,7 @@ import {
   XMarkIcon,
   PlayIcon,
   PauseIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
 
 interface Workflow {
@@ -35,6 +36,8 @@ export default function Workflows() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
+  const [showFilters, setShowFilters] = useState(true);
   const [loading, setLoading] = useState(false);
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
@@ -67,7 +70,12 @@ export default function Workflows() {
     setLoading(true);
     try {
       const data = await workflowsService.getWorkflows();
-      setWorkflows(data);
+      // Map backend data and initialize is_running based on is_active
+      const mappedWorkflows = data.map((workflow: any) => ({
+        ...workflow,
+        is_running: workflow.is_active || false // If backend says active, it's running
+      }));
+      setWorkflows(mappedWorkflows);
     } catch (error) {
       console.error('Error fetching workflows:', error);
       toast.error('Failed to load workflows');
@@ -285,20 +293,16 @@ export default function Workflows() {
   };
 
   const filteredWorkflows = workflows.filter(workflow => {
-    const query = searchQuery.toLowerCase().trim();
+    // Search filter
+    const matchesSearch = searchQuery.trim() === '' || 
+      workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      workflow.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      workflow.trigger.toLowerCase().includes(searchQuery.toLowerCase());
     
-    if (!query) return true; // Show all if no search query
+    // Status filter
+    const matchesStatus = filterStatus === 'all' || workflow.status === filterStatus;
     
-    // Search in other fields with includes
-    const nameMatch = workflow.name.toLowerCase().includes(query);
-    const descMatch = workflow.description.toLowerCase().includes(query);
-    const triggerMatch = workflow.trigger.toLowerCase().includes(query);
-    
-    // For status field, use startsWith to avoid "a" matching "inactive"
-    // Only match status if it starts with the query
-    const statusMatch = workflow.status.toLowerCase().startsWith(query);
-    
-    return nameMatch || descMatch || triggerMatch || statusMatch;
+    return matchesSearch && matchesStatus;
   });
 
   // Pagination
@@ -308,10 +312,10 @@ export default function Workflows() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedWorkflows = filteredWorkflows.slice(startIndex, endIndex);
 
-  // Reset to page 1 when search changes
+  // Reset to page 1 when search/filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery]);
+  }, [searchQuery, filterStatus]);
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'Never';
@@ -347,17 +351,43 @@ export default function Workflows() {
         </div>
       </div>
 
-      {/* Search */}
+      {/* Filters */}
       <div className="px-4 sm:px-6 lg:max-w-7xl lg:mx-auto lg:px-8 py-6">
-        <div className="flex-1 relative mb-6">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Search workflows..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-          />
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search workflows..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2 rounded-lg transition-colors ${
+                showFilters 
+                  ? 'bg-primary-100 text-primary-600' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Toggle Filters"
+            >
+              <FunnelIcon className="h-5 w-5" />
+            </button>
+            {showFilters && (
+              <select
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            )}
+          </div>
         </div>
 
         {/* Workflows List */}

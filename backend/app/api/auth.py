@@ -198,6 +198,68 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"A user with email '{email_lower}' is already registered. Please use a different email address."
                 )
+        
+        # Assign role - use provided role or default to Regular User
+        # Special case: admin@sunstonecrm.com always gets Super Admin
+        if email_lower == "admin@sunstonecrm.com":
+            role = "Super Admin"
+            user_role = "super_admin"
+        else:
+            role = request.role if request.role else "Regular User"
+            # user_role is the same as role for consistency
+            # Both fields will store the same value (the role name)
+            user_role = role
+        
+        # Get company_id from request (should be provided when adding team members)
+        import uuid
+        company_id = None
+        if request.company_id:
+            try:
+                company_id = uuid.UUID(request.company_id) if isinstance(request.company_id, str) else request.company_id
+            except (ValueError, AttributeError):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid company_id format"
+                )
+        
+        # Create new user with lowercase email
+        new_user = UserModel(
+            email=email_lower,
+            hashed_password=get_password_hash(request.password),
+            first_name=request.first_name,
+            last_name=request.last_name,
+            role=role,
+            user_role=user_role,
+            company_id=company_id,
+            email_verified=False
+        )
+        
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        
+        # Create tokens
+        access_token = create_access_token(data={"sub": new_user.email})
+        refresh_token = create_refresh_token(data={"sub": new_user.email})
+        
+        # Prepare user data
+        user_data = {
+            "id": str(new_user.id),
+            "email": new_user.email,
+            "first_name": new_user.first_name,
+            "last_name": new_user.last_name,
+            "role": new_user.user_role.value if hasattr(new_user.user_role, 'value') else str(new_user.user_role),
+            "company_id": str(new_user.company_id) if new_user.company_id else None,
+            "team_id": None,
+            "is_active": True
+        }
+        
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "user": user_data
+        }
     except HTTPException:
         # Re-raise HTTP exceptions
         raise
@@ -215,68 +277,6 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred during registration. Please try again later."
         )
-    
-    # Assign role - use provided role or default to Regular User
-    # Special case: admin@sunstonecrm.com always gets Super Admin
-    if email_lower == "admin@sunstonecrm.com":
-        role = "Super Admin"
-        user_role = "super_admin"
-    else:
-        role = request.role if request.role else "Regular User"
-        # user_role is the same as role for consistency
-        # Both fields will store the same value (the role name)
-        user_role = role
-    
-    # Get company_id from request (should be provided when adding team members)
-    import uuid
-    company_id = None
-    if request.company_id:
-        try:
-            company_id = uuid.UUID(request.company_id) if isinstance(request.company_id, str) else request.company_id
-        except (ValueError, AttributeError):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid company_id format"
-            )
-    
-    # Create new user with lowercase email
-    new_user = UserModel(
-        email=email_lower,
-        hashed_password=get_password_hash(request.password),
-        first_name=request.first_name,
-        last_name=request.last_name,
-        role=role,
-        user_role=user_role,
-        company_id=company_id,
-        email_verified=False
-    )
-    
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    
-    # Create tokens
-    access_token = create_access_token(data={"sub": new_user.email})
-    refresh_token = create_refresh_token(data={"sub": new_user.email})
-    
-    # Prepare user data
-    user_data = {
-        "id": str(new_user.id),
-        "email": new_user.email,
-        "first_name": new_user.first_name,
-        "last_name": new_user.last_name,
-        "role": new_user.user_role.value if hasattr(new_user.user_role, 'value') else str(new_user.user_role),
-        "company_id": str(new_user.company_id) if new_user.company_id else None,
-        "team_id": None,
-        "is_active": True
-    }
-    
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer",
-        "user": user_data
-    }
 
 
 @router.get("/me", response_model=UserResponse)
