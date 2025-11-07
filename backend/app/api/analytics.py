@@ -257,6 +257,10 @@ async def get_activity_analytics(
 
 @router.get("/revenue")
 async def get_revenue_analytics(
+    date_from: Optional[str] = Query(None, description="Start date (YYYY-MM-DD)"),
+    date_to: Optional[str] = Query(None, description="End date (YYYY-MM-DD)"),
+    user_id: Optional[str] = Query(None, description="Filter by user ID"),
+    pipeline_id: Optional[str] = Query(None, description="Filter by pipeline ID"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -278,27 +282,28 @@ async def get_revenue_analytics(
         else:
             month_end = month_date.replace(month=month_date.month + 1, day=1)
         
+        # Build filters
+        filters = [
+            Deal.company_id == company_id if company_id else Deal.owner_id == owner_id,
+            Deal.is_deleted == False,
+            Deal.status == DealStatus.WON,
+            Deal.actual_close_date >= month_start,
+            Deal.actual_close_date < month_end
+        ]
+        
+        # Apply user filter
+        if user_id:
+            filters.append(Deal.owner_id == uuid.UUID(user_id))
+        
+        # Apply pipeline filter
+        if pipeline_id:
+            filters.append(Deal.pipeline_id == uuid.UUID(pipeline_id))
+        
         # Get revenue for this month (won deals only)
-        revenue = db.query(func.sum(Deal.value)).filter(
-            and_(
-                Deal.company_id == company_id if company_id else Deal.owner_id == owner_id,
-                Deal.is_deleted == False,
-                Deal.status == DealStatus.WON,
-                Deal.actual_close_date >= month_start,
-                Deal.actual_close_date < month_end
-            )
-        ).scalar() or 0.0
+        revenue = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0.0
         
         # Get deal count for this month
-        deal_count = db.query(func.count(Deal.id)).filter(
-            and_(
-                Deal.company_id == company_id if company_id else Deal.owner_id == owner_id,
-                Deal.is_deleted == False,
-                Deal.status == DealStatus.WON,
-                Deal.actual_close_date >= month_start,
-                Deal.actual_close_date < month_end
-            )
-        ).scalar() or 0
+        deal_count = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
         
         monthly_data.append({
             "month": month_start.strftime("%Y-%m"),
