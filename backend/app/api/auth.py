@@ -133,6 +133,9 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
 @router.post("/register", response_model=LoginResponse)
 async def register(request: RegisterRequest, db: Session = Depends(get_db)):
     """Register new user endpoint"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     try:
         # Normalize email to lowercase
         email_lower = request.email.lower()
@@ -200,9 +203,17 @@ async def register(request: RegisterRequest, db: Session = Depends(get_db)):
         raise
     except ValueError as e:
         # Catch validation errors from pydantic validators
+        logger.error(f"Validation error during registration: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e)
+        )
+    except Exception as e:
+        # Catch all other errors
+        logger.error(f"Unexpected error during registration: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred during registration. Please try again later."
         )
     
     # Assign role - use provided role or default to Regular User

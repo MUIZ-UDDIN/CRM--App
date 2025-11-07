@@ -19,6 +19,7 @@ interface Workflow {
   description: string;
   trigger: string;
   status: 'active' | 'inactive';
+  is_running?: boolean; // Track if workflow is currently running
   actions_count: number;
   executions_count: number;
   last_run?: string;
@@ -143,21 +144,18 @@ export default function Workflows() {
   };
 
   const handleToggleStatus = async (workflow: Workflow) => {
-    // Check if workflow has actions before activating
-    if (workflow.status === 'inactive' && workflow.actions_count === 0) {
-      toast.error('Cannot activate workflow without actions. Please add actions first.');
-      return;
-    }
-
-    const newStatus = workflow.status === 'active' ? 'inactive' : 'active';
-    try {
-      await workflowsService.toggleWorkflow(workflow.id, newStatus === 'active');
-      toast.success(`Workflow ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
-      fetchWorkflows();
-    } catch (error: any) {
-      console.error('Toggle error:', error);
-      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update workflow status';
-      toast.error(errorMessage);
+    // For active workflows, toggle is_running (start/stop)
+    if (workflow.status === 'active') {
+      const newRunningState = !workflow.is_running;
+      try {
+        await workflowsService.toggleWorkflow(workflow.id, newRunningState);
+        toast.success(`Workflow ${newRunningState ? 'started' : 'stopped'}`);
+        fetchWorkflows();
+      } catch (error: any) {
+        console.error('Toggle error:', error);
+        const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update workflow status';
+        toast.error(errorMessage);
+      }
     }
   };
 
@@ -421,24 +419,27 @@ export default function Workflows() {
                       </button>
                     )}
                     
-                    {/* Activate/Deactivate Buttons */}
-                    {workflow.status === 'active' && (
-                      <button
-                        onClick={() => handleToggleStatus(workflow)}
-                        className="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50"
-                        title="Deactivate"
-                      >
-                        <PauseIcon className="h-5 w-5" />
-                      </button>
-                    )}
-                    {workflow.status === 'inactive' && workflow.actions_count > 0 && (
-                      <button
-                        onClick={() => handleToggleStatus(workflow)}
-                        className="p-2 rounded-lg transition-colors text-green-600 hover:bg-green-50"
-                        title="Activate"
-                      >
-                        <PlayIcon className="h-5 w-5" />
-                      </button>
+                    {/* Play/Stop Buttons - Only show when status is Active */}
+                    {workflow.status === 'active' && workflow.actions_count > 0 && (
+                      <>
+                        {workflow.is_running ? (
+                          <button
+                            onClick={() => handleToggleStatus(workflow)}
+                            className="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50"
+                            title="Stop Workflow"
+                          >
+                            <PauseIcon className="h-5 w-5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleToggleStatus(workflow)}
+                            className="p-2 rounded-lg transition-colors text-green-600 hover:bg-green-50"
+                            title="Start Workflow"
+                          >
+                            <PlayIcon className="h-5 w-5" />
+                          </button>
+                        )}
+                      </>
                     )}
                     <ActionButtons
                       onView={() => handleView(workflow)}
