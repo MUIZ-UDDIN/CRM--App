@@ -492,6 +492,30 @@ async def handle_incoming_sms(
         db.commit()
         db.refresh(sms_record)
         
+        # Create notification for incoming SMS
+        try:
+            from app.models.notifications import Notification
+            from app.models.users import User
+            
+            # Get user and company info
+            user = db.query(User).filter(User.id == user_id).first()
+            if user and user.company_id:
+                contact_name = f"{contact.first_name} {contact.last_name}" if contact else from_number
+                notification = Notification(
+                    user_id=user_id,
+                    company_id=user.company_id,
+                    type="sms_received",
+                    title=f"New SMS from {contact_name}",
+                    message=body[:100] + ("..." if len(body) > 100 else ""),
+                    link=f"/sms",
+                    is_read=False
+                )
+                db.add(notification)
+                db.commit()
+                print(f"✅ Notification created for incoming SMS")
+        except Exception as e:
+            print(f"⚠️ Failed to create notification: {e}")
+        
         # Get conversation history
         conversation = db.query(SMSModel).filter(
             or_(

@@ -348,15 +348,23 @@ export default function SMSEnhanced() {
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           </div>
-        ) : messages.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg shadow">
-            <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No messages</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by sending a new message.</p>
-          </div>
-        ) : (
-          <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
-            {messages.map((msg) => (
+        ) : (() => {
+          // Filter messages based on selected tab
+          const filteredMessages = messages.filter(msg => 
+            selectedTab === 'inbox' ? msg.direction === 'inbound' : msg.direction === 'outbound'
+          );
+          
+          return filteredMessages.length === 0 ? (
+            <div className="text-center py-12 bg-white rounded-lg shadow">
+              <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No messages</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {selectedTab === 'inbox' ? 'No received messages yet.' : 'No sent messages yet.'}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
+              {filteredMessages.map((msg) => (
               <div key={msg.id} className="p-4 hover:bg-gray-50">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
@@ -390,7 +398,8 @@ export default function SMSEnhanced() {
               </div>
             ))}
           </div>
-        )}
+          );
+        })()}
       </div>
 
       {/* Compose Modal */}
