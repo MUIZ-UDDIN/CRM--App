@@ -75,6 +75,7 @@ export default function Workflows() {
         ...workflow,
         is_running: false // All workflows start in stopped state, user must click Play
       }));
+      console.log('Fetched workflows:', mappedWorkflows); // Debug log
       setWorkflows(mappedWorkflows);
     } catch (error) {
       console.error('Error fetching workflows:', error);
