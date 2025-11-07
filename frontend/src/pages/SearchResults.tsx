@@ -1,22 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { MagnifyingGlassIcon, ArrowRightIcon } from '@heroicons/react/24/outline';
 import { 
+  HomeIcon,
   CurrencyDollarIcon, 
   UserGroupIcon, 
   CalendarIcon, 
   DocumentIcon,
-  DocumentTextIcon 
+  ChartBarIcon,
+  EnvelopeIcon,
+  ChatBubbleLeftIcon,
+  PhoneIcon,
+  FolderIcon,
+  CogIcon,
+  BellIcon,
+  ClockIcon
 } from '@heroicons/react/24/solid';
 import * as searchService from '../services/searchService';
-import type { SearchResponse, SearchResult } from '../services/searchService';
+import type { NavigationSearchResponse, NavigationResult } from '../services/searchService';
 import toast from 'react-hot-toast';
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [results, setResults] = useState<SearchResponse | null>(null);
+  const [results, setResults] = useState<NavigationSearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -32,7 +40,7 @@ export default function SearchResults() {
 
     setLoading(true);
     try {
-      const data = await searchService.globalSearch(query);
+      const data = await searchService.navigationSearch(query);
       setResults(data);
     } catch (error: any) {
       console.error('Search error:', error);
@@ -49,68 +57,64 @@ export default function SearchResults() {
     }
   };
 
-  const handleResultClick = (result: SearchResult) => {
-    navigate(result.link);
+  const handleResultClick = (result: NavigationResult) => {
+    navigate(result.path);
   };
 
-  const getIcon = (type: string) => {
-    switch (type) {
-      case 'deal':
-        return <CurrencyDollarIcon className="h-5 w-5 text-green-600" />;
-      case 'contact':
-        return <UserGroupIcon className="h-5 w-5 text-blue-600" />;
-      case 'activity':
-        return <CalendarIcon className="h-5 w-5 text-purple-600" />;
-      case 'file':
-        return <DocumentIcon className="h-5 w-5 text-orange-600" />;
-      case 'quote':
-        return <DocumentTextIcon className="h-5 w-5 text-indigo-600" />;
+  const getIcon = (iconName: string) => {
+    const iconClass = "h-6 w-6";
+    switch (iconName) {
+      case 'home':
+        return <HomeIcon className={iconClass} />;
+      case 'currency':
+        return <CurrencyDollarIcon className={iconClass} />;
+      case 'users':
+        return <UserGroupIcon className={iconClass} />;
+      case 'calendar':
+        return <CalendarIcon className={iconClass} />;
+      case 'document':
+        return <DocumentIcon className={iconClass} />;
+      case 'chart':
+      case 'chart-bar':
+        return <ChartBarIcon className={iconClass} />;
+      case 'envelope':
+        return <EnvelopeIcon className={iconClass} />;
+      case 'chat':
+        return <ChatBubbleLeftIcon className={iconClass} />;
+      case 'phone':
+        return <PhoneIcon className={iconClass} />;
+      case 'folder':
+        return <FolderIcon className={iconClass} />;
+      case 'cog':
+        return <CogIcon className={iconClass} />;
+      case 'bell':
+        return <BellIcon className={iconClass} />;
+      case 'clock':
+        return <ClockIcon className={iconClass} />;
+      case 'user':
+        return <UserGroupIcon className={iconClass} />;
       default:
-        return <DocumentIcon className="h-5 w-5 text-gray-600" />;
+        return <DocumentIcon className={iconClass} />;
     }
   };
 
-  const renderResultSection = (title: string, items: SearchResult[], type: string) => {
-    if (items.length === 0) return null;
-
-    return (
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-          {getIcon(type)}
-          <span className="ml-2">{title}</span>
-          <span className="ml-2 text-sm font-normal text-gray-500">({items.length})</span>
-        </h2>
-        <div className="space-y-2">
-          {items.map((item) => (
-            <div
-              key={item.id}
-              onClick={() => handleResultClick(item)}
-              className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary-500 hover:shadow-md transition-all cursor-pointer"
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-base font-medium text-gray-900 truncate">
-                    {item.title}
-                  </h3>
-                  {item.description && (
-                    <p className="text-sm text-gray-600 mt-1 truncate">
-                      {item.description}
-                    </p>
-                  )}
-                </div>
-                {item.value && (
-                  <div className="ml-4 flex-shrink-0">
-                    <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
-                      {item.value}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+  const getCategoryColor = (category: string) => {
+    switch (category) {
+      case 'Main':
+        return 'bg-blue-100 text-blue-700';
+      case 'Sales':
+        return 'bg-green-100 text-green-700';
+      case 'Communications':
+        return 'bg-purple-100 text-purple-700';
+      case 'SMS':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'More':
+        return 'bg-gray-100 text-gray-700';
+      case 'User':
+        return 'bg-indigo-100 text-indigo-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
+    }
   };
 
   return (
@@ -126,7 +130,7 @@ export default function SearchResults() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search deals, contacts, activities, files, quotes..."
+              placeholder="Search for pages: Contacts, Deals, SMS, Settings..."
               className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </form>
@@ -141,33 +145,59 @@ export default function SearchResults() {
         )}
 
         {/* No Results */}
-        {!loading && results && results.total_results === 0 && (
+        {!loading && results && results.results.length === 0 && (
           <div className="text-center py-12">
             <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No results found</h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No pages found</h3>
             <p className="mt-2 text-sm text-gray-500">
-              Try searching with different keywords
+              Try searching for: Contacts, Deals, SMS, Settings, Activities, etc.
             </p>
           </div>
         )}
 
         {/* Results */}
-        {!loading && results && results.total_results > 0 && (
+        {!loading && results && results.results.length > 0 && (
           <div>
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">
-                Search Results
+                Pages & Sections
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Found {results.total_results} results for "{results.query}"
+                Found {results.results.length} pages matching "{results.query}"
               </p>
             </div>
 
-            {renderResultSection('Deals', results.deals, 'deal')}
-            {renderResultSection('Contacts', results.contacts, 'contact')}
-            {renderResultSection('Activities', results.activities, 'activity')}
-            {renderResultSection('Files', results.files, 'file')}
-            {renderResultSection('Quotes', results.quotes, 'quote')}
+            <div className="space-y-3">
+              {results.results.map((result, index) => (
+                <div
+                  key={index}
+                  onClick={() => handleResultClick(result)}
+                  className="bg-white p-5 rounded-lg border border-gray-200 hover:border-primary-500 hover:shadow-lg transition-all cursor-pointer group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 flex-1 min-w-0">
+                      <div className="flex-shrink-0 w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 group-hover:bg-primary-100 transition-colors">
+                        {getIcon(result.icon)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+                          {result.name}
+                        </h3>
+                        <p className="text-sm text-gray-600 mt-0.5">
+                          {result.description}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-3 flex-shrink-0">
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(result.category)}`}>
+                        {result.category}
+                      </span>
+                      <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
@@ -175,10 +205,17 @@ export default function SearchResults() {
         {!loading && !results && (
           <div className="text-center py-12">
             <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Start searching</h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">Quick Navigation</h3>
             <p className="mt-2 text-sm text-gray-500">
-              Search across deals, contacts, activities, files, and quotes
+              Search for pages and sections to quickly navigate
             </p>
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Contacts</span>
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Deals</span>
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">SMS</span>
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Settings</span>
+              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Activities</span>
+            </div>
           </div>
         )}
       </div>
