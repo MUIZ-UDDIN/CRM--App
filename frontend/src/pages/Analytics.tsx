@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   ChartBarIcon, 
   XMarkIcon, 
@@ -29,6 +30,7 @@ import toast from 'react-hot-toast';
 import * as analyticsService from '../services/analyticsService';
 
 export default function Analytics() {
+  const { user: currentUser } = useAuth();
   const [showPipelineModal, setShowPipelineModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('sales');
@@ -56,6 +58,16 @@ export default function Analytics() {
   const [documentAnalytics, setDocumentAnalytics] = useState<any>(null);
   const [revenueAnalytics, setRevenueAnalytics] = useState<any>(null);
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
+  
+  // Check if user is admin (can see all company data and filter by user)
+  const isAdmin = currentUser && ['Super Admin', 'Company Admin', 'Admin'].includes(currentUser.user_role);
+  
+  // Auto-set user filter for regular users
+  useEffect(() => {
+    if (currentUser && !isAdmin) {
+      setSelectedUser(currentUser.id);
+    }
+  }, [currentUser, isAdmin]);
   
   // Fetch users and pipelines on mount
   useEffect(() => {
@@ -616,53 +628,56 @@ export default function Analytics() {
                 )}
               </div>
               
-              <div className="relative user-dropdown-container w-full sm:w-auto">
-                <input
-                  type="text"
-                  value={showUserDropdown ? userSearch : (selectedUser === 'all' ? 'All Users' : users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || '')}
-                  onChange={(e) => {
-                    setUserSearch(e.target.value);
-                    if (!showUserDropdown) setShowUserDropdown(true);
-                  }}
-                  onFocus={() => {
-                    setShowUserDropdown(true);
-                    setUserSearch('');
-                  }}
-                  placeholder="Search users..."
-                  className="w-full sm:w-48 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs sm:text-sm"
-                />
-                {showUserDropdown && (
-                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    <button
-                      onClick={() => {
-                        setSelectedUser('all');
-                        setUserSearch('');
-                        setShowUserDropdown(false);
-                      }}
-                      className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b"
-                    >
-                      All Users
-                    </button>
-                    {users
-                      .filter(user => 
-                        `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearch.toLowerCase())
-                      )
-                      .map(user => (
-                        <button
-                          key={user.id}
-                          onClick={() => {
-                            setSelectedUser(user.id);
-                            setUserSearch('');
-                            setShowUserDropdown(false);
-                          }}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
-                        >
-                          {user.first_name} {user.last_name}
-                        </button>
-                      ))}
-                  </div>
-                )}
-              </div>
+              {/* User Filter - Only visible to admins */}
+              {isAdmin && (
+                <div className="relative user-dropdown-container w-full sm:w-auto">
+                  <input
+                    type="text"
+                    value={showUserDropdown ? userSearch : (selectedUser === 'all' ? 'All Users' : users.find(u => u.id === selectedUser)?.first_name + ' ' + users.find(u => u.id === selectedUser)?.last_name || '')}
+                    onChange={(e) => {
+                      setUserSearch(e.target.value);
+                      if (!showUserDropdown) setShowUserDropdown(true);
+                    }}
+                    onFocus={() => {
+                      setShowUserDropdown(true);
+                      setUserSearch('');
+                    }}
+                    placeholder="Search users..."
+                    className="w-full sm:w-48 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs sm:text-sm"
+                  />
+                  {showUserDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          setSelectedUser('all');
+                          setUserSearch('');
+                          setShowUserDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b"
+                      >
+                        All Users
+                      </button>
+                      {users
+                        .filter(user => 
+                          `${user.first_name} ${user.last_name}`.toLowerCase().includes(userSearch.toLowerCase())
+                        )
+                        .map(user => (
+                          <button
+                            key={user.id}
+                            onClick={() => {
+                              setSelectedUser(user.id);
+                              setUserSearch('');
+                              setShowUserDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
+                          >
+                            {user.first_name} {user.last_name}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
               
               <div className="relative pipeline-dropdown-container w-full sm:w-auto">
                 <input
