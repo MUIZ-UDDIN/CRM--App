@@ -11,10 +11,11 @@ export interface Workflow {
   trigger_type: string;
   trigger_config?: any;
   actions?: any[];
-  is_active: boolean;
-  owner_id: string;
-  created_at: string;
-  updated_at: string;
+  is_active?: boolean;  // Optional for backward compatibility
+  status?: string;  // New field for 3-state support: 'active', 'paused', 'inactive'
+  owner_id?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 // Get all workflows
