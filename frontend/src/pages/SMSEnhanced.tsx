@@ -6,7 +6,8 @@ import {
   SparklesIcon,
   DocumentDuplicateIcon,
   UserGroupIcon,
-  ClockIcon
+  ClockIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -80,6 +81,13 @@ export default function SMSEnhanced() {
     fetchContacts();
     fetchTemplates();
     fetchPhoneNumbers();
+    
+    // Auto-refresh messages every 10 seconds
+    const interval = setInterval(() => {
+      fetchMessages();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, [selectedTab]);
 
   const fetchMessages = async () => {
@@ -273,6 +281,14 @@ export default function SMSEnhanced() {
               <p className="mt-1 text-xs sm:text-sm text-gray-500 truncate">Send and receive text messages with AI-powered features</p>
             </div>
             <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full lg:w-auto">
+              <button
+                onClick={fetchMessages}
+                className="inline-flex items-center px-2 sm:px-2.5 md:px-3 py-1.5 border border-gray-300 shadow-sm text-xs md:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                title="Refresh messages"
+              >
+                <ArrowPathIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
+                <span className="whitespace-nowrap">Refresh</span>
+              </button>
               <button
                 onClick={() => navigate('/sms-templates')}
                 className="inline-flex items-center px-2 sm:px-2.5 md:px-3 py-1.5 border border-gray-300 shadow-sm text-xs md:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
