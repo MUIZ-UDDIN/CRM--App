@@ -72,6 +72,8 @@ async def get_pipeline_analytics(
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
     if date_to:
         filters.append(Deal.created_at <= datetime.fromisoformat(date_to))
+    if user_id:
+        filters.append(Deal.owner_id == uuid.UUID(user_id))
     if pipeline_id:
         filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
     
@@ -601,108 +603,84 @@ async def get_call_analytics(
 async def get_contact_analytics(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
     source: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Get contact/lead analytics with source distribution, conversion rates, AI scoring
+    """Get contact/lead analytics with source distribution, conversion rates"""
+    from app.models.contacts import Contact
     
-    Returns:
-    - Lead source distribution
-    - Conversion rates per source
-    - Lead scoring distribution (AI-generated)
-    - Lead status breakdown
-    """
+    company_id = current_user.get('company_id')
     
-    cache_key = f"analytics:contacts:{date_from}:{date_to}:{source}"
-    cached = await get_cached_analytics(cache_key)
-    if cached:
-        return cached
+    # Build filters
+    filters = [Contact.is_deleted == False]
+    if company_id:
+        filters.append(Contact.company_id == company_id)
+    if date_from:
+        filters.append(Contact.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        filters.append(Contact.created_at <= datetime.fromisoformat(date_to))
+    if user_id:
+        filters.append(Contact.owner_id == uuid.UUID(user_id))
+    if source:
+        filters.append(Contact.source == source)
     
-    data = {
+    # Get contacts by source
+    contacts_by_source = db.query(
+        Contact.source,
+        func.count(Contact.id).label('count')
+    ).filter(and_(*filters)).group_by(Contact.source).all()
+    
+    # Get total contacts
+    total_contacts = db.query(func.count(Contact.id)).filter(and_(*filters)).scalar() or 0
+    
+    # Format source data
+    source_data = []
+    for row in contacts_by_source:
+        source_name = row.source or 'Unknown'
+        count = row.count or 0
+        source_data.append({
+            "source": source_name,
+            "count": count
+        })
+    
+    # Get conversion data (contacts with deals)
+    conversion_by_source = db.query(
+        Contact.source,
+        func.count(func.distinct(Contact.id)).label('total_leads'),
+        func.count(func.distinct(Deal.id)).label('converted')
+    ).outerjoin(Deal, Deal.contact_id == Contact.id)\
+     .filter(and_(*filters))\
+     .group_by(Contact.source).all()
+    
+    conversion_data = []
+    for row in conversion_by_source:
+        total = row.total_leads or 0
+        converted = row.converted or 0
+        conversion_rate = (converted / total * 100) if total > 0 else 0
+        conversion_data.append({
+            "source": row.source or 'Unknown',
+            "total_leads": total,
+            "converted": converted,
+            "conversion_rate": round(conversion_rate, 1)
+        })
+    
+    return {
         "filters": {
             "date_from": date_from,
             "date_to": date_to,
+            "user_id": user_id,
             "source": source
         },
-        "source_analytics": [
-            {
-                "source_name": "Website",
-                "contact_count": 120,
-                "deals_created": 24,
-                "conversion_rate": 20.0,
-                "avg_deal_value": 35000.0
-            },
-            {
-                "source_name": "Referral",
-                "contact_count": 85,
-                "deals_created": 28,
-                "conversion_rate": 32.9,
-                "avg_deal_value": 48000.0
-            },
-            {
-                "source_name": "LinkedIn",
-                "contact_count": 95,
-                "deals_created": 19,
-                "conversion_rate": 20.0,
-                "avg_deal_value": 42000.0
-            },
-            {
-                "source_name": "Cold Email",
-                "contact_count": 150,
-                "deals_created": 18,
-                "conversion_rate": 12.0,
-                "avg_deal_value": 28000.0
-            },
-            {
-                "source_name": "Trade Show",
-                "contact_count": 45,
-                "deals_created": 12,
-                "conversion_rate": 26.7,
-                "avg_deal_value": 52000.0
-            }
-        ],
-        "lead_status_breakdown": [
-            {"status": "New", "count": 145, "percentage": 29.3},
-            {"status": "Contacted", "count": 128, "percentage": 25.9},
-            {"status": "Qualified", "count": 95, "percentage": 19.2},
-            {"status": "Unqualified", "count": 78, "percentage": 15.8},
-            {"status": "Converted", "count": 49, "percentage": 9.9}
-        ],
-        "lead_scoring_distribution": {
-            "score_ranges": [
-                {"range": "0-20", "count": 85, "label": "Cold"},
-                {"range": "21-40", "count": 125, "label": "Warm"},
-                {"range": "41-60", "count": 145, "label": "Hot"},
-                {"range": "61-80", "count": 98, "label": "Very Hot"},
-                {"range": "81-100", "count": 42, "label": "Extremely Hot"}
-            ],
-            "avg_score": 48.5,
-            "median_score": 52.0
-        },
-        "ai_insights": {
-            "high_value_leads": 42,
-            "ready_to_convert": 28,
-            "needs_nurturing": 156,
-            "likely_to_churn": 18
-        },
-        "conversion_funnel": [
-            {"stage": "Lead", "count": 495, "conversion_rate": 100.0},
-            {"stage": "Contacted", "count": 350, "conversion_rate": 70.7},
-            {"stage": "Qualified", "count": 245, "conversion_rate": 49.5},
-            {"stage": "Proposal", "count": 125, "conversion_rate": 25.3},
-            {"stage": "Negotiation", "count": 75, "conversion_rate": 15.2},
-            {"stage": "Won", "count": 49, "conversion_rate": 9.9}
-        ],
+        "contacts_by_source": source_data,
+        "conversion_by_source": conversion_data,
+        "lead_scoring": [],  # Placeholder for AI scoring
         "summary": {
-            "total_contacts": 495,
-            "total_deals_created": 101,
-            "overall_conversion_rate": 20.4,
-            "avg_time_to_convert_days": 32.5
+            "total_contacts": total_contacts,
+            "avg_time_to_convert_days": 0
         }
     }
-    
-    await set_cached_analytics(cache_key, data, ttl=300)
-    return data
 
 
 @router.get("/documents")
