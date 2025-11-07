@@ -305,6 +305,13 @@ async def call_webhook(
             call.updated_at = datetime.utcnow()
         else:
             # Create new inbound call record
+            # Find user by phone number
+            from app.models.twilio_settings import PhoneNumber as PhoneNumberModel
+            phone_record = db.query(PhoneNumberModel).filter(
+                PhoneNumberModel.phone_number == to_number
+            ).first()
+            user_id = phone_record.user_id if phone_record else None
+            
             call = CallModel(
                 direction=CallDirection.INBOUND,
                 status=call_status,
@@ -315,10 +322,38 @@ async def call_webhook(
                 recording_url=recording_url,
                 started_at=datetime.utcnow(),
                 ended_at=datetime.utcnow() if call_status in ["completed", "failed", "canceled", "busy", "no-answer"] else None,
-                # Note: user_id should be determined by to_number mapping
-                user_id="default-user-id"  # TODO: Map phone number to user
+                user_id=user_id
             )
             db.add(call)
+            
+            # Create notification for incoming call
+            if user_id and call_status in ["ringing", "in-progress"]:
+                try:
+                    from app.models.notifications import Notification
+                    from app.models.users import User
+                    from app.models.contacts import Contact
+                    
+                    user = db.query(User).filter(User.id == user_id).first()
+                    contact = db.query(Contact).filter(
+                        Contact.phone == from_number,
+                        Contact.owner_id == user_id
+                    ).first()
+                    
+                    if user and user.company_id:
+                        contact_name = f"{contact.first_name} {contact.last_name}" if contact else from_number
+                        notification = Notification(
+                            user_id=user_id,
+                            company_id=user.company_id,
+                            type="call_received",
+                            title=f"Incoming call from {contact_name}",
+                            message=f"Call status: {call_status}",
+                            link=f"/calls",
+                            is_read=False
+                        )
+                        db.add(notification)
+                        print(f"✅ Notification created for incoming call")
+                except Exception as e:
+                    print(f"⚠️ Failed to create call notification: {e}")
         
         db.commit()
         
