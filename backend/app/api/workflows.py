@@ -124,7 +124,9 @@ async def create_workflow(
         trigger_type = WorkflowTrigger.SCHEDULED
     
     # Determine status from is_active
-    status = WorkflowStatus.ACTIVE if workflow_data.is_active else WorkflowStatus.INACTIVE
+    # When enabled (is_active=true), start as PAUSED (stopped but ready to run)
+    # When disabled (is_active=false), set as INACTIVE
+    status = WorkflowStatus.PAUSED if workflow_data.is_active else WorkflowStatus.INACTIVE
     
     new_workflow = Workflow(
         name=workflow_data.name,
@@ -237,7 +239,9 @@ async def update_workflow(
         except ValueError:
             pass
     if workflow_data.is_active is not None:
-        workflow.status = WorkflowStatus.ACTIVE if workflow_data.is_active else WorkflowStatus.INACTIVE
+        # When enabling (is_active=true), set to PAUSED (stopped but ready)
+        # When disabling (is_active=false), set to INACTIVE
+        workflow.status = WorkflowStatus.PAUSED if workflow_data.is_active else WorkflowStatus.INACTIVE
     elif workflow_data.status:
         try:
             workflow.status = WorkflowStatus(workflow_data.status)
@@ -300,7 +304,7 @@ async def toggle_workflow(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Toggle workflow status between active and inactive"""
+    """Toggle workflow execution state (running/paused) for active workflows"""
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
     if not company_id:
@@ -317,16 +321,20 @@ async def toggle_workflow(
     if not workflow:
         raise HTTPException(status_code=404, detail="Workflow not found")
     
-    # Set status based on the request
+    # Only allow toggling if workflow is active or paused
+    if workflow.status == WorkflowStatus.INACTIVE:
+        raise HTTPException(status_code=400, detail="Cannot start/stop an inactive workflow. Please activate it first.")
+    
+    # Toggle between ACTIVE (running) and PAUSED (stopped)
     if toggle_data.is_active:
-        workflow.status = WorkflowStatus.ACTIVE
+        workflow.status = WorkflowStatus.ACTIVE  # Running
     else:
-        workflow.status = WorkflowStatus.INACTIVE
+        workflow.status = WorkflowStatus.PAUSED  # Stopped but still enabled
     
     db.commit()
     db.refresh(workflow)
     
-    return {"message": f"Workflow {workflow.status.value}", "status": workflow.status.value}
+    return {"message": f"Workflow {workflow.status.value}", "status": workflow.status.value, "is_running": workflow.status == WorkflowStatus.ACTIVE}
 
 
 @router.post("/{workflow_id}/execute")
