@@ -54,8 +54,8 @@ class RegisterRequest(BaseModel):
     def validate_name(cls, v):
         if not v or not v.strip():
             raise ValueError('Name cannot be empty')
-        if len(v) > 255:
-            raise ValueError('Name cannot exceed 255 characters')
+        if len(v) > 100:
+            raise ValueError('Name cannot exceed 100 characters')
         # Check for script tags
         if re.search(r'<script[^>]*>.*?</script>', v, re.IGNORECASE | re.DOTALL):
             raise ValueError('HTML tags and scripts are not allowed. Please enter plain text only.')

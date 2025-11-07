@@ -326,9 +326,14 @@ export default function TeamManagement() {
                 <input
                   type="text"
                   required
+                  maxLength={100}
                   value={inviteForm.first_name}
                   onChange={(e) => {
                     const value = e.target.value;
+                    if (value.length > 100) {
+                      toast.error('First name cannot exceed 100 characters');
+                      return;
+                    }
                     if (!/<[^>]*>/gi.test(value)) {
                       setInviteForm({ ...inviteForm, first_name: value });
                     } else {
@@ -345,6 +350,7 @@ export default function TeamManagement() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="John"
                 />
+                <p className="mt-1 text-xs text-gray-500">{inviteForm.first_name.length}/100 characters</p>
               </div>
 
               {/* Last Name */}
@@ -355,9 +361,14 @@ export default function TeamManagement() {
                 <input
                   type="text"
                   required
+                  maxLength={100}
                   value={inviteForm.last_name}
                   onChange={(e) => {
                     const value = e.target.value;
+                    if (value.length > 100) {
+                      toast.error('Last name cannot exceed 100 characters');
+                      return;
+                    }
                     if (!/<[^>]*>/gi.test(value)) {
                       setInviteForm({ ...inviteForm, last_name: value });
                     } else {
@@ -374,6 +385,7 @@ export default function TeamManagement() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Doe"
                 />
+                <p className="mt-1 text-xs text-gray-500">{inviteForm.last_name.length}/100 characters</p>
               </div>
 
               {/* Email */}
