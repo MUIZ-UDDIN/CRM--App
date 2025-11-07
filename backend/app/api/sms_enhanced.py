@@ -440,6 +440,10 @@ async def handle_incoming_sms(
 ):
     """Webhook for incoming SMS from Twilio"""
     try:
+        print("=" * 80)
+        print("🔔 WEBHOOK TRIGGERED - Incoming SMS")
+        print("=" * 80)
+        
         form_data = await request.form()
         
         from_number = form_data.get("From")
@@ -447,7 +451,10 @@ async def handle_incoming_sms(
         body = form_data.get("Body")
         message_sid = form_data.get("MessageSid")
         
-        print(f"📱 Incoming SMS from {from_number}: {body}")
+        print(f"📱 From: {from_number}")
+        print(f"📱 To: {to_number}")
+        print(f"📱 Body: {body}")
+        print(f"📱 MessageSid: {message_sid}")
         
         # Find user by phone number
         phone_record = db.query(PhoneNumber).filter(
@@ -469,6 +476,14 @@ async def handle_incoming_sms(
             print(f"⚠️ No user found for number {to_number}")
             return {"status": "ok"}
         
+        # Get user and company info
+        from app.models.users import User
+        user = db.query(User).filter(User.id == user_id).first()
+        company_id = user.company_id if user else None
+        
+        print(f"👤 User ID: {user_id}")
+        print(f"🏢 Company ID: {company_id}")
+        
         # Find contact by phone number
         contact = db.query(Contact).filter(
             and_(
@@ -476,6 +491,8 @@ async def handle_incoming_sms(
                 Contact.owner_id == user_id
             )
         ).first()
+        
+        print(f"📇 Contact: {contact.first_name if contact else 'Unknown'} {contact.last_name if contact else ''}")
         
         # Save incoming message
         sms_record = SMSModel(
@@ -485,12 +502,15 @@ async def handle_incoming_sms(
             to_address=to_number,
             body=body,
             user_id=user_id,
+            company_id=company_id,
             contact_id=contact.id if contact else None,
             twilio_sid=message_sid
         )
         db.add(sms_record)
         db.commit()
         db.refresh(sms_record)
+        
+        print(f"✅ SMS saved to database with ID: {sms_record.id}")
         
         # Create notification for incoming SMS
         try:
