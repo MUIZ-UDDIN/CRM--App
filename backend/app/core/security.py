@@ -130,3 +130,43 @@ def get_current_active_user(current_user: dict = Depends(get_current_user)) -> d
     if not current_user.get("is_active"):
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user
+
+
+async def get_current_user_ws(token: str) -> dict:
+    """Get current user from JWT token for WebSocket connections"""
+    from .database import SessionLocal
+    
+    try:
+        payload = verify_token(token)
+        if payload is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        email: str = payload.get("sub")
+        if email is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        
+        # Create a new database session for this request
+        db = SessionLocal()
+        try:
+            # Fetch the user from database
+            user = db.query(UserModel).filter(UserModel.email == email).first()
+            if user is None or not user.is_active:
+                raise HTTPException(status_code=401, detail="User not found or inactive")
+            
+            # Prepare user data
+            user_data = {
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
+                "company_id": str(user.company_id) if user.company_id else None,
+                "team_id": str(user.team_id) if user.team_id else None,
+                "is_active": True
+            }
+            return user_data
+        finally:
+            db.close()
+    
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
