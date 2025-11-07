@@ -395,7 +395,8 @@ export default function Workflows() {
               >
                 <option value="all">All Status</option>
                 <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="paused">Inactive</option>
+                <option value="inactive">Deactivated</option>
               </select>
             )}
           </div>
@@ -421,9 +422,12 @@ export default function Workflows() {
                       </div>
                       <span className={`ml-3 inline-flex px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
                         workflow.status === 'active' ? 'bg-green-100 text-green-800' :
+                        workflow.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {workflow.status === 'active' ? 'Active' : 'Inactive'}
+                        {workflow.status === 'active' ? 'Active' : 
+                         workflow.status === 'paused' ? 'Inactive' : 
+                         'Deactivated'}
                       </span>
                     </div>
                     
@@ -460,28 +464,24 @@ export default function Workflows() {
                       </button>
                     )}
                     
-                    {/* Play/Stop Buttons - Show for active or paused workflows */}
-                    {(workflow.status === 'active' || workflow.status === 'paused') && (
-                      <>
-                        {workflow.is_running ? (
-                          <button
-                            onClick={() => handleToggleStatus(workflow)}
-                            className="p-2 rounded-lg transition-colors text-red-600 hover:bg-red-50"
-                            title="Stop Workflow"
-                          >
-                            <PauseIcon className="h-5 w-5" />
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleToggleStatus(workflow)}
-                            className="p-2 rounded-lg transition-colors text-green-600 hover:bg-green-50"
-                            title="Start Workflow"
-                          >
-                            <PlayIcon className="h-5 w-5" />
-                          </button>
-                        )}
-                      </>
+                    {/* Status Indicator Icons - Display only, not clickable */}
+                    {workflow.status === 'active' && (
+                      <div
+                        className="p-2 rounded-lg text-green-600 bg-green-50"
+                        title="Active - Workflow is running"
+                      >
+                        <PlayIcon className="h-5 w-5" />
+                      </div>
                     )}
+                    {workflow.status === 'paused' && (
+                      <div
+                        className="p-2 rounded-lg text-yellow-600 bg-yellow-50"
+                        title="Inactive - Workflow is paused"
+                      >
+                        <PauseIcon className="h-5 w-5" />
+                      </div>
+                    )}
+                    {/* No icons shown for 'inactive' (deactivated) workflows */}
                     <ActionButtons
                       onView={() => handleView(workflow)}
                       onEdit={() => handleEdit(workflow)}
@@ -603,10 +603,11 @@ export default function Workflows() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="active">Active</option>
+                  <option value="paused">Inactive</option>
                   <option value="inactive">Deactivate</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Active workflows show Play/Stop buttons. Deactivated workflows are hidden.
+                  Active: Shows Play button | Inactive: Shows Pause button | Deactivate: Hides all buttons
                 </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -718,10 +719,11 @@ export default function Workflows() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="active">Active</option>
+                  <option value="paused">Inactive</option>
                   <option value="inactive">Deactivate</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Active workflows show Play/Stop buttons. Deactivated workflows are hidden.
+                  Active: Shows Play button | Inactive: Shows Pause button | Deactivate: Hides all buttons
                 </p>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -771,9 +773,12 @@ export default function Workflows() {
                   <label className="text-sm font-medium text-gray-500">Status</label>
                   <span className={`inline-flex px-3 py-1 text-xs font-semibold rounded-full ${
                     selectedWorkflow.status === 'active' ? 'bg-green-100 text-green-800' :
+                    selectedWorkflow.status === 'paused' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>
-                    {selectedWorkflow.status === 'active' ? 'Active' : 'Inactive'}
+                    {selectedWorkflow.status === 'active' ? 'Active' : 
+                     selectedWorkflow.status === 'paused' ? 'Inactive' : 
+                     'Deactivated'}
                   </span>
                 </div>
               </div>
