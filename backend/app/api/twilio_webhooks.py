@@ -426,13 +426,10 @@ async def handle_incoming_call(
         # Generate TwiML response
         resp = VoiceResponse()
         
-        # Enqueue the call silently - no greeting, no music
-        # Point to our own silent wait endpoint
-        base_url = str(request.base_url).rstrip('/')
-        resp.enqueue(
-            name=f"user_{user_id}",
-            wait_url=f"{base_url}/api/webhooks/twilio/voice/wait-silent"
-        )
+        # Dial directly to the browser client using their identity
+        # This allows the Twilio Device to receive the call via the 'incoming' event
+        dial = resp.dial()
+        dial.client(f"user_{user_id}")
         
         return Response(content=str(resp), media_type="application/xml")
         
