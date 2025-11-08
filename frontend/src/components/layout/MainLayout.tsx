@@ -108,6 +108,12 @@ export default function MainLayout() {
     fetchUnreadCount();
     fetchUserProfile();
     
+    // Poll for new notifications every 30 seconds
+    const notificationInterval = setInterval(() => {
+      fetchNotifications();
+      fetchUnreadCount();
+    }, 30000);
+    
     // Listen for avatar updates
     const handleAvatarUpdate = (event: any) => {
       setUserAvatar(event.detail.avatar);
@@ -116,6 +122,7 @@ export default function MainLayout() {
     window.addEventListener('avatarUpdated', handleAvatarUpdate);
     
     return () => {
+      clearInterval(notificationInterval);
       window.removeEventListener('avatarUpdated', handleAvatarUpdate);
     };
   }, []);
@@ -600,14 +607,14 @@ export default function MainLayout() {
                           onClick={() => handleNotificationClick(notification)}
                           className={clsx(
                             'p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors duration-200',
-                            notification.unread && 'bg-blue-50'
+                            !notification.read && 'bg-blue-50'
                           )}
                         >
                           <div className="flex justify-between items-start">
                             <div className="flex-1 pr-2">
                               <h4 className={clsx(
                                 'text-sm font-medium',
-                                notification.unread ? 'text-gray-900' : 'text-gray-700'
+                                !notification.read ? 'text-gray-900' : 'text-gray-700'
                               )}>
                                 {notification.title}
                               </h4>
