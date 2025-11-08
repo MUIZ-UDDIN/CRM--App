@@ -47,11 +47,11 @@ async def get_access_token(
     # Create identity for this user
     identity = f"user_{user_id}"
     
-    # Create access token
+    # Create access token (using account SID and auth token as fallback)
     token = AccessToken(
         twilio_settings.account_sid,
-        twilio_settings.api_key_sid if hasattr(twilio_settings, 'api_key_sid') else twilio_settings.account_sid,
-        twilio_settings.api_key_secret if hasattr(twilio_settings, 'api_key_secret') else twilio_settings.auth_token,
+        twilio_settings.account_sid,  # Use account SID as API key
+        twilio_settings.auth_token,   # Use auth token as API secret
         identity=identity,
         ttl=3600  # 1 hour
     )
