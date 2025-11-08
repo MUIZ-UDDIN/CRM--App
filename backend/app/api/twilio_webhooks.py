@@ -82,24 +82,30 @@ async def handle_incoming_sms(
         
         # Find the user who owns this phone number
         # Handle both formats: +19296730383 and 19296730383
-        from app.models.twilio_settings import TwilioSettings
+        from app.models.phone_numbers import PhoneNumber
         
         # Normalize phone number (add + if missing)
         normalized_to = to_number if to_number.startswith('+') else f'+{to_number}'
         
-        twilio_settings = db.query(TwilioSettings).filter(
-            or_(
-                TwilioSettings.phone_number == to_number,
-                TwilioSettings.phone_number == normalized_to
+        phone_record = db.query(PhoneNumber).filter(
+            and_(
+                or_(
+                    PhoneNumber.phone_number == to_number,
+                    PhoneNumber.phone_number == normalized_to
+                ),
+                PhoneNumber.is_active == True,
+                PhoneNumber.is_deleted == False
             )
         ).first()
         
-        if not twilio_settings:
-            logger.warning(f"No Twilio settings found for phone number: {to_number} or {normalized_to}")
+        if not phone_record:
+            logger.warning(f"No phone number found: {to_number} or {normalized_to}")
             return Response(content="<?xml version='1.0' encoding='UTF-8'?><Response></Response>", media_type="application/xml")
         
-        user_id = twilio_settings.user_id
-        company_id = twilio_settings.company_id
+        user_id = phone_record.user_id
+        company_id = phone_record.company_id
+        
+        logger.info(f"✅ Phone number found - User: {user_id}, Company: {company_id}")
         
         # Find or create contact
         contact = db.query(Contact).filter(
@@ -289,27 +295,33 @@ async def handle_incoming_call(
         
         # Find the user who owns this phone number
         # Handle both formats: +19296730383 and 19296730383
-        from app.models.twilio_settings import TwilioSettings
+        from app.models.phone_numbers import PhoneNumber
         
         # Normalize phone number (add + if missing)
         normalized_to = to_number if to_number.startswith('+') else f'+{to_number}'
         
-        twilio_settings = db.query(TwilioSettings).filter(
-            or_(
-                TwilioSettings.phone_number == to_number,
-                TwilioSettings.phone_number == normalized_to
+        phone_record = db.query(PhoneNumber).filter(
+            and_(
+                or_(
+                    PhoneNumber.phone_number == to_number,
+                    PhoneNumber.phone_number == normalized_to
+                ),
+                PhoneNumber.is_active == True,
+                PhoneNumber.is_deleted == False
             )
         ).first()
         
-        if not twilio_settings:
-            logger.warning(f"No Twilio settings found for phone number: {to_number} or {normalized_to}")
+        if not phone_record:
+            logger.warning(f"No phone number found: {to_number} or {normalized_to}")
             resp = VoiceResponse()
             resp.say("This number is not configured. Please try again later.")
             resp.hangup()
             return Response(content=str(resp), media_type="application/xml")
         
-        user_id = twilio_settings.user_id
-        company_id = twilio_settings.company_id
+        user_id = phone_record.user_id
+        company_id = phone_record.company_id
+        
+        logger.info(f"✅ Phone number found - User: {user_id}, Company: {company_id}")
         
         # Find or create contact
         contact = db.query(Contact).filter(
