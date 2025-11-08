@@ -81,13 +81,21 @@ async def handle_incoming_sms(
         logger.info(f"Media Count: {num_media}")
         
         # Find the user who owns this phone number
+        # Handle both formats: +19296730383 and 19296730383
         from app.models.twilio_settings import TwilioSettings
+        
+        # Normalize phone number (add + if missing)
+        normalized_to = to_number if to_number.startswith('+') else f'+{to_number}'
+        
         twilio_settings = db.query(TwilioSettings).filter(
-            TwilioSettings.phone_number == to_number
+            or_(
+                TwilioSettings.phone_number == to_number,
+                TwilioSettings.phone_number == normalized_to
+            )
         ).first()
         
         if not twilio_settings:
-            logger.warning(f"No Twilio settings found for phone number: {to_number}")
+            logger.warning(f"No Twilio settings found for phone number: {to_number} or {normalized_to}")
             return Response(content="<?xml version='1.0' encoding='UTF-8'?><Response></Response>", media_type="application/xml")
         
         user_id = twilio_settings.user_id
@@ -280,13 +288,21 @@ async def handle_incoming_call(
         logger.info(f"Status: {call_status}")
         
         # Find the user who owns this phone number
+        # Handle both formats: +19296730383 and 19296730383
         from app.models.twilio_settings import TwilioSettings
+        
+        # Normalize phone number (add + if missing)
+        normalized_to = to_number if to_number.startswith('+') else f'+{to_number}'
+        
         twilio_settings = db.query(TwilioSettings).filter(
-            TwilioSettings.phone_number == to_number
+            or_(
+                TwilioSettings.phone_number == to_number,
+                TwilioSettings.phone_number == normalized_to
+            )
         ).first()
         
         if not twilio_settings:
-            logger.warning(f"No Twilio settings found for phone number: {to_number}")
+            logger.warning(f"No Twilio settings found for phone number: {to_number} or {normalized_to}")
             resp = VoiceResponse()
             resp.say("This number is not configured. Please try again later.")
             resp.hangup()
