@@ -427,8 +427,11 @@ async def handle_incoming_call(
         resp = VoiceResponse()
         
         # Enqueue the call silently - no greeting, no music
+        # Point to our own silent wait endpoint
+        base_url = str(request.base_url).rstrip('/')
         resp.enqueue(
-            name=f"user_{user_id}"
+            name=f"user_{user_id}",
+            wait_url=f"{base_url}/api/webhooks/twilio/voice/wait-silent"
         )
         
         return Response(content=str(resp), media_type="application/xml")
@@ -441,6 +444,16 @@ async def handle_incoming_call(
         resp.say("An error occurred. Please try again later.")
         resp.hangup()
         return Response(content=str(resp), media_type="application/xml")
+
+
+@router.post("/voice/wait-silent", response_class=Response)
+async def handle_wait_silent():
+    """
+    Silent wait endpoint - returns empty TwiML to prevent any audio
+    """
+    resp = VoiceResponse()
+    # Empty response = silence
+    return Response(content=str(resp), media_type="application/xml")
 
 
 @router.post("/voice/status", response_class=Response)

@@ -26,6 +26,7 @@ class NotificationResponse(BaseModel):
     read: bool
     created_at: str
     link: Optional[str] = None
+    extra_data: Optional[dict] = None
     
     class Config:
         from_attributes = True
