@@ -31,6 +31,10 @@ class TwilioSettings(BaseModel):
     voice_enabled = Column(Boolean, default=True)
     email_enabled = Column(Boolean, default=False)
     
+    # Auto-Reply Settings
+    auto_reply_enabled = Column(Boolean, default=False)
+    auto_reply_message = Column(String(500), nullable=True, default="Thank you for your message. We'll get back to you soon!")
+    
     # Status
     is_verified = Column(Boolean, default=False)  # Whether credentials have been verified
     last_verified_at = Column(DateTime, nullable=True)
