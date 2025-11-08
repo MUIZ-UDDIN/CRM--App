@@ -60,9 +60,9 @@ export default function Analytics() {
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
   
   // Check if user can see all company data and filter by user
-  // company_admin and admin: Can see all company data + filter by user
-  // super_admin and company_user: See only their own data
-  const canFilterByUser = currentUser && ['company_admin', 'admin'].includes(currentUser.role);
+  // super_admin, company_admin, and admin: Can see all company data + filter by user
+  // company_user: See only their own data
+  const canFilterByUser = currentUser && ['super_admin', 'company_admin', 'admin'].includes(currentUser.role);
   
   // Debug logging
   useEffect(() => {
@@ -71,7 +71,7 @@ export default function Analytics() {
     console.log('Analytics - Can Filter By User:', canFilterByUser);
   }, [currentUser, canFilterByUser]);
   
-  // Auto-set user filter for users who cannot filter (super_admin, company_user)
+  // Auto-set user filter for regular users only (company_user)
   useEffect(() => {
     if (currentUser && !canFilterByUser) {
       setSelectedUser(currentUser.id);
@@ -637,7 +637,7 @@ export default function Analytics() {
                 )}
               </div>
               
-              {/* User Filter - Only visible to company_admin and admin */}
+              {/* User Filter - Visible to super_admin, company_admin, and admin */}
               {canFilterByUser && (
                 <div className="relative user-dropdown-container w-full sm:w-auto">
                   <input

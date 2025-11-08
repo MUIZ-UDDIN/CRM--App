@@ -284,12 +284,11 @@ export default function Dashboard() {
       };
       
       // Check if user can see company-wide data
-      // company_admin and admin: See all company data
-      // super_admin and company_user: See only their own data
-      const canSeeCompanyData = currentUser && ['company_admin', 'admin'].includes(currentUser.role);
+      // super_admin, company_admin, and admin: See all company data
+      // company_user: See only their own data
+      const canSeeCompanyData = currentUser && ['super_admin', 'company_admin', 'admin'].includes(currentUser.role);
       
-      // Add user_id filter for users who should see only their data
-      // (super_admin, company_user)
+      // Add user_id filter for regular users only (company_user)
       if (currentUser && !canSeeCompanyData) {
         filters.user_id = currentUser.id;
       }
