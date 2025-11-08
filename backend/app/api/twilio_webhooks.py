@@ -84,8 +84,12 @@ async def handle_incoming_sms(
         # Handle both formats: +19296730383 and 19296730383
         from app.models.phone_numbers import PhoneNumber
         
-        # Normalize phone number (add + if missing)
+        # Clean and normalize phone number (remove spaces, add + if missing)
+        to_number = to_number.strip() if to_number else ""
+        from_number = from_number.strip() if from_number else ""
         normalized_to = to_number if to_number.startswith('+') else f'+{to_number}'
+        
+        logger.info(f"Normalized To: {normalized_to}")
         
         phone_record = db.query(PhoneNumber).filter(
             and_(
@@ -297,8 +301,12 @@ async def handle_incoming_call(
         # Handle both formats: +19296730383 and 19296730383
         from app.models.phone_numbers import PhoneNumber
         
-        # Normalize phone number (add + if missing)
+        # Clean and normalize phone number (remove spaces, add + if missing)
+        to_number = to_number.strip() if to_number else ""
+        from_number = from_number.strip() if from_number else ""
         normalized_to = to_number if to_number.startswith('+') else f'+{to_number}'
+        
+        logger.info(f"Normalized To: {normalized_to}")
         
         phone_record = db.query(PhoneNumber).filter(
             and_(
