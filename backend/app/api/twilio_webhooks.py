@@ -111,6 +111,12 @@ async def handle_incoming_sms(
         
         logger.info(f"✅ Phone number found - User: {user_id}, Company: {company_id}")
         
+        # Get twilio settings for auto-reply
+        from app.models.twilio_settings import TwilioSettings
+        twilio_settings = db.query(TwilioSettings).filter(
+            TwilioSettings.company_id == company_id
+        ).first()
+        
         # Find or create contact
         contact = db.query(Contact).filter(
             and_(
@@ -175,8 +181,7 @@ async def handle_incoming_sms(
                 type="sms_received",
                 title=f"New SMS from {contact_name}",
                 message=body[:100] + ("..." if len(body) > 100 else ""),
-                link=f"/sms",
-                is_read=False
+                link=f"/sms"
             )
             db.add(notification)
             db.commit()
