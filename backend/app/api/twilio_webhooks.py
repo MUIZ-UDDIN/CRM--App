@@ -157,11 +157,10 @@ async def handle_incoming_sms(
             from_address=from_number,
             to_address=to_number,
             body=body,
-            message_sid=message_sid,
+            twilio_sid=message_sid,  # Use twilio_sid not message_sid
             contact_id=contact.id,
             user_id=user_id,
-            company_id=company_id,
-            media_urls=media_urls if media_urls else None
+            company_id=company_id
         )
         db.add(sms_record)
         db.commit()
@@ -234,7 +233,7 @@ async def handle_sms_status(
         
         # Update SMS record in database
         sms_record = db.query(SMSMessage).filter(
-            SMSMessage.message_sid == message_sid
+            SMSMessage.twilio_sid == message_sid
         ).first()
         
         if sms_record:
