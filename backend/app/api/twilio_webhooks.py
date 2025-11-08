@@ -426,13 +426,9 @@ async def handle_incoming_call(
         # Generate TwiML response
         resp = VoiceResponse()
         
-        # Greet the caller and queue for browser answer
-        resp.say(f"Thank you for calling. Please hold while we connect you to an agent.", voice='alice')
-        
-        # Enqueue the call - this allows the browser to pick it up
+        # Enqueue the call silently - no greeting, no music
         resp.enqueue(
-            name=f"user_{user_id}",
-            wait_url="http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical"
+            name=f"user_{user_id}"
         )
         
         return Response(content=str(resp), media_type="application/xml")
