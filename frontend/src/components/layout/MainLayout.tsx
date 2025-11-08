@@ -140,9 +140,9 @@ export default function MainLayout() {
       try {
         await twilioVoiceService.initialize();
         
-        // Set up incoming call handler
+        // Set up incoming call handler from Twilio Device
         twilioVoiceService.onIncomingCall((call) => {
-          console.log('Incoming call received in UI');
+          console.log('Incoming call received from Twilio Device');
           setIncomingCall(call);
           
           // Add call notification to existing notifications
@@ -184,6 +184,59 @@ export default function MainLayout() {
     
     return () => {
       twilioVoiceService.destroy();
+    };
+  }, []);
+
+  // WebSocket for real-time notifications
+  useEffect(() => {
+    const WS_URL = import.meta.env.VITE_WS_URL || 'wss://sunstonecrm.com/ws';
+    let ws: WebSocket | null = null;
+    
+    const connectWebSocket = () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      ws = new WebSocket(`${WS_URL}?token=${token}`);
+      
+      ws.onopen = () => {
+        console.log('✅ WebSocket connected for real-time notifications');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📨 WebSocket message:', data);
+          
+          if (data.type === 'incoming_call') {
+            // Refresh notifications immediately
+            fetchNotifications();
+            fetchUnreadCount();
+            
+            // Play notification sound (optional)
+            const audio = new Audio('/notification.mp3');
+            audio.play().catch(e => console.log('Could not play sound:', e));
+          }
+        } catch (error) {
+          console.error('WebSocket message error:', error);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+      ws.onclose = () => {
+        console.log('WebSocket disconnected, reconnecting in 5s...');
+        setTimeout(connectWebSocket, 5000);
+      };
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      if (ws) {
+        ws.close();
+      }
     };
   }, []);
 

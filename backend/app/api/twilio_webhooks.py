@@ -397,13 +397,23 @@ async def handle_incoming_call(
             logger.info(f"✅ Notification created")
             
             # Send real-time notification via WebSocket
-            await manager.send_notification(user_id, {
-                "type": "call_received",
-                "title": f"Incoming Call from {contact_name}",
-                "from_number": from_number,
-                "contact_id": str(contact.id),
-                "call_id": str(call_record.id)
-            })
+            try:
+                from app.api.websocket import manager
+                await manager.broadcast({
+                    "type": "incoming_call",
+                    "notification_id": str(notification.id),
+                    "title": f"📞 Incoming Call from {contact_name}",
+                    "message": f"Call from {from_number}",
+                    "from_number": from_number,
+                    "to_number": to_number,
+                    "call_sid": call_sid,
+                    "contact_id": str(contact.id),
+                    "call_id": str(call_record.id),
+                    "user_id": str(user_id),
+                    "company_id": str(company_id)
+                }, user_id=str(user_id))
+            except Exception as ws_error:
+                logger.warning(f"WebSocket notification failed: {ws_error}")
         except Exception as e:
             logger.error(f"Failed to create notification: {e}")
         
