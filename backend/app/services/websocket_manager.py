@@ -75,6 +75,23 @@ class ConnectionManager:
             await websocket.send_text(json.dumps(message))
         except Exception as e:
             logger.error(f"Error sending personal message: {e}")
+    
+    async def broadcast(self, message: dict, user_id: str = None, company_id: str = None):
+        """
+        Broadcast a message to all connections or specific user/company
+        
+        Args:
+            message: The message dict to send
+            user_id: Optional user_id (currently broadcasts to company)
+            company_id: Optional company_id to broadcast to
+        """
+        # If company_id provided, broadcast to that company
+        if company_id:
+            await self.broadcast_to_company(company_id, message)
+        else:
+            # Broadcast to all companies (use sparingly)
+            for cid in list(self.active_connections.keys()):
+                await self.broadcast_to_company(cid, message)
 
 
 # Global instance

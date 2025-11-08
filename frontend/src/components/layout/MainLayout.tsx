@@ -189,14 +189,15 @@ export default function MainLayout() {
 
   // WebSocket for real-time notifications
   useEffect(() => {
-    const WS_URL = import.meta.env.VITE_WS_URL || 'wss://sunstonecrm.com/ws';
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+    const WS_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
     let ws: WebSocket | null = null;
     
     const connectWebSocket = () => {
       const token = localStorage.getItem('token');
       if (!token) return;
       
-      ws = new WebSocket(`${WS_URL}?token=${token}`);
+      ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
       
       ws.onopen = () => {
         console.log('✅ WebSocket connected for real-time notifications');
