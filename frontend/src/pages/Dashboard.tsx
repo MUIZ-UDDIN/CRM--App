@@ -283,8 +283,9 @@ export default function Dashboard() {
         date_to: today.toISOString().split('T')[0]
       };
       
-      // Check if user is admin (Super Admin, Company Admin, or Admin)
-      const isAdmin = currentUser && ['Super Admin', 'Company Admin', 'Admin'].includes(currentUser.role);
+      // Check if user is admin (super_admin or company_admin)
+      // Roles: super_admin (CRM owner), company_admin (company owner), company_user (regular user)
+      const isAdmin = currentUser && ['super_admin', 'company_admin'].includes(currentUser.role);
       
       // Only add user_id filter for regular users
       // Admins see company-wide data by default
