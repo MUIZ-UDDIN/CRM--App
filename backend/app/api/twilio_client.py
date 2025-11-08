@@ -47,11 +47,21 @@ async def get_access_token(
     # Create identity for this user
     identity = f"user_{user_id}"
     
-    # Create access token (using account SID and auth token as fallback)
+    # Get API keys (required for browser calling)
+    api_key_sid = getattr(twilio_settings, 'api_key_sid', None)
+    api_key_secret = getattr(twilio_settings, 'api_key_secret', None)
+    
+    if not api_key_sid or not api_key_secret:
+        raise HTTPException(
+            status_code=400, 
+            detail="Twilio API Keys not configured. Please create API keys in Twilio Console and add them to settings."
+        )
+    
+    # Create access token
     token = AccessToken(
         twilio_settings.account_sid,
-        twilio_settings.account_sid,  # Use account SID as API key
-        twilio_settings.auth_token,   # Use auth token as API secret
+        api_key_sid,
+        api_key_secret,
         identity=identity,
         ttl=3600  # 1 hour
     )
