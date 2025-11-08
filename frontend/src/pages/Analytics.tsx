@@ -59,23 +59,24 @@ export default function Analytics() {
   const [revenueAnalytics, setRevenueAnalytics] = useState<any>(null);
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
   
-  // Check if user is admin (can see all company data and filter by user)
-  // Roles: super_admin (CRM owner), company_admin (company owner), company_user (regular user)
-  const isAdmin = currentUser && ['super_admin', 'company_admin'].includes(currentUser.role);
+  // Check if user can see all company data and filter by user
+  // company_admin and admin: Can see all company data + filter by user
+  // super_admin and company_user: See only their own data
+  const canFilterByUser = currentUser && ['company_admin', 'admin'].includes(currentUser.role);
   
   // Debug logging
   useEffect(() => {
     console.log('Analytics - Current User:', currentUser);
     console.log('Analytics - User Role:', currentUser?.role);
-    console.log('Analytics - Is Admin:', isAdmin);
-  }, [currentUser, isAdmin]);
+    console.log('Analytics - Can Filter By User:', canFilterByUser);
+  }, [currentUser, canFilterByUser]);
   
-  // Auto-set user filter for regular users
+  // Auto-set user filter for users who cannot filter (super_admin, company_user)
   useEffect(() => {
-    if (currentUser && !isAdmin) {
+    if (currentUser && !canFilterByUser) {
       setSelectedUser(currentUser.id);
     }
-  }, [currentUser, isAdmin]);
+  }, [currentUser, canFilterByUser]);
   
   // Fetch users and pipelines on mount
   useEffect(() => {
@@ -636,8 +637,8 @@ export default function Analytics() {
                 )}
               </div>
               
-              {/* User Filter - Only visible to admins */}
-              {isAdmin && (
+              {/* User Filter - Only visible to company_admin and admin */}
+              {canFilterByUser && (
                 <div className="relative user-dropdown-container w-full sm:w-auto">
                   <input
                     type="text"
