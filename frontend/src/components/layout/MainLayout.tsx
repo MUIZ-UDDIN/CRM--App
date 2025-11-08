@@ -253,10 +253,13 @@ export default function MainLayout() {
       if (response.ok) {
         const data = await response.json();
         // Add isCall flag from extra_data
-        const notificationsWithFlags = data.map((n: any) => ({
-          ...n,
-          isCall: n.extra_data?.isCall || false
-        }));
+        const notificationsWithFlags = data.map((n: any) => {
+          console.log('📋 Notification:', n.title, 'extra_data:', n.extra_data, 'isCall:', n.extra_data?.isCall);
+          return {
+            ...n,
+            isCall: n.extra_data?.isCall || false
+          };
+        });
         setNotifications(notificationsWithFlags);
       }
     } catch (error) {
