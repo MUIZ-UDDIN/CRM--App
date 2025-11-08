@@ -43,7 +43,50 @@ export default function CallsNew() {
     fetchCalls();
     fetchContacts();
     fetchTwilioNumbers();
-  }, [selectedTab]);
+    
+    // WebSocket for real-time call updates
+    const WS_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
+    let ws: WebSocket | null = null;
+    
+    const connectWebSocket = () => {
+      if (!token) return;
+      
+      ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
+      
+      ws.onopen = () => {
+        console.log('✅ Calls page WebSocket connected');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === 'incoming_call') {
+            console.log('📞 New call received, refreshing calls list');
+            fetchCalls();
+          }
+        } catch (error) {
+          console.error('WebSocket message error:', error);
+        }
+      };
+      
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+      };
+      
+      ws.onclose = () => {
+        console.log('WebSocket disconnected, reconnecting in 5s...');
+        setTimeout(connectWebSocket, 5000);
+      };
+    };
+    
+    connectWebSocket();
+    
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+  }, [selectedTab, token]);
 
   const fetchTwilioNumbers = async () => {
     try {

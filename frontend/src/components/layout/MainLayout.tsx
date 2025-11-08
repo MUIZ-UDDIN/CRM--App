@@ -428,15 +428,47 @@ export default function MainLayout() {
     navigate('/notifications');
   };
 
-  const handleNotificationClick = (notification: any) => {
-    // Mark as read
-    setNotificationsList(prev => 
-      prev.map(n => 
-        n.id === notification.id ? { ...n, unread: false } : n
-      )
-    );
-    setShowNotifications(false);
-    navigate('/notifications');
+  const handleNotificationClick = async (notification: any) => {
+    // Don't handle clicks on call notifications (they have their own buttons)
+    if (notification.isCall) {
+      return;
+    }
+    
+    // Mark as read immediately in UI
+    if (!notification.read) {
+      // Update UI immediately
+      setNotifications(prev => 
+        prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+      );
+      setNotificationsList(prev => 
+        prev.map(n => n.id === notification.id ? { ...n, read: true } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      
+      // Update backend
+      await markAsRead(notification.id);
+    }
+    
+    // Navigate if there's a link
+    if (notification.link) {
+      navigate(notification.link);
+      setShowNotifications(false);
+    }
+  };
+
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
   const markAllAsRead = async () => {
