@@ -24,7 +24,7 @@ class TwilioVoiceService {
       // Initialize Twilio Device
       this.device = new Device(twilioToken, {
         logLevel: 1,
-        codecPreferences: ['opus', 'pcmu'],
+        // codecPreferences removed - let Twilio use defaults
       });
 
       // Set up event listeners

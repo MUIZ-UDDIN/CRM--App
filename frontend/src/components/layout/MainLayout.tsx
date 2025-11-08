@@ -24,7 +24,6 @@ import { clsx } from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageViewer from '../ImageViewer';
 import TrialBanner from '../TrialBanner';
-import IncomingCallNotification from '../IncomingCallNotification';
 import ActiveCallPanel from '../ActiveCallPanel';
 import { twilioVoiceService } from '../../services/twilioVoiceService';
 import { Call } from '@twilio/voice-sdk';
@@ -145,6 +144,23 @@ export default function MainLayout() {
         twilioVoiceService.onIncomingCall((call) => {
           console.log('Incoming call received in UI');
           setIncomingCall(call);
+          
+          // Add call notification to existing notifications
+          const callNotification = {
+            id: `call_${Date.now()}`,
+            type: 'info',
+            title: `📞 Incoming Call`,
+            message: `Call from ${call.parameters.From || 'Unknown'}`,
+            read: false,
+            created_at: new Date().toISOString(),
+            link: null,
+            isCall: true,
+            callData: call
+          };
+          
+          setNotifications(prev => [callNotification, ...prev]);
+          setNotificationsList(prev => [callNotification, ...prev]);
+          setUnreadCount(prev => prev + 1);
         });
         
         // Set up call ended handler
@@ -152,6 +168,10 @@ export default function MainLayout() {
           console.log('Call ended in UI');
           setIncomingCall(null);
           setActiveCall(null);
+          
+          // Remove call notification
+          setNotifications(prev => prev.filter(n => !n.isCall));
+          setNotificationsList(prev => prev.filter(n => !n.isCall));
         });
         
         console.log('Twilio Voice initialized successfully');
@@ -661,10 +681,12 @@ export default function MainLayout() {
                         notificationsList.map((notification) => (
                         <div
                           key={notification.id}
-                          onClick={() => handleNotificationClick(notification)}
+                          onClick={() => !notification.isCall && handleNotificationClick(notification)}
                           className={clsx(
-                            'p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors duration-200',
-                            !notification.read && 'bg-blue-50'
+                            'p-4 border-b border-gray-100 transition-colors duration-200',
+                            !notification.isCall && 'hover:bg-gray-50 cursor-pointer',
+                            !notification.read && 'bg-blue-50',
+                            notification.isCall && 'bg-green-50 border-l-4 border-green-500'
                           )}
                         >
                           <div className="flex justify-between items-start">
@@ -681,19 +703,45 @@ export default function MainLayout() {
                               <p className="text-xs text-gray-400 mt-1">
                                 {notification.time}
                               </p>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              {notification.unread && (
-                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              
+                              {/* Call Action Buttons */}
+                              {notification.isCall && (
+                                <div className="flex gap-2 mt-3">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAnswerCall();
+                                    }}
+                                    className="flex-1 bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                  >
+                                    📞 Answer
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleRejectCall();
+                                    }}
+                                    className="flex-1 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                                  >
+                                    ✖ Decline
+                                  </button>
+                                </div>
                               )}
-                              <button
-                                onClick={(e) => deleteNotification(notification.id, e)}
-                                className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
-                                title="Delete notification"
-                              >
-                                <TrashIcon className="h-4 w-4" />
-                              </button>
                             </div>
+                            {!notification.isCall && (
+                              <div className="flex items-center space-x-2">
+                                {!notification.read && (
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                )}
+                                <button
+                                  onClick={(e) => deleteNotification(notification.id, e)}
+                                  className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors duration-200"
+                                  title="Delete notification"
+                                >
+                                  <TrashIcon className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
                           </div>
                         </div>
                         ))
@@ -957,14 +1005,7 @@ export default function MainLayout() {
         />
       )}
 
-      {/* Incoming Call Notification */}
-      <IncomingCallNotification
-        call={incomingCall}
-        onAnswer={handleAnswerCall}
-        onReject={handleRejectCall}
-      />
-
-      {/* Active Call Panel */}
+      {/* Active Call Panel - Only show when call is active */}
       <ActiveCallPanel
         call={activeCall}
         onHangup={handleHangupCall}
