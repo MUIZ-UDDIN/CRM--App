@@ -369,9 +369,9 @@ async def handle_incoming_call(
         call_record = Call(
             direction=CallDirection.INBOUND,
             status=CallStatus.RINGING,
-            from_number=from_number,
-            to_number=to_number,
-            call_sid=call_sid,
+            from_address=from_number,
+            to_address=to_number,
+            twilio_sid=call_sid,
             contact_id=contact.id,
             user_id=user_id,
             company_id=company_id
