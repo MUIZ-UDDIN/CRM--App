@@ -261,9 +261,9 @@ export default function Analytics() {
   const revenueData = Array.isArray(revenueAnalytics?.monthly_revenue) && revenueAnalytics.monthly_revenue.length > 0
     ? revenueAnalytics.monthly_revenue.map((item: any) => ({
         month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
-        revenue: item.revenue,
-        deals: item.deal_count,
-        target: item.revenue * 1.1 // 10% above actual as target
+        revenue: parseFloat(item.revenue) || 0,
+        deals: item.deal_count || 0,
+        target: (parseFloat(item.revenue) || 0) * 1.1 // 10% above actual as target
       }))
     : [
         { month: 'Jan', revenue: 0, deals: 0, target: 0 },
@@ -273,16 +273,30 @@ export default function Analytics() {
         { month: 'May', revenue: 0, deals: 0, target: 0 },
         { month: 'Jun', revenue: 0, deals: 0, target: 0 },
       ];
+  
+  // Debug logging for revenue
+  useEffect(() => {
+    if (revenueAnalytics) {
+      console.log('Revenue Analytics Data:', revenueAnalytics);
+      console.log('Processed Revenue Data:', revenueData);
+    }
+  }, [revenueAnalytics]);
 
   // Pipeline data from API - show empty state if no data
   const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0
-    ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => ({
-        name: stage.stage_name,
-        value: stage.total_value,
-        deals: stage.deal_count,
-        color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
-      }))
-    : [{ name: 'No Data', value: 0, deals: 0, color: '#E5E7EB' }];
+    ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => {
+        // Truncate long stage names to max 20 characters
+        const stageName = stage.stage_name || 'Unnamed';
+        const truncatedName = stageName.length > 20 ? stageName.substring(0, 20) + '...' : stageName;
+        return {
+          name: truncatedName,
+          fullName: stageName,
+          value: stage.total_value,
+          deals: stage.deal_count,
+          color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
+        };
+      })
+    : [{ name: 'No Data', fullName: 'No Data', value: 0, deals: 0, color: '#E5E7EB' }];
 
   // Activity data from API - show zeros if no data
   const activityData = Array.isArray(activityAnalytics?.activities_by_user) && activityAnalytics.activities_by_user.length > 0 
@@ -302,11 +316,15 @@ export default function Analytics() {
 
   // Lead source data from API
   const leadSourceData = Array.isArray(contactAnalytics?.contacts_by_source) && contactAnalytics.contacts_by_source.length > 0
-    ? contactAnalytics.contacts_by_source.map((item: any, index: number) => ({
-        name: item.source || 'Unknown',
-        value: item.count || 0,
-        color: ['#3B82F6', '#10B981', '#0EA5E9', '#8B5CF6', '#6B7280'][index % 5]
-      }))
+    ? contactAnalytics.contacts_by_source.map((item: any, index: number) => {
+        // Better label for unknown sources
+        const sourceName = item.source === 'Unknown' || !item.source ? 'Direct/Other' : item.source;
+        return {
+          name: sourceName,
+          value: item.count || 0,
+          color: ['#3B82F6', '#10B981', '#0EA5E9', '#8B5CF6', '#6B7280'][index % 5]
+        };
+      })
     : [{ name: 'No Data', value: 0, color: '#E5E7EB' }];
 
   // Conversion funnel from pipeline data
@@ -884,10 +902,16 @@ export default function Analytics() {
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip 
+                    formatter={(value: any, name: any, props: any) => {
+                      return [`$${value.toLocaleString()}`, props.payload.fullName || name];
+                    }}
+                  />
                   <Legend 
-                    wrapperStyle={{ fontSize: '12px' }}
+                    wrapperStyle={{ fontSize: '11px', maxHeight: '80px', overflowY: 'auto' }}
                     iconType="circle"
+                    layout="horizontal"
+                    align="center"
                   />
                 </PieChart>
               </ResponsiveContainer>
