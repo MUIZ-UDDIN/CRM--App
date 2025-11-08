@@ -4,7 +4,7 @@ Notification models
 
 from sqlalchemy import Column, String, ForeignKey, Boolean, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 from .base import BaseModel
 import enum
 
@@ -31,6 +31,9 @@ class Notification(BaseModel):
     
     # Link
     link = Column(String(500))  # Optional link to related resource
+    
+    # Metadata for additional data (e.g., call info)
+    metadata = Column(JSONB, default=dict)
     
     # User
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
