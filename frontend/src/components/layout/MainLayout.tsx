@@ -465,13 +465,11 @@ export default function MainLayout() {
     try {
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
-        method: 'PUT',
+      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/mark-read`, {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ read: true }),
       });
     } catch (error) {
       console.error('Error marking notification as read:', error);
