@@ -67,7 +67,8 @@ async def get_notifications(
             type=n.type.value if n.type else "info",
             read=n.read,
             created_at=n.created_at.isoformat() if n.created_at else "",
-            link=n.link
+            link=n.link,
+            extra_data=n.extra_data if n.extra_data else None
         )
         for n in notifications
     ]
