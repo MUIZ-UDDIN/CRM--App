@@ -96,6 +96,13 @@ except Exception as e:
     logger.error(f"❌ Failed to import Twilio Webhooks router: {e}")
     twilio_webhooks_router = None
 
+try:
+    from app.api.twilio_client import router as twilio_client_router
+    logger.info("✅ Twilio Client router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import Twilio Client router: {e}")
+    twilio_client_router = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -354,6 +361,17 @@ if twilio_webhooks_router:
     logger.info("✅ Twilio Webhooks routes registered (public endpoints)")
 else:
     logger.warning("⚠️ Twilio Webhooks router not loaded - skipping registration")
+
+# Twilio Client (Browser calling)
+if twilio_client_router:
+    app.include_router(
+        twilio_client_router,
+        prefix="/api/twilio/client",
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Twilio Client routes registered")
+else:
+    logger.warning("⚠️ Twilio Client router not loaded - skipping registration")
 
 # New Phase 2 routers
 app.include_router(

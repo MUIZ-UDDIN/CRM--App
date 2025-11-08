@@ -410,22 +410,14 @@ async def handle_incoming_call(
         # Generate TwiML response
         resp = VoiceResponse()
         
-        # Greet the caller
-        resp.say(f"Thank you for calling. Please hold while we connect you.", voice='alice')
+        # Greet the caller and queue for browser answer
+        resp.say(f"Thank you for calling. Please hold while we connect you to an agent.", voice='alice')
         
-        # Dial the user's phone (if configured)
-        user = db.query(User).filter(User.id == user_id).first()
-        if user and user.phone:
-            dial = resp.dial(
-                action=f"/api/webhooks/twilio/voice/status",
-                timeout=30,
-                caller_id=to_number
-            )
-            dial.number(user.phone)
-        else:
-            # No forwarding number configured
-            resp.say("Sorry, this number is not available right now. Please try again later.")
-            resp.hangup()
+        # Enqueue the call - this allows the browser to pick it up
+        resp.enqueue(
+            name=f"user_{user_id}",
+            wait_url="http://twimlets.com/holdmusic?Bucket=com.twilio.music.classical"
+        )
         
         return Response(content=str(resp), media_type="application/xml")
         
