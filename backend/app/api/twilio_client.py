@@ -13,6 +13,7 @@ from datetime import datetime
 from app.core.security import get_current_active_user
 from app.core.database import get_db
 from app.models.twilio_settings import TwilioSettings
+from app.services.twilio_api_key_service import create_or_get_api_keys
 
 router = APIRouter(tags=["Twilio Client"])
 
@@ -47,14 +48,13 @@ async def get_access_token(
     # Create identity for this user
     identity = f"user_{user_id}"
     
-    # Get API keys (required for browser calling)
-    api_key_sid = getattr(twilio_settings, 'api_key_sid', None)
-    api_key_secret = getattr(twilio_settings, 'api_key_secret', None)
-    
-    if not api_key_sid or not api_key_secret:
+    # Auto-create or get API keys for this company
+    try:
+        api_key_sid, api_key_secret = create_or_get_api_keys(twilio_settings, db)
+    except Exception as e:
         raise HTTPException(
-            status_code=400, 
-            detail="Twilio API Keys not configured. Please create API keys in Twilio Console and add them to settings."
+            status_code=500,
+            detail=f"Failed to create/retrieve API keys: {str(e)}"
         )
     
     # Create access token

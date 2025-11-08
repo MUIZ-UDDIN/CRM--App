@@ -19,6 +19,10 @@ class TwilioSettings(BaseModel):
     account_sid = Column(String(255), nullable=False)
     auth_token = Column(String(255), nullable=False)  # Should be encrypted in production
     
+    # Twilio API Keys (for browser calling)
+    api_key_sid = Column(String(255), nullable=True)  # Auto-created for browser calling
+    api_key_secret = Column(String(255), nullable=True)  # Auto-created for browser calling
+    
     # Twilio Phone Numbers
     phone_number = Column(String(20), nullable=True)  # Primary phone number for calls/SMS
     
