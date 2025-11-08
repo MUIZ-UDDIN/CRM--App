@@ -90,7 +90,7 @@ class TwilioVoiceService {
     });
 
     // Device errors
-    this.device.on('error', (error) => {
+    this.device.on('error', (error: any) => {
       console.error('Twilio Device error:', error);
     });
 
