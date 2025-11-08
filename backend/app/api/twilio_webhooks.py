@@ -391,7 +391,7 @@ async def handle_incoming_call(
                 title=f"📞 Incoming Call from {contact_name}",
                 message=f"Call from {from_number}",
                 link=f"/calls",
-                metadata={
+                extra_data={
                     "isCall": True,
                     "from_number": from_number,
                     "call_sid": call_sid,

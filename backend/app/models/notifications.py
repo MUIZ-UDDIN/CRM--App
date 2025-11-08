@@ -32,8 +32,8 @@ class Notification(BaseModel):
     # Link
     link = Column(String(500))  # Optional link to related resource
     
-    # Metadata for additional data (e.g., call info)
-    metadata = Column(JSONB, default=dict)
+    # Extra data for additional info (e.g., call info)
+    extra_data = Column(JSONB, default=dict)
     
     # User
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)

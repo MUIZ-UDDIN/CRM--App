@@ -252,10 +252,10 @@ export default function MainLayout() {
       });
       if (response.ok) {
         const data = await response.json();
-        // Add isCall flag from metadata
+        // Add isCall flag from extra_data
         const notificationsWithFlags = data.map((n: any) => ({
           ...n,
-          isCall: n.metadata?.isCall || false
+          isCall: n.extra_data?.isCall || false
         }));
         setNotifications(notificationsWithFlags);
       }
