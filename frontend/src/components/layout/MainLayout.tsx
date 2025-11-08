@@ -252,7 +252,12 @@ export default function MainLayout() {
       });
       if (response.ok) {
         const data = await response.json();
-        setNotifications(data);
+        // Add isCall flag from metadata
+        const notificationsWithFlags = data.map((n: any) => ({
+          ...n,
+          isCall: n.metadata?.isCall || false
+        }));
+        setNotifications(notificationsWithFlags);
       }
     } catch (error) {
       console.error('Error fetching notifications:', error);
@@ -460,11 +465,13 @@ export default function MainLayout() {
     try {
       const token = localStorage.getItem('token');
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}/read`, {
+      await fetch(`${API_BASE_URL}/api/notifications/${notificationId}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ read: true }),
       });
     } catch (error) {
       console.error('Error marking notification as read:', error);

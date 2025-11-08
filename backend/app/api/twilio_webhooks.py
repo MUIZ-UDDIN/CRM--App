@@ -390,11 +390,17 @@ async def handle_incoming_call(
                 type=NotificationType.INFO,  # Use valid enum value
                 title=f"📞 Incoming Call from {contact_name}",
                 message=f"Call from {from_number}",
-                link=f"/calls"
+                link=f"/calls",
+                metadata={
+                    "isCall": True,
+                    "from_number": from_number,
+                    "call_sid": call_sid,
+                    "contact_id": str(contact.id) if contact else None
+                }
             )
             db.add(notification)
             db.commit()
-            logger.info(f"✅ Notification created")
+            logger.info(f"✅ Notification created with isCall flag")
             
             # Send real-time notification via WebSocket
             try:
