@@ -19,6 +19,7 @@ class SMSDirection(str, enum.Enum):
 class SMSStatus(str, enum.Enum):
     """SMS status enum"""
     QUEUED = "queued"
+    SENDING = "sending"
     SENT = "sent"
     RECEIVED = "received"
     DELIVERED = "delivered"

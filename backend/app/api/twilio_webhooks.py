@@ -19,7 +19,7 @@ from datetime import datetime
 from loguru import logger
 
 from ..core.database import get_db
-from ..models.sms import SMS as SMSModel, SMSDirection, SMSStatus
+from ..models.sms import SMSMessage, SMSDirection, SMSStatus
 from ..models.calls import Call, CallDirection, CallStatus
 from ..models.contacts import Contact
 from ..models.users import User
@@ -129,7 +129,7 @@ async def handle_incoming_sms(
                     logger.info(f"Media {i}: {media_url} ({media_type})")
         
         # Save incoming SMS to database
-        sms_record = SMSModel(
+        sms_record = SMSMessage(
             direction=SMSDirection.INBOUND,
             status=SMSStatus.RECEIVED,
             from_address=from_number,
@@ -211,8 +211,8 @@ async def handle_sms_status(
         logger.info(f"📊 SMS Status Update: {message_sid} -> {message_status}")
         
         # Update SMS record in database
-        sms_record = db.query(SMSModel).filter(
-            SMSModel.message_sid == message_sid
+        sms_record = db.query(SMSMessage).filter(
+            SMSMessage.message_sid == message_sid
         ).first()
         
         if sms_record:
