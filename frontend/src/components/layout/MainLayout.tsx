@@ -24,6 +24,10 @@ import { clsx } from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
 import ImageViewer from '../ImageViewer';
 import TrialBanner from '../TrialBanner';
+import IncomingCallNotification from '../IncomingCallNotification';
+import ActiveCallPanel from '../ActiveCallPanel';
+import { twilioVoiceService } from '../../services/twilioVoiceService';
+import { Call } from '@twilio/voice-sdk';
 
 interface NavItem {
   name: string;
@@ -84,6 +88,10 @@ export default function MainLayout() {
   const [userAvatar, setUserAvatar] = useState<string>('');
   const [showImageViewer, setShowImageViewer] = useState(false);
   const quickAddRef = useRef<HTMLDivElement>(null);
+  
+  // Twilio Voice states
+  const [incomingCall, setIncomingCall] = useState<Call | null>(null);
+  const [activeCall, setActiveCall] = useState<Call | null>(null);
 
   // Close quick add menu when clicking outside
   useEffect(() => {
@@ -124,6 +132,38 @@ export default function MainLayout() {
     return () => {
       clearInterval(notificationInterval);
       window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+    };
+  }, []);
+
+  // Initialize Twilio Voice
+  useEffect(() => {
+    const initTwilioVoice = async () => {
+      try {
+        await twilioVoiceService.initialize();
+        
+        // Set up incoming call handler
+        twilioVoiceService.onIncomingCall((call) => {
+          console.log('Incoming call received in UI');
+          setIncomingCall(call);
+        });
+        
+        // Set up call ended handler
+        twilioVoiceService.onCallEnded(() => {
+          console.log('Call ended in UI');
+          setIncomingCall(null);
+          setActiveCall(null);
+        });
+        
+        console.log('Twilio Voice initialized successfully');
+      } catch (error) {
+        console.error('Failed to initialize Twilio Voice:', error);
+      }
+    };
+    
+    initTwilioVoice();
+    
+    return () => {
+      twilioVoiceService.destroy();
     };
   }, []);
 
@@ -366,6 +406,23 @@ export default function MainLayout() {
     } catch (error) {
       console.error('Error deleting notification:', error);
     }
+  };
+
+  // Call handlers
+  const handleAnswerCall = () => {
+    twilioVoiceService.answerCall();
+    setActiveCall(incomingCall);
+    setIncomingCall(null);
+  };
+
+  const handleRejectCall = () => {
+    twilioVoiceService.rejectCall();
+    setIncomingCall(null);
+  };
+
+  const handleHangupCall = () => {
+    twilioVoiceService.hangupCall();
+    setActiveCall(null);
   };
 
   return (
@@ -899,6 +956,19 @@ export default function MainLayout() {
           userName={`${user?.firstName} ${user?.lastName}`}
         />
       )}
+
+      {/* Incoming Call Notification */}
+      <IncomingCallNotification
+        call={incomingCall}
+        onAnswer={handleAnswerCall}
+        onReject={handleRejectCall}
+      />
+
+      {/* Active Call Panel */}
+      <ActiveCallPanel
+        call={activeCall}
+        onHangup={handleHangupCall}
+      />
     </div>
   );
 }
