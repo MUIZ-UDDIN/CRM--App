@@ -126,13 +126,17 @@ async def handle_incoming_sms(
                 first_name="Unknown",
                 last_name="Contact",
                 phone=from_number,
-                company_id=company_id,
+                email=f"{from_number.replace('+', '')}@sms.placeholder",  # Placeholder email required
+                type="Lead",
+                status="NEW",
+                source="other",  # Use valid enum value
+                lead_score=0,
                 owner_id=user_id,
-                source="SMS"
+                company_id=company_id
             )
             db.add(contact)
             db.flush()
-            logger.info(f"✅ Created new contact for {from_number}")
+            logger.info(f" Created new contact for {from_number}")
         
         contact_name = f"{contact.first_name} {contact.last_name}"
         
@@ -345,9 +349,10 @@ async def handle_incoming_call(
                 first_name="Unknown",
                 last_name="Caller",
                 phone=from_number,
+                email=f"{from_number.replace('+', '')}@call.placeholder",  # Placeholder email required
                 company_id=company_id,
                 owner_id=user_id,
-                source="Phone"
+                source="other"  # Use valid enum value
             )
             db.add(contact)
             db.flush()
