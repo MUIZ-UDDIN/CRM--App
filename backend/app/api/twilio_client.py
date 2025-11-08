@@ -67,9 +67,9 @@ async def get_access_token(
     )
     
     # Create Voice grant
+    # Note: For incoming calls to work, the webhook must enqueue calls to the user's identity
     voice_grant = VoiceGrant(
-        outgoing_application_sid=twilio_settings.twiml_app_sid if hasattr(twilio_settings, 'twiml_app_sid') else None,
-        incoming_allow=True
+        incoming_allow=True  # Allow incoming calls
     )
     
     token.add_grant(voice_grant)
