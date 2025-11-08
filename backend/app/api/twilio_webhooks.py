@@ -175,11 +175,12 @@ async def handle_incoming_sms(
         
         # Create notification for incoming SMS
         try:
+            from app.models.notifications import NotificationType
             notification = Notification(
                 user_id=user_id,
                 company_id=company_id,
-                type="sms_received",
-                title=f"New SMS from {contact_name}",
+                type=NotificationType.INFO,  # Use valid enum value
+                title=f"📱 New SMS from {contact_name}",
                 message=body[:100] + ("..." if len(body) > 100 else ""),
                 link=f"/sms"
             )
@@ -382,14 +383,14 @@ async def handle_incoming_call(
         
         # Create notification for incoming call
         try:
+            from app.models.notifications import NotificationType
             notification = Notification(
                 user_id=user_id,
                 company_id=company_id,
-                type="call_received",
-                title=f"Incoming Call from {contact_name}",
+                type=NotificationType.INFO,  # Use valid enum value
+                title=f"📞 Incoming Call from {contact_name}",
                 message=f"Call from {from_number}",
-                link=f"/calls",
-                is_read=False
+                link=f"/calls"
             )
             db.add(notification)
             db.commit()
