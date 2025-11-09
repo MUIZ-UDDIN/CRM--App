@@ -204,6 +204,41 @@ async def make_call(
         )
 
 
+@router.post("/cleanup-stale")
+async def cleanup_stale_calls(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Update old calls stuck in ringing/initiated status to no-answer"""
+    import uuid
+    from datetime import timedelta
+    
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    # Find calls older than 5 minutes still in ringing/initiated status
+    cutoff_time = datetime.utcnow() - timedelta(minutes=5)
+    
+    stale_calls = db.query(CallModel).filter(
+        CallModel.company_id == company_id,
+        CallModel.status.in_([CallStatus.RINGING, CallStatus.INITIATED, CallStatus.QUEUED]),
+        CallModel.started_at < cutoff_time
+    ).all()
+    
+    count = 0
+    for call in stale_calls:
+        call.status = CallStatus.NO_ANSWER
+        call.ended_at = call.started_at + timedelta(seconds=30)  # Assume 30 second ring time
+        call.updated_at = datetime.utcnow()
+        count += 1
+    
+    db.commit()
+    
+    return {"success": True, "updated_count": count, "message": f"Updated {count} stale calls"}
+
+
 @router.delete("/{call_id}")
 async def delete_call(
     call_id: str,

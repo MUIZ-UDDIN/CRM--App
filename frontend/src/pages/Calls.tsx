@@ -265,6 +265,29 @@ export default function CallsNew() {
     }
   };
 
+  const cleanupStaleCalls = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/calls/cleanup-stale`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Updated ${data.updated_count} old calls`);
+        fetchCalls();
+      } else {
+        toast.error('Failed to cleanup calls');
+      }
+    } catch (error) {
+      console.error('Error cleaning up calls:', error);
+      toast.error('Failed to cleanup calls');
+    }
+  };
+
   return (
     <div className="min-h-full">
       {/* Header */}
@@ -280,13 +303,22 @@ export default function CallsNew() {
                 </div>
               </div>
             </div>
-            <button
-              onClick={() => setShowCallModal(true)}
-              className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto whitespace-nowrap"
-            >
-              <PhoneIcon className="h-4 w-4 sm:mr-2" />
-              <span className="hidden xs:inline ml-1">Make Call</span>
-            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                onClick={cleanupStaleCalls}
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-gray-300 shadow-sm text-xs sm:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 flex-1 sm:flex-initial whitespace-nowrap"
+                title="Update old calls stuck in ringing status"
+              >
+                <span>Fix Old Calls</span>
+              </button>
+              <button
+                onClick={() => setShowCallModal(true)}
+                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 flex-1 sm:flex-initial whitespace-nowrap"
+              >
+                <PhoneIcon className="h-4 w-4 sm:mr-2" />
+                <span className="hidden xs:inline ml-1">Make Call</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
