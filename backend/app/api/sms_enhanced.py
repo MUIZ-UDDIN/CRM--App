@@ -233,6 +233,37 @@ async def get_sms_messages(
     ]
 
 
+@router.delete("/messages/{message_id}")
+async def delete_message(
+    message_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Permanently delete an SMS message"""
+    try:
+        message = db.query(SMSModel).filter(
+            and_(
+                SMSModel.id == uuid.UUID(message_id),
+                SMSModel.user_id == uuid.UUID(current_user["id"])
+            )
+        ).first()
+        
+        if not message:
+            raise HTTPException(status_code=404, detail="Message not found")
+        
+        db.delete(message)
+        db.commit()
+        
+        logger.info(f"Message {message_id} deleted by user {current_user['id']}")
+        return {"success": True, "message": "Message deleted successfully"}
+        
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid message ID format")
+    except Exception as e:
+        logger.error(f"Error deleting message: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete message: {str(e)}")
+
+
 @router.post("/send")
 async def send_sms(
     request: SMSSendRequest,

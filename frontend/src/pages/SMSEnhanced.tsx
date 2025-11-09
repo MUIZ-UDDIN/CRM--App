@@ -7,7 +7,9 @@ import {
   DocumentDuplicateIcon,
   UserGroupIcon,
   ClockIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  XMarkIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -438,64 +440,136 @@ export default function SMSEnhanced() {
         </div>
       </div>
 
-      {/* Messages List */}
+      {/* Chat Interface */}
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           </div>
-        ) : (() => {
-          // Filter messages based on selected tab
-          const filteredMessages = messages.filter(msg => 
-            selectedTab === 'inbox' ? msg.direction === 'inbound' : msg.direction === 'outbound'
-          );
-          
-          return filteredMessages.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow">
-              <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No messages</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                {selectedTab === 'inbox' ? 'No received messages yet.' : 'No sent messages yet.'}
-              </p>
-            </div>
-          ) : (
-            <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
-              {filteredMessages.map((msg) => (
-              <div key={msg.id} className="p-4 hover:bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        msg.direction === 'outbound' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {msg.direction === 'outbound' ? 'Sent' : 'Received'}
-                      </span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        msg.status === 'delivered' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                      }`}>
-                        {msg.status}
-                      </span>
-                      {msg.is_auto_response && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-800">
-                          <SparklesIcon className="w-3 h-3 mr-1" />
-                          AI Response
-                        </span>
-                      )}
+        ) : messages.length === 0 ? (
+          <div className="text-center py-12 bg-white rounded-lg shadow">
+            <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No messages</h3>
+            <p className="mt-1 text-sm text-gray-500">Get started by sending a new message.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-300px)]">
+            {/* Conversations List */}
+            <div className="lg:col-span-1 bg-white rounded-lg shadow overflow-y-auto">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Conversations</h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {getConversations().map((conv) => (
+                  <div
+                    key={conv.phone}
+                    onClick={() => handleConversationClick(conv.phone)}
+                    className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                      selectedConversation === conv.phone ? 'bg-primary-50 border-l-4 border-primary-500' : ''
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {conv.phone}
+                        </p>
+                        <p className="text-sm text-gray-500 truncate mt-1">
+                          {conv.lastMessage.body}
+                        </p>
+                      </div>
+                      <div className="ml-2 flex flex-col items-end">
+                        <p className="text-xs text-gray-400">
+                          {new Date(conv.lastMessage.sent_at).toLocaleDateString()}
+                        </p>
+                        {conv.unreadCount > 0 && (
+                          <span className="mt-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary-600 rounded-full">
+                            {conv.unreadCount}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p className="mt-1 text-sm text-gray-600">
-                      From: {msg.from_address} → To: {msg.to_address}
-                    </p>
-                    <p className="mt-1 text-sm text-gray-900">{msg.body}</p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      {new Date(msg.sent_at).toLocaleString()}
-                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Chat Messages */}
+            <div className="lg:col-span-2 bg-white rounded-lg shadow flex flex-col">
+              {selectedConversation ? (
+                <>
+                  {/* Chat Header */}
+                  <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{selectedConversation}</h3>
+                      <p className="text-sm text-gray-500">{conversationMessages.length} messages</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedConversation(null)}
+                      className="text-gray-400 hover:text-gray-600"
+                    >
+                      <XMarkIcon className="w-6 h-6" />
+                    </button>
+                  </div>
+
+                  {/* Messages */}
+                  <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                    {conversationMessages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
+                      >
+                        <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${
+                          msg.direction === 'outbound' ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-900'
+                        } rounded-lg px-4 py-2 shadow`}>
+                          <p className="text-sm">{msg.body}</p>
+                          <div className="flex items-center justify-between mt-1 space-x-2">
+                            <p className={`text-xs ${msg.direction === 'outbound' ? 'text-primary-100' : 'text-gray-500'}`}>
+                              {new Date(msg.sent_at).toLocaleTimeString()}
+                            </p>
+                            <button
+                              onClick={() => deleteMessage(msg.id)}
+                              className={`text-xs ${msg.direction === 'outbound' ? 'text-primary-100 hover:text-white' : 'text-gray-500 hover:text-red-600'}`}
+                            >
+                              <TrashIcon className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Quick Reply Input */}
+                  <div className="p-4 border-t border-gray-200">
+                    <div className="flex space-x-2">
+                      <input
+                        type="text"
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && sendQuickReply()}
+                        placeholder="Type a message..."
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                      <button
+                        onClick={sendQuickReply}
+                        disabled={!newMessage.trim()}
+                        className="px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Send
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-gray-400">
+                  <div className="text-center">
+                    <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 mb-4" />
+                    <p>Select a conversation to start chatting</p>
                   </div>
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
           </div>
-          );
-        })()}
+        )}
       </div>
 
       {/* Compose Modal */}
