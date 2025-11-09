@@ -474,7 +474,7 @@ async def handle_call_status(
         
         # Update call record in database
         call_record = db.query(Call).filter(
-            Call.call_sid == call_sid
+            Call.twilio_sid == call_sid
         ).first()
         
         if call_record:
@@ -498,8 +498,8 @@ async def handle_call_status(
             if recording_url:
                 call_record.recording_url = recording_url
             
-            if call_status == "completed":
-                call_record.end_time = datetime.utcnow()
+            if call_status in ["completed", "no-answer", "busy", "failed", "canceled"]:
+                call_record.ended_at = datetime.utcnow()
             
             call_record.updated_at = datetime.utcnow()
             
@@ -543,7 +543,7 @@ async def handle_recording(
         
         # Update call record with recording
         call_record = db.query(Call).filter(
-            Call.call_sid == call_sid
+            Call.twilio_sid == call_sid
         ).first()
         
         if call_record:

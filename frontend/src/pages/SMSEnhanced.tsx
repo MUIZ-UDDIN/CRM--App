@@ -373,6 +373,25 @@ export default function SMSEnhanced() {
     }
   };
 
+  const deleteConversation = async (phone: string) => {
+    if (!confirm(`Permanently delete entire conversation with ${phone}?`)) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/sms/conversations/${encodeURIComponent(phone)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        toast.success('Conversation deleted');
+        setSelectedConversation(null);
+        fetchMessages();
+      }
+    } catch (error) {
+      toast.error('Failed to delete conversation');
+    }
+  };
+
   return (
     <div className="min-h-full">
       {/* Header */}
@@ -492,12 +511,21 @@ export default function SMSEnhanced() {
                       <h3 className="text-lg font-semibold text-gray-900">{selectedConversation}</h3>
                       <p className="text-sm text-gray-500">{conversationMessages.length} messages</p>
                     </div>
-                    <button
-                      onClick={() => setSelectedConversation(null)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <XMarkIcon className="w-6 h-6" />
-                    </button>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => deleteConversation(selectedConversation)}
+                        className="text-red-400 hover:text-red-600"
+                        title="Delete conversation"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                      <button
+                        onClick={() => setSelectedConversation(null)}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <XMarkIcon className="w-6 h-6" />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Messages */}

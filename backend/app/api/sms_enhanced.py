@@ -299,6 +299,43 @@ async def mark_messages_as_read(
         raise HTTPException(status_code=500, detail=f"Failed to mark messages as read: {str(e)}")
 
 
+@router.delete("/conversations/{phone_number}")
+async def delete_conversation(
+    phone_number: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Delete all messages in a conversation with a phone number"""
+    try:
+        user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+        
+        # Find all messages in this conversation
+        messages = db.query(SMSModel).filter(
+            and_(
+                SMSModel.user_id == user_id,
+                or_(
+                    SMSModel.from_address == phone_number,
+                    SMSModel.to_address == phone_number
+                )
+            )
+        ).all()
+        
+        count = len(messages)
+        
+        # Delete all messages
+        for msg in messages:
+            db.delete(msg)
+        
+        db.commit()
+        
+        logger.info(f"Conversation with {phone_number} deleted by user {current_user['id']} ({count} messages)")
+        return {"success": True, "deleted_count": count}
+    
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete conversation: {str(e)}")
+
+
 @router.post("/send")
 async def send_sms(
     request: SMSSendRequest,

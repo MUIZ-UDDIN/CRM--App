@@ -39,6 +39,8 @@ export default function CallsNew() {
 
   const [searchTo, setSearchTo] = useState('');
   const [twilioNumbers, setTwilioNumbers] = useState<any[]>([]);
+  const [showRedialModal, setShowRedialModal] = useState(false);
+  const [redialNumber, setRedialNumber] = useState('');
 
   useEffect(() => {
     fetchCalls();
@@ -222,6 +224,47 @@ export default function CallsNew() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleRedial = (phoneNumber: string) => {
+    setRedialNumber(phoneNumber);
+    setCallForm({ ...callForm, to: phoneNumber });
+    setShowRedialModal(true);
+  };
+
+  const initiateRedial = async () => {
+    if (!callForm.from || !redialNumber) {
+      toast.error('Please select a number to call from');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: callForm.from,
+          to: redialNumber
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Call initiated!');
+        setShowRedialModal(false);
+        setRedialNumber('');
+        setCallForm({ from: '', to: '' });
+        fetchCalls();
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to initiate call');
+      }
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      toast.error('Failed to initiate call');
+    }
+  };
+
   return (
     <div className="min-h-full">
       {/* Header */}
@@ -322,10 +365,17 @@ export default function CallsNew() {
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Date & Time
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {calls.map((call) => (
+                  {calls.map((call) => {
+                    // Determine which number to redial
+                    const redialTo = call.direction === 'outbound' ? call.to_address : call.from_address;
+                    
+                    return (
                     <tr key={call.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -362,8 +412,18 @@ export default function CallsNew() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {call.started_at ? new Date(call.started_at).toLocaleString() : 'Unknown'}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <button
+                          onClick={() => handleRedial(redialTo)}
+                          className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                        >
+                          <PhoneIcon className="h-4 w-4 mr-1" />
+                          Redial
+                        </button>
+                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -450,6 +510,52 @@ export default function CallsNew() {
                 </button>
                 <button
                   onClick={handleMakeCall}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  <PhoneIcon className="h-4 w-4 inline mr-2" />
+                  Call Now
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Redial Modal */}
+      {showRedialModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Redial {redialNumber}</h3>
+              <button onClick={() => setShowRedialModal(false)} className="text-gray-400 hover:text-gray-600">
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Number</label>
+                <select
+                  value={callForm.from}
+                  onChange={(e) => setCallForm({...callForm, from: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">Select a number...</option>
+                  {twilioNumbers.map((num) => (
+                    <option key={num.id} value={num.phone_number}>
+                      {num.phone_number} {num.friendly_name ? `(${num.friendly_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowRedialModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={initiateRedial}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
                   <PhoneIcon className="h-4 w-4 inline mr-2" />
