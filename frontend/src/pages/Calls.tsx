@@ -298,41 +298,74 @@ export default function CallsNew() {
             <p className="mt-1 text-sm text-gray-500">Get started by making a new call.</p>
           </div>
         ) : (
-          <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
-            {calls.map((call) => (
-              <div key={call.id} className="p-4 hover:bg-gray-50">
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <PhoneIcon className={`h-5 w-5 ${
-                        call.direction === 'outbound' ? 'text-blue-600' : 'text-green-600'
-                      }`} />
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        call.direction === 'outbound' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-                      }`}>
-                        {call.direction === 'outbound' ? 'Outgoing' : 'Incoming'}
-                      </span>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        call.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                        call.status === 'no-answer' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {call.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm text-gray-600">
-                      From: {call.from} → To: {call.to}
-                    </p>
-                    <p className="mt-1 text-sm text-gray-900">
-                      Duration: {formatDuration(call.duration)}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-400">
-                      {new Date(call.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      From
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      To
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Duration
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Date & Time
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {calls.map((call) => (
+                    <tr key={call.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <PhoneIcon className={`h-5 w-5 mr-2 ${
+                            call.direction === 'outbound' ? 'text-blue-600' : 'text-green-600'
+                          }`} />
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            call.direction === 'outbound' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                          }`}>
+                            {call.direction === 'outbound' ? 'Outgoing' : 'Incoming'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {call.from || 'Unknown'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {call.to || 'Unknown'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          call.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                          call.status === 'no-answer' ? 'bg-yellow-100 text-yellow-800' :
+                          call.status === 'busy' ? 'bg-red-100 text-red-800' :
+                          call.status === 'failed' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
+                        }`}>
+                          {call.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {call.duration > 0 ? formatDuration(call.duration) : '-'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {call.created_at ? new Date(call.created_at).toLocaleString() : 'Unknown'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

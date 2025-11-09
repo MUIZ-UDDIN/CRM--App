@@ -30,6 +30,7 @@ interface SMSMessage {
   status: string;
   direction: 'inbound' | 'outbound';
   is_auto_response?: boolean;
+  read_at?: string | null;
 }
 
 interface SMSTemplate {
@@ -277,11 +278,11 @@ export default function SMSEnhanced() {
         convMap.set(otherPhone, {
           phone: otherPhone,
           lastMessage: msg,
-          unreadCount: (msg.direction === 'inbound' && msg.status !== 'read') ? 1 : 0
+          unreadCount: (msg.direction === 'inbound' && msg.read_at === null) ? 1 : 0
         });
       } else {
-        // Count unread inbound messages
-        if (msg.direction === 'inbound' && msg.status !== 'read') {
+        // Count unread inbound messages based on read_at field
+        if (msg.direction === 'inbound' && msg.read_at === null) {
           existing.unreadCount++;
         }
         // Update last message if newer
@@ -372,14 +373,6 @@ export default function SMSEnhanced() {
               <p className="mt-1 text-xs sm:text-sm text-gray-500 truncate">Send and receive text messages with AI-powered features</p>
             </div>
             <div className="flex flex-wrap gap-1.5 sm:gap-2 w-full lg:w-auto">
-              <button
-                onClick={fetchMessages}
-                className="inline-flex items-center px-2 sm:px-2.5 md:px-3 py-1.5 border border-gray-300 shadow-sm text-xs md:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
-                title="Refresh messages"
-              >
-                <ArrowPathIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
-                <span className="whitespace-nowrap">Refresh</span>
-              </button>
               <button
                 onClick={() => navigate('/sms-templates')}
                 className="inline-flex items-center px-2 sm:px-2.5 md:px-3 py-1.5 border border-gray-300 shadow-sm text-xs md:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
