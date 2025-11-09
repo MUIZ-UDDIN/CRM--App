@@ -56,6 +56,9 @@ export default function SMSEnhanced() {
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'inbox' | 'sent'>('inbox');
   const [contactSearch, setContactSearch] = useState('');
+  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [conversationMessages, setConversationMessages] = useState<SMSMessage[]>([]);
+  const [newMessage, setNewMessage] = useState('');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -81,13 +84,6 @@ export default function SMSEnhanced() {
     fetchContacts();
     fetchTemplates();
     fetchPhoneNumbers();
-    
-    // Auto-refresh messages every 10 seconds
-    const interval = setInterval(() => {
-      fetchMessages();
-    }, 10000);
-    
-    return () => clearInterval(interval);
   }, [selectedTab]);
 
   const fetchMessages = async () => {
@@ -247,7 +243,7 @@ export default function SMSEnhanced() {
   const handleTemplateSelect = (templateId: string) => {
     const template = templates.find(t => t.id === templateId);
     if (template) {
-      setSmsForm({ ...smsForm, template_id: templateId, body: template.body });
+      setSmsForm({...smsForm, template_id: templateId, body: template.body});
     }
   };
 
@@ -265,6 +261,90 @@ export default function SMSEnhanced() {
         ? prev.contact_ids.filter(id => id !== contactId)
         : [...prev.contact_ids, contactId]
     }));
+  };
+
+  // Group messages by conversation (phone number)
+  const getConversations = () => {
+    const convMap = new Map<string, { phone: string; lastMessage: SMSMessage; unreadCount: number }>();
+    
+    messages.forEach(msg => {
+      const otherPhone = msg.direction === 'inbound' ? msg.from_address : msg.to_address;
+      const existing = convMap.get(otherPhone);
+      
+      if (!existing || new Date(msg.sent_at) > new Date(existing.lastMessage.sent_at)) {
+        convMap.set(otherPhone, {
+          phone: otherPhone,
+          lastMessage: msg,
+          unreadCount: msg.direction === 'inbound' && msg.status !== 'read' ? 1 : (existing?.unreadCount || 0)
+        });
+      }
+    });
+    
+    return Array.from(convMap.values()).sort((a, b) => 
+      new Date(b.lastMessage.sent_at).getTime() - new Date(a.lastMessage.sent_at).getTime()
+    );
+  };
+
+  const fetchConversationMessages = (phone: string) => {
+    const filtered = messages.filter(msg => 
+      msg.from_address === phone || msg.to_address === phone
+    ).sort((a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime());
+    
+    setConversationMessages(filtered);
+  };
+
+  const handleConversationClick = (phone: string) => {
+    setSelectedConversation(phone);
+    fetchConversationMessages(phone);
+  };
+
+  const sendQuickReply = async () => {
+    if (!newMessage.trim() || !selectedConversation) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/sms/send`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          to: selectedConversation,
+          body: newMessage,
+          use_rotation: true
+        })
+      });
+
+      if (response.ok) {
+        setNewMessage('');
+        fetchMessages();
+        fetchConversationMessages(selectedConversation);
+        toast.success('Message sent!');
+      }
+    } catch (error) {
+      toast.error('Failed to send message');
+    }
+  };
+
+  const deleteMessage = async (messageId: string) => {
+    if (!confirm('Permanently delete this message?')) return;
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/sms/messages/${messageId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        toast.success('Message deleted');
+        fetchMessages();
+        if (selectedConversation) {
+          fetchConversationMessages(selectedConversation);
+        }
+      }
+    } catch (error) {
+      toast.error('Failed to delete message');
+    }
   };
 
   return (
