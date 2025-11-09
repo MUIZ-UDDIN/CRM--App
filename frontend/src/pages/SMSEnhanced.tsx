@@ -630,17 +630,64 @@ export default function SMSEnhanced() {
                   {/* Chat Header */}
                   <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-900">{selectedConversation}</h3>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        {getContactName(selectedConversation) || selectedConversation}
+                      </h3>
+                      {getContactName(selectedConversation) && (
+                        <p className="text-xs text-gray-400">{selectedConversation}</p>
+                      )}
                       <p className="text-sm text-gray-500">{conversationMessages.length} messages</p>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => deleteConversation(selectedConversation)}
-                        className="text-red-400 hover:text-red-600"
-                        title="Delete conversation"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
+                      {/* 3-Dot Menu */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowActionsMenu(showActionsMenu === 'chat-header' ? null : 'chat-header')}
+                          className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                        >
+                          <EllipsisVerticalIcon className="h-6 w-6 text-gray-500" />
+                        </button>
+                        
+                        {/* Dropdown Menu */}
+                        {showActionsMenu === 'chat-header' && (
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                            <div className="py-1">
+                              <button
+                                onClick={() => {
+                                  handleCallContact(selectedConversation);
+                                  setShowActionsMenu(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                <PhoneIcon className="h-4 w-4 mr-2" />
+                                Call
+                              </button>
+                              {!getContactByPhone(selectedConversation) && (
+                                <button
+                                  onClick={() => {
+                                    handleAddToContacts(selectedConversation);
+                                    setShowActionsMenu(null);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <UserPlusIcon className="h-4 w-4 mr-2" />
+                                  Add to Contacts
+                                </button>
+                              )}
+                              <button
+                                onClick={() => {
+                                  deleteConversation(selectedConversation);
+                                  setShowActionsMenu(null);
+                                }}
+                                className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                              >
+                                <TrashIcon className="h-4 w-4 mr-2" />
+                                Delete Conversation
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                       <button
                         onClick={() => setSelectedConversation(null)}
                         className="text-gray-400 hover:text-gray-600"
@@ -827,7 +874,7 @@ export default function SMSEnhanced() {
               <button onClick={() => setShowBulkModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
                 ×
               </button>
-            </div>
+            </div>  
             <div className="space-y-4">
               {/* Template Selection */}
               <div>

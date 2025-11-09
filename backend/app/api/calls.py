@@ -236,7 +236,10 @@ async def cleanup_stale_calls(
     count = 0
     for call in stale_calls:
         call.status = CallStatus.NO_ANSWER
-        call.ended_at = call.started_at + timedelta(seconds=30)  # Assume 30 second ring time
+        if call.started_at:
+            call.ended_at = call.started_at + timedelta(seconds=30)  # Assume 30 second ring time
+        else:
+            call.ended_at = datetime.utcnow()
         call.updated_at = datetime.utcnow()
         count += 1
     
