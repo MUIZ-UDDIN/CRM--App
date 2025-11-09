@@ -109,8 +109,26 @@ export default function MainLayout() {
     };
   }, [showQuickAdd]);
 
+  // Cleanup old call notifications on mount
+  const cleanupOldCallNotifications = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      await fetch(`${API_BASE_URL}/api/notifications/cleanup-old-calls`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      console.log('✅ Old call notifications cleaned up');
+    } catch (error) {
+      console.error('Error cleaning up old calls:', error);
+    }
+  };
+
   // Fetch notifications and user profile
   useEffect(() => {
+    cleanupOldCallNotifications();
     fetchNotifications();
     fetchUnreadCount();
     fetchUserProfile();
