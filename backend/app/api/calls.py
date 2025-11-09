@@ -212,7 +212,9 @@ async def cleanup_stale_calls(
     """Update old calls stuck in ringing/initiated status to no-answer"""
     import uuid
     from datetime import timedelta
+    from sqlalchemy import or_, and_
     
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
     if not company_id:
@@ -221,8 +223,12 @@ async def cleanup_stale_calls(
     # Find calls older than 5 minutes still in ringing/initiated status
     cutoff_time = datetime.utcnow() - timedelta(minutes=5)
     
+    # Include records with matching company_id OR NULL company_id for this user (backward compatibility)
     stale_calls = db.query(CallModel).filter(
-        CallModel.company_id == company_id,
+        or_(
+            CallModel.company_id == company_id,
+            and_(CallModel.company_id.is_(None), CallModel.user_id == user_id)
+        ),
         CallModel.status.in_([CallStatus.RINGING, CallStatus.INITIATED, CallStatus.QUEUED]),
         CallModel.started_at < cutoff_time
     ).all()

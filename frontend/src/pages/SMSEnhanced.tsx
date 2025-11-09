@@ -9,7 +9,10 @@ import {
   ClockIcon,
   ArrowPathIcon,
   XMarkIcon,
-  TrashIcon
+  TrashIcon,
+  EllipsisVerticalIcon,
+  PhoneIcon,
+  UserPlusIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -62,6 +65,7 @@ export default function SMSEnhanced() {
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [conversationMessages, setConversationMessages] = useState<SMSMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  const [showActionsMenu, setShowActionsMenu] = useState<string | null>(null);
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -266,6 +270,17 @@ export default function SMSEnhanced() {
     }));
   };
 
+  // Helper function to get contact name from phone number
+  const getContactName = (phone: string): string | null => {
+    const contact = contacts.find(c => c.phone === phone);
+    return contact ? `${contact.first_name} ${contact.last_name}`.trim() : null;
+  };
+
+  // Helper function to get contact by phone
+  const getContactByPhone = (phone: string): Contact | null => {
+    return contacts.find(c => c.phone === phone) || null;
+  };
+
   // Group messages by conversation (phone number)
   const getConversations = () => {
     const convMap = new Map<string, { phone: string; lastMessage: SMSMessage; unreadCount: number }>();
@@ -394,6 +409,42 @@ export default function SMSEnhanced() {
     }
   };
 
+  const handleCallContact = (phone: string) => {
+    // Navigate to calls page with pre-filled number
+    navigate('/calls', { state: { callTo: phone } });
+  };
+
+  const handleAddToContacts = async (phone: string) => {
+    const firstName = prompt('Enter first name:');
+    if (!firstName) return;
+    
+    const lastName = prompt('Enter last name:');
+    
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/contacts`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          last_name: lastName || '',
+          phone: phone
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Contact added successfully!');
+        fetchContacts(); // Refresh contacts list
+      } else {
+        toast.error('Failed to add contact');
+      }
+    } catch (error) {
+      toast.error('Failed to add contact');
+    }
+  };
+
   return (
     <div className="min-h-full">
       {/* Header */}
@@ -470,36 +521,105 @@ export default function SMSEnhanced() {
                 <h3 className="text-lg font-semibold text-gray-900">Conversations</h3>
               </div>
               <div className="divide-y divide-gray-200">
-                {getConversations().map((conv) => (
+                {getConversations().map((conv) => {
+                  const contactName = getContactName(conv.phone);
+                  const contact = getContactByPhone(conv.phone);
+                  
+                  return (
                   <div
                     key={conv.phone}
-                    onClick={() => handleConversationClick(conv.phone)}
-                    className={`p-4 cursor-pointer hover:bg-gray-50 transition-colors ${
+                    className={`p-4 hover:bg-gray-50 transition-colors relative ${
                       selectedConversation === conv.phone ? 'bg-primary-50 border-l-4 border-primary-500' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 truncate">
-                          {conv.phone}
-                        </p>
+                      <div 
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => handleConversationClick(conv.phone)}
+                      >
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {contactName || conv.phone}
+                          </p>
+                          {contactName && (
+                            <span className="text-xs text-gray-400">{conv.phone}</span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-500 truncate mt-1">
                           {conv.lastMessage.body}
                         </p>
                       </div>
-                      <div className="ml-2 flex flex-col items-end">
-                        <p className="text-xs text-gray-400">
-                          {new Date(conv.lastMessage.sent_at).toLocaleDateString()}
-                        </p>
-                        {conv.unreadCount > 0 && (
-                          <span className="mt-1 inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 rounded-full">
-                            {conv.unreadCount}
-                          </span>
-                        )}
+                      <div className="ml-2 flex items-center gap-2">
+                        <div className="flex flex-col items-end">
+                          <p className="text-xs text-gray-400">
+                            {new Date(conv.lastMessage.sent_at).toLocaleDateString()}
+                          </p>
+                          {conv.unreadCount > 0 && (
+                            <span className="mt-1 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                              {conv.unreadCount}
+                            </span>
+                          )}
+                        </div>
+                        {/* 3-Dot Menu */}
+                        <div className="relative">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowActionsMenu(showActionsMenu === conv.phone ? null : conv.phone);
+                            }}
+                            className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                          >
+                            <EllipsisVerticalIcon className="h-5 w-5 text-gray-500" />
+                          </button>
+                          
+                          {/* Dropdown Menu */}
+                          {showActionsMenu === conv.phone && (
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
+                              <div className="py-1">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCallContact(conv.phone);
+                                    setShowActionsMenu(null);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <PhoneIcon className="h-4 w-4 mr-2" />
+                                  Call
+                                </button>
+                                {!contact && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAddToContacts(conv.phone);
+                                      setShowActionsMenu(null);
+                                    }}
+                                    className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                  >
+                                    <UserPlusIcon className="h-4 w-4 mr-2" />
+                                    Add to Contacts
+                                  </button>
+                                )}
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteConversation(conv.phone);
+                                    setShowActionsMenu(null);
+                                  }}
+                                  className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                >
+                                  <TrashIcon className="h-4 w-4 mr-2" />
+                                  Delete Conversation
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
