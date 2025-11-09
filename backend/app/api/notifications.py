@@ -203,3 +203,42 @@ async def delete_all_notifications(
     db.commit()
     
     return {"message": "All notifications deleted"}
+
+
+@router.post("/cleanup-old-calls")
+async def cleanup_old_call_notifications(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Mark all old call notifications as ended (remove Answer/Decline buttons)"""
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    # Find all call notifications for this user
+    call_notifications = db.query(NotificationModel).filter(
+        and_(
+            NotificationModel.user_id == user_id,
+            NotificationModel.company_id == company_id,
+            NotificationModel.is_deleted == False,
+            NotificationModel.extra_data.isnot(None)
+        )
+    ).all()
+    
+    updated_count = 0
+    for notification in call_notifications:
+        if notification.extra_data and notification.extra_data.get('isCall'):
+            # Mark as not a call anymore
+            notification.extra_data['isCall'] = False
+            notification.extra_data['call_ended'] = True
+            notification.extra_data['cleanup_reason'] = 'old_call'
+            updated_count += 1
+    
+    db.commit()
+    
+    return {
+        "message": f"Cleaned up {updated_count} old call notifications",
+        "updated_count": updated_count
+    }

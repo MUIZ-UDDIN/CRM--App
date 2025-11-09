@@ -267,18 +267,23 @@ export default function SMSEnhanced() {
 
   // Group messages by conversation (phone number)
   const getConversations = () => {
-    const convMap = new Map<string, { phone: string; lastMessage: SMSMessage; unreadCount: number }>();
+    const convMap = new Map<string, { phone: string; lastMessage: SMSMessage; messageCount: number }>();
     
     messages.forEach(msg => {
       const otherPhone = msg.direction === 'inbound' ? msg.from_address : msg.to_address;
       const existing = convMap.get(otherPhone);
       
-      if (!existing || new Date(msg.sent_at) > new Date(existing.lastMessage.sent_at)) {
+      if (!existing) {
         convMap.set(otherPhone, {
           phone: otherPhone,
           lastMessage: msg,
-          unreadCount: msg.direction === 'inbound' && msg.status !== 'read' ? 1 : (existing?.unreadCount || 0)
+          messageCount: 1
         });
+      } else {
+        existing.messageCount++;
+        if (new Date(msg.sent_at) > new Date(existing.lastMessage.sent_at)) {
+          existing.lastMessage = msg;
+        }
       }
     });
     
@@ -412,33 +417,6 @@ export default function SMSEnhanced() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
-          <nav className="-mb-px flex space-x-8">
-            <button
-              onClick={() => setSelectedTab('inbox')}
-              className={`${
-                selectedTab === 'inbox'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Inbox
-            </button>
-            <button
-              onClick={() => setSelectedTab('sent')}
-              className={`${
-                selectedTab === 'sent'
-                  ? 'border-primary-500 text-primary-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
-            >
-              Sent
-            </button>
-          </nav>
-        </div>
-      </div>
 
       {/* Chat Interface */}
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
@@ -481,11 +459,9 @@ export default function SMSEnhanced() {
                         <p className="text-xs text-gray-400">
                           {new Date(conv.lastMessage.sent_at).toLocaleDateString()}
                         </p>
-                        {conv.unreadCount > 0 && (
-                          <span className="mt-1 inline-flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-primary-600 rounded-full">
-                            {conv.unreadCount}
-                          </span>
-                        )}
+                        <span className="mt-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium text-primary-700 bg-primary-100 rounded-full">
+                          {conv.messageCount}
+                        </span>
                       </div>
                     </div>
                   </div>
