@@ -267,7 +267,7 @@ export default function SMSEnhanced() {
 
   // Group messages by conversation (phone number)
   const getConversations = () => {
-    const convMap = new Map<string, { phone: string; lastMessage: SMSMessage; messageCount: number }>();
+    const convMap = new Map<string, { phone: string; lastMessage: SMSMessage; unreadCount: number }>();
     
     messages.forEach(msg => {
       const otherPhone = msg.direction === 'inbound' ? msg.from_address : msg.to_address;
@@ -277,10 +277,14 @@ export default function SMSEnhanced() {
         convMap.set(otherPhone, {
           phone: otherPhone,
           lastMessage: msg,
-          messageCount: 1
+          unreadCount: (msg.direction === 'inbound' && msg.status !== 'read') ? 1 : 0
         });
       } else {
-        existing.messageCount++;
+        // Count unread inbound messages
+        if (msg.direction === 'inbound' && msg.status !== 'read') {
+          existing.unreadCount++;
+        }
+        // Update last message if newer
         if (new Date(msg.sent_at) > new Date(existing.lastMessage.sent_at)) {
           existing.lastMessage = msg;
         }
@@ -459,9 +463,11 @@ export default function SMSEnhanced() {
                         <p className="text-xs text-gray-400">
                           {new Date(conv.lastMessage.sent_at).toLocaleDateString()}
                         </p>
-                        <span className="mt-1 inline-flex items-center justify-center px-2 py-0.5 text-xs font-medium text-primary-700 bg-primary-100 rounded-full">
-                          {conv.messageCount}
-                        </span>
+                        {conv.unreadCount > 0 && (
+                          <span className="mt-1 inline-flex items-center justify-center w-6 h-6 text-xs font-bold text-white bg-red-500 rounded-full">
+                            {conv.unreadCount}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

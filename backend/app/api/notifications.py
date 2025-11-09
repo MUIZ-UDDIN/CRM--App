@@ -231,9 +231,14 @@ async def cleanup_old_call_notifications(
     for notification in call_notifications:
         if notification.extra_data and notification.extra_data.get('isCall'):
             # Mark as not a call anymore
-            notification.extra_data['isCall'] = False
-            notification.extra_data['call_ended'] = True
-            notification.extra_data['cleanup_reason'] = 'old_call'
+            updated_data = dict(notification.extra_data)
+            updated_data['isCall'] = False
+            updated_data['call_ended'] = True
+            updated_data['cleanup_reason'] = 'old_call'
+            notification.extra_data = updated_data
+            # Flag the column as modified for SQLAlchemy
+            from sqlalchemy.orm.attributes import flag_modified
+            flag_modified(notification, 'extra_data')
             updated_count += 1
     
     db.commit()
