@@ -66,6 +66,9 @@ export default function SMSEnhanced() {
   const [conversationMessages, setConversationMessages] = useState<SMSMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [showActionsMenu, setShowActionsMenu] = useState<string | null>(null);
+  const [showCallModal, setShowCallModal] = useState(false);
+  const [callToNumber, setCallToNumber] = useState('');
+  const [callFromNumber, setCallFromNumber] = useState('');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -410,8 +413,44 @@ export default function SMSEnhanced() {
   };
 
   const handleCallContact = (phone: string) => {
-    // Navigate to calls page with pre-filled number
-    navigate('/calls', { state: { callTo: phone } });
+    // Open call modal instead of navigating
+    setCallToNumber(phone);
+    setCallFromNumber('');
+    setShowCallModal(true);
+  };
+
+  const initiateCall = async () => {
+    if (!callFromNumber) {
+      toast.error('Please select a number to call from');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: callFromNumber,
+          to: callToNumber
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Call initiated!');
+        setShowCallModal(false);
+        setCallToNumber('');
+        setCallFromNumber('');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to initiate call');
+      }
+    } catch (error) {
+      console.error('Error initiating call:', error);
+      toast.error('Failed to initiate call');
+    }
   };
 
   const handleAddToContacts = async (phone: string) => {
@@ -977,6 +1016,64 @@ export default function SMSEnhanced() {
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
                   Send to {bulkForm.contact_ids.length} Contacts
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Call Modal */}
+      {showCallModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">
+                Call {getContactName(callToNumber) || callToNumber}
+              </h3>
+              <button onClick={() => setShowCallModal(false)} className="text-gray-400 hover:text-gray-600">
+                ×
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Calling To:</label>
+                <input
+                  type="text"
+                  value={callToNumber}
+                  disabled
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Number *</label>
+                <select
+                  value={callFromNumber}
+                  onChange={(e) => setCallFromNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">Select a number...</option>
+                  {phoneNumbers.map((num) => (
+                    <option key={num.id} value={num.phone_number}>
+                      {num.phone_number} {num.friendly_name ? `(${num.friendly_name})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowCallModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={initiateCall}
+                  disabled={!callFromNumber}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <PhoneIcon className="h-4 w-4 inline mr-2" />
+                  Call Now
                 </button>
               </div>
             </div>
