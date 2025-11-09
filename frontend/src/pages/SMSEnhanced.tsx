@@ -363,10 +363,12 @@ export default function SMSEnhanced() {
 
       if (response.ok) {
         toast.success('Message deleted');
+        
+        // Remove message from conversation view immediately
+        setConversationMessages(prev => prev.filter(msg => msg.id !== messageId));
+        
+        // Refresh messages list in background
         fetchMessages();
-        if (selectedConversation) {
-          fetchConversationMessages(selectedConversation);
-        }
       }
     } catch (error) {
       toast.error('Failed to delete message');

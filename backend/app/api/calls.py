@@ -156,8 +156,8 @@ async def make_call(
             twiml="<Response><Say>Hello! This is a call from your CRM system.</Say></Response>",
             to=request.to,
             from_=from_number,
-            status_callback="https://sunstonecrm.com/api/calls/webhook",
-            status_callback_event=['initiated', 'ringing', 'answered', 'completed']
+            status_callback="https://sunstonecrm.com/api/webhooks/twilio/voice/status",
+            status_callback_event=['initiated', 'ringing', 'answered', 'completed', 'busy', 'failed', 'no-answer', 'canceled']
         )
         
         # Save to database
