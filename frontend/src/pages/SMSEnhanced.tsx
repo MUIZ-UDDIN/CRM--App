@@ -305,9 +305,23 @@ export default function SMSEnhanced() {
     setConversationMessages(filtered);
   };
 
-  const handleConversationClick = (phone: string) => {
+  const handleConversationClick = async (phone: string) => {
     setSelectedConversation(phone);
     fetchConversationMessages(phone);
+    
+    // Mark messages as read
+    try {
+      await fetch(`${API_BASE_URL}/api/sms/messages/mark-read?phone_number=${encodeURIComponent(phone)}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      // Refresh messages to update unread count
+      fetchMessages();
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
+    }
   };
 
   const sendQuickReply = async () => {

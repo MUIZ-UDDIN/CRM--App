@@ -14,12 +14,13 @@ interface Contact {
 
 interface Call {
   id: string;
-  from: string;
-  to: string;
+  from_address: string;
+  to_address: string;
   duration: number;
   status: string;
   direction: 'inbound' | 'outbound';
-  created_at: string;
+  started_at: string;
+  contact_id?: string;
 }
 
 export default function CallsNew() {
@@ -339,10 +340,10 @@ export default function CallsNew() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {call.from || 'Unknown'}
+                        {call.from_address || 'Unknown'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {call.to || 'Unknown'}
+                        {call.to_address || 'Unknown'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -359,7 +360,7 @@ export default function CallsNew() {
                         {call.duration > 0 ? formatDuration(call.duration) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {call.created_at ? new Date(call.created_at).toLocaleString() : 'Unknown'}
+                        {call.started_at ? new Date(call.started_at).toLocaleString() : 'Unknown'}
                       </td>
                     </tr>
                   ))}

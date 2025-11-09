@@ -264,6 +264,41 @@ async def delete_message(
         raise HTTPException(status_code=500, detail=f"Failed to delete message: {str(e)}")
 
 
+@router.post("/messages/mark-read")
+async def mark_messages_as_read(
+    phone_number: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Mark all inbound messages from a phone number as read"""
+    try:
+        from datetime import datetime
+        user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+        
+        # Find all unread inbound messages from this phone number
+        messages = db.query(SMSModel).filter(
+            and_(
+                SMSModel.user_id == user_id,
+                SMSModel.from_address == phone_number,
+                SMSModel.direction == SMSDirection.INBOUND,
+                SMSModel.read_at.is_(None)
+            )
+        ).all()
+        
+        # Mark them as read
+        for msg in messages:
+            msg.read_at = datetime.utcnow()
+            msg.status = SMSStatus.READ
+        
+        db.commit()
+        
+        return {"success": True, "marked_count": len(messages)}
+    
+    except Exception as e:
+        logger.error(f"Error marking messages as read: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to mark messages as read: {str(e)}")
+
+
 @router.post("/send")
 async def send_sms(
     request: SMSSendRequest,
