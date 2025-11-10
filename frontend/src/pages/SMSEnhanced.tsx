@@ -345,6 +345,22 @@ export default function SMSEnhanced() {
   const sendQuickReply = async () => {
     if (!newMessage.trim() || !selectedConversation) return;
     
+    const messageText = newMessage;
+    setNewMessage(''); // Clear input immediately
+    
+    // Add optimistic message to UI
+    const optimisticMessage: SMSMessage = {
+      id: `temp-${Date.now()}`,
+      body: messageText,
+      direction: 'outbound',
+      status: 'sent',
+      sent_at: new Date().toISOString(),
+      from_number: '',
+      to_number: selectedConversation,
+      read_at: null
+    };
+    setConversationMessages(prev => [...prev, optimisticMessage]);
+    
     try {
       const response = await fetch(`${API_BASE_URL}/api/sms/send`, {
         method: 'POST',
@@ -354,18 +370,26 @@ export default function SMSEnhanced() {
         },
         body: JSON.stringify({
           to: selectedConversation,
-          body: newMessage,
+          body: messageText,
           use_rotation: true
         })
       });
 
       if (response.ok) {
-        setNewMessage('');
+        // Refresh to get the real message from server
         fetchMessages();
         fetchConversationMessages(selectedConversation);
         toast.success('Message sent!');
+      } else {
+        // Remove optimistic message on error
+        setConversationMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+        setNewMessage(messageText); // Restore message
+        toast.error('Failed to send message');
       }
     } catch (error) {
+      // Remove optimistic message on error
+      setConversationMessages(prev => prev.filter(m => m.id !== optimisticMessage.id));
+      setNewMessage(messageText); // Restore message
       toast.error('Failed to send message');
     }
   };
@@ -738,29 +762,70 @@ export default function SMSEnhanced() {
 
                   {/* Messages */}
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                    {conversationMessages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'}`}
-                      >
-                        <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${
-                          msg.direction === 'outbound' ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-900'
-                        } rounded-lg px-4 py-2 shadow`}>
-                          <p className="text-sm">{msg.body}</p>
-                          <div className="flex items-center justify-between mt-1 space-x-2">
-                            <p className={`text-xs ${msg.direction === 'outbound' ? 'text-primary-100' : 'text-gray-500'}`}>
-                              {new Date(msg.sent_at).toLocaleTimeString()}
-                            </p>
-                            <button
-                              onClick={() => deleteMessage(msg.id)}
-                              className={`text-xs ${msg.direction === 'outbound' ? 'text-primary-100 hover:text-white' : 'text-gray-500 hover:text-red-600'}`}
-                            >
-                              <TrashIcon className="w-3 h-3" />
-                            </button>
+                    {(() => {
+                      // Group messages by date
+                      const groupedMessages: { [key: string]: SMSMessage[] } = {};
+                      conversationMessages.forEach(msg => {
+                        const date = new Date(msg.sent_at);
+                        const dateKey = date.toDateString();
+                        if (!groupedMessages[dateKey]) {
+                          groupedMessages[dateKey] = [];
+                        }
+                        groupedMessages[dateKey].push(msg);
+                      });
+
+                      // Helper function to format date label
+                      const getDateLabel = (dateString: string) => {
+                        const date = new Date(dateString);
+                        const today = new Date();
+                        const yesterday = new Date(today);
+                        yesterday.setDate(yesterday.getDate() - 1);
+
+                        if (date.toDateString() === today.toDateString()) {
+                          return 'Today';
+                        } else if (date.toDateString() === yesterday.toDateString()) {
+                          return 'Yesterday';
+                        } else {
+                          return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined });
+                        }
+                      };
+
+                      return Object.keys(groupedMessages).sort((a, b) => new Date(a).getTime() - new Date(b).getTime()).map(dateKey => (
+                        <div key={dateKey}>
+                          {/* Date Separator */}
+                          <div className="flex items-center justify-center my-4">
+                            <div className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">
+                              {getDateLabel(dateKey)}
+                            </div>
                           </div>
+                          
+                          {/* Messages for this date */}
+                          {groupedMessages[dateKey].map((msg) => (
+                            <div
+                              key={msg.id}
+                              className={`flex ${msg.direction === 'outbound' ? 'justify-end' : 'justify-start'} mb-2`}
+                            >
+                              <div className={`max-w-xs lg:max-w-md xl:max-w-lg ${
+                                msg.direction === 'outbound' ? 'bg-primary-500 text-white' : 'bg-gray-200 text-gray-900'
+                              } rounded-lg px-4 py-2 shadow`}>
+                                <p className="text-sm">{msg.body}</p>
+                                <div className="flex items-center justify-between mt-1 space-x-2">
+                                  <p className={`text-xs ${msg.direction === 'outbound' ? 'text-primary-100' : 'text-gray-500'}`}>
+                                    {new Date(msg.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </p>
+                                  <button
+                                    onClick={() => deleteMessage(msg.id)}
+                                    className={`text-xs ${msg.direction === 'outbound' ? 'text-primary-100 hover:text-white' : 'text-gray-500 hover:text-red-600'}`}
+                                  >
+                                    <TrashIcon className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
 
                   {/* Quick Reply Input */}
