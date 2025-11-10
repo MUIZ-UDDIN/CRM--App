@@ -3,6 +3,8 @@ import { PhoneIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
 import SearchableSelect from '../components/common/SearchableSelect';
+import { CallModal } from '../components/CallModal';
+import { twilioVoiceService } from '../services/twilioVoiceService';
 
 interface Contact {
   id: string;
@@ -41,11 +43,44 @@ export default function CallsNew() {
   const [twilioNumbers, setTwilioNumbers] = useState<any[]>([]);
   const [showRedialModal, setShowRedialModal] = useState(false);
   const [redialNumber, setRedialNumber] = useState('');
+  
+  // Call UI state
+  const [callState, setCallState] = useState<'idle' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
+  const [currentCallNumber, setCurrentCallNumber] = useState('');
+  const [currentCallName, setCurrentCallName] = useState('');
+  const [isIncomingCall, setIsIncomingCall] = useState(false);
 
   useEffect(() => {
     fetchCalls();
     fetchContacts();
     fetchTwilioNumbers();
+    
+    // Initialize Twilio Device
+    twilioVoiceService.initialize().catch(err => {
+      console.error('Failed to initialize Twilio Device:', err);
+    });
+    
+    // Listen for incoming calls
+    twilioVoiceService.onIncomingCall((call) => {
+      const fromNumber = call.parameters.From;
+      const contact = contacts.find(c => c.phone === fromNumber || c.mobile === fromNumber);
+      
+      setCurrentCallNumber(fromNumber);
+      setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
+      setIsIncomingCall(true);
+      setCallState('ringing');
+      setShowCallModal(true);
+    });
+    
+    // Listen for call ended
+    twilioVoiceService.onCallEnded(() => {
+      setCallState('ended');
+      setTimeout(() => {
+        setShowCallModal(false);
+        setCallState('idle');
+        fetchCalls(); // Refresh call list
+      }, 2000);
+    });
     
     // WebSocket for real-time call updates
     const WS_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
@@ -237,6 +272,18 @@ export default function CallsNew() {
     }
 
     try {
+      // Find contact name
+      const contact = contacts.find(c => c.phone === redialNumber || c.mobile === redialNumber);
+      
+      // Show call UI
+      setCurrentCallNumber(redialNumber);
+      setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
+      setIsIncomingCall(false);
+      setCallState('ringing');
+      setShowCallModal(true);
+      setShowRedialModal(false);
+      
+      // Make call via API (which will trigger Twilio)
       const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
         method: 'POST',
         headers: {
@@ -244,25 +291,56 @@ export default function CallsNew() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: callForm.from,
+          from_number: callForm.from,
           to: redialNumber
         })
       });
 
       if (response.ok) {
-        toast.success('Call initiated!');
-        setShowRedialModal(false);
-        setRedialNumber('');
-        setCallForm({ from: '', to: '' });
-        fetchCalls();
+        setCallState('connecting');
+        // Wait for Twilio Device to handle the call
+        setTimeout(() => {
+          if (twilioVoiceService.isCallActive()) {
+            setCallState('connected');
+          }
+        }, 2000);
       } else {
         const error = await response.json();
         toast.error(error.detail || 'Failed to initiate call');
+        setShowCallModal(false);
+        setCallState('idle');
       }
     } catch (error) {
       console.error('Error initiating call:', error);
       toast.error('Failed to initiate call');
+      setShowCallModal(false);
+      setCallState('idle');
     }
+  };
+  
+  const handleAnswerCall = () => {
+    twilioVoiceService.answerCall();
+    setCallState('connected');
+  };
+  
+  const handleRejectCall = () => {
+    twilioVoiceService.rejectCall();
+    setShowCallModal(false);
+    setCallState('idle');
+  };
+  
+  const handleHangupCall = () => {
+    twilioVoiceService.hangupCall();
+    setCallState('ended');
+    setTimeout(() => {
+      setShowCallModal(false);
+      setCallState('idle');
+      fetchCalls();
+    }, 2000);
+  };
+  
+  const handleMuteCall = (muted: boolean) => {
+    twilioVoiceService.muteCall(muted);
   };
 
   const cleanupStaleCalls = async () => {
@@ -598,6 +676,19 @@ export default function CallsNew() {
           </div>
         </div>
       )}
+      
+      {/* Call Modal */}
+      <CallModal
+        isOpen={showCallModal}
+        callState={callState}
+        contactName={currentCallName}
+        contactNumber={currentCallNumber}
+        isIncoming={isIncomingCall}
+        onAnswer={handleAnswerCall}
+        onReject={handleRejectCall}
+        onHangup={handleHangupCall}
+        onMute={handleMuteCall}
+      />
     </div>
   );
 }

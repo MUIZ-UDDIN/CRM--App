@@ -276,6 +276,34 @@ async def handle_sms_status(
         return Response(content="ERROR", media_type="text/plain")
 
 
+@router.post("/voice/outgoing", response_class=Response)
+async def handle_outgoing_call(
+    request: Request,
+    to: str,
+    from_: str = None,
+    user_id: str = None
+):
+    """
+    Webhook for outgoing voice calls - connects directly without automated message
+    """
+    from twilio.twiml.voice_response import VoiceResponse, Dial
+    
+    resp = VoiceResponse()
+    
+    # Simply dial the destination number - no automated message
+    dial = Dial(
+        caller_id=from_ if from_ else None,
+        action="https://sunstonecrm.com/api/webhooks/twilio/voice/status",
+        method="POST"
+    )
+    dial.number(to)
+    resp.append(dial)
+    
+    logger.info(f"📞 Outgoing call TwiML generated: {to} from {from_}")
+    
+    return Response(content=str(resp), media_type="application/xml")
+
+
 @router.post("/voice/incoming", response_class=Response)
 async def handle_incoming_call(
     request: Request,

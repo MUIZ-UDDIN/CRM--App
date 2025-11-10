@@ -16,6 +16,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
+import { CallModal } from '../components/CallModal';
+import { twilioVoiceService } from '../services/twilioVoiceService';
 
 interface Contact {
   id: string;
@@ -69,6 +71,12 @@ export default function SMSEnhanced() {
   const [showCallModal, setShowCallModal] = useState(false);
   const [callToNumber, setCallToNumber] = useState('');
   const [callFromNumber, setCallFromNumber] = useState('');
+  
+  // Call UI state
+  const [callState, setCallState] = useState<'idle' | 'ringing' | 'connecting' | 'connected' | 'ended'>('idle');
+  const [currentCallNumber, setCurrentCallNumber] = useState('');
+  const [currentCallName, setCurrentCallName] = useState('');
+  const [showCallUI, setShowCallUI] = useState(false);
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -508,6 +516,17 @@ export default function SMSEnhanced() {
     }
 
     try {
+      // Find contact name
+      const contact = contacts.find(c => c.phone === callToNumber || c.mobile === callToNumber);
+      
+      // Show call UI
+      setCurrentCallNumber(callToNumber);
+      setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
+      setCallState('ringing');
+      setShowCallUI(true);
+      setShowCallModal(false);
+      
+      // Make call via API
       const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
         method: 'POST',
         headers: {
@@ -515,24 +534,43 @@ export default function SMSEnhanced() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          from: callFromNumber,
+          from_number: callFromNumber,
           to: callToNumber
         })
       });
 
       if (response.ok) {
-        toast.success('Call initiated!');
-        setShowCallModal(false);
-        setCallToNumber('');
-        setCallFromNumber('');
+        setCallState('connecting');
+        setTimeout(() => {
+          if (twilioVoiceService.isCallActive()) {
+            setCallState('connected');
+          }
+        }, 2000);
       } else {
         const error = await response.json();
         toast.error(error.detail || 'Failed to initiate call');
+        setShowCallUI(false);
+        setCallState('idle');
       }
     } catch (error) {
       console.error('Error initiating call:', error);
       toast.error('Failed to initiate call');
+      setShowCallUI(false);
+      setCallState('idle');
     }
+  };
+  
+  const handleHangupCall = () => {
+    twilioVoiceService.hangupCall();
+    setCallState('ended');
+    setTimeout(() => {
+      setShowCallUI(false);
+      setCallState('idle');
+    }, 2000);
+  };
+  
+  const handleMuteCall = (muted: boolean) => {
+    twilioVoiceService.muteCall(muted);
   };
 
   const handleAddToContacts = async (phone: string) => {
@@ -1203,6 +1241,17 @@ export default function SMSEnhanced() {
           </div>
         </div>
       )}
+      
+      {/* Call Modal */}
+      <CallModal
+        isOpen={showCallUI}
+        callState={callState}
+        contactName={currentCallName}
+        contactNumber={currentCallNumber}
+        isIncoming={false}
+        onHangup={handleHangupCall}
+        onMute={handleMuteCall}
+      />
 
     </div>
   );

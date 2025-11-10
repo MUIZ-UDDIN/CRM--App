@@ -150,10 +150,15 @@ async def make_call(
                 )
             from_number = phone_number.phone_number
         
-        # Make call via Twilio with inline TwiML
-        # According to Twilio docs, we can pass TwiML directly as a string
+        # Make call via Twilio - connect directly without automated message
+        # The call will be handled by the browser Twilio Device SDK
+        user_id = current_user["id"]
+        
+        # Create TwiML URL that will handle the outgoing call
+        twiml_url = f"https://sunstonecrm.com/api/webhooks/twilio/voice/outgoing?to={request.to}&from={from_number}&user_id={user_id}"
+        
         call = client.calls.create(
-            twiml="<Response><Say>Hello! This is a call from your CRM system.</Say></Response>",
+            url=twiml_url,
             to=request.to,
             from_=from_number,
             status_callback="https://sunstonecrm.com/api/webhooks/twilio/voice/status",
