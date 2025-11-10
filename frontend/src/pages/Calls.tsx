@@ -404,20 +404,20 @@ export default function CallsNew() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {calls.map((call) => {
-                    // Determine which number to redial
-                    const redialTo = call.direction === 'outbound' ? call.to_address : call.from_address;
+                    // Determine which number to redial (handle both uppercase and lowercase)
+                    const redialTo = call.direction?.toUpperCase() === 'OUTBOUND' ? call.to_address : call.from_address;
                     
                     return (
                     <tr key={call.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
                           <PhoneIcon className={`h-5 w-5 mr-2 ${
-                            call.direction === 'outbound' ? 'text-blue-600' : 'text-green-600'
+                            call.direction?.toUpperCase() === 'OUTBOUND' ? 'text-blue-600' : 'text-green-600'
                           }`} />
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            call.direction === 'outbound' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                            call.direction?.toUpperCase() === 'OUTBOUND' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
                           }`}>
-                            {call.direction === 'outbound' ? 'Outgoing' : 'Incoming'}
+                            {call.direction?.toUpperCase() === 'OUTBOUND' ? 'Outgoing' : 'Incoming'}
                           </span>
                         </div>
                       </td>
@@ -429,13 +429,13 @@ export default function CallsNew() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          call.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                          call.status === 'no-answer' ? 'bg-yellow-100 text-yellow-800' :
-                          call.status === 'busy' ? 'bg-red-100 text-red-800' :
-                          call.status === 'failed' ? 'bg-red-100 text-red-800' :
+                          call.status?.toUpperCase() === 'COMPLETED' ? 'bg-green-100 text-green-800' : 
+                          call.status?.toUpperCase() === 'NO_ANSWER' ? 'bg-yellow-100 text-yellow-800' :
+                          call.status?.toUpperCase() === 'BUSY' ? 'bg-red-100 text-red-800' :
+                          call.status?.toUpperCase() === 'FAILED' ? 'bg-red-100 text-red-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {call.status}
+                          {call.status?.replace('_', '-').toLowerCase()}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
