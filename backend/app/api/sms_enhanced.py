@@ -490,6 +490,19 @@ async def send_sms(
         
         db.commit()
         
+        # Send WebSocket notification for sent SMS
+        try:
+            from app.api.websocket import manager
+            await manager.send_notification(str(user_id), {
+                "type": "sms_sent",
+                "message_sid": message.sid,
+                "from": from_number,
+                "to": to_number,
+                "body": message_body
+            })
+        except Exception as ws_error:
+            logger.warning(f"WebSocket notification failed: {ws_error}")
+        
         return {
             "success": True,
             "message_sid": message.sid,

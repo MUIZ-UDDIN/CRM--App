@@ -94,7 +94,58 @@ export default function SMSEnhanced() {
     fetchContacts();
     fetchTemplates();
     fetchPhoneNumbers();
-  }, [selectedTab]);
+
+    // Set up WebSocket for real-time SMS updates
+    const WS_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
+    let ws: WebSocket | null = null;
+
+    const connectWebSocket = () => {
+      try {
+        ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
+        
+        ws.onopen = () => {
+          console.log('SMS WebSocket connected');
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === 'sms_received' || data.type === 'sms_sent') {
+              // Refresh messages to get the new one
+              fetchMessages();
+            }
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
+
+        ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+        };
+
+        ws.onclose = () => {
+          console.log('WebSocket disconnected, reconnecting...');
+          setTimeout(connectWebSocket, 3000);
+        };
+      } catch (error) {
+        console.error('Failed to connect WebSocket:', error);
+      }
+    };
+
+    connectWebSocket();
+
+    // Polling fallback - check for new messages every 10 seconds
+    const pollInterval = setInterval(() => {
+      fetchMessages();
+    }, 10000);
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+      clearInterval(pollInterval);
+    };
+  }, [selectedTab, token]);
 
   const fetchMessages = async () => {
     try {
@@ -322,6 +373,13 @@ export default function SMSEnhanced() {
     
     setConversationMessages(filtered);
   };
+
+  // Auto-update conversation when messages change
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchConversationMessages(selectedConversation);
+    }
+  }, [messages, selectedConversation]);
 
   const handleConversationClick = async (phone: string) => {
     setSelectedConversation(phone);
