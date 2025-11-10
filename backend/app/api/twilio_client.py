@@ -179,7 +179,7 @@ async def hangup_call(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/voice", response_class=Response)
+@router.post("/voice", response_class=Response, dependencies=[])
 async def handle_outgoing_voice(
     request: Request,
     db: Session = Depends(get_db)
@@ -187,6 +187,7 @@ async def handle_outgoing_voice(
     """
     TwiML handler for outgoing calls from Twilio Device SDK
     This is called when a user initiates a call from the browser
+    PUBLIC ENDPOINT - No auth required (called by Twilio)
     """
     try:
         form_data = await request.form()
@@ -195,8 +196,43 @@ async def handle_outgoing_voice(
         to_number = form_data.get("To")
         from_number = form_data.get("From") or form_data.get("from_number")
         caller_id = form_data.get("CallerId") or from_number
+        call_sid = form_data.get("CallSid")
+        account_sid = form_data.get("AccountSid")
         
-        logger.info(f"📞 Outgoing call from Device SDK: To={to_number}, From={from_number}, CallerId={caller_id}")
+        logger.info(f"📞 Outgoing call from Device SDK: CallSid={call_sid}, To={to_number}, From={from_number}, CallerId={caller_id}")
+        
+        # Create call record in database
+        if call_sid and to_number:
+            try:
+                # Get user_id from the caller identity (format: user_{user_id})
+                caller = form_data.get("Caller")  # This is the identity from the token
+                user_id = None
+                if caller and caller.startswith("user_"):
+                    user_id = caller.replace("user_", "")
+                
+                # Get company from account_sid
+                twilio_settings = db.query(TwilioSettings).filter(
+                    TwilioSettings.account_sid == account_sid
+                ).first()
+                
+                if twilio_settings and user_id:
+                    call_record = CallModel(
+                        id=uuid.uuid4(),
+                        user_id=uuid.UUID(user_id),
+                        company_id=twilio_settings.company_id,
+                        twilio_sid=call_sid,
+                        from_address=from_number or caller_id,
+                        to_address=to_number,
+                        direction=CallDirection.OUTBOUND,
+                        status=CallStatus.QUEUED,
+                        started_at=datetime.utcnow()
+                    )
+                    db.add(call_record)
+                    db.commit()
+                    logger.info(f"✅ Call record created: {call_sid}")
+            except Exception as e:
+                logger.error(f"⚠️ Failed to create call record: {e}")
+                # Continue anyway - don't block the call
         
         # Create TwiML response
         resp = VoiceResponse()
