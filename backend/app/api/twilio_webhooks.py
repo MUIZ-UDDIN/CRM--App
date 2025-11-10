@@ -428,7 +428,10 @@ async def handle_incoming_call(
         
         # Dial directly to the browser client using their identity
         # This allows the Twilio Device to receive the call via the 'incoming' event
-        dial = resp.dial()
+        dial = resp.dial(
+            action="https://sunstonecrm.com/api/webhooks/twilio/voice/status",
+            method="POST"
+        )
         dial.client(f"user_{user_id}")
         
         return Response(content=str(resp), media_type="application/xml")
@@ -470,7 +473,17 @@ async def handle_call_status(
         call_duration = form_data.get("CallDuration")
         recording_url = form_data.get("RecordingUrl")
         
-        logger.info(f"📊 Call Status Update: {call_sid} -> {call_status}")
+        # For incoming calls with Dial, check DialCallStatus
+        dial_call_status = form_data.get("DialCallStatus")
+        dial_call_duration = form_data.get("DialCallDuration")
+        
+        # Use dial status if available (for incoming calls)
+        if dial_call_status:
+            call_status = dial_call_status
+        if dial_call_duration:
+            call_duration = dial_call_duration
+        
+        logger.info(f"📊 Call Status Update: {call_sid} -> {call_status} (duration: {call_duration})")
         
         # Update call record in database
         call_record = db.query(Call).filter(
@@ -494,6 +507,7 @@ async def handle_call_status(
             
             if call_duration:
                 call_record.duration = int(call_duration)
+                logger.info(f"✅ Duration set to: {call_duration} seconds")
             
             if recording_url:
                 call_record.recording_url = recording_url
@@ -504,7 +518,7 @@ async def handle_call_status(
             call_record.updated_at = datetime.utcnow()
             
             db.commit()
-            logger.info(f"✅ Call status updated: {call_status}")
+            logger.info(f"✅ Call record updated: status={call_status}, duration={call_record.duration}, ended_at={call_record.ended_at}")
             
             # Send WebSocket update
             if call_record.user_id:
@@ -514,6 +528,8 @@ async def handle_call_status(
                     "status": call_status,
                     "duration": call_duration
                 })
+        else:
+            logger.warning(f"⚠️ Call record not found for SID: {call_sid}")
         
         return Response(content="OK", media_type="text/plain")
         
