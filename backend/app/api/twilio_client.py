@@ -19,6 +19,7 @@ from app.core.database import get_db
 from app.core.config import settings
 from app.models.twilio_settings import TwilioSettings
 from app.services.twilio_api_key_service import create_or_get_api_keys
+from app.services.twiml_app_service import create_or_get_twiml_app
 from app.models.calls import Call as CallModel, CallDirection, CallStatus
 
 router = APIRouter(tags=["Twilio Client"])
@@ -72,19 +73,23 @@ async def get_access_token(
         ttl=3600  # 1 hour
     )
     
-    # Create Voice grant with outgoing call handler
-    # Use TwiML App SID if configured, otherwise Device SDK will need manual configuration
-    twiml_app_sid = settings.TWIML_APP_SID or os.getenv("TWIML_APP_SID")
+    # Create or get TwiML App for this company (auto-creates if doesn't exist)
+    try:
+        twiml_app_sid = create_or_get_twiml_app(twilio_settings, db)
+    except Exception as e:
+        logger.error(f"Failed to create TwiML App: {e}")
+        # Fallback to global TwiML App if configured
+        twiml_app_sid = settings.TWIML_APP_SID or os.getenv("TWIML_APP_SID")
     
     voice_grant = VoiceGrant(
         incoming_allow=True,  # Allow incoming calls
-        outgoing_application_sid=twiml_app_sid,  # TwiML App for outgoing calls
+        outgoing_application_sid=twiml_app_sid,  # Company-specific TwiML App
         push_credential_sid=None  # Not using push notifications
     )
     
     token.add_grant(voice_grant)
     
-    logger.info(f"🎫 Token generated for {identity} with TwiML App: {twiml_app_sid or 'Not configured'}")
+    logger.info(f"🎫 Token generated for {identity} with TwiML App: {twiml_app_sid}")
     
     return TokenResponse(
         token=token.to_jwt(),

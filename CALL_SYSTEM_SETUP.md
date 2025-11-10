@@ -3,6 +3,12 @@
 ## Overview
 The call system has been completely overhauled to use Twilio Device SDK for browser-to-phone calls instead of API-based calls. This fixes all the issues with voicemail, call UI, and status updates.
 
+## 🏢 Multi-Tenant Isolation
+**IMPORTANT:** Each company gets their own TwiML App automatically! This ensures complete isolation:
+- Company A's calls use their own Twilio account and TwiML App
+- Company B's calls use their own Twilio account and TwiML App
+- No cross-company data leakage or call interference
+
 ## Issues Fixed
 
 ### 1. ❌ Calls Going to Voicemail
@@ -23,31 +29,16 @@ The call system has been completely overhauled to use Twilio Device SDK for brow
 
 ## Setup Steps
 
-### Step 1: Create TwiML App
+### Step 1: Add Database Column
 
-Run this command on the server:
-
-```bash
-cd /var/www/crm-app/backend
-python3 setup_twiml_app.py
-```
-
-This will output a `TWIML_APP_SID`. Copy it!
-
-### Step 2: Add to Environment Variables
-
-Edit the `.env` file:
+Run this SQL migration:
 
 ```bash
-nano /var/www/crm-app/backend/.env
+cd /var/www/crm-app
+psql -U postgres -d sales_crm -f add_twiml_app_column.sql
 ```
 
-Add this line (replace with your actual SID):
-```
-TWIML_APP_SID=APxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-```
-
-### Step 3: Deploy Backend
+### Step 2: Deploy Backend (TwiML Apps Auto-Created!)
 
 ```bash
 cd /var/www/crm-app/backend
@@ -56,7 +47,15 @@ pm2 restart crm-backend
 pm2 logs crm-backend --lines 50
 ```
 
-### Step 4: Deploy Frontend
+**What happens:** When a user makes their first call, the system will:
+1. Check if company has a TwiML App
+2. If not, auto-create one using their Twilio credentials
+3. Save the TwiML App SID to database
+4. Use it for all future calls
+
+**No manual setup needed!** Each company gets isolated calling automatically.
+
+### Step 3: Deploy Frontend
 
 ```bash
 cd /var/www/crm-app/frontend

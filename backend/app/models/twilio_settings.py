@@ -23,6 +23,9 @@ class TwilioSettings(BaseModel):
     api_key_sid = Column(String(255), nullable=True)  # Auto-created for browser calling
     api_key_secret = Column(String(255), nullable=True)  # Auto-created for browser calling
     
+    # TwiML App for Device SDK (per company)
+    twiml_app_sid = Column(String(255), nullable=True)  # TwiML App SID for this company's calls
+    
     # Twilio Phone Numbers
     phone_number = Column(String(20), nullable=True)  # Primary phone number for calls/SMS
     
