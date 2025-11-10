@@ -355,8 +355,8 @@ export default function SMSEnhanced() {
       direction: 'outbound',
       status: 'sent',
       sent_at: new Date().toISOString(),
-      from_number: '',
-      to_number: selectedConversation,
+      from_address: '',
+      to_address: selectedConversation,
       read_at: null
     };
     setConversationMessages(prev => [...prev, optimisticMessage]);
