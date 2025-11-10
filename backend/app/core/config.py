@@ -58,6 +58,7 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: Optional[str] = None
     TWILIO_ACCOUNT_SID: Optional[str] = None
     TWILIO_AUTH_TOKEN: Optional[str] = None
+    TWIML_APP_SID: Optional[str] = None  # TwiML App SID for Device SDK
     
     # Logging
     LOG_LEVEL: str = "INFO"

@@ -10,11 +10,13 @@ from twilio.jwt.access_token.grants import VoiceGrant
 from twilio.twiml.voice_response import VoiceResponse, Dial
 from pydantic import BaseModel
 import uuid
+import os
 from datetime import datetime
 from loguru import logger
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
+from app.core.config import settings
 from app.models.twilio_settings import TwilioSettings
 from app.services.twilio_api_key_service import create_or_get_api_keys
 from app.models.calls import Call as CallModel, CallDirection, CallStatus
@@ -71,14 +73,18 @@ async def get_access_token(
     )
     
     # Create Voice grant with outgoing call handler
-    # The outgoing calls will use the /voice endpoint as TwiML handler
+    # Use TwiML App SID if configured, otherwise Device SDK will need manual configuration
+    twiml_app_sid = settings.TWIML_APP_SID or os.getenv("TWIML_APP_SID")
+    
     voice_grant = VoiceGrant(
         incoming_allow=True,  # Allow incoming calls
-        outgoing_application_sid=None,  # Not using TwiML app
+        outgoing_application_sid=twiml_app_sid,  # TwiML App for outgoing calls
         push_credential_sid=None  # Not using push notifications
     )
     
     token.add_grant(voice_grant)
+    
+    logger.info(f"🎫 Token generated for {identity} with TwiML App: {twiml_app_sid or 'Not configured'}")
     
     return TokenResponse(
         token=token.to_jwt(),
