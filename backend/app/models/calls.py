@@ -12,21 +12,21 @@ import enum
 
 class CallDirection(str, enum.Enum):
     """Call direction enum"""
-    INBOUND = "inbound"
-    OUTBOUND = "outbound"
+    INBOUND = "INBOUND"
+    OUTBOUND = "OUTBOUND"
 
 
 class CallStatus(str, enum.Enum):
-    """Call status enum"""
-    QUEUED = "queued"
-    INITIATED = "initiated"
-    RINGING = "ringing"
-    IN_PROGRESS = "in-progress"
-    COMPLETED = "completed"
-    FAILED = "failed"
-    BUSY = "busy"
-    NO_ANSWER = "no-answer"
-    CANCELED = "canceled"
+    """Call status enum - UPPERCASE to match database"""
+    QUEUED = "QUEUED"
+    INITIATED = "INITIATED"
+    RINGING = "RINGING"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    BUSY = "BUSY"
+    NO_ANSWER = "NO_ANSWER"
+    CANCELED = "CANCELED"
 
 
 class Call(BaseModel):

@@ -221,16 +221,16 @@ async def cleanup_stale_calls(
         # Find calls older than 5 minutes still in ringing/initiated status
         cutoff_time = datetime.utcnow() - timedelta(minutes=5)
         
-        # Use raw SQL to avoid enum issues
+        # Use raw SQL to avoid enum issues - UPPERCASE to match database enum
         if company_id:
             result = db.execute(
                 text("""
                     UPDATE calls 
-                    SET status = 'no-answer',
+                    SET status = 'NO_ANSWER',
                         ended_at = COALESCE(started_at + INTERVAL '30 seconds', NOW()),
                         updated_at = NOW()
                     WHERE (company_id = :company_id OR (company_id IS NULL AND user_id = :user_id))
-                    AND status IN ('ringing', 'initiated', 'queued')
+                    AND status IN ('RINGING', 'INITIATED', 'QUEUED')
                     AND (started_at < :cutoff_time OR started_at IS NULL)
                     RETURNING id
                 """),
@@ -240,11 +240,11 @@ async def cleanup_stale_calls(
             result = db.execute(
                 text("""
                     UPDATE calls 
-                    SET status = 'no-answer',
+                    SET status = 'NO_ANSWER',
                         ended_at = COALESCE(started_at + INTERVAL '30 seconds', NOW()),
                         updated_at = NOW()
                     WHERE user_id = :user_id
-                    AND status IN ('ringing', 'initiated', 'queued')
+                    AND status IN ('RINGING', 'INITIATED', 'QUEUED')
                     AND (started_at < :cutoff_time OR started_at IS NULL)
                     RETURNING id
                 """),

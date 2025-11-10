@@ -6,25 +6,25 @@ SELECT enumlabel FROM pg_enum
 WHERE enumtypid = (SELECT oid FROM pg_type WHERE typname = 'callstatus') 
 ORDER BY enumsortorder;
 
--- Step 2: Add 'queued' status if it doesn't exist
--- Note: This might fail if 'queued' already exists, that's OK
+-- Step 2: Add 'QUEUED' status if it doesn't exist (UPPERCASE to match existing enum)
+-- Note: This might fail if 'QUEUED' already exists, that's OK
 DO $$
 BEGIN
     BEGIN
-        ALTER TYPE callstatus ADD VALUE 'queued' BEFORE 'initiated';
-        RAISE NOTICE 'Added queued status';
+        ALTER TYPE callstatus ADD VALUE 'QUEUED' BEFORE 'INITIATED';
+        RAISE NOTICE 'Added QUEUED status';
     EXCEPTION
         WHEN duplicate_object THEN
-            RAISE NOTICE 'queued status already exists';
+            RAISE NOTICE 'QUEUED status already exists';
     END;
 END$$;
 
--- Step 3: Fix all old calls stuck in ringing/initiated
+-- Step 3: Fix all old calls stuck in RINGING/INITIATED (UPPERCASE)
 UPDATE calls 
-SET status = 'no-answer',
+SET status = 'NO_ANSWER',
     ended_at = COALESCE(started_at + INTERVAL '30 seconds', NOW()),
     updated_at = NOW()
-WHERE status IN ('ringing', 'initiated')
+WHERE status IN ('RINGING', 'INITIATED', 'QUEUED')
 AND (started_at < NOW() - INTERVAL '5 minutes' OR started_at IS NULL);
 
 -- Step 4: Verify the changes
