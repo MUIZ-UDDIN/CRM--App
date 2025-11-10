@@ -18,6 +18,7 @@ class CallDirection(str, enum.Enum):
 
 class CallStatus(str, enum.Enum):
     """Call status enum"""
+    QUEUED = "queued"
     INITIATED = "initiated"
     RINGING = "ringing"
     IN_PROGRESS = "in-progress"
@@ -44,7 +45,7 @@ class Call(BaseModel):
     price_unit = Column(String(10), default='USD')
     
     # Timestamps
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     answered_at = Column(DateTime)
     ended_at = Column(DateTime)
     

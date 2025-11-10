@@ -212,7 +212,7 @@ async def cleanup_stale_calls(
     """Update old calls stuck in ringing/initiated status to no-answer"""
     import uuid
     from datetime import timedelta
-    from sqlalchemy import or_, and_
+    from sqlalchemy import or_, and_, text
     
     try:
         user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
@@ -221,51 +221,46 @@ async def cleanup_stale_calls(
         # Find calls older than 5 minutes still in ringing/initiated status
         cutoff_time = datetime.utcnow() - timedelta(minutes=5)
         
-        # Build query with proper filters
-        query = db.query(CallModel).filter(
-            CallModel.status.in_([CallStatus.RINGING, CallStatus.INITIATED, CallStatus.QUEUED])
-        )
-        
-        # Add company/user filter
+        # Use raw SQL to avoid enum issues
         if company_id:
-            query = query.filter(
-                or_(
-                    CallModel.company_id == company_id,
-                    and_(CallModel.company_id.is_(None), CallModel.user_id == user_id)
-                )
+            result = db.execute(
+                text("""
+                    UPDATE calls 
+                    SET status = 'no-answer',
+                        ended_at = COALESCE(started_at + INTERVAL '30 seconds', NOW()),
+                        updated_at = NOW()
+                    WHERE (company_id = :company_id OR (company_id IS NULL AND user_id = :user_id))
+                    AND status IN ('ringing', 'initiated', 'queued')
+                    AND (started_at < :cutoff_time OR started_at IS NULL)
+                    RETURNING id
+                """),
+                {"company_id": company_id, "user_id": user_id, "cutoff_time": cutoff_time}
             )
         else:
-            # If no company_id, just filter by user_id
-            query = query.filter(CallModel.user_id == user_id)
-        
-        # Filter by time - handle NULL started_at
-        query = query.filter(
-            or_(
-                CallModel.started_at < cutoff_time,
-                CallModel.started_at.is_(None)
+            result = db.execute(
+                text("""
+                    UPDATE calls 
+                    SET status = 'no-answer',
+                        ended_at = COALESCE(started_at + INTERVAL '30 seconds', NOW()),
+                        updated_at = NOW()
+                    WHERE user_id = :user_id
+                    AND status IN ('ringing', 'initiated', 'queued')
+                    AND (started_at < :cutoff_time OR started_at IS NULL)
+                    RETURNING id
+                """),
+                {"user_id": user_id, "cutoff_time": cutoff_time}
             )
-        )
         
-        stale_calls = query.all()
-        
-        count = 0
-        for call in stale_calls:
-            call.status = CallStatus.NO_ANSWER
-            if call.started_at:
-                call.ended_at = call.started_at + timedelta(seconds=30)
-            else:
-                call.ended_at = datetime.utcnow()
-            call.updated_at = datetime.utcnow()
-            count += 1
-        
-        if count > 0:
-            db.commit()
+        count = result.rowcount
+        db.commit()
         
         return {"success": True, "updated_count": count, "message": f"Updated {count} stale calls"}
     
     except Exception as e:
         db.rollback()
-        print(f"Error in cleanup_stale_calls: {str(e)}")
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"Error in cleanup_stale_calls: {error_detail}")
         raise HTTPException(status_code=500, detail=f"Error cleaning up calls: {str(e)}")
 
 
