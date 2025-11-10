@@ -11,7 +11,7 @@ from fastapi import APIRouter, Request, Depends, BackgroundTasks, Response
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, or_
 from twilio.twiml.messaging_response import MessagingResponse
-from twilio.twiml.voice_response import VoiceResponse, Gather, Say, Record
+from twilio.twiml.voice_response import VoiceResponse, Gather, Say, Record, Dial
 # from twilio.request_validator import RequestValidator  # Optional - commented out for now
 from typing import Optional
 import uuid
