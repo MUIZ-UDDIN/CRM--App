@@ -40,15 +40,15 @@ export const CallModal: React.FC<CallModalProps> = ({
   const [callDuration, setCallDuration] = useState(0);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: number;
     if (callState === 'connected') {
-      interval = setInterval(() => {
+      interval = window.setInterval(() => {
         setCallDuration(prev => prev + 1);
       }, 1000);
     } else {
       setCallDuration(0);
     }
-    return () => clearInterval(interval);
+    return () => window.clearInterval(interval);
   }, [callState]);
 
   const formatDuration = (seconds: number) => {
