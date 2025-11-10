@@ -98,8 +98,8 @@ export default function CallsNew() {
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          if (data.type === 'incoming_call') {
-            console.log('📞 New call received, refreshing calls list');
+          if (data.type === 'incoming_call' || data.type === 'call_status_update') {
+            console.log('📞 Call update received, refreshing calls list');
             fetchCalls();
           }
         } catch (error) {
@@ -283,33 +283,18 @@ export default function CallsNew() {
       setShowCallModal(true);
       setShowRedialModal(false);
       
-      // Make call via API (which will trigger Twilio)
-      const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from_number: callForm.from,
-          to: redialNumber
-        })
-      });
-
-      if (response.ok) {
-        setCallState('connecting');
-        // Wait for Twilio Device to handle the call
-        setTimeout(() => {
-          if (twilioVoiceService.isCallActive()) {
-            setCallState('connected');
-          }
-        }, 2000);
-      } else {
-        const error = await response.json();
-        toast.error(error.detail || 'Failed to initiate call');
-        setShowCallModal(false);
-        setCallState('idle');
-      }
+      // Make call directly using Twilio Device SDK
+      await twilioVoiceService.makeOutboundCall(redialNumber, callForm.from);
+      
+      setCallState('connecting');
+      
+      // Listen for call to be accepted
+      setTimeout(() => {
+        if (twilioVoiceService.isCallActive()) {
+          setCallState('connected');
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error('Error initiating call:', error);
       toast.error('Failed to initiate call');

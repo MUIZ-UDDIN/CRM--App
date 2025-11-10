@@ -2,18 +2,22 @@
 Twilio Client API endpoints for browser-based calling
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 from twilio.jwt.access_token import AccessToken
 from twilio.jwt.access_token.grants import VoiceGrant
+from twilio.twiml.voice_response import VoiceResponse, Dial
 from pydantic import BaseModel
 import uuid
 from datetime import datetime
+from loguru import logger
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
 from app.models.twilio_settings import TwilioSettings
 from app.services.twilio_api_key_service import create_or_get_api_keys
+from app.models.calls import Call as CallModel, CallDirection, CallStatus
 
 router = APIRouter(tags=["Twilio Client"])
 
@@ -66,10 +70,12 @@ async def get_access_token(
         ttl=3600  # 1 hour
     )
     
-    # Create Voice grant
-    # Note: For incoming calls to work, the webhook must enqueue calls to the user's identity
+    # Create Voice grant with outgoing call handler
+    # The outgoing calls will use the /voice endpoint as TwiML handler
     voice_grant = VoiceGrant(
-        incoming_allow=True  # Allow incoming calls
+        incoming_allow=True,  # Allow incoming calls
+        outgoing_application_sid=None,  # Not using TwiML app
+        push_credential_sid=None  # Not using push notifications
     )
     
     token.add_grant(voice_grant)
@@ -160,3 +166,45 @@ async def hangup_call(
         return {"message": "Call ended", "call_sid": call_sid}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/voice", response_class=Response)
+async def handle_outgoing_voice(
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    """
+    TwiML handler for outgoing calls from Twilio Device SDK
+    This is called when a user initiates a call from the browser
+    """
+    try:
+        form_data = await request.form()
+        
+        # Get parameters from Twilio Device SDK
+        to_number = form_data.get("To")
+        from_number = form_data.get("From") or form_data.get("from_number")
+        caller_id = form_data.get("CallerId") or from_number
+        
+        logger.info(f"📞 Outgoing call from Device SDK: To={to_number}, From={from_number}, CallerId={caller_id}")
+        
+        # Create TwiML response
+        resp = VoiceResponse()
+        
+        # Dial the destination number
+        dial = Dial(
+            caller_id=caller_id if caller_id else None,
+            action="https://sunstonecrm.com/api/webhooks/twilio/voice/status",
+            method="POST"
+        )
+        dial.number(to_number)
+        resp.append(dial)
+        
+        logger.info(f"✅ TwiML generated for outgoing call to {to_number}")
+        
+        return Response(content=str(resp), media_type="application/xml")
+        
+    except Exception as e:
+        logger.error(f"❌ Error in outgoing voice handler: {e}")
+        resp = VoiceResponse()
+        resp.say("An error occurred. Please try again.")
+        return Response(content=str(resp), media_type="application/xml")

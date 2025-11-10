@@ -21,10 +21,12 @@ class TwilioVoiceService {
 
       const { token: twilioToken, identity } = response.data;
 
-      // Initialize Twilio Device
+      // Initialize Twilio Device with TwiML URL for outgoing calls
       this.device = new Device(twilioToken, {
         logLevel: 1,
         // codecPreferences removed - let Twilio use defaults
+        // Set the TwiML URL for outgoing calls
+        edge: 'ashburn' // Use closest edge location
       });
 
       // Set up event listeners
@@ -158,23 +160,52 @@ class TwilioVoiceService {
     return this.currentCall !== null;
   }
 
-  async makeOutboundCall(phoneNumber: string) {
+  async makeOutboundCall(phoneNumber: string, fromNumber?: string) {
     if (!this.device) {
       throw new Error('Device not initialized');
     }
 
     try {
+      // Connect using Twilio Device SDK
+      // The TwiML URL is configured in the backend token endpoint
       const call = await this.device.connect({
         params: {
           To: phoneNumber,
+          from_number: fromNumber || '', // Pass the from number
+          CallerId: fromNumber || '' // Set caller ID
+        },
+        rtcConfiguration: {
+          iceServers: [
+            { urls: 'stun:global.stun.twilio.com:3478' },
+          ],
         },
       });
 
       this.currentCall = call;
 
       // Set up call event listeners
+      call.on('accept', () => {
+        console.log('Outbound call accepted');
+      });
+
       call.on('disconnect', () => {
         console.log('Call ended');
+        this.currentCall = null;
+        if (this.onCallEndedCallback) {
+          this.onCallEndedCallback();
+        }
+      });
+
+      call.on('cancel', () => {
+        console.log('Call cancelled');
+        this.currentCall = null;
+        if (this.onCallEndedCallback) {
+          this.onCallEndedCallback();
+        }
+      });
+
+      call.on('reject', () => {
+        console.log('Call rejected');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();

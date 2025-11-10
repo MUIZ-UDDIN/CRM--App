@@ -552,32 +552,18 @@ export default function SMSEnhanced() {
       setShowCallUI(true);
       setShowCallModal(false);
       
-      // Make call via API
-      const response = await fetch(`${API_BASE_URL}/api/calls/make`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from_number: callFromNumber,
-          to: callToNumber
-        })
-      });
-
-      if (response.ok) {
-        setCallState('connecting');
-        setTimeout(() => {
-          if (twilioVoiceService.isCallActive()) {
-            setCallState('connected');
-          }
-        }, 2000);
-      } else {
-        const error = await response.json();
-        toast.error(error.detail || 'Failed to initiate call');
-        setShowCallUI(false);
-        setCallState('idle');
-      }
+      // Make call directly using Twilio Device SDK
+      await twilioVoiceService.makeOutboundCall(callToNumber, callFromNumber);
+      
+      setCallState('connecting');
+      
+      // Listen for call to be accepted
+      setTimeout(() => {
+        if (twilioVoiceService.isCallActive()) {
+          setCallState('connected');
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error('Error initiating call:', error);
       toast.error('Failed to initiate call');
