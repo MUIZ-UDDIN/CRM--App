@@ -18,7 +18,7 @@ load_dotenv()
 
 # Import core modules
 from app.core.config import settings
-from app.core.database import init_db
+from app.core.database import init_db, get_db
 from app.core.security import get_current_user
 from app.core.redis import init_redis
 from app.core.security_headers import SecurityHeadersMiddleware
