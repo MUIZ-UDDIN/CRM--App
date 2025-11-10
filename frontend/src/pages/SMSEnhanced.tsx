@@ -24,6 +24,7 @@ interface Contact {
   first_name: string;
   last_name: string;
   phone?: string;
+  mobile?: string;
 }
 
 interface SMSMessage {
@@ -102,6 +103,31 @@ export default function SMSEnhanced() {
     fetchContacts();
     fetchTemplates();
     fetchPhoneNumbers();
+    
+    // Initialize Twilio Device for calls
+    twilioVoiceService.initialize().catch(err => {
+      console.error('Failed to initialize Twilio Device:', err);
+    });
+    
+    // Listen for incoming calls
+    twilioVoiceService.onIncomingCall((call) => {
+      const fromNumber = call.parameters.From;
+      const contact = contacts.find(c => c.phone === fromNumber || c.mobile === fromNumber);
+      
+      setCurrentCallNumber(fromNumber);
+      setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
+      setCallState('ringing');
+      setShowCallUI(true);
+    });
+    
+    // Listen for call ended
+    twilioVoiceService.onCallEnded(() => {
+      setCallState('ended');
+      setTimeout(() => {
+        setShowCallUI(false);
+        setCallState('idle');
+      }, 2000);
+    });
 
     // Set up WebSocket for real-time SMS updates
     const WS_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
@@ -558,6 +584,17 @@ export default function SMSEnhanced() {
       setShowCallUI(false);
       setCallState('idle');
     }
+  };
+  
+  const handleAnswerCall = () => {
+    twilioVoiceService.answerCall();
+    setCallState('connected');
+  };
+  
+  const handleRejectCall = () => {
+    twilioVoiceService.rejectCall();
+    setShowCallUI(false);
+    setCallState('idle');
   };
   
   const handleHangupCall = () => {
@@ -1248,7 +1285,9 @@ export default function SMSEnhanced() {
         callState={callState}
         contactName={currentCallName}
         contactNumber={currentCallNumber}
-        isIncoming={false}
+        isIncoming={callState === 'ringing' && currentCallNumber !== callToNumber}
+        onAnswer={handleAnswerCall}
+        onReject={handleRejectCall}
         onHangup={handleHangupCall}
         onMute={handleMuteCall}
       />
