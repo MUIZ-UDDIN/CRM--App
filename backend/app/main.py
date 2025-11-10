@@ -3,9 +3,11 @@ Sales CRM FastAPI Application
 Main entry point for the CRM backend API
 """
 
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import Response as FastAPIResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer
+from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 import uvicorn
 from loguru import logger
@@ -361,6 +363,19 @@ if twilio_webhooks_router:
     logger.info("✅ Twilio Webhooks routes registered (public endpoints)")
 else:
     logger.warning("⚠️ Twilio Webhooks router not loaded - skipping registration")
+
+# Twilio Device SDK Voice endpoint (PUBLIC - NO AUTH)
+# This endpoint must be at /api/twilio/client/voice to match TwiML App configuration
+@app.post("/api/twilio/client/voice", response_class=FastAPIResponse)
+async def twilio_device_sdk_voice_handler(request: Request, db: Session = Depends(get_db)):
+    """
+    PUBLIC endpoint for Twilio Device SDK outgoing calls
+    This is called by Twilio when a user initiates a call from the browser
+    """
+    from app.api.twilio_webhooks import handle_device_sdk_outgoing_voice
+    return await handle_device_sdk_outgoing_voice(request, db)
+
+logger.info("✅ Twilio Device SDK voice endpoint registered (public)")
 
 # Twilio Client (Browser calling)
 if twilio_client_router:

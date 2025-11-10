@@ -566,7 +566,7 @@ async def handle_call_status(
         return Response(content="ERROR", media_type="text/plain")
 
 
-@router.post("/twilio/client/voice", response_class=Response)
+@router.post("/client/voice", response_class=Response)
 async def handle_device_sdk_outgoing_voice(
     request: Request,
     db: Session = Depends(get_db)
@@ -575,7 +575,7 @@ async def handle_device_sdk_outgoing_voice(
     TwiML handler for outgoing calls from Twilio Device SDK
     This is called when a user initiates a call from the browser
     PUBLIC ENDPOINT - No auth required (called by Twilio)
-    Webhook URL: https://sunstonecrm.com/api/twilio/client/voice
+    Full URL: https://sunstonecrm.com/api/webhooks/twilio/client/voice
     """
     try:
         form_data = await request.form()
