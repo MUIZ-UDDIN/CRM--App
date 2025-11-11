@@ -138,7 +138,7 @@ export default function SMSEnhanced() {
         ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
         
         ws.onopen = () => {
-          console.log('SMS WebSocket connected');
+          // WebSocket connected
         };
 
         ws.onmessage = (event) => {
@@ -158,7 +158,6 @@ export default function SMSEnhanced() {
         };
 
         ws.onclose = () => {
-          console.log('WebSocket disconnected, reconnecting...');
           setTimeout(connectWebSocket, 3000);
         };
       } catch (error) {

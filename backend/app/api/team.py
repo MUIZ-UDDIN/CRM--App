@@ -21,7 +21,7 @@ class AddTeamMemberRequest(BaseModel):
     """Add team member request schema with validation"""
     email: EmailStr
     first_name: str
-    last_name: str
+    last_name: Optional[str] = ''
     role: str
     phone: Optional[str] = None
     
@@ -51,10 +51,15 @@ class AddTeamMemberRequest(BaseModel):
     
     @validator('last_name')
     def validate_last_name(cls, v):
-        if not v or not v.strip():
-            raise ValueError('Last name is required. Please enter the team member\'s last name.')
+        # Last name is optional - allow empty string
+        if not v:
+            return ''
         
         v = v.strip()
+        
+        # If empty after strip, return empty string
+        if not v:
+            return ''
         
         # Check for script tags and HTML
         if re.search(r'<script|<iframe|javascript:|onerror=|onload=', v, re.IGNORECASE):
