@@ -16,6 +16,7 @@ export default function TrialBanner() {
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string>('');
+  const [userEmail, setUserEmail] = useState<string>('');
 
   useEffect(() => {
     fetchCompanyInfo();
@@ -32,6 +33,7 @@ export default function TrialBanner() {
 
       const user = response.data;
       setUserRole(user.role);
+      setUserEmail(user.email);
       
       // Fetch company details
       if (user.company_id) {
@@ -68,18 +70,20 @@ export default function TrialBanner() {
   const isSuperAdmin = userRole === 'super_admin' || 
                        userRole === 'Super Admin' || 
                        userRole === 'SUPER_ADMIN' ||
-                       userRole.toLowerCase() === 'super_admin';
+                       userRole.toLowerCase() === 'super_admin' ||
+                       userEmail === 'admin@sunstonecrm.com';
   
   if (isSuperAdmin) return null;
 
   // Don't show if subscription is active (paid)
   if (companyInfo.subscription_status === 'active') return null;
 
-  // Check if user can see "View Plans" button (only company_admin and admin)
-  const canViewPlans = userRole === 'company_admin' || 
-                       userRole === 'admin' || 
-                       userRole === 'Admin' ||
-                       userRole === 'company_admin';
+  // Check if user can see "View Plans" button
+  // ONLY show to company_admin or admin roles, but NOT if they're from super admin's company
+  const canViewPlans = (userRole === 'company_admin' || 
+                        userRole === 'admin' || 
+                        userRole === 'Admin') &&
+                       userEmail !== 'admin@sunstonecrm.com';
 
   // Show different banners based on status
   const isTrialExpired = companyInfo.subscription_status === 'expired' || companyInfo.days_remaining <= 0;
