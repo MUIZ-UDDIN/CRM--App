@@ -542,33 +542,39 @@ export default function SMSEnhanced() {
     }
 
     try {
-      // Find contact name
-      const contact = contacts.find(c => c.phone === callToNumber || c.mobile === callToNumber);
+      // Format phone number
+      const formatPhoneNumber = (phone: string) => {
+        const digits = phone.replace(/\D/g, '');
+        return digits ? `+${digits}` : phone;
+      };
       
-      // Show call UI
-      setCurrentCallNumber(callToNumber);
-      setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
-      setCallState('ringing');
-      setShowCallUI(true);
-      setShowCallModal(false);
+      const formattedTo = formatPhoneNumber(callToNumber);
       
-      // Make call directly using Twilio Device SDK
-      await twilioVoiceService.makeOutboundCall(callToNumber, callFromNumber);
-      
-      setCallState('connecting');
-      
-      // Listen for call to be accepted
-      setTimeout(() => {
-        if (twilioVoiceService.isCallActive()) {
-          setCallState('connected');
-        }
-      }, 2000);
-      
+      const response = await fetch(`${API_BASE_URL}/api/calls/initiate`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: callFromNumber,
+          to: formattedTo
+        })
+      });
+
+      if (response.ok) {
+        toast.success('Call initiated successfully!');
+        setShowCallModal(false);
+        setCallToNumber('');
+        setCallFromNumber('');
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to initiate call');
+        console.error('Call error:', error);
+      }
     } catch (error) {
       console.error('Error initiating call:', error);
       toast.error('Failed to initiate call');
-      setShowCallUI(false);
-      setCallState('idle');
     }
   };
   
