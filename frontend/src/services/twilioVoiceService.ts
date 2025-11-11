@@ -22,9 +22,27 @@ class TwilioVoiceService {
 
       const { token: twilioToken, identity } = response.data;
 
+      // Suppress Twilio SDK console logs by filtering them
+      const originalLog = console.log;
+      const originalWarn = console.warn;
+      
+      console.log = (...args: any[]) => {
+        const message = args.join(' ');
+        if (!message.includes('[TwilioVoice]') && !message.includes('AudioContext')) {
+          originalLog.apply(console, args);
+        }
+      };
+      
+      console.warn = (...args: any[]) => {
+        const message = args.join(' ');
+        if (!message.includes('[TwilioVoice]') && !message.includes('AudioContext')) {
+          originalWarn.apply(console, args);
+        }
+      };
+      
       // Initialize Twilio Device with TwiML URL for outgoing calls
       this.device = new Device(twilioToken, {
-        logLevel: 0, // 0 = error only, 1 = warn, 2 = info, 3 = debug
+        logLevel: 0, // 0 = error only
         edge: 'ashburn' // Use closest edge location
       });
 
