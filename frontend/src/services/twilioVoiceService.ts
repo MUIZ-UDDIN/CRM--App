@@ -49,7 +49,6 @@ class TwilioVoiceService {
 
     // Incoming call
     this.device.on('incoming', (call: Call) => {
-      console.log('Incoming call from:', call.parameters.From);
       this.currentCall = call;
 
       // Set up call event listeners
@@ -103,7 +102,6 @@ class TwilioVoiceService {
 
     // Token will expire
     this.device.on('tokenWillExpire', async () => {
-      console.log('Token will expire, refreshing...');
       await this.refreshToken();
     });
   }
@@ -119,7 +117,6 @@ class TwilioVoiceService {
 
       const { token: twilioToken } = response.data;
       this.device?.updateToken(twilioToken);
-      console.log('Token refreshed successfully');
     } catch (error: any) {
       // Silently ignore 404 errors (Twilio not configured)
       if (error?.response?.status === 404) {
@@ -141,7 +138,6 @@ class TwilioVoiceService {
           } 
         });
         this.currentCall.accept();
-        console.log('Call answered with microphone access');
       } catch (error) {
         console.error('Failed to get microphone access:', error);
         // Still try to accept the call

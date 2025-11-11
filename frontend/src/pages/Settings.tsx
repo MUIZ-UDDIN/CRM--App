@@ -412,13 +412,9 @@ export default function Settings() {
     }
     
     const nameParts = trimmedName.split(/\s+/);
-    if (nameParts.length < 2) {
-      toast.error('Please enter both first name and last name (separated by space).');
-      return;
-    }
-    
+    // If no space, treat entire name as first name with empty last name
     const firstName = nameParts[0];
-    const lastName = nameParts.slice(1).join(' ');
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
     
     // Validate name contains only letters, spaces, hyphens, and apostrophes
     if (!/^[a-zA-Z\s\-']+$/.test(teamForm.name)) {

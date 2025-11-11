@@ -125,7 +125,7 @@ export default function MainLayout() {
           'Authorization': `Bearer ${token}`,
         },
       });
-      console.log('✅ Old call notifications cleaned up');
+      // Old call notifications cleaned up
     } catch (error) {
       console.error('Error cleaning up old calls:', error);
     }
@@ -165,7 +165,6 @@ export default function MainLayout() {
         
         // Set up incoming call handler from Twilio Device
         twilioVoiceService.onIncomingCall((call) => {
-          console.log('Incoming call received from Twilio Device');
           setIncomingCall(call);
           
           // Add call notification to existing notifications
@@ -188,7 +187,6 @@ export default function MainLayout() {
 
         // Set up outgoing call handler
         twilioVoiceService.onOutgoingCall((call, phoneNumber) => {
-          console.log('Outgoing call initiated to:', phoneNumber);
           setOutgoingCall(call);
           setOutgoingNumber(phoneNumber);
           // You can set contact name here if you have contact data
@@ -196,7 +194,6 @@ export default function MainLayout() {
         
         // Set up call ended handler
         twilioVoiceService.onCallEnded(() => {
-          console.log('Call ended in UI');
           setIncomingCall(null);
           setOutgoingCall(null);
           setActiveCall(null);
@@ -244,7 +241,7 @@ export default function MainLayout() {
             
             // Play notification sound (optional)
             const audio = new Audio('/notification.mp3');
-            audio.play().catch(e => console.log('Could not play sound:', e));
+            audio.play().catch(() => {});
           } else if (data.type === 'call_status_update') {
             // Call status changed (answered, ended, etc.)
             if (data.status === 'in-progress' || data.status === 'completed') {
