@@ -323,20 +323,22 @@ export default function Register() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Company Name *
             </label>
-            <div className="relative">
-              <BuildingOfficeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                required
-                maxLength={100}
-                value={formData.company_name}
-                onChange={(e) => handleFieldChange('company_name', e.target.value)}
-                onBlur={() => handleFieldBlur('company_name')}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  validationErrors.company_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="Acme Corporation"
-              />
+            <div>
+              <div className="relative">
+                <BuildingOfficeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  required
+                  maxLength={100}
+                  value={formData.company_name}
+                  onChange={(e) => handleFieldChange('company_name', e.target.value)}
+                  onBlur={() => handleFieldBlur('company_name')}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.company_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="Acme Corporation"
+                />
+              </div>
               <div className="mt-1 flex justify-between items-center">
                 <p className="text-xs text-gray-500">{formData.company_name.length}/100 characters</p>
                 {validationErrors.company_name && (
@@ -352,20 +354,22 @@ export default function Register() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 First Name *
               </label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  maxLength={50}
-                  value={formData.admin_first_name}
-                  onChange={(e) => handleFieldChange('admin_first_name', e.target.value)}
-                  onBlur={() => handleFieldBlur('admin_first_name')}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.admin_first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                  placeholder="John"
-                />
+              <div>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    required
+                    maxLength={50}
+                    value={formData.admin_first_name}
+                    onChange={(e) => handleFieldChange('admin_first_name', e.target.value)}
+                    onBlur={() => handleFieldBlur('admin_first_name')}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      validationErrors.admin_first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
+                    placeholder="John"
+                  />
+                </div>
                 <div className="mt-1 flex justify-between items-center">
                   <p className="text-xs text-gray-500">{formData.admin_first_name.length}/50 characters</p>
                   {validationErrors.admin_first_name && (
@@ -378,20 +382,22 @@ export default function Register() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Last Name *
               </label>
-              <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  required
-                  maxLength={50}
-                  value={formData.admin_last_name}
-                  onChange={(e) => handleFieldChange('admin_last_name', e.target.value)}
-                  onBlur={() => handleFieldBlur('admin_last_name')}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.admin_last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
-                  placeholder="Doe"
-                />
+              <div>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type="text"
+                    required
+                    maxLength={50}
+                    value={formData.admin_last_name}
+                    onChange={(e) => handleFieldChange('admin_last_name', e.target.value)}
+                    onBlur={() => handleFieldBlur('admin_last_name')}
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      validationErrors.admin_last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
+                    placeholder="Doe"
+                  />
+                </div>
                 <div className="mt-1 flex justify-between items-center">
                   <p className="text-xs text-gray-500">{formData.admin_last_name.length}/50 characters</p>
                   {validationErrors.admin_last_name && (
@@ -407,20 +413,22 @@ export default function Register() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Work Email *
             </label>
-            <div className="relative">
-              <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="email"
-                required
-                maxLength={255}
-                value={formData.admin_email}
-                onChange={(e) => handleFieldChange('admin_email', e.target.value.trim())}
-                onBlur={() => handleFieldBlur('admin_email')}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  validationErrors.admin_email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="john@company.com"
-              />
+            <div>
+              <div className="relative">
+                <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="email"
+                  required
+                  maxLength={255}
+                  value={formData.admin_email}
+                  onChange={(e) => handleFieldChange('admin_email', e.target.value.trim())}
+                  onBlur={() => handleFieldBlur('admin_email')}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.admin_email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="john@company.com"
+                />
+              </div>
               {validationErrors.admin_email && (
                 <p className="mt-1 text-xs text-red-600">{validationErrors.admin_email}</p>
               )}
@@ -432,23 +440,25 @@ export default function Register() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Phone Number (Optional)
             </label>
-            <div className="relative">
-              <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="tel"
-                maxLength={20}
-                value={formData.phone}
-                onChange={(e) => {
-                  // Only allow numbers and phone formatting characters
-                  const value = e.target.value.replace(/[^\d\s\-\(\)\+]/g, '');
-                  handleFieldChange('phone', value);
-                }}
-                onBlur={() => handleFieldBlur('phone')}
-                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                }`}
-                placeholder="+1 (555) 000-0000"
-              />
+            <div>
+              <div className="relative">
+                <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="tel"
+                  maxLength={20}
+                  value={formData.phone}
+                  onChange={(e) => {
+                    // Only allow numbers and phone formatting characters
+                    const value = e.target.value.replace(/[^\d\s\-\(\)\+]/g, '');
+                    handleFieldChange('phone', value);
+                  }}
+                  onBlur={() => handleFieldBlur('phone')}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
+                  placeholder="+1 (555) 000-0000"
+                />
+              </div>
               <div className="mt-1 flex justify-between items-center">
                 <p className="text-xs text-gray-500">{formData.phone.length}/20 characters</p>
                 {validationErrors.phone && (
