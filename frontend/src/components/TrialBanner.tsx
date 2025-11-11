@@ -31,7 +31,7 @@ export default function TrialBanner() {
       });
 
       const user = response.data;
-      setUserRole(user.user_role);
+      setUserRole(user.role);
       
       // Fetch company details
       if (user.company_id) {
@@ -64,14 +64,22 @@ export default function TrialBanner() {
   // Don't show banner if dismissed, loading, or no company info
   if (loading || dismissed || !companyInfo) return null;
 
-  // Don't show for super_admin (application owner)
-  if (userRole === 'super_admin') return null;
+  // Don't show for super_admin (application owner) - check all variations
+  const isSuperAdmin = userRole === 'super_admin' || 
+                       userRole === 'Super Admin' || 
+                       userRole === 'SUPER_ADMIN' ||
+                       userRole.toLowerCase() === 'super_admin';
+  
+  if (isSuperAdmin) return null;
 
   // Don't show if subscription is active (paid)
   if (companyInfo.subscription_status === 'active') return null;
 
   // Check if user can see "View Plans" button (only company_admin and admin)
-  const canViewPlans = userRole === 'company_admin' || userRole === 'admin';
+  const canViewPlans = userRole === 'company_admin' || 
+                       userRole === 'admin' || 
+                       userRole === 'Admin' ||
+                       userRole === 'company_admin';
 
   // Show different banners based on status
   const isTrialExpired = companyInfo.subscription_status === 'expired' || companyInfo.days_remaining <= 0;
