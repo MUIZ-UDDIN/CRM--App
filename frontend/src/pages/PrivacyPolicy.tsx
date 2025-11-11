@@ -8,7 +8,7 @@ const PrivacyPolicy: React.FC = () => {
       <div className="max-w-4xl mx-auto">
         {/* Back Button */}
         <Link 
-          to="/register" 
+          to="/auth/register" 
           className="inline-flex items-center text-blue-600 hover:text-blue-700 mb-6"
         >
           <ArrowLeftIcon className="h-5 w-5 mr-2" />
@@ -179,7 +179,7 @@ const PrivacyPolicy: React.FC = () => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <Link 
-            to="/register" 
+            to="/auth/register" 
             className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700"
           >
             Back to Registration

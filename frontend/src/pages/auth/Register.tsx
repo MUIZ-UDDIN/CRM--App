@@ -105,8 +105,9 @@ export default function Register() {
   const validatePhone = (value: string): string | undefined => {
     if (!value) return undefined; // Optional field
     if (value.length > 20) return 'Phone number cannot exceed 20 characters';
+    // Only allow digits, spaces, hyphens, parentheses, and plus sign
     if (!/^[\d\s\-\(\)\+]+$/.test(value)) {
-      return 'Only numbers, spaces, hyphens, parentheses, and + allowed';
+      return 'Phone number can only contain numbers and formatting characters (+ - ( ) space)';
     }
     const digitsOnly = value.replace(/\D/g, '');
     if (digitsOnly.length < 10) return 'Phone number must contain at least 10 digits';
@@ -115,8 +116,10 @@ export default function Register() {
 
   const validateEmail = (value: string): string | undefined => {
     if (!value) return 'Email is required';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) return 'Please enter a valid email address';
+    // Strict email validation
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(value)) return 'Please enter a valid email address (e.g., user@example.com)';
+    if (value.length > 255) return 'Email cannot exceed 255 characters';
     return undefined;
   };
 
@@ -363,9 +366,12 @@ export default function Register() {
                   }`}
                   placeholder="John"
                 />
-                {validationErrors.admin_first_name && (
-                  <p className="mt-1 text-xs text-red-600">{validationErrors.admin_first_name}</p>
-                )}
+                <div className="mt-1 flex justify-between items-center">
+                  <p className="text-xs text-gray-500">{formData.admin_first_name.length}/50 characters</p>
+                  {validationErrors.admin_first_name && (
+                    <p className="text-xs text-red-600">{validationErrors.admin_first_name}</p>
+                  )}
+                </div>
               </div>
             </div>
             <div>
@@ -386,9 +392,12 @@ export default function Register() {
                   }`}
                   placeholder="Doe"
                 />
-                {validationErrors.admin_last_name && (
-                  <p className="mt-1 text-xs text-red-600">{validationErrors.admin_last_name}</p>
-                )}
+                <div className="mt-1 flex justify-between items-center">
+                  <p className="text-xs text-gray-500">{formData.admin_last_name.length}/50 characters</p>
+                  {validationErrors.admin_last_name && (
+                    <p className="text-xs text-red-600">{validationErrors.admin_last_name}</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -405,7 +414,7 @@ export default function Register() {
                 required
                 maxLength={255}
                 value={formData.admin_email}
-                onChange={(e) => handleFieldChange('admin_email', e.target.value)}
+                onChange={(e) => handleFieldChange('admin_email', e.target.value.trim())}
                 onBlur={() => handleFieldBlur('admin_email')}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   validationErrors.admin_email ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -429,16 +438,23 @@ export default function Register() {
                 type="tel"
                 maxLength={20}
                 value={formData.phone}
-                onChange={(e) => handleFieldChange('phone', e.target.value)}
+                onChange={(e) => {
+                  // Only allow numbers and phone formatting characters
+                  const value = e.target.value.replace(/[^\d\s\-\(\)\+]/g, '');
+                  handleFieldChange('phone', value);
+                }}
                 onBlur={() => handleFieldBlur('phone')}
                 className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                   validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-300'
                 }`}
                 placeholder="+1 (555) 000-0000"
               />
-              {validationErrors.phone && (
-                <p className="mt-1 text-xs text-red-600">{validationErrors.phone}</p>
-              )}
+              <div className="mt-1 flex justify-between items-center">
+                <p className="text-xs text-gray-500">{formData.phone.length}/20 characters</p>
+                {validationErrors.phone && (
+                  <p className="text-xs text-red-600">{validationErrors.phone}</p>
+                )}
+              </div>
             </div>
           </div>
 
