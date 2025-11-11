@@ -324,9 +324,7 @@ export default function Register() {
               Company Name *
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-3 flex items-center h-[42px]">
-                <BuildingOfficeIcon className="w-5 h-5 text-gray-400" />
-              </div>
+              <BuildingOfficeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="text"
                 required
@@ -355,9 +353,7 @@ export default function Register() {
                 First Name *
               </label>
               <div className="relative">
-                <div className="absolute left-3 top-3 flex items-center h-[42px]">
-                  <UserIcon className="w-5 h-5 text-gray-400" />
-                </div>
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   required
@@ -383,9 +379,7 @@ export default function Register() {
                 Last Name *
               </label>
               <div className="relative">
-                <div className="absolute left-3 top-3 flex items-center h-[42px]">
-                  <UserIcon className="w-5 h-5 text-gray-400" />
-                </div>
+                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
                   required
@@ -414,9 +408,7 @@ export default function Register() {
               Work Email *
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-3 flex items-center h-[42px]">
-                <EnvelopeIcon className="w-5 h-5 text-gray-400" />
-              </div>
+              <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="email"
                 required
@@ -441,9 +433,7 @@ export default function Register() {
               Phone Number (Optional)
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-3 flex items-center h-[42px]">
-                <PhoneIcon className="w-5 h-5 text-gray-400" />
-              </div>
+              <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="tel"
                 maxLength={20}
@@ -474,9 +464,7 @@ export default function Register() {
               Password *
             </label>
             <div className="relative">
-              <div className="absolute left-3 top-3 flex items-center h-[42px]">
-                <LockClosedIcon className="w-5 h-5 text-gray-400" />
-              </div>
+              <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="password"
                 required
