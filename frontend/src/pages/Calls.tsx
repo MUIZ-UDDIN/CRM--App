@@ -29,7 +29,7 @@ export default function CallsNew() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showCallModal, setShowCallModal] = useState(false);
+  const [showCallFormModal, setShowCallFormModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'all' | 'incoming' | 'outgoing'>('all');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -69,14 +69,12 @@ export default function CallsNew() {
       setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
       setIsIncomingCall(true);
       setCallState('ringing');
-      setShowCallModal(true);
     });
     
     // Listen for call ended
     twilioVoiceService.onCallEnded(() => {
       setCallState('ended');
       setTimeout(() => {
-        setShowCallModal(false);
         setCallState('idle');
         fetchCalls(); // Refresh call list
       }, 2000);
@@ -233,7 +231,7 @@ export default function CallsNew() {
 
       if (response.ok) {
         toast.success('Call initiated successfully!');
-        setShowCallModal(false);
+        setShowCallFormModal(false);
         setCallForm({ from: callForm.from, to: '' });
         fetchCalls();
       } else {
@@ -280,7 +278,6 @@ export default function CallsNew() {
       setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
       setIsIncomingCall(false);
       setCallState('ringing');
-      setShowCallModal(true);
       setShowRedialModal(false);
       
       // Make call directly using Twilio Device SDK
@@ -298,7 +295,6 @@ export default function CallsNew() {
     } catch (error) {
       console.error('Error initiating call:', error);
       toast.error('Failed to initiate call');
-      setShowCallModal(false);
       setCallState('idle');
     }
   };
@@ -310,7 +306,6 @@ export default function CallsNew() {
   
   const handleRejectCall = () => {
     twilioVoiceService.rejectCall();
-    setShowCallModal(false);
     setCallState('idle');
   };
   
@@ -318,7 +313,6 @@ export default function CallsNew() {
     twilioVoiceService.hangupCall();
     setCallState('ended');
     setTimeout(() => {
-      setShowCallModal(false);
       setCallState('idle');
       fetchCalls();
     }, 2000);
@@ -375,7 +369,7 @@ export default function CallsNew() {
                 <span>Fix Old Calls</span>
               </button>
               <button
-                onClick={() => setShowCallModal(true)}
+                onClick={() => setShowCallFormModal(true)}
                 className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 flex-1 sm:flex-initial whitespace-nowrap"
               >
                 <PhoneIcon className="h-4 w-4 sm:mr-2" />
@@ -527,12 +521,12 @@ export default function CallsNew() {
       </div>
 
       {/* Make Call Modal */}
-      {showCallModal && (
+      {showCallFormModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Make a Call</h3>
-              <button onClick={() => setShowCallModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowCallFormModal(false)} className="text-gray-400 hover:text-gray-600">
                 ×
               </button>
             </div>
@@ -598,14 +592,15 @@ export default function CallsNew() {
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
-                  onClick={() => setShowCallModal(false)}
+                  onClick={() => setShowCallFormModal(false)}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleMakeCall}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={!callForm.from || !callForm.to}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 border border-transparent rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PhoneIcon className="h-4 w-4 inline mr-2" />
                   Call Now
