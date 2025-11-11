@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   BuildingOfficeIcon, 
@@ -7,7 +7,8 @@ import {
   UserIcon, 
   PhoneIcon, 
   CheckCircleIcon, 
-  ExclamationCircleIcon 
+  ExclamationCircleIcon,
+  XMarkIcon 
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 
@@ -22,11 +23,27 @@ interface RegistrationForm {
   phone: string;
 }
 
+interface ToastMessage {
+  id: number;
+  type: 'success' | 'error' | 'info';
+  message: string;
+}
+
+interface ValidationErrors {
+  company_name?: string;
+  admin_first_name?: string;
+  admin_last_name?: string;
+  admin_email?: string;
+  phone?: string;
+  admin_password?: string;
+}
+
 export default function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   
   const [formData, setFormData] = useState<RegistrationForm>({
     company_name: '',
@@ -44,6 +61,102 @@ export default function Register() {
     hasLength: false
   });
 
+  // Toast notification functions
+  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, type, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id));
+    }, 5000);
+  };
+
+  const removeToast = (id: number) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  };
+
+  // Real-time validation functions
+  const validateCompanyName = (value: string): string | undefined => {
+    if (!value.trim()) return 'Company name is required';
+    if (value.length < 2) return 'Company name must be at least 2 characters';
+    if (value.length > 100) return 'Company name cannot exceed 100 characters';
+    if (/<script|<iframe|javascript:|onerror=|onload=/i.test(value)) {
+      return 'Invalid characters detected. Script tags are not allowed';
+    }
+    if (/<[^>]+>/.test(value)) return 'HTML tags are not allowed';
+    if (!/^[a-zA-Z0-9\s\-\.&,'"()]+$/.test(value)) {
+      return 'Only letters, numbers, spaces, and basic punctuation allowed';
+    }
+    return undefined;
+  };
+
+  const validateName = (value: string, fieldName: string): string | undefined => {
+    if (!value.trim()) return `${fieldName} is required`;
+    if (value.length > 50) return `${fieldName} cannot exceed 50 characters`;
+    if (/<script|<iframe|javascript:|onerror=|onload=/i.test(value)) {
+      return 'Invalid characters detected. Script tags are not allowed';
+    }
+    if (/<[^>]+>/.test(value)) return 'HTML tags are not allowed';
+    if (!/^[a-zA-Z\s\-']+$/.test(value)) {
+      return 'Only letters, spaces, hyphens, and apostrophes allowed';
+    }
+    return undefined;
+  };
+
+  const validatePhone = (value: string): string | undefined => {
+    if (!value) return undefined; // Optional field
+    if (value.length > 20) return 'Phone number cannot exceed 20 characters';
+    if (!/^[\d\s\-\(\)\+]+$/.test(value)) {
+      return 'Only numbers, spaces, hyphens, parentheses, and + allowed';
+    }
+    const digitsOnly = value.replace(/\D/g, '');
+    if (digitsOnly.length < 10) return 'Phone number must contain at least 10 digits';
+    return undefined;
+  };
+
+  const validateEmail = (value: string): string | undefined => {
+    if (!value) return 'Email is required';
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) return 'Please enter a valid email address';
+    return undefined;
+  };
+
+  // Handle field changes with validation
+  const handleFieldChange = (field: keyof RegistrationForm, value: string) => {
+    setFormData({ ...formData, [field]: value });
+    
+    // Clear validation error when user starts typing
+    if (validationErrors[field]) {
+      setValidationErrors({ ...validationErrors, [field]: undefined });
+    }
+  };
+
+  // Validate field on blur
+  const handleFieldBlur = (field: keyof RegistrationForm) => {
+    let error: string | undefined;
+    
+    switch (field) {
+      case 'company_name':
+        error = validateCompanyName(formData.company_name);
+        break;
+      case 'admin_first_name':
+        error = validateName(formData.admin_first_name, 'First name');
+        break;
+      case 'admin_last_name':
+        error = validateName(formData.admin_last_name, 'Last name');
+        break;
+      case 'admin_email':
+        error = validateEmail(formData.admin_email);
+        break;
+      case 'phone':
+        error = validatePhone(formData.phone);
+        break;
+    }
+    
+    if (error) {
+      setValidationErrors({ ...validationErrors, [field]: error });
+    }
+  };
+
   const handlePasswordChange = (password: string) => {
     setFormData({ ...formData, admin_password: password });
     setPasswordStrength({
@@ -58,8 +171,35 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+
+    // Validate all fields before submission
+    const errors: ValidationErrors = {
+      company_name: validateCompanyName(formData.company_name),
+      admin_first_name: validateName(formData.admin_first_name, 'First name'),
+      admin_last_name: validateName(formData.admin_last_name, 'Last name'),
+      admin_email: validateEmail(formData.admin_email),
+      phone: validatePhone(formData.phone),
+    };
+
+    // Check if password is valid
+    if (!isPasswordValid) {
+      errors.admin_password = 'Password does not meet requirements';
+    }
+
+    // Remove undefined errors
+    Object.keys(errors).forEach(key => {
+      if (!errors[key as keyof ValidationErrors]) {
+        delete errors[key as keyof ValidationErrors];
+      }
+    });
+
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      showToast('Please correct the errors in the form', 'error');
+      setLoading(false);
+      return;
+    }
 
     try {
       const response = await axios.post(`${API_URL}/register/company`, formData);
@@ -73,6 +213,7 @@ export default function Register() {
         }));
         
         setSuccess(true);
+        showToast('Account created successfully! Redirecting...', 'success');
         
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
@@ -82,22 +223,20 @@ export default function Register() {
     } catch (err: any) {
       // Better error handling with user-friendly messages
       const errorDetail = err.response?.data?.detail;
+      let errorMessage = 'We encountered an issue creating your account. Please try again or contact support if the problem persists.';
       
       if (typeof errorDetail === 'string') {
-        // Display the backend's user-friendly error message directly
-        setError(errorDetail);
+        errorMessage = errorDetail;
       } else if (Array.isArray(errorDetail)) {
-        // Handle validation errors array
         const firstError = errorDetail[0];
         if (firstError && firstError.msg) {
-          setError(firstError.msg);
+          errorMessage = firstError.msg;
         } else {
-          setError('Please check your information and correct any errors.');
+          errorMessage = 'Please check your information and correct any errors.';
         }
-      } else {
-        setError('We encountered an issue creating your account. Please try again or contact support if the problem persists.');
       }
       
+      showToast(errorMessage, 'error');
       console.error('Registration error:', err);
     } finally {
       setLoading(false);
@@ -124,7 +263,45 @@ export default function Register() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <>
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map(toast => (
+          <div
+            key={toast.id}
+            className={`flex items-start gap-3 p-4 rounded-lg shadow-lg min-w-[300px] max-w-md animate-slide-in ${
+              toast.type === 'success' ? 'bg-green-50 border border-green-200' :
+              toast.type === 'error' ? 'bg-red-50 border border-red-200' :
+              'bg-blue-50 border border-blue-200'
+            }`}
+          >
+            {toast.type === 'success' && (
+              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+            )}
+            {toast.type === 'error' && (
+              <ExclamationCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            )}
+            {toast.type === 'info' && (
+              <ExclamationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            )}
+            <p className={`text-sm flex-1 ${
+              toast.type === 'success' ? 'text-green-800' :
+              toast.type === 'error' ? 'text-red-800' :
+              'text-blue-800'
+            }`}>
+              {toast.message}
+            </p>
+            <button
+              onClick={() => removeToast(toast.id)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <XMarkIcon className="w-4 h-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
@@ -135,13 +312,6 @@ export default function Register() {
           <p className="text-gray-600">14 days free • No credit card required • Full access</p>
         </div>
 
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
-            <ExclamationCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
 
         {/* Registration Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -157,11 +327,19 @@ export default function Register() {
                 required
                 maxLength={100}
                 value={formData.company_name}
-                onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => handleFieldChange('company_name', e.target.value)}
+                onBlur={() => handleFieldBlur('company_name')}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  validationErrors.company_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="Acme Corporation"
               />
-              <p className="mt-1 text-xs text-gray-500">{formData.company_name.length}/100 characters</p>
+              <div className="mt-1 flex justify-between items-center">
+                <p className="text-xs text-gray-500">{formData.company_name.length}/100 characters</p>
+                {validationErrors.company_name && (
+                  <p className="text-xs text-red-600">{validationErrors.company_name}</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -178,10 +356,16 @@ export default function Register() {
                   required
                   maxLength={50}
                   value={formData.admin_first_name}
-                  onChange={(e) => setFormData({ ...formData, admin_first_name: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => handleFieldChange('admin_first_name', e.target.value)}
+                  onBlur={() => handleFieldBlur('admin_first_name')}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.admin_first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                   placeholder="John"
                 />
+                {validationErrors.admin_first_name && (
+                  <p className="mt-1 text-xs text-red-600">{validationErrors.admin_first_name}</p>
+                )}
               </div>
             </div>
             <div>
@@ -195,10 +379,16 @@ export default function Register() {
                   required
                   maxLength={50}
                   value={formData.admin_last_name}
-                  onChange={(e) => setFormData({ ...formData, admin_last_name: e.target.value })}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={(e) => handleFieldChange('admin_last_name', e.target.value)}
+                  onBlur={() => handleFieldBlur('admin_last_name')}
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.admin_last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                   placeholder="Doe"
                 />
+                {validationErrors.admin_last_name && (
+                  <p className="mt-1 text-xs text-red-600">{validationErrors.admin_last_name}</p>
+                )}
               </div>
             </div>
           </div>
@@ -213,11 +403,18 @@ export default function Register() {
               <input
                 type="email"
                 required
+                maxLength={255}
                 value={formData.admin_email}
-                onChange={(e) => setFormData({ ...formData, admin_email: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => handleFieldChange('admin_email', e.target.value)}
+                onBlur={() => handleFieldBlur('admin_email')}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  validationErrors.admin_email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="john@company.com"
               />
+              {validationErrors.admin_email && (
+                <p className="mt-1 text-xs text-red-600">{validationErrors.admin_email}</p>
+              )}
             </div>
           </div>
 
@@ -232,10 +429,16 @@ export default function Register() {
                 type="tel"
                 maxLength={20}
                 value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => handleFieldChange('phone', e.target.value)}
+                onBlur={() => handleFieldBlur('phone')}
+                className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                  validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                }`}
                 placeholder="+1 (555) 000-0000"
               />
+              {validationErrors.phone && (
+                <p className="mt-1 text-xs text-red-600">{validationErrors.phone}</p>
+              )}
             </div>
           </div>
 
@@ -300,9 +503,9 @@ export default function Register() {
           {/* Terms */}
           <p className="text-xs text-center text-gray-500">
             By signing up, you agree to our{' '}
-            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Terms of Service</a>
+            <Link to="/terms" className="text-blue-600 hover:underline">Terms of Service</Link>
             {' '}and{' '}
-            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Privacy Policy</a>
+            <Link to="/privacy" className="text-blue-600 hover:underline">Privacy Policy</Link>
           </p>
 
           {/* Login Link */}
@@ -317,5 +520,6 @@ export default function Register() {
         </form>
       </div>
     </div>
+    </>
   );
 }
