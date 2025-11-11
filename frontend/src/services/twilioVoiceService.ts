@@ -21,6 +21,15 @@ class TwilioVoiceService {
 
       const { token: twilioToken, identity } = response.data;
 
+      // Request microphone permissions explicitly before initializing
+      await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+
       // Initialize Twilio Device with TwiML URL for outgoing calls
       this.device = new Device(twilioToken, {
         logLevel: 1,
