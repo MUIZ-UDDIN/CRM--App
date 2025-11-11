@@ -388,7 +388,8 @@ logger.info("✅ Twilio Device SDK voice endpoint registered (public)")
 if twilio_client_router:
     app.include_router(
         twilio_client_router,
-        prefix="/api/twilio/client"
+        prefix="/api/twilio/client",
+        dependencies=[Depends(get_current_user)]
     )
     logger.info("✅ Twilio Client routes registered at /api/twilio/client")
 else:
