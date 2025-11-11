@@ -35,6 +35,8 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
 import ForgotPassword from './pages/auth/ForgotPassword';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 // Providers
 import { AuthProvider } from './contexts/AuthContext';
@@ -98,6 +100,12 @@ function App() {
                 <Route path="forgot-password" element={<ForgotPassword />} />
                 <Route index element={<Navigate to="/auth/login" replace />} />
               </Route>
+
+              {/* Public Routes */}
+              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/terms" element={<TermsOfService />} />
+              <Route path="/privacy" element={<PrivacyPolicy />} />
 
               {/* Protected Routes */}
               <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>

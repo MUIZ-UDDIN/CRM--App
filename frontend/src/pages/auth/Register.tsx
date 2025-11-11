@@ -84,17 +84,18 @@ export default function Register() {
       const errorDetail = err.response?.data?.detail;
       
       if (typeof errorDetail === 'string') {
-        if (errorDetail.includes('already registered') || errorDetail.includes('already exists')) {
-          setError('This email is already registered. Please use a different email or try logging in.');
-        } else if (errorDetail.includes('password')) {
-          setError('Password must be at least 8 characters long and contain letters and numbers.');
-        } else if (errorDetail.includes('email')) {
-          setError('Please enter a valid email address.');
+        // Display the backend's user-friendly error message directly
+        setError(errorDetail);
+      } else if (Array.isArray(errorDetail)) {
+        // Handle validation errors array
+        const firstError = errorDetail[0];
+        if (firstError && firstError.msg) {
+          setError(firstError.msg);
         } else {
-          setError(errorDetail);
+          setError('Please check your information and correct any errors.');
         }
       } else {
-        setError('Registration failed. Please check your information and try again.');
+        setError('We encountered an issue creating your account. Please try again or contact support if the problem persists.');
       }
       
       console.error('Registration error:', err);
@@ -154,11 +155,13 @@ export default function Register() {
               <input
                 type="text"
                 required
+                maxLength={100}
                 value={formData.company_name}
                 onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Acme Corporation"
               />
+              <p className="mt-1 text-xs text-gray-500">{formData.company_name.length}/100 characters</p>
             </div>
           </div>
 
@@ -173,6 +176,7 @@ export default function Register() {
                 <input
                   type="text"
                   required
+                  maxLength={50}
                   value={formData.admin_first_name}
                   onChange={(e) => setFormData({ ...formData, admin_first_name: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -189,6 +193,7 @@ export default function Register() {
                 <input
                   type="text"
                   required
+                  maxLength={50}
                   value={formData.admin_last_name}
                   onChange={(e) => setFormData({ ...formData, admin_last_name: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -225,6 +230,7 @@ export default function Register() {
               <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
               <input
                 type="tel"
+                maxLength={20}
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -243,6 +249,7 @@ export default function Register() {
               <input
                 type="password"
                 required
+                maxLength={128}
                 value={formData.admin_password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -293,9 +300,9 @@ export default function Register() {
           {/* Terms */}
           <p className="text-xs text-center text-gray-500">
             By signing up, you agree to our{' '}
-            <a href="/terms" className="text-blue-600 hover:underline">Terms of Service</a>
+            <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Terms of Service</a>
             {' '}and{' '}
-            <a href="/privacy" className="text-blue-600 hover:underline">Privacy Policy</a>
+            <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Privacy Policy</a>
           </p>
 
           {/* Login Link */}

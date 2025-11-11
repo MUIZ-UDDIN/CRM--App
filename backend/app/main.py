@@ -47,6 +47,7 @@ from app.api.registration import router as registration_router
 from app.api.invitations import router as invitations_router
 from app.api.search import router as search_router
 from app.api.websocket import router as websocket_router
+from app.api.team import router as team_router
 
 # Import with error handling for debugging
 try:
@@ -209,6 +210,12 @@ app.include_router(
     auth_router,
     prefix="/api/auth",
     tags=["Authentication"]
+)
+
+app.include_router(
+    team_router,
+    tags=["Team"],
+    dependencies=[Depends(get_current_user)]
 )
 
 app.include_router(

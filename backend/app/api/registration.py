@@ -5,10 +5,11 @@ Handles new company signups with 14-day trial
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, field_validator
 from datetime import datetime, timedelta
 from typing import Optional
 import re
+import html
 
 from app.core.database import get_db
 from app.core.security import get_password_hash, create_access_token
@@ -28,22 +29,121 @@ class CompanyRegistrationRequest(BaseModel):
     
     @validator('company_name')
     def validate_company_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Company name is required. Please enter your company name.')
+        
+        v = v.strip()
+        
+        # Check for script tags and HTML
+        if re.search(r'<script|<iframe|javascript:|onerror=|onload=', v, re.IGNORECASE):
+            raise ValueError('Invalid characters detected. Company name cannot contain script tags or HTML code.')
+        
+        # Check for any HTML tags
+        if re.search(r'<[^>]+>', v):
+            raise ValueError('Company name cannot contain HTML tags. Please use plain text only.')
+        
+        # Character limit
         if len(v) < 2:
-            raise ValueError('Company name must be at least 2 characters')
+            raise ValueError('Company name must be at least 2 characters long.')
         if len(v) > 100:
-            raise ValueError('Company name must be less than 100 characters')
-        return v.strip()
+            raise ValueError('Company name is too long. Maximum 100 characters allowed.')
+        
+        # Only allow letters, numbers, spaces, and common business characters
+        if not re.match(r'^[a-zA-Z0-9\s\-\.&,\'"()]+$', v):
+            raise ValueError('Company name can only contain letters, numbers, spaces, and basic punctuation (- . & , \' " ( )).')
+        
+        return html.escape(v)  # Sanitize output
+    
+    @validator('admin_first_name')
+    def validate_first_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('First name is required. Please enter your first name.')
+        
+        v = v.strip()
+        
+        # Check for script tags and HTML
+        if re.search(r'<script|<iframe|javascript:|onerror=|onload=', v, re.IGNORECASE):
+            raise ValueError('Invalid characters detected. First name cannot contain script tags or HTML code.')
+        
+        if re.search(r'<[^>]+>', v):
+            raise ValueError('First name cannot contain HTML tags. Please use plain text only.')
+        
+        # Character limit
+        if len(v) > 50:
+            raise ValueError('First name is too long. Maximum 50 characters allowed.')
+        
+        # Only allow letters, spaces, hyphens, and apostrophes
+        if not re.match(r'^[a-zA-Z\s\-\']+$', v):
+            raise ValueError('First name can only contain letters, spaces, hyphens, and apostrophes.')
+        
+        return html.escape(v)
+    
+    @validator('admin_last_name')
+    def validate_last_name(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Last name is required. Please enter your last name.')
+        
+        v = v.strip()
+        
+        # Check for script tags and HTML
+        if re.search(r'<script|<iframe|javascript:|onerror=|onload=', v, re.IGNORECASE):
+            raise ValueError('Invalid characters detected. Last name cannot contain script tags or HTML code.')
+        
+        if re.search(r'<[^>]+>', v):
+            raise ValueError('Last name cannot contain HTML tags. Please use plain text only.')
+        
+        # Character limit
+        if len(v) > 50:
+            raise ValueError('Last name is too long. Maximum 50 characters allowed.')
+        
+        # Only allow letters, spaces, hyphens, and apostrophes
+        if not re.match(r'^[a-zA-Z\s\-\']+$', v):
+            raise ValueError('Last name can only contain letters, spaces, hyphens, and apostrophes.')
+        
+        return html.escape(v)
+    
+    @validator('phone')
+    def validate_phone(cls, v):
+        if v is None or not v.strip():
+            return None
+        
+        v = v.strip()
+        
+        # Character limit
+        if len(v) > 20:
+            raise ValueError('Phone number is too long. Maximum 20 characters allowed.')
+        
+        # Only allow numbers, spaces, hyphens, parentheses, and plus sign
+        if not re.match(r'^[\d\s\-\(\)\+]+$', v):
+            raise ValueError('Phone number can only contain numbers, spaces, hyphens, parentheses, and plus sign.')
+        
+        # Check for minimum digits
+        digits_only = re.sub(r'\D', '', v)
+        if len(digits_only) < 10:
+            raise ValueError('Phone number must contain at least 10 digits.')
+        
+        return v
     
     @validator('admin_password')
     def validate_password(cls, v):
+        if not v:
+            raise ValueError('Password is required. Please create a strong password.')
+        
         if len(v) < 8:
-            raise ValueError('Password must be at least 8 characters')
+            raise ValueError('Password is too short. It must be at least 8 characters long.')
+        
+        if len(v) > 128:
+            raise ValueError('Password is too long. Maximum 128 characters allowed.')
+        
         if not re.search(r'[A-Z]', v):
-            raise ValueError('Password must contain at least one uppercase letter')
+            raise ValueError('Password must contain at least one uppercase letter (A-Z).')
+        
         if not re.search(r'[a-z]', v):
-            raise ValueError('Password must contain at least one lowercase letter')
+            raise ValueError('Password must contain at least one lowercase letter (a-z).')
+        
         if not re.search(r'\d', v):
-            raise ValueError('Password must contain at least one number')
+            raise ValueError('Password must contain at least one number (0-9).')
+        
         return v
 
 
@@ -73,11 +173,11 @@ async def register_company(
     """
     
     # Check if email already exists
-    existing_user = db.query(User).filter(User.email == request.admin_email).first()
+    existing_user = db.query(User).filter(User.email == request.admin_email.lower()).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already registered"
+            detail="This email address is already registered. Please use a different email or try logging in."
         )
     
     # Check if company name already exists
@@ -85,7 +185,7 @@ async def register_company(
     if existing_company:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Company name already exists"
+            detail="This company name is already taken. Please choose a different company name."
         )
     
     try:
@@ -169,11 +269,22 @@ async def register_company(
             access_token=access_token
         )
         
+    except ValueError as e:
+        db.rollback()
+        # Validation errors - return as 400 with the specific message
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
     except Exception as e:
         db.rollback()
+        # Log the actual error for debugging
+        import logging
+        logging.error(f"Registration error: {str(e)}")
+        # Return user-friendly message
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to register company: {str(e)}"
+            detail="We encountered an issue creating your account. Please try again or contact support if the problem persists."
         )
 
 

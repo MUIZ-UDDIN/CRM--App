@@ -373,50 +373,75 @@ export default function Settings() {
   const handleAddTeamMember = async () => {
     // Validate inputs
     if (!teamForm.name.trim()) {
-      toast.error('Please enter a name for the team member');
+      toast.error('Please enter a name for the team member.');
       return;
     }
     if (!teamForm.email.trim()) {
-      toast.error('Please enter an email address');
+      toast.error('Please enter an email address.');
       return;
     }
     if (!teamForm.role) {
-      toast.error('Please select a role');
-      return;
-    }
-    if (teamForm.name.length > 100) {
-      toast.error('Name cannot exceed 100 characters (50 for first name + 50 for last name)');
+      toast.error('Please select a role for the team member.');
       return;
     }
     
-    // Check for any HTML tags or script tags
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(teamForm.email)) {
+      toast.error('Please enter a valid email address.');
+      return;
+    }
+    
+    // Check for HTML tags or script tags
     if (/<[^>]+>/gi.test(teamForm.name)) {
       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
     }
     
+    // Validate name length
+    if (teamForm.name.length > 100) {
+      toast.error('Name is too long. Maximum 100 characters allowed.');
+      return;
+    }
+    
+    // Split name into first and last
+    const nameParts = teamForm.name.trim().split(/\s+/);
+    if (nameParts.length < 2) {
+      toast.error('Please enter both first name and last name.');
+      return;
+    }
+    
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ');
+    
+    // Validate name contains only letters, spaces, hyphens, and apostrophes
+    if (!/^[a-zA-Z\s\-']+$/.test(teamForm.name)) {
+      toast.error('Name can only contain letters, spaces, hyphens, and apostrophes.');
+      return;
+    }
+    
     try {
-      const [firstName, ...lastNameParts] = teamForm.name.split(' ');
-      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+      const response = await fetch(`${API_BASE_URL}/api/team/members`, {
         method: 'POST',
         headers: {
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: teamForm.email,
-          password: 'ChangeMe123!',
+          email: teamForm.email.toLowerCase(),
           first_name: firstName,
-          last_name: lastNameParts.join(' ') || 'User',
-          role: teamForm.role,  // Send the selected role
-          company_id: user?.company_id,  // Send the current user's company_id
+          last_name: lastName,
+          role: teamForm.role,
         }),
       });
+      
       if (response.ok) {
-        toast.success(`Team member added with role: ${teamForm.role}. Default password: ChangeMe123!`);
+        const data = await response.json();
+        toast.success(data.message || `Team member added successfully! Default password: ${data.default_password}`);
         setShowAddTeamModal(false);
         setTeamForm({ name: '', email: '', role: 'Regular User' });
         setRoleSearchTerm('');
-        // Wait a bit for database to update, then refresh
+        // Refresh team members list
         setTimeout(() => {
           fetchTeamMembers();
         }, 500);
@@ -425,19 +450,10 @@ export default function Settings() {
           const errorData = await response.json();
           const errorMessage = typeof errorData.detail === 'string' 
             ? errorData.detail 
-            : (errorData.detail ? JSON.stringify(errorData.detail) : 'Failed to add team member');
+            : 'Failed to add team member. Please try again.';
           
-          if (errorMessage.includes('already registered')) {
-            toast.error(`This email is already registered. Please use a different email address.`);
-          } else if (errorMessage.includes('exceed 255')) {
-            toast.error('Name is too long. Please use a shorter name (max 255 characters).');
-          } else if (errorMessage.includes('Script') || errorMessage.includes('HTML') || errorMessage.includes('tags')) {
-            toast.error('Invalid characters in name. Please remove any special characters or tags.');
-          } else if (errorMessage.includes('empty')) {
-            toast.error('Name cannot be empty. Please enter a valid name.');
-          } else {
-            toast.error(errorMessage);
-          }
+          // Display the backend's user-friendly error message
+          toast.error(errorMessage);
         } catch (parseError) {
           toast.error('Failed to add team member. Please try again.');
         }
@@ -1377,12 +1393,16 @@ export default function Settings() {
                 </label>
                 <input
                   type="email"
-                  placeholder="Enter email address"
+                  placeholder="user@example.com"
+                  maxLength={255}
                   value={teamForm.email}
                   onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
+                <div className="text-xs text-gray-500 mt-1">
+                  Enter a valid email address (e.g., name@company.com)
+                </div>
               </div>
               <div>
                 <div className="flex items-center justify-between mb-1">
