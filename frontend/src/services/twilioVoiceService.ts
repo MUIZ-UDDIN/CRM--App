@@ -24,9 +24,7 @@ class TwilioVoiceService {
 
       // Initialize Twilio Device with TwiML URL for outgoing calls
       this.device = new Device(twilioToken, {
-        logLevel: 1,
-        // codecPreferences removed - let Twilio use defaults
-        // Set the TwiML URL for outgoing calls
+        logLevel: 0, // 0 = error only, 1 = warn, 2 = info, 3 = debug
         edge: 'ashburn' // Use closest edge location
       });
 
@@ -35,8 +33,6 @@ class TwilioVoiceService {
 
       // Register the device
       await this.device.register();
-
-      console.log('Twilio Device registered successfully');
       return true;
     } catch (error: any) {
       // Silently ignore 404 errors (Twilio not configured for this company)
@@ -58,11 +54,10 @@ class TwilioVoiceService {
 
       // Set up call event listeners
       call.on('accept', () => {
-        console.log('Call accepted - connection established');
+        // Call connected
       });
 
       call.on('disconnect', (disconnectCall: Call) => {
-        console.log('Call disconnected:', disconnectCall.status());
         // Only clear if this is the current call
         if (this.currentCall === disconnectCall) {
           this.currentCall = null;
@@ -73,7 +68,6 @@ class TwilioVoiceService {
       });
 
       call.on('cancel', () => {
-        console.log('Call cancelled by caller');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
@@ -81,7 +75,6 @@ class TwilioVoiceService {
       });
 
       call.on('reject', () => {
-        console.log('Call rejected by user');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
@@ -89,7 +82,7 @@ class TwilioVoiceService {
       });
 
       call.on('error', (error: any) => {
-        console.error('Call error:', error);
+        // Call error occurred
       });
 
       // Notify the UI
@@ -100,7 +93,7 @@ class TwilioVoiceService {
 
     // Device ready
     this.device.on('registered', () => {
-      console.log('Twilio Device is ready to receive calls');
+      // Device registered and ready
     });
 
     // Device errors
@@ -234,11 +227,10 @@ class TwilioVoiceService {
 
       // Set up call event listeners
       call.on('accept', () => {
-        console.log('Outbound call accepted - connection established');
+        // Outbound call connected
       });
 
       call.on('disconnect', (disconnectCall: Call) => {
-        console.log('Outbound call disconnected:', disconnectCall.status());
         // Only clear if this is the current call
         if (this.currentCall === disconnectCall) {
           this.currentCall = null;
@@ -249,7 +241,6 @@ class TwilioVoiceService {
       });
 
       call.on('cancel', () => {
-        console.log('Outbound call cancelled');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
@@ -257,7 +248,6 @@ class TwilioVoiceService {
       });
 
       call.on('reject', () => {
-        console.log('Outbound call rejected');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
@@ -265,7 +255,7 @@ class TwilioVoiceService {
       });
 
       call.on('error', (error: any) => {
-        console.error('Outbound call error:', error);
+        // Outbound call error
       });
 
       return call;

@@ -548,13 +548,25 @@ async def handle_call_status(
             db.commit()
             logger.info(f"✅ Call record updated: status={call_status}, duration={call_record.duration}, ended_at={call_record.ended_at}")
             
+            # Mark call notification as ended when call is answered or completed
+            if call_status in ["in-progress", "completed", "no-answer", "busy", "failed", "canceled"]:
+                notifications = db.query(Notification).filter(
+                    Notification.extra_data.contains({"call_sid": call_sid})
+                ).all()
+                for notif in notifications:
+                    if notif.extra_data:
+                        notif.extra_data["call_ended"] = True
+                        notif.extra_data["isCall"] = False  # Mark as no longer active call
+                db.commit()
+            
             # Send WebSocket update
             if call_record.user_id:
                 await manager.send_notification(str(call_record.user_id), {
                     "type": "call_status_update",
                     "call_id": str(call_record.id),
                     "status": call_status,
-                    "duration": call_duration
+                    "duration": call_duration,
+                    "call_sid": call_sid
                 })
         else:
             logger.warning(f"⚠️ Call record not found for SID: {call_sid}")

@@ -205,8 +205,6 @@ export default function MainLayout() {
           setNotifications(prev => prev.filter(n => !n.isCall));
           setNotificationsList(prev => prev.filter(n => !n.isCall));
         });
-        
-        console.log('Twilio Voice initialized successfully');
       } catch (error) {
         console.error('Failed to initialize Twilio Voice:', error);
       }
@@ -232,13 +230,12 @@ export default function MainLayout() {
       ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
       
       ws.onopen = () => {
-        console.log('✅ WebSocket connected for real-time notifications');
+        // WebSocket connected
       };
       
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('📨 WebSocket message:', data);
           
           if (data.type === 'incoming_call') {
             // Refresh notifications immediately
@@ -248,6 +245,13 @@ export default function MainLayout() {
             // Play notification sound (optional)
             const audio = new Audio('/notification.mp3');
             audio.play().catch(e => console.log('Could not play sound:', e));
+          } else if (data.type === 'call_status_update') {
+            // Call status changed (answered, ended, etc.)
+            if (data.status === 'in-progress' || data.status === 'completed') {
+              // Call was answered or ended - clear the notification
+              fetchNotifications();
+              fetchUnreadCount();
+            }
           }
         } catch (error) {
           console.error('WebSocket message error:', error);
@@ -259,7 +263,7 @@ export default function MainLayout() {
       };
       
       ws.onclose = () => {
-        console.log('WebSocket disconnected, reconnecting in 5s...');
+        // Reconnect after disconnect
         setTimeout(connectWebSocket, 5000);
       };
     };
@@ -284,9 +288,15 @@ export default function MainLayout() {
       });
       if (response.ok) {
         const data = await response.json();
+        // Clean up old call notifications on load
+        const cleanedNotifications = data.map((notif: any) => {
+          if (notif.extra_data?.isCall && notif.extra_data?.call_ended) {
+            return { ...notif, extra_data: { ...notif.extra_data, isCall: false } };
+          }
+          return notif;
+        });
         // Add isCall flag from extra_data
-        const notificationsWithFlags = data.map((n: any) => {
-          console.log('📋 Notification:', n.title, 'extra_data:', n.extra_data, 'isCall:', n.extra_data?.isCall);
+        const notificationsWithFlags = cleanedNotifications.map((n: any) => {
           return {
             ...n,
             isCall: n.extra_data?.isCall || false

@@ -76,13 +76,11 @@ export default function TrialBanner() {
                        userEmail === 'admin@sunstonecrm.com';
   
   if (isSuperAdmin) {
-    console.log('TrialBanner: Hidden for super admin');
     return null;
   }
 
   // Don't show if subscription is active (paid)
   if (companyInfo.subscription_status === 'active') {
-    console.log('TrialBanner: Hidden for active subscription');
     return null;
   }
 
@@ -92,14 +90,6 @@ export default function TrialBanner() {
                         userRole === 'admin' || 
                         userRole === 'Admin') &&
                        userEmail !== 'admin@sunstonecrm.com';
-  
-  console.log('TrialBanner: Showing banner', { 
-    userRole, 
-    userEmail, 
-    canViewPlans, 
-    subscription_status: companyInfo.subscription_status,
-    days_remaining: companyInfo.days_remaining 
-  });
 
   // Show different banners based on status
   const isTrialExpired = companyInfo.subscription_status === 'expired' || companyInfo.days_remaining <= 0;

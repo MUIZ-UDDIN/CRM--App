@@ -90,14 +90,13 @@ export default function CallsNew() {
       ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
       
       ws.onopen = () => {
-        console.log('✅ Calls page WebSocket connected');
+        // WebSocket connected
       };
       
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
           if (data.type === 'incoming_call' || data.type === 'call_status_update') {
-            console.log('📞 Call update received, refreshing calls list');
             fetchCalls();
           }
         } catch (error) {
@@ -110,7 +109,6 @@ export default function CallsNew() {
       };
       
       ws.onclose = () => {
-        console.log('WebSocket disconnected, reconnecting in 5s...');
         setTimeout(connectWebSocket, 5000);
       };
     };

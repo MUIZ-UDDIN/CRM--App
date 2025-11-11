@@ -405,9 +405,15 @@ export default function Settings() {
     }
     
     // Split name into first and last
-    const nameParts = teamForm.name.trim().split(/\s+/);
+    const trimmedName = teamForm.name.trim();
+    if (!trimmedName || trimmedName.length < 2) {
+      toast.error('Please enter a valid name (at least 2 characters).');
+      return;
+    }
+    
+    const nameParts = trimmedName.split(/\s+/);
     if (nameParts.length < 2) {
-      toast.error('Please enter both first name and last name.');
+      toast.error('Please enter both first name and last name (separated by space).');
       return;
     }
     
