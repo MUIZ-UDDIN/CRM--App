@@ -44,17 +44,19 @@ export default function TrialBanner() {
         const company = companyResponse.data;
         
         // Calculate days remaining
+        let daysRemaining = 0;
         if (company.trial_ends_at) {
           const trialEnd = new Date(company.trial_ends_at);
           const now = new Date();
-          const daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-          
-          setCompanyInfo({
-            subscription_status: company.subscription_status,
-            trial_ends_at: company.trial_ends_at,
-            days_remaining: Math.max(0, daysRemaining)
-          });
+          daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
         }
+        
+        // Always set company info if company exists (even without trial_ends_at)
+        setCompanyInfo({
+          subscription_status: company.subscription_status || 'trial',
+          trial_ends_at: company.trial_ends_at,
+          days_remaining: Math.max(0, daysRemaining)
+        });
       }
     } catch (error) {
       console.error('Failed to fetch company info:', error);
@@ -73,10 +75,16 @@ export default function TrialBanner() {
                        userRole.toLowerCase() === 'super_admin' ||
                        userEmail === 'admin@sunstonecrm.com';
   
-  if (isSuperAdmin) return null;
+  if (isSuperAdmin) {
+    console.log('TrialBanner: Hidden for super admin');
+    return null;
+  }
 
   // Don't show if subscription is active (paid)
-  if (companyInfo.subscription_status === 'active') return null;
+  if (companyInfo.subscription_status === 'active') {
+    console.log('TrialBanner: Hidden for active subscription');
+    return null;
+  }
 
   // Check if user can see "View Plans" button
   // ONLY show to company_admin or admin roles, but NOT if they're from super admin's company
@@ -84,6 +92,14 @@ export default function TrialBanner() {
                         userRole === 'admin' || 
                         userRole === 'Admin') &&
                        userEmail !== 'admin@sunstonecrm.com';
+  
+  console.log('TrialBanner: Showing banner', { 
+    userRole, 
+    userEmail, 
+    canViewPlans, 
+    subscription_status: companyInfo.subscription_status,
+    days_remaining: companyInfo.days_remaining 
+  });
 
   // Show different banners based on status
   const isTrialExpired = companyInfo.subscription_status === 'expired' || companyInfo.days_remaining <= 0;
