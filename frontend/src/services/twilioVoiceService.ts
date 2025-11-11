@@ -57,19 +57,22 @@ class TwilioVoiceService {
 
       // Set up call event listeners
       call.on('accept', () => {
-        console.log('Call accepted');
+        console.log('Call accepted - connection established');
       });
 
-      call.on('disconnect', () => {
-        console.log('Call ended');
-        this.currentCall = null;
-        if (this.onCallEndedCallback) {
-          this.onCallEndedCallback();
+      call.on('disconnect', (disconnectCall: Call) => {
+        console.log('Call disconnected:', disconnectCall.status());
+        // Only clear if this is the current call
+        if (this.currentCall === disconnectCall) {
+          this.currentCall = null;
+          if (this.onCallEndedCallback) {
+            this.onCallEndedCallback();
+          }
         }
       });
 
       call.on('cancel', () => {
-        console.log('Call cancelled');
+        console.log('Call cancelled by caller');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
@@ -77,11 +80,15 @@ class TwilioVoiceService {
       });
 
       call.on('reject', () => {
-        console.log('Call rejected');
+        console.log('Call rejected by user');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
         }
+      });
+
+      call.on('error', (error: any) => {
+        console.error('Call error:', error);
       });
 
       // Notify the UI
@@ -217,19 +224,22 @@ class TwilioVoiceService {
 
       // Set up call event listeners
       call.on('accept', () => {
-        console.log('Outbound call accepted');
+        console.log('Outbound call accepted - connection established');
       });
 
-      call.on('disconnect', () => {
-        console.log('Call ended');
-        this.currentCall = null;
-        if (this.onCallEndedCallback) {
-          this.onCallEndedCallback();
+      call.on('disconnect', (disconnectCall: Call) => {
+        console.log('Outbound call disconnected:', disconnectCall.status());
+        // Only clear if this is the current call
+        if (this.currentCall === disconnectCall) {
+          this.currentCall = null;
+          if (this.onCallEndedCallback) {
+            this.onCallEndedCallback();
+          }
         }
       });
 
       call.on('cancel', () => {
-        console.log('Call cancelled');
+        console.log('Outbound call cancelled');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
@@ -237,11 +247,15 @@ class TwilioVoiceService {
       });
 
       call.on('reject', () => {
-        console.log('Call rejected');
+        console.log('Outbound call rejected');
         this.currentCall = null;
         if (this.onCallEndedCallback) {
           this.onCallEndedCallback();
         }
+      });
+
+      call.on('error', (error: any) => {
+        console.error('Outbound call error:', error);
       });
 
       return call;
