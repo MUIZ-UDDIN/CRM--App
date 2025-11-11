@@ -331,7 +331,11 @@ export default function Register() {
                   required
                   maxLength={100}
                   value={formData.company_name}
-                  onChange={(e) => handleFieldChange('company_name', e.target.value)}
+                  onChange={(e) => {
+                    // Block < and > characters to prevent HTML/script tags
+                    const value = e.target.value.replace(/[<>]/g, '');
+                    handleFieldChange('company_name', value);
+                  }}
                   onBlur={() => handleFieldBlur('company_name')}
                   className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                     validationErrors.company_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -362,7 +366,11 @@ export default function Register() {
                     required
                     maxLength={50}
                     value={formData.admin_first_name}
-                    onChange={(e) => handleFieldChange('admin_first_name', e.target.value)}
+                    onChange={(e) => {
+                      // Block < and > characters to prevent HTML/script tags
+                      const value = e.target.value.replace(/[<>]/g, '');
+                      handleFieldChange('admin_first_name', value);
+                    }}
                     onBlur={() => handleFieldBlur('admin_first_name')}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       validationErrors.admin_first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
@@ -390,7 +398,11 @@ export default function Register() {
                     required
                     maxLength={50}
                     value={formData.admin_last_name}
-                    onChange={(e) => handleFieldChange('admin_last_name', e.target.value)}
+                    onChange={(e) => {
+                      // Block < and > characters to prevent HTML/script tags
+                      const value = e.target.value.replace(/[<>]/g, '');
+                      handleFieldChange('admin_last_name', value);
+                    }}
                     onBlur={() => handleFieldBlur('admin_last_name')}
                     className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       validationErrors.admin_last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
