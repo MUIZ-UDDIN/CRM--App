@@ -272,33 +272,34 @@ export default function CallsNew() {
     }
 
     try {
-      const formattedTo = formatPhoneNumber(redialNumber);
+      // Find contact name
+      const contact = contacts.find(c => c.phone === redialNumber || c.mobile === redialNumber);
       
-      const response = await fetch(`${API_BASE_URL}/api/calls/initiate`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          from: callForm.from,
-          to: formattedTo
-        })
-      });
-
-      if (response.ok) {
-        toast.success('Call initiated successfully!');
-        setShowRedialModal(false);
-        setCallForm({ ...callForm, to: '' });
-        fetchCalls();
-      } else {
-        const error = await response.json();
-        toast.error(error.detail || 'Failed to initiate call');
-        console.error('Call error:', error);
-      }
+      // Show call UI
+      setCurrentCallNumber(redialNumber);
+      setCurrentCallName(contact ? `${contact.first_name} ${contact.last_name}` : '');
+      setIsIncomingCall(false);
+      setCallState('ringing');
+      setShowCallModal(true);
+      setShowRedialModal(false);
+      
+      // Make call directly using Twilio Device SDK
+      await twilioVoiceService.makeOutboundCall(redialNumber, callForm.from);
+      
+      setCallState('connecting');
+      
+      // Listen for call to be accepted
+      setTimeout(() => {
+        if (twilioVoiceService.isCallActive()) {
+          setCallState('connected');
+        }
+      }, 2000);
+      
     } catch (error) {
       console.error('Error initiating call:', error);
       toast.error('Failed to initiate call');
+      setShowCallModal(false);
+      setCallState('idle');
     }
   };
   
@@ -661,9 +662,9 @@ export default function CallsNew() {
         </div>
       )}
       
-      {/* Call Modal */}
+      {/* Call Modal - Only show when there's an active call */}
       <CallModal
-        isOpen={showCallModal}
+        isOpen={callState !== 'idle'}
         callState={callState}
         contactName={currentCallName}
         contactNumber={currentCallNumber}
