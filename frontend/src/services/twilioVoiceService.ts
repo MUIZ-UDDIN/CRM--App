@@ -37,7 +37,11 @@ class TwilioVoiceService {
 
       console.log('Twilio Device registered successfully');
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      // Silently ignore 404 errors (Twilio not configured for this company)
+      if (error?.response?.status === 404) {
+        return false;
+      }
       console.error('Failed to initialize Twilio Device:', error);
       throw error;
     }
@@ -115,7 +119,11 @@ class TwilioVoiceService {
       const { token: twilioToken } = response.data;
       this.device?.updateToken(twilioToken);
       console.log('Token refreshed successfully');
-    } catch (error) {
+    } catch (error: any) {
+      // Silently ignore 404 errors (Twilio not configured)
+      if (error?.response?.status === 404) {
+        return;
+      }
       console.error('Failed to refresh token:', error);
     }
   }
