@@ -214,8 +214,8 @@ app.include_router(
 
 app.include_router(
     team_router,
-    tags=["Team"],
-    dependencies=[Depends(get_current_user)]
+    tags=["Team"]
+    # No dependencies here - router already has prefix and endpoints have their own auth
 )
 
 app.include_router(
