@@ -15,6 +15,7 @@ export default function TrialBanner() {
   const [companyInfo, setCompanyInfo] = useState<CompanyInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string>('');
 
   useEffect(() => {
     fetchCompanyInfo();
@@ -30,6 +31,7 @@ export default function TrialBanner() {
       });
 
       const user = response.data;
+      setUserRole(user.user_role);
       
       // Fetch company details
       if (user.company_id) {
@@ -62,8 +64,14 @@ export default function TrialBanner() {
   // Don't show banner if dismissed, loading, or no company info
   if (loading || dismissed || !companyInfo) return null;
 
+  // Don't show for super_admin (application owner)
+  if (userRole === 'super_admin') return null;
+
   // Don't show if subscription is active (paid)
   if (companyInfo.subscription_status === 'active') return null;
+
+  // Check if user can see "View Plans" button (only company_admin and admin)
+  const canViewPlans = userRole === 'company_admin' || userRole === 'admin';
 
   // Show different banners based on status
   const isTrialExpired = companyInfo.subscription_status === 'expired' || companyInfo.days_remaining <= 0;
@@ -83,15 +91,17 @@ export default function TrialBanner() {
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/billing"
-              className="bg-white text-red-600 px-6 py-2 rounded-lg font-semibold hover:bg-red-50 transition-colors flex items-center gap-2"
-            >
-              <CreditCardIcon className="w-5 h-5" />
-              Upgrade Now
-            </Link>
-          </div>
+          {canViewPlans && (
+            <div className="flex items-center gap-3">
+              <Link
+                to="/billing"
+                className="bg-white text-red-600 px-6 py-2 rounded-lg font-semibold hover:bg-red-50 transition-colors flex items-center gap-2"
+              >
+                <CreditCardIcon className="w-5 h-5" />
+                Upgrade Now
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -114,13 +124,15 @@ export default function TrialBanner() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Link
-              to="/billing"
-              className="bg-white text-orange-600 px-6 py-2 rounded-lg font-semibold hover:bg-orange-50 transition-colors flex items-center gap-2"
-            >
-              <CreditCardIcon className="w-5 h-5" />
-              Upgrade
-            </Link>
+            {canViewPlans && (
+              <Link
+                to="/billing"
+                className="bg-white text-orange-600 px-6 py-2 rounded-lg font-semibold hover:bg-orange-50 transition-colors flex items-center gap-2"
+              >
+                <CreditCardIcon className="w-5 h-5" />
+                Upgrade
+              </Link>
+            )}
             <button
               onClick={() => setDismissed(true)}
               className="p-2 hover:bg-orange-600 rounded-lg transition-colors"
@@ -149,13 +161,15 @@ export default function TrialBanner() {
           </div>
         </div>
         <div className="flex items-center gap-3">
-          <Link
-            to="/billing"
-            className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
-          >
-            <CreditCardIcon className="w-5 h-5" />
-            View Plans
-          </Link>
+          {canViewPlans && (
+            <Link
+              to="/billing"
+              className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+            >
+              <CreditCardIcon className="w-5 h-5" />
+              View Plans
+            </Link>
+          )}
           <button
             onClick={() => setDismissed(true)}
             className="p-2 hover:bg-blue-700 rounded-lg transition-colors"

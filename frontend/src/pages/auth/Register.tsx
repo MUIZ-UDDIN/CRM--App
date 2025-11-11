@@ -80,7 +80,7 @@ export default function Register() {
     if (value.length < 2) return 'Company name must be at least 2 characters';
     if (value.length > 100) return 'Company name cannot exceed 100 characters';
     if (/<script|<iframe|javascript:|onerror=|onload=/i.test(value)) {
-      return 'Invalid characters detected. Script tags are not allowed';
+      return 'Script tags and HTML are not allowed';
     }
     if (/<[^>]+>/.test(value)) return 'HTML tags are not allowed';
     if (!/^[a-zA-Z0-9\s\-\.&,'"()]+$/.test(value)) {
@@ -93,7 +93,7 @@ export default function Register() {
     if (!value.trim()) return `${fieldName} is required`;
     if (value.length > 50) return `${fieldName} cannot exceed 50 characters`;
     if (/<script|<iframe|javascript:|onerror=|onload=/i.test(value)) {
-      return 'Invalid characters detected. Script tags are not allowed';
+      return 'Script tags and HTML are not allowed';
     }
     if (/<[^>]+>/.test(value)) return 'HTML tags are not allowed';
     if (!/^[a-zA-Z\s\-']+$/.test(value)) {
@@ -324,7 +324,9 @@ export default function Register() {
               Company Name *
             </label>
             <div className="relative">
-              <BuildingOfficeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="absolute left-3 top-3 flex items-center h-[42px]">
+                <BuildingOfficeIcon className="w-5 h-5 text-gray-400" />
+              </div>
               <input
                 type="text"
                 required
@@ -353,7 +355,9 @@ export default function Register() {
                 First Name *
               </label>
               <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="absolute left-3 top-3 flex items-center h-[42px]">
+                  <UserIcon className="w-5 h-5 text-gray-400" />
+                </div>
                 <input
                   type="text"
                   required
@@ -379,7 +383,9 @@ export default function Register() {
                 Last Name *
               </label>
               <div className="relative">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="absolute left-3 top-3 flex items-center h-[42px]">
+                  <UserIcon className="w-5 h-5 text-gray-400" />
+                </div>
                 <input
                   type="text"
                   required
@@ -408,7 +414,9 @@ export default function Register() {
               Work Email *
             </label>
             <div className="relative">
-              <EnvelopeIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="absolute left-3 top-3 flex items-center h-[42px]">
+                <EnvelopeIcon className="w-5 h-5 text-gray-400" />
+              </div>
               <input
                 type="email"
                 required
@@ -433,7 +441,9 @@ export default function Register() {
               Phone Number (Optional)
             </label>
             <div className="relative">
-              <PhoneIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="absolute left-3 top-3 flex items-center h-[42px]">
+                <PhoneIcon className="w-5 h-5 text-gray-400" />
+              </div>
               <input
                 type="tel"
                 maxLength={20}
@@ -464,7 +474,9 @@ export default function Register() {
               Password *
             </label>
             <div className="relative">
-              <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <div className="absolute left-3 top-3 flex items-center h-[42px]">
+                <LockClosedIcon className="w-5 h-5 text-gray-400" />
+              </div>
               <input
                 type="password"
                 required
@@ -528,7 +540,7 @@ export default function Register() {
           <div className="text-center pt-4 border-t">
             <p className="text-sm text-gray-600">
               Already have an account?{' '}
-              <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+              <Link to="/auth/login" className="text-blue-600 font-semibold hover:underline">
                 Sign in
               </Link>
             </p>
