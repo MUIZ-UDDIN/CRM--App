@@ -16,6 +16,10 @@ from app.models import User, Company
 
 router = APIRouter(prefix="/api/team", tags=["Team"])
 
+import logging
+logger = logging.getLogger(__name__)
+logger.info("✅ Team router loaded with prefix /api/team")
+
 
 class AddTeamMemberRequest(BaseModel):
     """Add team member request schema with validation"""
@@ -116,6 +120,12 @@ class AddTeamMemberRequest(BaseModel):
             raise ValueError('Phone number must contain at least 10 digits.')
         
         return v
+
+
+@router.get("/test")
+async def test_endpoint():
+    """Test endpoint to verify router is working"""
+    return {"status": "ok", "message": "Team router is working", "prefix": "/api/team"}
 
 
 @router.post("/members")

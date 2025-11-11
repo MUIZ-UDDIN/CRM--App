@@ -217,6 +217,7 @@ app.include_router(
     tags=["Team"]
     # No dependencies here - router already has prefix and endpoints have their own auth
 )
+logger.info("✅ Team Management routes registered at /api/team")
 
 app.include_router(
     users_router,
