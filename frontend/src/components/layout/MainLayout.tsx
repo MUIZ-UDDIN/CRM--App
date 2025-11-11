@@ -26,6 +26,7 @@ import ImageViewer from '../ImageViewer';
 import TrialBanner from '../TrialBanner';
 import ActiveCallPanel from '../ActiveCallPanel';
 import IncomingCallNotification from '../IncomingCallNotification';
+import OutgoingCallNotification from '../OutgoingCallNotification';
 import { twilioVoiceService } from '../../services/twilioVoiceService';
 import { Call } from '@twilio/voice-sdk';
 
@@ -91,6 +92,9 @@ export default function MainLayout() {
   
   // Twilio Voice states
   const [incomingCall, setIncomingCall] = useState<Call | null>(null);
+  const [outgoingCall, setOutgoingCall] = useState<Call | null>(null);
+  const [outgoingNumber, setOutgoingNumber] = useState<string>('');
+  const [outgoingName, setOutgoingName] = useState<string>('');
   const [activeCall, setActiveCall] = useState<Call | null>(null);
 
   // Close quick add menu when clicking outside
@@ -181,11 +185,20 @@ export default function MainLayout() {
           setNotificationsList(prev => [callNotification, ...prev]);
           setUnreadCount(prev => prev + 1);
         });
+
+        // Set up outgoing call handler
+        twilioVoiceService.onOutgoingCall((call, phoneNumber) => {
+          console.log('Outgoing call initiated to:', phoneNumber);
+          setOutgoingCall(call);
+          setOutgoingNumber(phoneNumber);
+          // You can set contact name here if you have contact data
+        });
         
         // Set up call ended handler
         twilioVoiceService.onCallEnded(() => {
           console.log('Call ended in UI');
           setIncomingCall(null);
+          setOutgoingCall(null);
           setActiveCall(null);
           
           // Remove call notification
@@ -1123,6 +1136,14 @@ export default function MainLayout() {
         call={incomingCall}
         onAnswer={handleAnswerCall}
         onReject={handleRejectCall}
+      />
+
+      {/* Outgoing Call Notification */}
+      <OutgoingCallNotification
+        call={outgoingCall}
+        phoneNumber={outgoingNumber}
+        contactName={outgoingName}
+        onHangup={handleHangupCall}
       />
 
       {/* Active Call Panel - Only show when call is active */}

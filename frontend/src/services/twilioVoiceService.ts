@@ -7,6 +7,7 @@ class TwilioVoiceService {
   private device: Device | null = null;
   private currentCall: Call | null = null;
   private onIncomingCallCallback: ((call: Call) => void) | null = null;
+  private onOutgoingCallCallback: ((call: Call, phoneNumber: string) => void) | null = null;
   private onCallEndedCallback: (() => void) | null = null;
 
   async initialize() {
@@ -178,6 +179,10 @@ class TwilioVoiceService {
     this.onIncomingCallCallback = callback;
   }
 
+  onOutgoingCall(callback: (call: Call, phoneNumber: string) => void) {
+    this.onOutgoingCallCallback = callback;
+  }
+
   onCallEnded(callback: () => void) {
     this.onCallEndedCallback = callback;
   }
@@ -221,6 +226,11 @@ class TwilioVoiceService {
       });
 
       this.currentCall = call;
+
+      // Notify UI about outgoing call
+      if (this.onOutgoingCallCallback) {
+        this.onOutgoingCallCallback(call, phoneNumber);
+      }
 
       // Set up call event listeners
       call.on('accept', () => {
