@@ -541,8 +541,8 @@ export default function MainLayout() {
   };
 
   // Call handlers
-  const handleAnswerCall = () => {
-    twilioVoiceService.answerCall();
+  const handleAnswerCall = async () => {
+    await twilioVoiceService.answerCall();
     setActiveCall(incomingCall);
     setIncomingCall(null);
   };

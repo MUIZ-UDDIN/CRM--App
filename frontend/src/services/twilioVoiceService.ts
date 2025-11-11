@@ -137,9 +137,24 @@ class TwilioVoiceService {
     }
   }
 
-  answerCall() {
+  async answerCall() {
     if (this.currentCall) {
-      this.currentCall.accept();
+      try {
+        // Ensure microphone access before accepting
+        await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          } 
+        });
+        this.currentCall.accept();
+        console.log('Call answered with microphone access');
+      } catch (error) {
+        console.error('Failed to get microphone access:', error);
+        // Still try to accept the call
+        this.currentCall.accept();
+      }
     }
   }
 

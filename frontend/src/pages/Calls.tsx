@@ -303,8 +303,8 @@ export default function CallsNew() {
     }
   };
   
-  const handleAnswerCall = () => {
-    twilioVoiceService.answerCall();
+  const handleAnswerCall = async () => {
+    await twilioVoiceService.answerCall();
     setCallState('connected');
   };
   
