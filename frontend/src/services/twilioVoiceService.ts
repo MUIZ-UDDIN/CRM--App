@@ -198,6 +198,15 @@ class TwilioVoiceService {
     }
 
     try {
+      // Ensure microphone access before making call
+      await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        } 
+      });
+
       // Connect using Twilio Device SDK
       // The TwiML URL is configured in the backend token endpoint
       const call = await this.device.connect({

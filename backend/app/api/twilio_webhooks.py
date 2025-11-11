@@ -633,7 +633,8 @@ async def handle_device_sdk_outgoing_voice(
         dial = Dial(
             caller_id=caller_id if caller_id else None,
             action="https://sunstonecrm.com/api/webhooks/twilio/voice/status",
-            method="POST"
+            method="POST",
+            record="record-from-answer-dual"  # Record both sides for debugging
         )
         dial.number(to_number)
         resp.append(dial)
