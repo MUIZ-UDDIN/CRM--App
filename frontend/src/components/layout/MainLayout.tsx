@@ -25,6 +25,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import ImageViewer from '../ImageViewer';
 import TrialBanner from '../TrialBanner';
 import ActiveCallPanel from '../ActiveCallPanel';
+import IncomingCallNotification from '../IncomingCallNotification';
 import { twilioVoiceService } from '../../services/twilioVoiceService';
 import { Call } from '@twilio/voice-sdk';
 
@@ -1116,6 +1117,13 @@ export default function MainLayout() {
           userName={`${user?.firstName} ${user?.lastName}`}
         />
       )}
+
+      {/* Incoming Call Notification */}
+      <IncomingCallNotification
+        call={incomingCall}
+        onAnswer={handleAnswerCall}
+        onReject={handleRejectCall}
+      />
 
       {/* Active Call Panel - Only show when call is active */}
       <ActiveCallPanel
