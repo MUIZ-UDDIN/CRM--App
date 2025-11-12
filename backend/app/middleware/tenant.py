@@ -80,13 +80,20 @@ class TenantContext:
             # If model has team_id, filter by team
             if hasattr(model, 'team_id'):
                 return query.filter(model.team_id == self.user.team_id)
-            # If model has owner_id and owner is in manager's team
+            # If model has owner_id, filter by team membership
             elif hasattr(model, 'owner_id'):
-                # This requires a subquery to get team members
-                # For simplicity, we'll just filter by company for now
-                # In a real implementation, you'd join with users and filter by team_id
-                if hasattr(model, 'company_id'):
-                    return query.filter(model.company_id == self.company_id)
+                # Get all team members IDs
+                from sqlalchemy import select
+                from app.models import User
+                
+                # This creates a subquery to get all users in the manager's team
+                team_members = select(User.id).where(User.team_id == self.user.team_id)
+                
+                # Filter records where owner is in the team
+                return query.filter(model.owner_id.in_(team_members))
+            # If model has company_id, at least filter by company
+            elif hasattr(model, 'company_id'):
+                return query.filter(model.company_id == self.company_id)
             return query
         
         # Sales reps and regular users see only their own data
@@ -99,12 +106,19 @@ class TenantContext:
         
         return query
     
-    def validate_record_access(self, record) -> bool:
+    def validate_record_access(self, record, db=None) -> bool:
         """
         Validate if user can access a specific record
+        
+        Args:
+            record: The record to check access for
+            db: Optional database session for team membership queries
+            
+        Returns:
+            bool: True if user has access, False otherwise
         """
         if self.is_super_admin():
-            return True
+            return True  # Super admin can access all records
         
         # Company admins can access all company records
         if self.is_company_admin():
@@ -119,8 +133,15 @@ class TenantContext:
                 return str(record.team_id) == str(self.user.team_id)
             
             # If record has owner_id, check if owner is in manager's team
-            # This would require a database query to check team membership
-            # For simplicity, we'll just check company_id for now
+            if hasattr(record, 'owner_id') and db is not None:
+                from app.models import User
+                
+                # Check if owner is in the manager's team
+                owner = db.query(User).filter(User.id == record.owner_id).first()
+                if owner and owner.team_id:
+                    return str(owner.team_id) == str(self.user.team_id)
+            
+            # If we can't determine team membership, fall back to company check
             if hasattr(record, 'company_id'):
                 return str(record.company_id) == str(self.company_id)
         
