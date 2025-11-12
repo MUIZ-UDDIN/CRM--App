@@ -48,6 +48,7 @@ from app.api.invitations import router as invitations_router
 from app.api.search import router as search_router
 from app.api.websocket import router as websocket_router
 from app.api.team import router as team_router
+from app.api.teams import router as teams_router
 
 # Import with error handling for debugging
 try:
@@ -218,6 +219,14 @@ app.include_router(
     # No dependencies here - router already has prefix and endpoints have their own auth
 )
 logger.info("✅ Team Management routes registered at /api/team")
+
+app.include_router(
+    teams_router,
+    prefix="/api/teams",
+    tags=["Teams"],
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Teams Management routes registered at /api/teams")
 
 app.include_router(
     users_router,
