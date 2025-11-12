@@ -14,7 +14,7 @@ from app.middleware.tenant import require_company_admin, require_sales_manager, 
 from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
 
-router = APIRouter(prefix="/api/teams", tags=["Teams"])
+router = APIRouter(tags=["Teams"])
 
 
 class TeamBase(BaseModel):
