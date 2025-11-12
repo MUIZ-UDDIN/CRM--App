@@ -59,6 +59,14 @@ const navigation: NavItem[] = [
       { name: 'Calls', href: '/calls' },
     ]
   },
+  {
+    name: 'Team',
+    icon: UserGroupIcon,
+    children: [
+      { name: 'Team Management', href: '/team' },
+      { name: 'Teams', href: '/teams' },
+    ]
+  },
   { 
     name: 'More', 
     icon: FolderIcon,

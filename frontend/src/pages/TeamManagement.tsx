@@ -32,8 +32,10 @@ export default function TeamManagement() {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [inviting, setInviting] = useState(false);
   
-  // Check if current user is admin
+  // Check user roles
   const isAdmin = user?.role === 'company_admin' || user?.role === 'super_admin' || user?.role === 'Super Admin';
+  const isSalesManager = user?.role === 'sales_manager';
+  const canManageUsers = isAdmin || isSalesManager;
 
   const [inviteForm, setInviteForm] = useState({
     email: '',
@@ -143,12 +145,16 @@ export default function TeamManagement() {
     const badges = {
       super_admin: 'bg-purple-100 text-purple-800',
       company_admin: 'bg-blue-100 text-blue-800',
+      sales_manager: 'bg-yellow-100 text-yellow-800',
+      sales_rep: 'bg-green-100 text-green-800',
       company_user: 'bg-gray-100 text-gray-800'
     };
     
     const labels = {
       super_admin: 'Super Admin',
       company_admin: 'Admin',
+      sales_manager: 'Sales Manager',
+      sales_rep: 'Sales Rep',
       company_user: 'User'
     };
 
@@ -204,7 +210,7 @@ export default function TeamManagement() {
             {isAdmin ? 'Manage your team members and send invitations' : 'View your team members'}
           </p>
         </div>
-        {isAdmin && (
+        {canManageUsers && (
           <button
             onClick={() => setShowInviteModal(true)}
             className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -235,7 +241,7 @@ export default function TeamManagement() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Joined
               </th>
-              {isAdmin && (
+              {canManageUsers && (
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
@@ -245,7 +251,7 @@ export default function TeamManagement() {
           <tbody className="bg-white divide-y divide-gray-200">
             {teamMembers.length === 0 ? (
               <tr>
-                <td colSpan={isAdmin ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
+                <td colSpan={canManageUsers ? 6 : 5} className="px-6 py-12 text-center text-gray-500">
                   <UserIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                   <p>No team members yet</p>
                   <p className="text-sm mt-1">Invite your first team member to get started</p>
@@ -280,7 +286,7 @@ export default function TeamManagement() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {new Date(member.created_at).toLocaleDateString()}
                   </td>
-                  {isAdmin && (
+                  {canManageUsers && (
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <div className="flex items-center gap-2">
                         <button
@@ -414,10 +420,19 @@ export default function TeamManagement() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="company_user">Team Member</option>
-                  <option value="company_admin">Admin</option>
+                  {isAdmin && (
+                    <>
+                      <option value="company_admin">Admin</option>
+                      <option value="sales_manager">Sales Manager</option>
+                    </>
+                  )}
+                  <option value="sales_rep">Sales Rep</option>
                 </select>
                 <p className="text-xs text-gray-500 mt-1">
-                  Admins can invite users and manage settings
+                  {inviteForm.user_role === 'company_admin' && 'Admins can invite users and manage company settings'}
+                  {inviteForm.user_role === 'sales_manager' && 'Sales Managers can manage their team members and assign leads'}
+                  {inviteForm.user_role === 'sales_rep' && 'Sales Reps can manage their own leads and clients'}
+                  {inviteForm.user_role === 'company_user' && 'Team Members have basic access to the system'}
                 </p>
               </div>
 
