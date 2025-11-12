@@ -15,6 +15,7 @@ class Permission(str, enum.Enum):
     EDIT_COMPANY = "edit_company"
     SUSPEND_COMPANY = "suspend_company"
     VIEW_BILLING = "view_billing"
+    MANAGE_COMPANIES = "manage_companies"
     
     # User Management
     MANAGE_COMPANY_ADMINS = "manage_company_admins"

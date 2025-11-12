@@ -2,17 +2,20 @@
 Workflows API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, UUID4
 from datetime import datetime
 import uuid
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
 from app.models.workflows import Workflow, WorkflowExecution, WorkflowStatus, WorkflowTrigger
+from app.middleware.tenant import get_tenant_context
+from app.middleware.permissions import has_permission
+from app.models.permissions import Permission
 
 router = APIRouter()
 
@@ -53,21 +56,78 @@ class WorkflowUpdate(BaseModel):
 @router.get("/", response_model=List[WorkflowResponse])
 async def get_workflows(
     status: Optional[str] = None,
+    scope: Optional[str] = None,  # company, team, user
+    team_id: Optional[UUID4] = None,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all workflows for the company"""
-    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    """Get workflows based on role permissions"""
+    context = get_tenant_context(current_user)
+    company_id = current_user.get("company_id")
+    user_id = current_user.get("id")
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
+    # Convert to UUID
+    company_id_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+    
+    # Base query - filter by company and not deleted
     query = db.query(Workflow).filter(
         and_(
-            Workflow.company_id == company_id,
+            Workflow.company_id == company_id_uuid,
             Workflow.is_deleted == False
         )
     )
+    
+    # Apply permission-based filters
+    if context.is_super_admin() or has_permission(current_user, Permission.MANAGE_COMPANY_AUTOMATIONS):
+        # Can see all workflows in the company
+        pass
+    elif has_permission(current_user, Permission.MANAGE_TEAM_AUTOMATIONS):
+        # Can see team and personal workflows
+        if scope == "company":
+            # Can only see company workflows (read-only)
+            query = query.filter(Workflow.scope == "company")
+        elif scope == "team":
+            # Can see team workflows for their team
+            if team_id:
+                query = query.filter(Workflow.scope == "team", Workflow.team_id == team_id)
+            elif user_team_id:
+                query = query.filter(Workflow.scope == "team", Workflow.team_id == user_team_id)
+            else:
+                return []
+        elif scope == "user":
+            # Can see personal workflows
+            query = query.filter(Workflow.scope == "user", Workflow.owner_id == user_id)
+        else:
+            # Default: see team and personal workflows
+            if user_team_id:
+                query = query.filter(
+                    (Workflow.scope == "team") & (Workflow.team_id == user_team_id) |
+                    (Workflow.scope == "user") & (Workflow.owner_id == user_id) |
+                    (Workflow.scope == "company")
+                )
+            else:
+                query = query.filter(
+                    (Workflow.scope == "user") & (Workflow.owner_id == user_id) |
+                    (Workflow.scope == "company")
+                )
+    elif has_permission(current_user, Permission.USE_PERSONAL_AUTOMATIONS):
+        # Can only see personal workflows and company workflows
+        if scope == "company":
+            query = query.filter(Workflow.scope == "company")
+        elif scope == "user":
+            query = query.filter(Workflow.scope == "user", Workflow.owner_id == user_id)
+        else:
+            query = query.filter(
+                (Workflow.scope == "user") & (Workflow.owner_id == user_id) |
+                (Workflow.scope == "company")
+            )
+    else:
+        # No permissions to view workflows
+        return []
     
     if status:
         query = query.filter(Workflow.status == status)
@@ -93,15 +153,63 @@ async def get_workflows(
 @router.post("/", response_model=WorkflowResponse)
 async def create_workflow(
     workflow_data: WorkflowCreate,
+    scope: Optional[str] = "user",  # company, team, user
+    team_id: Optional[UUID4] = None,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Create a new workflow"""
+    """Create a new workflow based on role permissions"""
+    context = get_tenant_context(current_user)
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
+    
+    # Check permissions based on scope
+    if scope == "company":
+        if not has_permission(current_user, Permission.MANAGE_COMPANY_AUTOMATIONS) and not context.is_super_admin():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to create company-wide workflows"
+            )
+    elif scope == "team":
+        if not has_permission(current_user, Permission.MANAGE_TEAM_AUTOMATIONS) and not context.is_super_admin():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to create team workflows"
+            )
+        
+        # Check if team_id is provided
+        if not team_id and not user_team_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="team_id is required for team scope workflows"
+            )
+        
+        # Use user's team if team_id not provided
+        if not team_id:
+            team_id = user_team_id
+        
+        # Check if user has access to the team
+        if not context.is_super_admin() and not has_permission(current_user, Permission.MANAGE_COMPANY_AUTOMATIONS):
+            if str(team_id) != str(user_team_id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only create workflows for your own team"
+                )
+    elif scope == "user":
+        if not has_permission(current_user, Permission.USE_PERSONAL_AUTOMATIONS) and not context.is_super_admin():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to create personal workflows"
+            )
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid scope. Must be one of: company, team, user"
+        )
     
     # Check for duplicate workflow name
     existing_workflow = db.query(Workflow).filter(
@@ -143,7 +251,9 @@ async def create_workflow(
         status=status,
         actions=[],  # Empty actions array
         owner_id=user_id,
-        company_id=company_id
+        company_id=company_id,
+        scope=scope,
+        team_id=team_id if scope == "team" else None
     )
     
     db.add(new_workflow)

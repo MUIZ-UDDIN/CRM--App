@@ -9,6 +9,7 @@ from .base import Base, BaseModel
 from .companies import Company, PlanType, CompanyStatus, SubscriptionStatus
 from .users import User, Role, Team, user_roles, UserRole, UserStatus
 from .payment_history import PaymentHistory
+from .billing import SubscriptionPlan, PlanFeature, Subscription, Invoice, Payment, BillingCycle, PaymentMethod
 from .contacts import Contact, ContactStatus, LeadSource
 from .deals import Deal, Pipeline, PipelineStage, DealStatus
 from .activities import Activity, ActivityType, ActivityStatus
@@ -55,6 +56,15 @@ __all__ = [
     'CompanyStatus',
     'SubscriptionStatus',
     'PaymentHistory',
+    
+    # Billing
+    'SubscriptionPlan',
+    'PlanFeature',
+    'Subscription',
+    'Invoice',
+    'Payment',
+    'BillingCycle',
+    'PaymentMethod',
     
     # Users & Auth
     'User',

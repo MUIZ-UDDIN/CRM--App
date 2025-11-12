@@ -13,6 +13,8 @@ from app.core.database import get_db
 from app.core.security import get_current_user
 from app.models import Company, User, UserRole, UserStatus, PlanType, CompanyStatus
 from app.middleware.tenant import require_super_admin, require_company_admin, get_tenant_context
+from app.middleware.permissions import has_permission, require_permission
+from app.models.permissions import Permission
 
 router = APIRouter(prefix="/api/companies", tags=["companies"])
 
@@ -93,7 +95,12 @@ def create_company(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new company (Super Admin only)"""
-    require_super_admin(current_user)
+    # Check if user has permission to create companies
+    if not has_permission(current_user, Permission.CREATE_COMPANY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Cannot create companies"
+        )
     
     # Check if domain already exists
     if company.domain:
@@ -131,7 +138,12 @@ def list_companies(
     current_user: User = Depends(get_current_user)
 ):
     """List all companies (Super Admin only)"""
-    require_super_admin(current_user)
+    # Check if user has permission to view all companies
+    if not has_permission(current_user, Permission.VIEW_ALL_COMPANIES):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Cannot view all companies"
+        )
     
     query = db.query(Company)
     
@@ -217,6 +229,13 @@ def update_company(
             detail="Access denied to this company"
         )
     
+    # Check if user has permission to edit company
+    if not has_permission(current_user, Permission.EDIT_COMPANY) and not context.is_super_admin():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Cannot edit company"
+        )
+    
     # Only super admin can change status and plan
     if not context.is_super_admin():
         if company_update.status or company_update.plan:
@@ -250,7 +269,12 @@ def delete_company(
     current_user: User = Depends(get_current_user)
 ):
     """Delete company (Super Admin only)"""
-    require_super_admin(current_user)
+    # Check if user has permission to delete companies
+    if not has_permission(current_user, Permission.DELETE_COMPANY):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Cannot delete companies"
+        )
     
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
@@ -280,7 +304,12 @@ def suspend_company(
     current_user: User = Depends(get_current_user)
 ):
     """Suspend a company (Super Admin only)"""
-    require_super_admin(current_user)
+    # Check if user has permission to manage companies
+    if not has_permission(current_user, Permission.MANAGE_COMPANIES):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Cannot manage companies"
+        )
     
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
@@ -314,7 +343,12 @@ def activate_company(
     current_user: User = Depends(get_current_user)
 ):
     """Activate a suspended company (Super Admin only)"""
-    require_super_admin(current_user)
+    # Check if user has permission to manage companies
+    if not has_permission(current_user, Permission.MANAGE_COMPANIES):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied: Cannot manage companies"
+        )
     
     company = db.query(Company).filter(Company.id == company_id).first()
     if not company:
@@ -386,10 +420,28 @@ def add_company_user(
     """Add a new user to company (Company Admin or Super Admin)"""
     context = get_tenant_context(current_user)
     
-    if not context.can_manage_company():
+    # Check if user has permission to manage company users
+    has_manage_permission = False
+    
+    # Super admin can manage any company's users
+    if context.is_super_admin():
+        has_manage_permission = True
+    # Company admin can manage their own company's users
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS) and context.can_access_company(company_id):
+        has_manage_permission = True
+    # Sales manager can only add users with sales_rep or company_user roles
+    elif has_permission(current_user, Permission.MANAGE_TEAM_USERS) and context.can_access_company(company_id):
+        if user_data.user_role not in [UserRole.SALES_REP, UserRole.COMPANY_USER]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Sales managers can only add sales reps or company users"
+            )
+        has_manage_permission = True
+    
+    if not has_manage_permission:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
+            detail="Permission denied: Cannot manage users"
         )
     
     if not context.can_access_company(company_id):

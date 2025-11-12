@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, or_
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, UUID4
 import pandas as pd
 import io
 from datetime import datetime
@@ -10,7 +10,10 @@ import uuid
 
 from app.core.database import get_db
 from app.models.contacts import Contact as ContactModel, ContactStatus
-from app.api.auth import get_current_active_user
+from app.core.security import get_current_active_user
+from app.middleware.tenant import get_tenant_context
+from app.middleware.permissions import has_permission
+from app.models.permissions import Permission
 
 # Pydantic schemas
 class ContactBase(BaseModel):
@@ -57,19 +60,49 @@ async def get_contacts(
     type: Optional[str] = None,
     status: Optional[str] = None,
     owner_id: Optional[str] = None,
+    team_id: Optional[UUID4] = None,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all contacts with optional search, filters and pagination (company-scoped)"""
+    """Get contacts based on role-based permissions"""
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
     
-    # All users (including super admin) see only their company's contacts
-    if company_id:
-        query = db.query(ContactModel).filter(
-            ContactModel.is_deleted == False,
-            ContactModel.company_id == company_id
+    # Start with base query for non-deleted contacts
+    query = db.query(ContactModel).filter(ContactModel.is_deleted == False)
+    
+    # Apply filters based on role permissions
+    if context.is_super_admin():
+        # Super admin can see all contacts or filter by company
+        if company_id:
+            query = query.filter(ContactModel.company_id == company_id)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company admin can see all contacts in their company
+        query = query.filter(ContactModel.company_id == company_id)
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
+        # Sales manager can see contacts owned by anyone in their team
+        if not user_team_id:
+            return []
+        
+        # Get all users in the team
+        from app.models.users import User
+        team_user_ids = [str(u.id) for u in db.query(User).filter(User.team_id == user_team_id).all()]
+        
+        # Filter contacts owned by team members
+        query = query.filter(
+            ContactModel.company_id == company_id,
+            ContactModel.owner_id.in_([uuid.UUID(id) for id in team_user_ids])
+        )
+    elif has_permission(current_user, Permission.VIEW_OWN_DATA):
+        # Regular users can only see their own contacts
+        query = query.filter(
+            ContactModel.company_id == company_id,
+            ContactModel.owner_id == uuid.UUID(user_id) if isinstance(user_id, str) else user_id
         )
     else:
+        # No permission to view contacts
         return []
     
     if search:
@@ -202,7 +235,11 @@ async def get_contact(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get a specific contact by ID"""
+    """Get a specific contact by ID with role-based permissions"""
+    context = get_tenant_context(current_user)
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
+    
     contact = db.query(ContactModel).filter(
         and_(
             ContactModel.id == contact_id,
@@ -212,7 +249,52 @@ async def get_contact(
     
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
-    return contact
+    
+    # Check permissions
+    if context.is_super_admin():
+        # Super admin can access any contact
+        return contact
+    
+    # Check if contact belongs to user's company
+    if str(contact.company_id) != str(context.company_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this contact"
+        )
+    
+    # Company admin can view any contact in their company
+    if has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        return contact
+    
+    # Sales manager can view contacts owned by anyone in their team
+    if has_permission(current_user, Permission.VIEW_TEAM_DATA):
+        # Get all users in the team
+        from app.models.users import User
+        team_user_ids = [str(u.id) for u in db.query(User).filter(User.team_id == user_team_id).all()]
+        
+        if str(contact.owner_id) in team_user_ids:
+            return contact
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this contact"
+            )
+    
+    # Regular users can only view their own contacts
+    if has_permission(current_user, Permission.VIEW_OWN_DATA):
+        if str(contact.owner_id) == str(user_id):
+            return contact
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this contact"
+            )
+    
+    # No permission to view contacts
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="You don't have permission to view contacts"
+    )
 
 @router.put("/{contact_id}", response_model=Contact)
 async def update_contact(
@@ -221,8 +303,10 @@ async def update_contact(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Update a specific contact"""
-    # Get company_id from current user
+    """Update a specific contact with role-based permissions"""
+    context = get_tenant_context(current_user)
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
     company_id = current_user.get('company_id')
     
     contact = db.query(ContactModel).filter(
@@ -283,7 +367,11 @@ async def delete_contact(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Soft delete a specific contact"""
+    """Soft delete a specific contact with role-based permissions"""
+    context = get_tenant_context(current_user)
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
+    
     contact = db.query(ContactModel).filter(
         and_(
             ContactModel.id == contact_id,
@@ -293,6 +381,43 @@ async def delete_contact(
     
     if not contact:
         raise HTTPException(status_code=404, detail="Contact not found")
+    
+    # Check permissions
+    if context.is_super_admin():
+        # Super admin can delete any contact
+        pass
+    elif str(contact.company_id) != str(context.company_id):
+        # Contact must belong to user's company
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied to this contact"
+        )
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company admin can delete any contact in their company
+        pass
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
+        # Sales manager can delete contacts owned by anyone in their team
+        from app.models.users import User
+        team_user_ids = [str(u.id) for u in db.query(User).filter(User.team_id == user_team_id).all()]
+        
+        if str(contact.owner_id) not in team_user_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this contact"
+            )
+    elif has_permission(current_user, Permission.VIEW_OWN_DATA):
+        # Regular users can only delete their own contacts
+        if str(contact.owner_id) != str(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this contact"
+            )
+    else:
+        # No permission to delete contacts
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete contacts"
+        )
     
     try:
         contact.is_deleted = True

@@ -2,17 +2,20 @@
 Users API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, UUID4
 from datetime import datetime
 import uuid
 import base64
 
 from ..core.security import get_current_active_user, get_password_hash, verify_password
 from ..core.database import get_db
-from ..models.users import User as UserModel
+from ..models.users import User as UserModel, UserRole, UserStatus
+from ..middleware.tenant import get_tenant_context
+from ..middleware.permissions import has_permission
+from ..models.permissions import Permission
 
 router = APIRouter()
 
@@ -190,20 +193,59 @@ async def change_password(
 
 @router.get("/", response_model=List[UserResponse])
 async def get_all_users(
+    team_id: Optional[UUID4] = None,
+    role: Optional[str] = None,
+    status: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all users from current user's company (for team management)"""
+    """Get users based on role-based permissions"""
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
     
-    # All users (including super admin) only see their company's team members
-    if company_id:
-        users = db.query(UserModel).filter(
-            UserModel.is_deleted == False,
-            UserModel.company_id == company_id
-        ).all()
+    # Start with base query
+    query = db.query(UserModel).filter(UserModel.is_deleted == False)
+    
+    # Apply filters based on role permissions
+    if context.is_super_admin():
+        # Super admin can see all users or filter by company
+        if company_id:
+            query = query.filter(UserModel.company_id == company_id)
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+        # Company admin can see all users in their company
+        query = query.filter(UserModel.company_id == company_id)
+    elif has_permission(current_user, Permission.MANAGE_TEAM_USERS):
+        # Sales manager can see users in their team
+        user_team_id = current_user.get('team_id')
+        if not user_team_id:
+            return []
+        query = query.filter(
+            UserModel.company_id == company_id,
+            UserModel.team_id == user_team_id
+        )
     else:
-        users = []
+        # Regular users can only see themselves
+        query = query.filter(UserModel.id == current_user.get('id'))
+    
+    # Apply additional filters
+    if team_id:
+        # Check if user has permission to view this team
+        if not context.is_super_admin() and not has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+            user_team_id = current_user.get('team_id')
+            if str(team_id) != str(user_team_id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You don't have permission to view users from this team"
+                )
+        query = query.filter(UserModel.team_id == team_id)
+    
+    if role:
+        query = query.filter(UserModel.user_role == role)
+    
+    if status:
+        query = query.filter(UserModel.status == status)
+    
+    users = query.all()
     
     return [
         UserResponse(
@@ -212,8 +254,6 @@ async def get_all_users(
             first_name=user.first_name,
             last_name=user.last_name,
             role=user.role,
-            user_role=user.user_role if hasattr(user, 'user_role') else None,
-            company_id=str(user.company_id) if user.company_id else None,
             phone=user.phone,
             title=user.title,
             department=user.department,
@@ -221,8 +261,7 @@ async def get_all_users(
             bio=user.bio,
             avatar=user.avatar_url,
             team_id=str(user.team_id) if user.team_id else None,
-            is_active=user.is_active if hasattr(user, 'is_active') else True,
-            status=user.status if hasattr(user, 'status') else 'active',
+            is_active=user.is_active,
             created_at=user.created_at
         )
         for user in users
@@ -236,6 +275,8 @@ async def get_user(
     db: Session = Depends(get_db)
 ):
     """Get specific user by ID"""
+    context = get_tenant_context(current_user)
+    
     user = db.query(UserModel).filter(
         UserModel.id == user_id,
         UserModel.is_deleted == False
@@ -243,6 +284,32 @@ async def get_user(
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check permissions
+    if not context.is_super_admin():
+        # Check if user is from the same company
+        if str(user.company_id) != str(context.company_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this user"
+            )
+        
+        # Company admin can view any user in their company
+        if has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+            pass
+        # Sales manager can only view users in their team
+        elif has_permission(current_user, Permission.MANAGE_TEAM_USERS):
+            if str(user.team_id) != str(current_user.get('team_id')):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied to this user"
+                )
+        # Regular users can only view themselves
+        elif str(user.id) != str(current_user.get('id')):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this user"
+            )
     
     return UserResponse(
         id=str(user.id),
@@ -257,48 +324,9 @@ async def get_user(
         bio=user.bio,
         avatar=user.avatar_url,
         team_id=str(user.team_id) if user.team_id else None,
-        is_active=True,
+        is_active=user.is_active,
         created_at=user.created_at
     )
-
-
-@router.delete("/me")
-async def delete_own_account(
-    current_user: dict = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    """Delete own account (permanent deletion)"""
-    import uuid
-    from sqlalchemy import text
-    
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
-    
-    # Check if user exists
-    user = db.query(UserModel).filter(UserModel.id == user_id).first()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    try:
-        # Delete related data first using raw SQL to avoid relationship loading issues
-        db.execute(text("DELETE FROM twilio_settings WHERE user_id = :user_id"), {"user_id": user_id})
-        db.execute(text("DELETE FROM workflows WHERE owner_id = :user_id"), {"user_id": user_id})
-        db.execute(text("DELETE FROM folders WHERE owner_id = :user_id"), {"user_id": user_id})
-        db.execute(text("DELETE FROM files WHERE owner_id = :user_id"), {"user_id": user_id})
-        db.execute(text("DELETE FROM documents WHERE owner_id = :user_id"), {"user_id": user_id})
-        db.execute(text("DELETE FROM deals WHERE owner_id = :user_id"), {"user_id": user_id})
-        db.execute(text("DELETE FROM activities WHERE owner_id = :user_id"), {"user_id": user_id})
-        db.execute(text("DELETE FROM contacts WHERE owner_id = :user_id"), {"user_id": user_id})
-        
-        # Now delete the user
-        db.execute(text("DELETE FROM users WHERE id = :user_id"), {"user_id": user_id})
-        db.commit()
-        
-        return {"message": "Account permanently deleted"}
-    except Exception as e:
-        db.rollback()
-        print(f"Error deleting account: {e}")
-        raise HTTPException(status_code=500, detail="Failed to delete account. Please try again.")
 
 
 @router.put("/{user_id}", response_model=UserResponse)
@@ -308,17 +336,29 @@ async def update_user(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Update a user - Super Admin, Admin, or Company Admin only"""
-    current_user_role = current_user.get("role")
-    current_user_company_id = current_user.get("company_id")
+    """Update a user based on role-based permissions"""
+    context = get_tenant_context(current_user)
     
-    # Check if current user has permission to update users
-    # Support both old role names and new ones
-    allowed_roles = ["Super Admin", "Admin", "company_admin", "super_admin", "admin"]
-    if current_user_role not in allowed_roles:
+    # Check if user has permission to update users
+    can_update = False
+    
+    # Super admin can update any user
+    if context.is_super_admin():
+        can_update = True
+    # Company admin can update users in their company
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+        can_update = True
+    # Sales manager can update users in their team
+    elif has_permission(current_user, Permission.MANAGE_TEAM_USERS):
+        can_update = True
+    # Users can update their own profile
+    elif str(current_user.get('id')) == user_id:
+        can_update = True
+    
+    if not can_update:
         raise HTTPException(
-            status_code=403, 
-            detail="Only Super Admin, Admin, or Company Admin can update users"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to update users"
         )
     
     user = db.query(UserModel).filter(
@@ -329,13 +369,44 @@ async def update_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Company Admin and Admin can only update users from their own company
-    if current_user_role in ["company_admin", "Admin"] and current_user_role != "Super Admin":
-        if str(user.company_id) != str(current_user_company_id):
+    # Check access permissions
+    if not context.is_super_admin():
+        # Check if user is from the same company
+        if str(user.company_id) != str(context.company_id):
             raise HTTPException(
-                status_code=403, 
-                detail="You can only update users from your own company"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this user"
             )
+        
+        # Sales manager can only update users in their team
+        if has_permission(current_user, Permission.MANAGE_TEAM_USERS) and not has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+            if str(user.team_id) != str(current_user.get('team_id')):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only update users in your team"
+                )
+            
+            # Sales managers cannot change user roles to higher roles
+            if user_update.role and user_update.role.lower() in ['super_admin', 'company_admin', 'admin']:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Sales managers cannot assign admin roles"
+                )
+        
+        # Regular users can only update themselves
+        if not has_permission(current_user, Permission.MANAGE_TEAM_USERS) and not has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+            if str(user.id) != str(current_user.get('id')):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only update your own profile"
+                )
+            
+            # Regular users cannot change their role
+            if user_update.role is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You cannot change your own role"
+                )
     
     # Update user fields
     if user_update.first_name is not None:
@@ -359,7 +430,7 @@ async def update_user(
         # Only admin@sunstonecrm.com can be super_admin
         if user_update.role.lower() in ['super_admin', 'super admin']:
             raise HTTPException(
-                status_code=403,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Super Admin role cannot be assigned. Only the system super admin (admin@sunstonecrm.com) has this role."
             )
         
@@ -395,17 +466,26 @@ async def delete_user(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a user (soft delete) - Super Admin, Admin, or Company Admin only"""
-    current_user_role = current_user.get("role")
-    current_user_company_id = current_user.get("company_id")
+    """Delete a user (soft delete) based on role-based permissions"""
+    context = get_tenant_context(current_user)
     
-    # Check if current user has permission to delete users
-    # Support both old role names and new ones
-    allowed_roles = ["Super Admin", "Admin", "company_admin", "super_admin", "admin"]
-    if current_user_role not in allowed_roles:
+    # Check if user has permission to delete users
+    can_delete = False
+    
+    # Super admin can delete any user
+    if context.is_super_admin():
+        can_delete = True
+    # Company admin can delete users in their company
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+        can_delete = True
+    # Sales manager can delete users in their team
+    elif has_permission(current_user, Permission.MANAGE_TEAM_USERS):
+        can_delete = True
+    
+    if not can_delete:
         raise HTTPException(
-            status_code=403, 
-            detail="Only Super Admin, Admin, or Company Admin can delete users"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete users"
         )
     
     # Prevent self-deletion
@@ -420,30 +500,39 @@ async def delete_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
-    # Company Admin can only delete users from their own company
-    if current_user_role == "company_admin":
-        if str(user.company_id) != str(current_user_company_id):
+    # Check access permissions
+    if not context.is_super_admin():
+        # Check if user is from the same company
+        if str(user.company_id) != str(context.company_id):
             raise HTTPException(
-                status_code=403, 
-                detail="You can only delete users from your own company"
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied to this user"
             )
-    
-    # Admin (assigned by super admin) can only delete users from their own company
-    if current_user_role == "Admin" and current_user_role != "Super Admin":
-        if str(user.company_id) != str(current_user_company_id):
-            raise HTTPException(
-                status_code=403, 
-                detail="You can only delete users from your own company"
-            )
-    
-    # Super Admin can delete any user from their company
-    # (Super Admin should not delete users from other companies via team page)
-    if current_user_role == "Super Admin":
-        if str(user.company_id) != str(current_user_company_id):
-            raise HTTPException(
-                status_code=403, 
-                detail="You can only delete users from your own company"
-            )
+        
+        # Sales manager can only delete users in their team
+        if has_permission(current_user, Permission.MANAGE_TEAM_USERS) and not has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+            if str(user.team_id) != str(current_user.get('team_id')):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only delete users in your team"
+                )
+            
+            # Sales managers cannot delete admins
+            if user.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN] or \
+               (isinstance(user.user_role, str) and user.user_role.lower() in ['super_admin', 'company_admin', 'admin']):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Sales managers cannot delete admin users"
+                )
+        
+        # Company admin cannot delete super admin
+        if has_permission(current_user, Permission.MANAGE_COMPANY_USERS) and not context.is_super_admin():
+            if user.user_role == UserRole.SUPER_ADMIN or \
+               (isinstance(user.user_role, str) and user.user_role.lower() == 'super_admin'):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Company admins cannot delete super admin users"
+                )
     
     # Soft delete
     user.is_deleted = True
