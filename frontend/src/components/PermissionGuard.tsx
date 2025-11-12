@@ -1,55 +1,58 @@
 import React, { ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
-// Define permission types
-export enum Permission {
+// Define permission types as a const object instead of enum to be compatible with TypeScript's erasableSyntaxOnly mode
+export const Permission = {
   // Company Management
-  MANAGE_BILLING = "manage_billing",
-  CREATE_COMPANY = "create_company",
-  DELETE_COMPANY = "delete_company",
-  EDIT_COMPANY = "edit_company",
-  SUSPEND_COMPANY = "suspend_company",
+  MANAGE_BILLING: "manage_billing",
+  CREATE_COMPANY: "create_company",
+  DELETE_COMPANY: "delete_company",
+  EDIT_COMPANY: "edit_company",
+  SUSPEND_COMPANY: "suspend_company",
   
   // User Management
-  MANAGE_COMPANY_ADMINS = "manage_company_admins",
-  MANAGE_COMPANY_USERS = "manage_company_users",
-  MANAGE_TEAM_USERS = "manage_team_users",
+  MANAGE_COMPANY_ADMINS: "manage_company_admins",
+  MANAGE_COMPANY_USERS: "manage_company_users",
+  MANAGE_TEAM_USERS: "manage_team_users",
   
   // Data Access
-  VIEW_ALL_COMPANIES = "view_all_companies",
-  VIEW_COMPANY_DATA = "view_company_data",
-  VIEW_TEAM_DATA = "view_team_data",
-  VIEW_OWN_DATA = "view_own_data",
+  VIEW_ALL_COMPANIES: "view_all_companies",
+  VIEW_COMPANY_DATA: "view_company_data",
+  VIEW_TEAM_DATA: "view_team_data",
+  VIEW_OWN_DATA: "view_own_data",
   
   // Analytics
-  VIEW_ALL_ANALYTICS = "view_all_analytics",
-  VIEW_COMPANY_ANALYTICS = "view_company_analytics",
-  VIEW_TEAM_ANALYTICS = "view_team_analytics",
-  VIEW_OWN_ANALYTICS = "view_own_analytics",
+  VIEW_ALL_ANALYTICS: "view_all_analytics",
+  VIEW_COMPANY_ANALYTICS: "view_company_analytics",
+  VIEW_TEAM_ANALYTICS: "view_team_analytics",
+  VIEW_OWN_ANALYTICS: "view_own_analytics",
   
   // Lead/Deal Management
-  ASSIGN_ANY_LEADS = "assign_any_leads",
-  ASSIGN_COMPANY_LEADS = "assign_company_leads",
-  ASSIGN_TEAM_LEADS = "assign_team_leads",
+  ASSIGN_ANY_LEADS: "assign_any_leads",
+  ASSIGN_COMPANY_LEADS: "assign_company_leads",
+  ASSIGN_TEAM_LEADS: "assign_team_leads",
   
   // Integrations
-  MANAGE_GLOBAL_INTEGRATIONS = "manage_global_integrations",
-  MANAGE_COMPANY_INTEGRATIONS = "manage_company_integrations",
-  USE_INTEGRATIONS = "use_integrations",
+  MANAGE_GLOBAL_INTEGRATIONS: "manage_global_integrations",
+  MANAGE_COMPANY_INTEGRATIONS: "manage_company_integrations",
+  USE_INTEGRATIONS: "use_integrations",
   
   // Automations
-  MANAGE_GLOBAL_AUTOMATIONS = "manage_global_automations",
-  MANAGE_COMPANY_AUTOMATIONS = "manage_company_automations",
-  MANAGE_TEAM_AUTOMATIONS = "manage_team_automations",
+  MANAGE_GLOBAL_AUTOMATIONS: "manage_global_automations",
+  MANAGE_COMPANY_AUTOMATIONS: "manage_company_automations",
+  MANAGE_TEAM_AUTOMATIONS: "manage_team_automations",
   
   // Data Export/Import
-  EXPORT_ANY_DATA = "export_any_data",
-  EXPORT_COMPANY_DATA = "export_company_data",
-  EXPORT_TEAM_DATA = "export_team_data"
-}
+  EXPORT_ANY_DATA: "export_any_data",
+  EXPORT_COMPANY_DATA: "export_company_data",
+  EXPORT_TEAM_DATA: "export_team_data"
+} as const;
+
+// Type for permission values
+export type PermissionType = typeof Permission[keyof typeof Permission];
 
 // Role-based permission mapping
-const ROLE_PERMISSIONS: Record<string, Permission[]> = {
+const ROLE_PERMISSIONS: Record<string, string[]> = {
   'super_admin': Object.values(Permission),
   'company_admin': [
     Permission.EDIT_COMPANY,
@@ -94,14 +97,14 @@ const ROLE_PERMISSIONS: Record<string, Permission[]> = {
 };
 
 // Helper function to check if a user has a specific permission
-export const hasPermission = (userRole: string, permission: Permission): boolean => {
+export const hasPermission = (userRole: string, permission: string): boolean => {
   const normalizedRole = userRole.toLowerCase().replace(' ', '_');
   const permissions = ROLE_PERMISSIONS[normalizedRole] || [];
   return permissions.includes(permission);
 };
 
 interface PermissionGuardProps {
-  permission: Permission;
+  permission: string;
   children: ReactNode;
   fallback?: ReactNode;
 }
