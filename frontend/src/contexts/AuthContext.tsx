@@ -28,7 +28,7 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
-  hasPermission: (permission: Permission) => boolean;
+  hasPermission: (permission: string) => boolean;
 }
 
 interface RegisterData {
@@ -256,7 +256,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'UPDATE_USER', payload: userData });
   };
 
-  const hasPermission = (permission: Permission): boolean => {
+  const hasPermission = (permission: string): boolean => {
     if (!state.user) return false;
     return checkPermission(state.user.role, permission);
   };
