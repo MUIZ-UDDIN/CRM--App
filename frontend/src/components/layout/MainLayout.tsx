@@ -66,7 +66,6 @@ const navigation: NavItem[] = [
       { name: 'Activities', href: '/activities' },
       { name: 'Files', href: '/files' },
       { name: 'Workflows', href: '/workflows' },
-      { name: 'Team Management', href: '/team' },
       { name: 'Settings', href: '/settings' },
     ]
   },
