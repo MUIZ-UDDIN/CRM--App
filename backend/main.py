@@ -33,6 +33,7 @@ from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
 from app.api.sms import router as sms_router
 from app.api.calls import router as calls_router
+from app.api.teams import router as teams_router
 
 
 @asynccontextmanager
@@ -171,6 +172,13 @@ app.include_router(
     calls_router,
     prefix="/api/calls",
     tags=["Calls"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    teams_router,
+    prefix="/api/teams",
+    tags=["Teams"],
     dependencies=[Depends(get_current_user)]
 )
 

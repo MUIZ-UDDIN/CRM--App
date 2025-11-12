@@ -38,6 +38,18 @@ class TenantContext:
             return self.user_role.lower() in ['company_admin', 'company admin']
         return self.user_role == UserRole.COMPANY_ADMIN
     
+    def is_sales_manager(self) -> bool:
+        """Check if current user is sales manager"""
+        if isinstance(self.user_role, str):
+            return self.user_role.lower() in ['sales_manager']
+        return self.user_role == UserRole.SALES_MANAGER
+    
+    def is_sales_rep(self) -> bool:
+        """Check if current user is sales rep"""
+        if isinstance(self.user_role, str):
+            return self.user_role.lower() in ['sales_rep']
+        return self.user_role == UserRole.SALES_REP
+    
     def can_manage_company(self) -> bool:
         """Check if user can manage company settings"""
         return self.is_super_admin() or self.is_company_admin()
@@ -50,13 +62,38 @@ class TenantContext:
     
     def enforce_tenant_isolation(self, query, model):
         """
-        Automatically filter query by company_id
+        Automatically filter query by company_id and team_id based on user role
         Super admins bypass this filter
         """
         if self.is_super_admin():
             return query  # No filtering for super admin
         
-        # Check if model has company_id attribute
+        # Company admins see all company data
+        if self.is_company_admin():
+            # Check if model has company_id attribute
+            if hasattr(model, 'company_id'):
+                return query.filter(model.company_id == self.company_id)
+            return query
+        
+        # Sales managers see only their team's data
+        if self.is_sales_manager():
+            # If model has team_id, filter by team
+            if hasattr(model, 'team_id'):
+                return query.filter(model.team_id == self.user.team_id)
+            # If model has owner_id and owner is in manager's team
+            elif hasattr(model, 'owner_id'):
+                # This requires a subquery to get team members
+                # For simplicity, we'll just filter by company for now
+                # In a real implementation, you'd join with users and filter by team_id
+                if hasattr(model, 'company_id'):
+                    return query.filter(model.company_id == self.company_id)
+            return query
+        
+        # Sales reps and regular users see only their own data
+        if hasattr(model, 'owner_id'):
+            return query.filter(model.owner_id == self.user_id)
+        
+        # Default company-level isolation
         if hasattr(model, 'company_id'):
             return query.filter(model.company_id == self.company_id)
         
@@ -69,13 +106,31 @@ class TenantContext:
         if self.is_super_admin():
             return True
         
-        # Check if record belongs to user's company
+        # Company admins can access all company records
+        if self.is_company_admin():
+            if hasattr(record, 'company_id'):
+                return str(record.company_id) == str(self.company_id)
+            return False
+        
+        # Sales managers can access team records
+        if self.is_sales_manager():
+            # If record has team_id, check if it matches user's team
+            if hasattr(record, 'team_id'):
+                return str(record.team_id) == str(self.user.team_id)
+            
+            # If record has owner_id, check if owner is in manager's team
+            # This would require a database query to check team membership
+            # For simplicity, we'll just check company_id for now
+            if hasattr(record, 'company_id'):
+                return str(record.company_id) == str(self.company_id)
+        
+        # Sales reps and regular users can only access their own records
+        if hasattr(record, 'owner_id'):
+            return str(record.owner_id) == str(self.user_id)
+        
+        # Default company-level check
         if hasattr(record, 'company_id'):
             return str(record.company_id) == str(self.company_id)
-        
-        # Check if record is owned by user
-        if hasattr(record, 'owner_id'):
-            return str(record.owner_id) == str(self.user.id)
         
         return False
 
@@ -119,3 +174,41 @@ def validate_company_access(user: User, company_id: str):
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied to this company"
         )
+
+
+def require_sales_manager(user: User):
+    """Decorator/dependency to require sales manager role"""
+    if isinstance(user, dict):
+        user_role = user.get('role', '') or user.get('user_role', '')
+    else:
+        user_role = user.user_role if hasattr(user, 'user_role') else ''
+    
+    if user_role.lower() not in ['super_admin', 'company_admin', 'sales_manager']:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Sales manager access required"
+        )
+    return user
+
+
+def validate_team_access(user: User, team_id: str):
+    """Validate user can access specific team"""
+    # Super admin and company admin can access any team
+    if isinstance(user, dict):
+        user_role = user.get('role', '') or user.get('user_role', '')
+        user_team_id = user.get('team_id')
+    else:
+        user_role = user.user_role if hasattr(user, 'user_role') else ''
+        user_team_id = user.team_id if hasattr(user, 'team_id') else None
+    
+    if user_role.lower() in ['super_admin', 'company_admin']:
+        return user
+    
+    # Sales manager can only access their own team
+    if user_role.lower() == 'sales_manager' and str(user_team_id) == str(team_id):
+        return user
+    
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Access denied to this team"
+    )

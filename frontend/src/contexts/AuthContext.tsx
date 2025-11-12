@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
 import apiService from '../services/api';
+import { Permission, hasPermission as checkPermission } from '../components/PermissionGuard';
 
 // Types
 interface User {
@@ -27,6 +28,7 @@ interface AuthContextType extends AuthState {
   logout: () => void;
   clearError: () => void;
   updateUser: (userData: Partial<User>) => void;
+  hasPermission: (permission: Permission) => boolean;
 }
 
 interface RegisterData {
@@ -254,6 +256,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'UPDATE_USER', payload: userData });
   };
 
+  const hasPermission = (permission: Permission): boolean => {
+    if (!state.user) return false;
+    return checkPermission(state.user.role, permission);
+  };
+
   const value: AuthContextType = {
     ...state,
     login,
@@ -261,6 +268,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     logout,
     clearError,
     updateUser,
+    hasPermission,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -416,11 +416,37 @@ export default function SuperAdminDashboard() {
             {/* Actions */}
             <div className="mt-6 pt-6 border-t flex gap-3">
               <button
-                onClick={() => {
-                  // TODO: Implement suspend/activate
-                  toast.success('Feature coming soon!');
+                onClick={async () => {
+                  try {
+                    const token = localStorage.getItem('token');
+                    const endpoint = selectedCompany.status === 'active' ? 
+                      `${API_URL}/companies/${selectedCompany.id}/suspend` : 
+                      `${API_URL}/companies/${selectedCompany.id}/activate`;
+                    
+                    await axios.post(endpoint, {}, {
+                      headers: { Authorization: `Bearer ${token}` }
+                    });
+                    
+                    // Update company status locally
+                    setSelectedCompany({
+                      ...selectedCompany,
+                      status: selectedCompany.status === 'active' ? 'suspended' : 'active'
+                    });
+                    
+                    // Refresh companies list
+                    fetchCompanies();
+                    
+                    toast.success(
+                      selectedCompany.status === 'active' ? 
+                      'Company suspended successfully' : 
+                      'Company activated successfully'
+                    );
+                  } catch (error: any) {
+                    toast.error(error.response?.data?.detail || 'Operation failed');
+                    console.error(error);
+                  }
                 }}
-                className="flex-1 px-4 py-2 bg-yellow-600 text-white text-sm sm:text-base rounded-lg hover:bg-yellow-700"
+                className={`flex-1 px-4 py-2 text-white text-sm sm:text-base rounded-lg ${selectedCompany.status === 'active' ? 'bg-yellow-600 hover:bg-yellow-700' : 'bg-green-600 hover:bg-green-700'}`}
               >
                 {selectedCompany.status === 'active' ? 'Suspend Company' : 'Activate Company'}
               </button>

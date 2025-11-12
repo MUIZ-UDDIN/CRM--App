@@ -273,6 +273,74 @@ def delete_company(
     return {"message": "Company deleted successfully"}
 
 
+@router.post("/{company_id}/suspend")
+def suspend_company(
+    company_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Suspend a company (Super Admin only)"""
+    require_super_admin(current_user)
+    
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found"
+        )
+    
+    # Check if company is already suspended
+    if company.status == CompanyStatus.SUSPENDED:
+        return {"message": "Company is already suspended"}
+    
+    # Suspend company
+    company.status = CompanyStatus.SUSPENDED
+    
+    # Also suspend all users in the company
+    users = db.query(User).filter(User.company_id == company.id).all()
+    for user in users:
+        user.status = UserStatus.SUSPENDED
+    
+    db.commit()
+    db.refresh(company)
+    
+    return {"message": "Company suspended successfully"}
+
+
+@router.post("/{company_id}/activate")
+def activate_company(
+    company_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Activate a suspended company (Super Admin only)"""
+    require_super_admin(current_user)
+    
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found"
+        )
+    
+    # Check if company is already active
+    if company.status == CompanyStatus.ACTIVE:
+        return {"message": "Company is already active"}
+    
+    # Activate company
+    company.status = CompanyStatus.ACTIVE
+    
+    # Also activate all users in the company
+    users = db.query(User).filter(User.company_id == company.id).all()
+    for user in users:
+        user.status = UserStatus.ACTIVE
+    
+    db.commit()
+    db.refresh(company)
+    
+    return {"message": "Company activated successfully"}
+
+
 # Company user management
 @router.get("/{company_id}/users", response_model=List[dict])
 def list_company_users(

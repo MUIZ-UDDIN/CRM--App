@@ -14,6 +14,8 @@ class UserRole(str, enum.Enum):
     SUPER_ADMIN = "super_admin"
     COMPANY_ADMIN = "company_admin"
     COMPANY_USER = "company_user"
+    SALES_MANAGER = "sales_manager"
+    SALES_REP = "sales_rep"
 
 
 class UserStatus(str, enum.Enum):
@@ -107,6 +109,18 @@ class User(BaseModel):
         """Check if user can manage company settings"""
         return self.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN]
     
+    def is_sales_manager(self) -> bool:
+        """Check if user is a sales manager"""
+        return self.user_role == UserRole.SALES_MANAGER
+    
+    def is_sales_rep(self) -> bool:
+        """Check if user is a sales rep"""
+        return self.user_role == UserRole.SALES_REP
+    
+    def can_manage_team(self) -> bool:
+        """Check if user can manage team"""
+        return self.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.SALES_MANAGER]
+    
     def __repr__(self):
         return f"<User {self.email}>"
 
@@ -117,8 +131,17 @@ class Team(BaseModel):
     
     name = Column(String(100), nullable=False, index=True)
     description = Column(String(500))
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=False, index=True)
     team_lead_id = Column(UUID(as_uuid=True), ForeignKey('users.id', name='fk_team_lead'))
     
     # Relationships
     members = relationship('User', back_populates='team', foreign_keys='User.team_id')
     team_lead = relationship('User', foreign_keys=[team_lead_id])
+    company = relationship('Company', back_populates='teams')
+    
+    def is_member(self, user_id: str) -> bool:
+        """Check if user is a member of this team"""
+        for member in self.members:
+            if str(member.id) == str(user_id):
+                return True
+        return False
