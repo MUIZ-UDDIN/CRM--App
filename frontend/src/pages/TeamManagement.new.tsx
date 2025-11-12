@@ -34,14 +34,6 @@ interface Team {
   team_lead_id: string | null;
 }
 
-interface Team {
-  id: string;
-  name: string;
-  description: string | null;
-  company_id: string;
-  team_lead_id: string | null;
-}
-
 export default function TeamManagement() {
   const { user } = useAuth();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -72,7 +64,7 @@ export default function TeamManagement() {
 
   // Prevent background scroll when modal is open
   useEffect(() => {
-    if (showInviteModal) {
+    if (showInviteModal || showCreateTeamModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -81,7 +73,7 @@ export default function TeamManagement() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showInviteModal]);
+  }, [showInviteModal, showCreateTeamModal]);
 
   useEffect(() => {
     fetchTeamMembers();
@@ -115,22 +107,15 @@ export default function TeamManagement() {
   };
 
   const fetchTeamMembers = async (teamId?: string) => {
-    console.log('🔥 fetchTeamMembers CALLED');
     try {
       const token = localStorage.getItem('token');
-      console.log('🔥 Token:', token ? 'exists' : 'missing');
       
       // Fetch current user from API to get fresh data
       const userResponse = await axios.get(`${API_URL}/auth/me`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      console.log('🔥 User response:', userResponse.data);
       
       const currentUser = userResponse.data;
-      
-      console.log('TeamManagement - User data:', currentUser);
-      console.log('TeamManagement - User role:', currentUser.role);
-      console.log('TeamManagement - Company ID:', currentUser.company_id);
       
       // Determine which endpoint to call based on team selection and user role
       let apiUrl;
@@ -149,7 +134,6 @@ export default function TeamManagement() {
         apiUrl = `${API_URL}/companies/${currentUser.company_id}/users`;
       }
       
-      console.log('TeamManagement - Calling API:', apiUrl);
       const response = await axios.get(apiUrl, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -184,7 +168,11 @@ export default function TeamManagement() {
       });
       
       // Refresh team members list
-      fetchTeamMembers();
+      if (selectedTeam) {
+        fetchTeamMembers(selectedTeam.id);
+      } else {
+        fetchTeamMembers();
+      }
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to send invitation');
     } finally {
@@ -446,6 +434,11 @@ export default function TeamManagement() {
                       <div className="ml-4 min-w-0 flex-1">
                         <div className="text-sm font-medium text-gray-900 truncate" title={`${member.first_name} ${member.last_name}`}>
                           {member.first_name} {member.last_name}
+                          {selectedTeam?.team_lead_id === member.id && (
+                            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                              Team Lead
+                            </span>
+                          )}
                         </div>
                       </div>
                     </div>
