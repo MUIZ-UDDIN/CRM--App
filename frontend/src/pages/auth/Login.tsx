@@ -45,8 +45,28 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      // Call login and wait for it to complete
-      await login(email, password);
+      // Call the API directly instead of going through context
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `Login failed: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (!data.access_token) {
+        throw new Error('No access token received');
+      }
+      
+      // Set token directly in localStorage
+      localStorage.setItem('token', data.access_token);
       
       // Handle remember me
       if (rememberMe) {
@@ -59,21 +79,10 @@ export default function Login() {
       
       toast.success('Login successful!');
       
-      // Add a small delay before redirecting to ensure all state is updated
-      setTimeout(() => {
-        // Check if token exists in localStorage
-        const token = localStorage.getItem('token');
-        if (!token) {
-          toast.error('Authentication failed. Please try again.');
-          return;
-        }
-        
-        // Force a hard redirect to dashboard with timestamp to prevent caching
-        window.location.href = `/dashboard?t=${new Date().getTime()}`;
-      }, 500);
-    } catch (error) {
-      // Error is handled by the context and useEffect above
-      console.error('Login error:', error);
+      // Force a hard redirect to dashboard
+      window.location.href = '/dashboard';
+    } catch (error: any) {
+      toast.error(error.message || 'Login failed');
     } finally {
       setIsSubmitting(false);
     }

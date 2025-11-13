@@ -2,8 +2,8 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import apiService from '../services/api';
 import { Permission, hasPermission as checkPermission } from '../components/PermissionGuard';
 
-// Types
-interface User {
+// Export types directly in this file to avoid separate type definition files
+export interface User {
   id: string;
   email: string;
   firstName: string;
@@ -12,6 +12,7 @@ interface User {
   company_id?: string;
   teamId?: string;
   avatarUrl?: string;
+  permissions?: string[];
 }
 
 interface AuthState {
