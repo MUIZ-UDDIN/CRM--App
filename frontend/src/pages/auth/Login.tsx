@@ -45,6 +45,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
+      // Call login and wait for it to complete
       await login(email, password);
       
       // Handle remember me
@@ -58,11 +59,21 @@ export default function Login() {
       
       toast.success('Login successful!');
       
-      // Force a hard redirect to dashboard instead of using React Router
-      // This ensures a full page reload and proper state reset
-      window.location.href = '/dashboard';
+      // Add a small delay before redirecting to ensure all state is updated
+      setTimeout(() => {
+        // Check if token exists in localStorage
+        const token = localStorage.getItem('token');
+        if (!token) {
+          toast.error('Authentication failed. Please try again.');
+          return;
+        }
+        
+        // Force a hard redirect to dashboard with timestamp to prevent caching
+        window.location.href = `/dashboard?t=${new Date().getTime()}`;
+      }, 500);
     } catch (error) {
       // Error is handled by the context and useEffect above
+      console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }

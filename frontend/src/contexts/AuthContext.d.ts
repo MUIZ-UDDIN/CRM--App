@@ -15,8 +15,9 @@ export interface User {
 }
 
 export interface LoginResult {
-  success: boolean;
-  error?: string;
+  access_token: string;
+  token_type: string;
+  user: any;
 }
 
 export interface AuthContextType {

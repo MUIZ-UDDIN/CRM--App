@@ -23,7 +23,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   clearError: () => void;
@@ -171,6 +171,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Try to use the real API first
       try {
         const response = await apiService.login(email, password);
+        
+        if (!response || !response.access_token) {
+          throw new Error('Invalid login response');
+        }
+        
         const user: User = {
           id: response.user.id,
           email: response.user.email,
@@ -183,16 +188,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         const token = response.access_token;
         
+        // Ensure token is set in localStorage
         localStorage.setItem('token', token);
+        
+        // Update auth state
         dispatch({
           type: 'AUTH_SUCCESS',
           payload: { user, token },
         });
-        return;
+        
+        // Store user data in localStorage as backup
+        localStorage.setItem('user', JSON.stringify(user));
+        
+        return response;
       } catch (apiError: any) {
+        console.error('API login error:', apiError);
         throw apiError;
       }
     } catch (error: any) {
+      console.error('Login error:', error);
       dispatch({
         type: 'AUTH_ERROR',
         payload: error.message || 'Login failed',

@@ -57,10 +57,17 @@ class ApiService {
 
   // Authentication endpoints
   async login(email: string, password: string) {
-    return this.request<{ access_token: string; token_type: string; user: any }>('/api/auth/login', {
+    const response = await this.request<{ access_token: string; token_type: string; user: any }>('/api/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     });
+    
+    // Ensure token is properly set in localStorage
+    if (response && response.access_token) {
+      localStorage.setItem('token', response.access_token);
+    }
+    
+    return response;
   }
 
   async register(userData: {
