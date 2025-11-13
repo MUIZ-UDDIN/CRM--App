@@ -107,7 +107,9 @@ async def get_notifications(
             read=n.read,
             created_at=n.created_at.isoformat() if n.created_at else "",
             link=n.link,
-            extra_data=n.extra_data if n.extra_data else None
+            extra_data=n.extra_data if n.extra_data else None,
+            user_id=str(n.user_id),
+            company_id=str(n.company_id) if n.company_id else None
         )
         for n in notifications
     ]
