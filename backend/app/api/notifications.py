@@ -17,7 +17,7 @@ from app.middleware.tenant import get_tenant_context
 from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
 
-router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 # Pydantic Models
