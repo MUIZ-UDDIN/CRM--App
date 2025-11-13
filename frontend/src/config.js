@@ -5,7 +5,7 @@
  */
 
 // API URL - Change this based on environment
-export const API_URL = process.env.REACT_APP_API_URL || 'https://sunstonecrm.com/api';
+export const API_URL = process.env.REACT_APP_API_URL || 'https://sunstonecrm.com';
 
 // Authentication settings
 export const AUTH_CONFIG = {

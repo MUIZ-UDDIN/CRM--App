@@ -254,6 +254,11 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
   
+  // Clear error function
+  const clearError = () => {
+    setError(null);
+  };
+
   // Context value
   const value = {
     user,
@@ -261,7 +266,8 @@ export const AuthProvider = ({ children }) => {
     error,
     login,
     logout,
-    loadUser
+    loadUser,
+    clearError
   };
   
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
