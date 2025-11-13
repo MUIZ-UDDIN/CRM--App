@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -9,6 +9,9 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+  
+  // Check for token directly in localStorage as a fallback
+  const hasToken = !!localStorage.getItem('token');
 
   // Show loading spinner while checking auth
   if (isLoading) {
@@ -22,8 +25,8 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  // Redirect to login if not authenticated
-  if (!isAuthenticated) {
+  // Redirect to login if not authenticated and no token
+  if (!isAuthenticated && !hasToken) {
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 

@@ -32,7 +32,7 @@ class ApiService {
       if (response.status === 401 && !endpoint.includes('/auth/login') && !endpoint.includes('/auth/register')) {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         throw new Error('Session expired');
       }
       

@@ -10,29 +10,41 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
-  const { login, isLoading, error, clearError, user, isAuthenticated } = useAuth();
+  const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   
-  // If already authenticated, redirect to dashboard
-  if (isAuthenticated) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
+  // Load saved credentials on component mount
   useEffect(() => {
-    if (error) {
-      toast.error(error);
-      clearError();
-    }
-    // Load saved credentials if remember me was checked
     const savedEmail = localStorage.getItem('rememberedEmail');
     const savedRememberMe = localStorage.getItem('rememberMe') === 'true';
     if (savedEmail && savedRememberMe) {
       setEmail(savedEmail);
       setRememberMe(true);
     }
+  }, []);
+  
+  // Handle errors
+  useEffect(() => {
+    if (error) {
+      toast.error(error);
+      clearError();
+    }
   }, [error, clearError]);
+  
+  // Handle successful login
+  useEffect(() => {
+    if (loginSuccess) {
+      window.location.href = '/dashboard';
+    }
+  }, [loginSuccess]);
+
+  // If already authenticated, redirect to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,6 +80,11 @@ export default function Login() {
       // Set token directly in localStorage
       localStorage.setItem('token', data.access_token);
       
+      // Store user data
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
+      
       // Handle remember me
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
@@ -78,11 +95,11 @@ export default function Login() {
       }
       
       toast.success('Login successful!');
+      setLoginSuccess(true);
       
-      // Force a hard redirect to dashboard
-      window.location.href = '/dashboard';
     } catch (error: any) {
       toast.error(error.message || 'Login failed');
+      console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }
