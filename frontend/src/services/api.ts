@@ -83,18 +83,18 @@ class ApiService {
   }
 
   async getCurrentUser() {
-    return this.request<any>('/api/users/me');
+    return this.request<any>('/api/auth/me');
   }
 
   async updateCurrentUser(userData: any) {
-    return this.request<any>('/api/users/me', {
+    return this.request<any>('/api/auth/me', {
       method: 'PUT',
       body: JSON.stringify(userData),
     });
   }
 
   async changePassword(passwordData: { current_password: string; new_password: string }) {
-    return this.request<any>('/api/users/me/change-password', {
+    return this.request<any>('/api/auth/me/change-password', {
       method: 'POST',
       body: JSON.stringify(passwordData),
     });
