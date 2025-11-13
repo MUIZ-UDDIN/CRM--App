@@ -19,6 +19,11 @@ from app.models.permissions import Permission
 
 router = APIRouter(prefix="/api/notifications", tags=["notifications"])
 
+# Debug logging
+import logging
+logger = logging.getLogger("uvicorn")
+logger.info("Notifications router initialized with prefix: /api/notifications")
+
 
 # Pydantic Models
 class NotificationResponse(BaseModel):
@@ -60,6 +65,8 @@ class BulkNotificationCreate(BaseModel):
 async def get_notifications(
     unread_only: bool = False,
     limit: int = 50,
+    # Add debug logging
+    _debug_log: bool = Depends(lambda: logger.info("GET /api/notifications/ endpoint called")),
     days: int = 30,  # Get notifications from the last X days
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -107,6 +114,8 @@ async def get_notifications(
 
 @router.get("/unread-count")
 async def get_unread_count(
+    # Add debug logging
+    _debug_log: bool = Depends(lambda: logger.info("GET /api/notifications/unread-count endpoint called")),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -242,6 +251,8 @@ async def delete_all_notifications(
 
 @router.post("/cleanup-old-calls")
 async def cleanup_old_call_notifications(
+    # Add debug logging
+    _debug_log: bool = Depends(lambda: logger.info("POST /api/notifications/cleanup-old-calls endpoint called")),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
