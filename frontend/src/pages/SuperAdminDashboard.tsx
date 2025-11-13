@@ -9,8 +9,10 @@ import {
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import adminAnalyticsService from '../services/adminAnalyticsService';
 
-const API_URL = 'https://sunstonecrm.com/api';
+// Use environment variable or config for API URL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 interface Company {
   id: string;
@@ -42,8 +44,21 @@ export default function SuperAdminDashboard() {
 
   const fetchCompanies = async () => {
     try {
+      // First try to use the adminAnalyticsService
+      try {
+        const analyticsData = await adminAnalyticsService.getCompanyAnalytics();
+        if (analyticsData && analyticsData.companies) {
+          setCompanies(analyticsData.companies);
+          return;
+        }
+      } catch (analyticsError) {
+        console.error('Admin analytics service failed:', analyticsError);
+        // Continue to fallback method
+      }
+
+      // Fallback to direct API call
       const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/companies`, {
+      const response = await axios.get(`${API_URL}/api/companies`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -51,6 +66,8 @@ export default function SuperAdminDashboard() {
     } catch (error: any) {
       toast.error('Failed to load companies');
       console.error(error);
+      // Set empty array to avoid undefined errors
+      setCompanies([]);
     } finally {
       setLoading(false);
     }
@@ -420,8 +437,8 @@ export default function SuperAdminDashboard() {
                   try {
                     const token = localStorage.getItem('token');
                     const endpoint = selectedCompany.status === 'active' ? 
-                      `${API_URL}/companies/${selectedCompany.id}/suspend` : 
-                      `${API_URL}/companies/${selectedCompany.id}/activate`;
+                      `${API_URL}/api/companies/${selectedCompany.id}/suspend` : 
+                      `${API_URL}/api/companies/${selectedCompany.id}/activate`;
                     
                     await axios.post(endpoint, {}, {
                       headers: { Authorization: `Bearer ${token}` }

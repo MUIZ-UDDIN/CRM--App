@@ -61,7 +61,7 @@ apiClient.interceptors.response.use(
       
       // Redirect to login immediately without showing error
       // Use replace to prevent back button from returning to protected page
-      window.location.replace('/login');
+      window.location.replace('/auth/login');
       
       // Return a resolved promise to prevent error propagation
       return new Promise(() => {}); // Never resolves, page is redirecting
