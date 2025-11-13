@@ -1,6 +1,17 @@
 import React, { ReactNode } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
+/**
+ * Permission Guard Component
+ * 
+ * This component controls access to UI elements based on user permissions.
+ * It implements the role-based permission matrix for:
+ * - Super Admin: SaaS platform owner with access to everything
+ * - Company Admin: Admin for a subscribing company with full access to their company
+ * - Sales Manager: Team manager with access to their team's data
+ * - Sales Rep/Regular User: Individual user with access to only their assigned data
+ */
+
 // Define permission types as a const object instead of enum to be compatible with TypeScript's erasableSyntaxOnly mode
 export const Permission = {
   // Company Management
@@ -10,6 +21,7 @@ export const Permission = {
   EDIT_COMPANY: "edit_company",
   SUSPEND_COMPANY: "suspend_company",
   VIEW_BILLING: "view_billing",
+  MANAGE_COMPANIES: "manage_companies",
   
   // User Management
   MANAGE_COMPANY_ADMINS: "manage_company_admins",
@@ -55,12 +67,20 @@ export const Permission = {
   EXPORT_ANY_DATA: "export_any_data",
   EXPORT_COMPANY_DATA: "export_company_data",
   EXPORT_TEAM_DATA: "export_team_data",
+  IMPORT_COMPANY_DATA: "import_company_data",
+  IMPORT_TEAM_DATA: "import_team_data",
   
   // Support and Notifications
   MANAGE_SYSTEM_SUPPORT: "manage_system_support",
   MANAGE_COMPANY_SUPPORT: "manage_company_support",
   MANAGE_TEAM_SUPPORT: "manage_team_support",
-  VIEW_USER_SUPPORT: "view_user_support"
+  VIEW_USER_SUPPORT: "view_user_support",
+  
+  // Notifications
+  MANAGE_NOTIFICATIONS: "manage_notifications",
+  VIEW_COMPANY_NOTIFICATIONS: "view_company_notifications",
+  VIEW_TEAM_NOTIFICATIONS: "view_team_notifications",
+  VIEW_OWN_NOTIFICATIONS: "view_own_notifications"
 } as const;
 
 // Type for permission values
@@ -208,7 +228,13 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   ]
 };
 
-// Helper function to check if a user has a specific permission
+/**
+ * Helper function to check if a user has a specific permission
+ * 
+ * @param userRole - The user's role (super_admin, company_admin, sales_manager, sales_rep, etc.)
+ * @param permission - The permission to check
+ * @returns boolean - Whether the user has the permission
+ */
 export const hasPermission = (userRole: string, permission: string): boolean => {
   if (!userRole) return false;
   
@@ -219,7 +245,8 @@ export const hasPermission = (userRole: string, permission: string): boolean => 
   let roleKey = normalizedRole;
   if (normalizedRole === 'admin') roleKey = 'company_admin';
   if (normalizedRole === 'super_admin' || normalizedRole === 'super') roleKey = 'super_admin';
-  if (normalizedRole === 'user' || normalizedRole === 'regular') roleKey = 'regular_user';
+  if (normalizedRole === 'user' || normalizedRole === 'regular' || normalizedRole === 'sales_rep') roleKey = 'regular_user';
+  if (normalizedRole === 'manager') roleKey = 'sales_manager';
   
   // Get permissions for the role
   const permissions = ROLE_PERMISSIONS[roleKey] || [];
@@ -229,15 +256,27 @@ export const hasPermission = (userRole: string, permission: string): boolean => 
 };
 
 interface PermissionGuardProps {
-  permission: string;
+  permission: string | string[];
   children: ReactNode;
   fallback?: ReactNode;
+  requireAll?: boolean; // If true, user must have all permissions in the array
 }
 
+/**
+ * PermissionGuard Component
+ * 
+ * Conditionally renders children based on user permissions
+ * 
+ * @param permission - Single permission string or array of permissions
+ * @param children - Content to show if user has permission
+ * @param fallback - Content to show if user lacks permission
+ * @param requireAll - If true and permission is an array, requires all permissions
+ */
 const PermissionGuard: React.FC<PermissionGuardProps> = ({ 
   permission, 
   children, 
-  fallback = null 
+  fallback = null,
+  requireAll = false
 }) => {
   const { user } = useAuth();
   
@@ -247,6 +286,20 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
   
   const userRole = user.role.toLowerCase();
   
+  // Handle array of permissions
+  if (Array.isArray(permission)) {
+    if (requireAll) {
+      // User must have ALL permissions
+      const hasAllPermissions = permission.every(p => hasPermission(userRole, p));
+      return hasAllPermissions ? <>{children}</> : <>{fallback}</>;
+    } else {
+      // User must have ANY permission
+      const hasAnyPermission = permission.some(p => hasPermission(userRole, p));
+      return hasAnyPermission ? <>{children}</> : <>{fallback}</>;
+    }
+  }
+  
+  // Handle single permission
   if (hasPermission(userRole, permission)) {
     return <>{children}</>;
   }
@@ -255,3 +308,35 @@ const PermissionGuard: React.FC<PermissionGuardProps> = ({
 };
 
 export default PermissionGuard;
+
+/**
+ * Usage examples:
+ * 
+ * // Basic usage with single permission
+ * <PermissionGuard permission={Permission.VIEW_COMPANY_DATA}>
+ *   <CompanyDataTable />
+ * </PermissionGuard>
+ * 
+ * // With fallback content
+ * <PermissionGuard 
+ *   permission={Permission.MANAGE_BILLING}
+ *   fallback={<AccessDeniedMessage />}
+ * >
+ *   <BillingManager />
+ * </PermissionGuard>
+ * 
+ * // With multiple permissions (any of them)
+ * <PermissionGuard 
+ *   permission={[Permission.MANAGE_COMPANY_USERS, Permission.MANAGE_TEAM_USERS]}
+ * >
+ *   <UserManagement />
+ * </PermissionGuard>
+ * 
+ * // With multiple permissions (all required)
+ * <PermissionGuard 
+ *   permission={[Permission.CUSTOMIZE_COMPANY_CRM, Permission.MANAGE_COMPANY_USERS]}
+ *   requireAll={true}
+ * >
+ *   <AdvancedCRMCustomization />
+ * </PermissionGuard>
+ */

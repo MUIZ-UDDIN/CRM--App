@@ -61,12 +61,20 @@ class Permission(str, enum.Enum):
     EXPORT_ANY_DATA = "export_any_data"
     EXPORT_COMPANY_DATA = "export_company_data"
     EXPORT_TEAM_DATA = "export_team_data"
+    IMPORT_COMPANY_DATA = "import_company_data"
+    IMPORT_TEAM_DATA = "import_team_data"
     
     # Support and Notifications
     MANAGE_SYSTEM_SUPPORT = "manage_system_support"
     MANAGE_COMPANY_SUPPORT = "manage_company_support"
     MANAGE_TEAM_SUPPORT = "manage_team_support"
     VIEW_USER_SUPPORT = "view_user_support"
+    
+    # Notifications
+    MANAGE_NOTIFICATIONS = "manage_notifications"
+    VIEW_COMPANY_NOTIFICATIONS = "view_company_notifications"
+    VIEW_TEAM_NOTIFICATIONS = "view_team_notifications"
+    VIEW_OWN_NOTIFICATIONS = "view_own_notifications"
 
 
 # Define role permissions mapping
@@ -114,11 +122,19 @@ ROLE_PERMISSIONS = {
         # Data Export/Import
         Permission.EXPORT_COMPANY_DATA, 
         Permission.EXPORT_TEAM_DATA,
+        Permission.IMPORT_COMPANY_DATA,
+        Permission.IMPORT_TEAM_DATA,
         
         # Support and Notifications
         Permission.MANAGE_COMPANY_SUPPORT,
         Permission.MANAGE_TEAM_SUPPORT,
-        Permission.VIEW_USER_SUPPORT
+        Permission.VIEW_USER_SUPPORT,
+        
+        # Notifications
+        Permission.MANAGE_NOTIFICATIONS,
+        Permission.VIEW_COMPANY_NOTIFICATIONS,
+        Permission.VIEW_TEAM_NOTIFICATIONS,
+        Permission.VIEW_OWN_NOTIFICATIONS
     ],
     
     UserRole.SALES_MANAGER: [
@@ -150,10 +166,15 @@ ROLE_PERMISSIONS = {
         
         # Data Export/Import
         Permission.EXPORT_TEAM_DATA,
+        Permission.IMPORT_TEAM_DATA,
         
         # Support and Notifications
         Permission.MANAGE_TEAM_SUPPORT,
-        Permission.VIEW_USER_SUPPORT
+        Permission.VIEW_USER_SUPPORT,
+        
+        # Notifications
+        Permission.VIEW_TEAM_NOTIFICATIONS,
+        Permission.VIEW_OWN_NOTIFICATIONS
     ],
     
     UserRole.SALES_REP: [
@@ -173,7 +194,10 @@ ROLE_PERMISSIONS = {
         Permission.USE_PERSONAL_AUTOMATIONS,
         
         # Support and Notifications
-        Permission.VIEW_USER_SUPPORT
+        Permission.VIEW_USER_SUPPORT,
+        
+        # Notifications
+        Permission.VIEW_OWN_NOTIFICATIONS
     ],
     
     UserRole.COMPANY_USER: [
@@ -187,7 +211,10 @@ ROLE_PERMISSIONS = {
         Permission.USE_INTEGRATIONS,
         
         # Support and Notifications
-        Permission.VIEW_USER_SUPPORT
+        Permission.VIEW_USER_SUPPORT,
+        
+        # Notifications
+        Permission.VIEW_OWN_NOTIFICATIONS
     ]
 }
 
