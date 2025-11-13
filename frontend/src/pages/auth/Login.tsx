@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -11,9 +11,14 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { login, isLoading, error, clearError, user } = useAuth();
+  const { login, isLoading, error, clearError, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // If already authenticated, redirect to dashboard
+  if (isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   useEffect(() => {
     if (error) {
@@ -41,6 +46,7 @@ export default function Login() {
 
     try {
       await login(email, password);
+      
       // Handle remember me
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
@@ -51,11 +57,10 @@ export default function Login() {
       }
       
       toast.success('Login successful!');
-      // Add a small delay to ensure the context is updated
-      setTimeout(() => {
-        // Always redirect to dashboard on login, regardless of previous page
-        navigate('/dashboard', { replace: true });
-      }, 100);
+      
+      // Force a hard redirect to dashboard instead of using React Router
+      // This ensures a full page reload and proper state reset
+      window.location.href = '/dashboard';
     } catch (error) {
       // Error is handled by the context and useEffect above
     } finally {
