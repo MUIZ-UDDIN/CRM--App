@@ -34,6 +34,7 @@ from app.api.inbox import router as inbox_router
 from app.api.sms import router as sms_router
 from app.api.calls import router as calls_router
 from app.api.teams import router as teams_router
+from app.api.notifications import router as notifications_router
 
 
 @asynccontextmanager
@@ -179,6 +180,12 @@ app.include_router(
     teams_router,
     prefix="/api/teams",
     tags=["Teams"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    notifications_router,
+    tags=["Notifications"],
     dependencies=[Depends(get_current_user)]
 )
 
