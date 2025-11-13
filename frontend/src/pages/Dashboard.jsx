@@ -1,0 +1,48 @@
+/**
+ * Role-based Dashboard Page
+ * 
+ * This component renders different dashboard views based on the user's role.
+ */
+
+import React from 'react';
+import { Container } from 'react-bootstrap';
+import { usePermissions } from '../hooks/usePermissions';
+import SuperAdminDashboard from '../components/dashboards/SuperAdminDashboard';
+import CompanyAdminDashboard from '../components/dashboards/CompanyAdminDashboard';
+import SalesManagerDashboard from '../components/dashboards/SalesManagerDashboard';
+import SalesRepDashboard from '../components/dashboards/SalesRepDashboard';
+
+/**
+ * Dashboard Page Component
+ * @returns {React.Component} Dashboard component
+ */
+function Dashboard() {
+  const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
+  
+  // Render different dashboard based on user role
+  const renderDashboard = () => {
+    if (isSuperAdmin()) {
+      return <SuperAdminDashboard />;
+    }
+    
+    if (isCompanyAdmin()) {
+      return <CompanyAdminDashboard />;
+    }
+    
+    if (isSalesManager()) {
+      return <SalesManagerDashboard />;
+    }
+    
+    // Default to sales rep dashboard
+    return <SalesRepDashboard />;
+  };
+  
+  return (
+    <Container fluid className="dashboard-container">
+      <h1 className="page-title">Dashboard</h1>
+      {renderDashboard()}
+    </Container>
+  );
+}
+
+export default Dashboard;

@@ -1,9 +1,5 @@
 # Role-Based Permissions System
 
-## Overview
-
-This document outlines the comprehensive role-based permission system implemented in the CRM application. The system defines four primary user roles with hierarchical access to features and data.
-
 ## User Roles
 
 1. **Super Admin (SaaS Owner)**
@@ -146,76 +142,161 @@ function CompanyActions() {
   );
 }
 ```
-   - Filters queries based on user role and permissions
 
-### Frontend
+## Frontend Components
 
-The frontend implements the permission system through:
+### 1. Permission Hook Implementation
 
-1. **Permission Object** (`PermissionGuard.tsx`)
-   - Mirrors the backend Permission enum
-   - Defines all available permissions
+```jsx
+// src/hooks/usePermissions.js
+import { useContext } from 'react';
+import { AuthContext } from '../contexts/AuthContext';
 
-2. **Role-Permission Mapping** (`PermissionGuard.tsx`)
-   - Maps frontend roles to permissions
-   - Kept in sync with backend mapping
+export function usePermissions() {
+  const { user } = useContext(AuthContext);
+  
+  const hasPermission = (permission) => {
+    if (!user || !user.permissions) return false;
+    return user.permissions.includes(permission);
+  };
+  
+  const hasRole = (role) => {
+    if (!user || !user.role) return false;
+    return user.role === role;
+  };
+  
+  return { hasPermission, hasRole };
+}
+```
 
-3. **Permission Guard Component** (`PermissionGuard.tsx`)
-   - Conditionally renders UI elements based on permissions
-   - Supports single or multiple permission checks
+### 2. Protected Route Component
 
-4. **Auth Context** (`AuthContext.tsx`)
-   - Provides `hasPermission()` method to components
-   - Stores user role and permissions
+```jsx
+// src/components/ProtectedRoute.jsx
+import React from 'react';
+import { Route, Redirect } from 'react-router-dom';
+import { usePermissions } from '../hooks/usePermissions';
 
-## Usage Examples
-
-### Backend
-
-```python
-# Check permission in API endpoint
-@router.get("/analytics/company")
-async def get_company_analytics(
-    current_user: dict = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
-):
-    if not has_permission(current_user, Permission.VIEW_COMPANY_ANALYTICS):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to view company analytics"
+function ProtectedRoute({ component: Component, requiredPermission, ...rest }) {
+  const { hasPermission } = usePermissions();
+  
+  return (
+    <Route
+      {...rest}
+      render={(props) =>
+        hasPermission(requiredPermission) ? (
+          <Component {...props} />
+        ) : (
+          <Redirect to="/unauthorized" />
         )
-    # ... implementation
+      }
+    />
+  );
+}
+
+export default ProtectedRoute;
 ```
 
-### Frontend
+### 3. Navigation Menu with Permission Checks
 
-```tsx
-// Basic usage with single permission
-<PermissionGuard permission={Permission.VIEW_COMPANY_DATA}>
-  <CompanyDataTable />
-</PermissionGuard>
+```jsx
+// src/components/Sidebar.jsx
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { usePermissions } from '../hooks/usePermissions';
 
-// With fallback content
-<PermissionGuard 
-  permission={Permission.MANAGE_BILLING}
-  fallback={<AccessDeniedMessage />}
->
-  <BillingManager />
-</PermissionGuard>
+function Sidebar() {
+  const { hasPermission, hasRole } = usePermissions();
+  
+  return (
+    <nav className="sidebar">
+      <ul>
+        <li>
+          <Link to="/dashboard">Dashboard</Link>
+        </li>
+        
+        {/* Company Management */}
+        {hasPermission('view_company_data') && (
+          <li>
+            <Link to="/companies">Companies</Link>
+          </li>
+        )}
+        
+        {/* User Management */}
+        {(hasPermission('manage_company_users') || hasPermission('manage_team_users')) && (
+          <li>
+            <Link to="/users">Users</Link>
+          </li>
+        )}
+        
+        {/* Billing */}
+        {hasPermission('manage_billing') && (
+          <li>
+            <Link to="/billing">Billing</Link>
+          </li>
+        )}
+        {hasPermission('view_billing') && !hasPermission('manage_billing') && (
+          <li>
+            <Link to="/billing">View Billing</Link>
+          </li>
+        )}
+        
+        {/* Analytics */}
+        <li>
+          <Link to="/analytics">Analytics</Link>
+        </li>
+        
+        {/* Support */}
+        <li>
+          <Link to="/support">Support</Link>
+        </li>
+        
+        {/* Admin Panel - Super Admin Only */}
+        {hasRole('super_admin') && (
+          <li>
+            <Link to="/admin">Admin Panel</Link>
+          </li>
+        )}
+      </ul>
+    </nav>
+  );
+}
 
-// With multiple permissions (any of them)
-<PermissionGuard 
-  permission={[Permission.MANAGE_COMPANY_USERS, Permission.MANAGE_TEAM_USERS]}
->
-  <UserManagement />
-</PermissionGuard>
+export default Sidebar;
 ```
 
-## Extending the System
+### 4. Role-Based Dashboard Components
 
-When adding new features:
+```jsx
+// src/pages/Dashboard.jsx
+import React from 'react';
+import { usePermissions } from '../hooks/usePermissions';
+import SuperAdminDashboard from '../components/dashboards/SuperAdminDashboard';
+import CompanyAdminDashboard from '../components/dashboards/CompanyAdminDashboard';
+import SalesManagerDashboard from '../components/dashboards/SalesManagerDashboard';
+import SalesRepDashboard from '../components/dashboards/SalesRepDashboard';
 
-1. Add new permissions to both backend and frontend
-2. Update role-permission mappings in both places
-3. Use permission checks in API endpoints
-4. Use PermissionGuard in frontend components
+function Dashboard() {
+  const { hasRole } = usePermissions();
+  
+  if (hasRole('super_admin')) {
+    return <SuperAdminDashboard />;
+  }
+  
+  if (hasRole('company_admin')) {
+    return <CompanyAdminDashboard />;
+  }
+  
+  if (hasRole('sales_manager')) {
+    return <SalesManagerDashboard />;
+  }
+  
+  return <SalesRepDashboard />;
+}
+
+export default Dashboard;
+```
+
+## Conclusion
+
+The role-based permission system has been fully implemented across both backend and frontend components. This ensures that users can only access features and data appropriate to their role, maintaining security and data isolation across the application.
