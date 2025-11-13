@@ -62,6 +62,10 @@ export const AuthProvider = ({ children }) => {
       
       const response = await axios.get(`${API_URL}/api/users/me`);
       
+      if (!response.data) {
+        throw new Error('No user data received');
+      }
+      
       // Process user data and permissions
       const userData = response.data;
       
@@ -72,11 +76,14 @@ export const AuthProvider = ({ children }) => {
       
       setUser(userData);
       setError(null);
+      return userData; // Return the user data
     } catch (err) {
       console.error('Failed to load user:', err);
       setError('Failed to authenticate user');
       setUser(null);
       setToken(null);
+      configureAxios(null);
+      throw err; // Re-throw the error for handling in calling functions
     } finally {
       setIsLoading(false);
     }
@@ -86,6 +93,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setIsLoading(true);
+      setError(null); // Clear any previous errors
       
       const response = await axios.post(`${API_URL}/api/auth/login`, {
         email,
@@ -94,16 +102,24 @@ export const AuthProvider = ({ children }) => {
       
       const { access_token } = response.data;
       
+      if (!access_token) {
+        throw new Error('No access token received');
+      }
+      
+      // Set token in local storage and configure axios
       setToken(access_token);
       configureAxios(access_token);
       
+      // Load user data
       await loadUser();
       
       return { success: true };
     } catch (err) {
       console.error('Login failed:', err);
-      setError(err.response?.data?.detail || 'Login failed');
-      return { success: false, error: err.response?.data?.detail || 'Login failed' };
+      setToken(null); // Clear any partial token
+      configureAxios(null); // Reset axios headers
+      setError(err.response?.data?.detail || err.message || 'Login failed');
+      return { success: false, error: err.response?.data?.detail || err.message || 'Login failed' };
     } finally {
       setIsLoading(false);
     }

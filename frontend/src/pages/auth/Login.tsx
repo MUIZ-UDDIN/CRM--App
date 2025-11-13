@@ -40,7 +40,7 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
+      const result = await login(email, password);
       // Handle remember me
       if (rememberMe) {
         localStorage.setItem('rememberedEmail', email);
@@ -49,9 +49,15 @@ export default function Login() {
         localStorage.removeItem('rememberedEmail');
         localStorage.removeItem('rememberMe');
       }
-      toast.success('Login successful!');
-      // Always redirect to dashboard on login, regardless of previous page
-      navigate('/dashboard', { replace: true });
+      
+      if (result.success) {
+        toast.success('Login successful!');
+        // Add a small delay to ensure the context is updated
+        setTimeout(() => {
+          // Always redirect to dashboard on login, regardless of previous page
+          navigate('/dashboard', { replace: true });
+        }, 100);
+      }
     } catch (error) {
       // Error is handled by the context and useEffect above
     } finally {
