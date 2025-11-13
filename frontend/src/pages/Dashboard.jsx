@@ -5,7 +5,6 @@
  */
 
 import React from 'react';
-import { Container } from 'react-bootstrap';
 import { usePermissions } from '../hooks/usePermissions';
 import SuperAdminDashboard from '../components/dashboards/SuperAdminDashboard';
 import CompanyAdminDashboard from '../components/dashboards/CompanyAdminDashboard';
@@ -38,10 +37,10 @@ function Dashboard() {
   };
   
   return (
-    <Container fluid className="dashboard-container">
-      <h1 className="page-title">Dashboard</h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
       {renderDashboard()}
-    </Container>
+    </div>
   );
 }
 
