@@ -69,6 +69,10 @@ class Permission(str, enum.Enum):
     MANAGE_COMPANY_SUPPORT = "manage_company_support"
     MANAGE_TEAM_SUPPORT = "manage_team_support"
     VIEW_USER_SUPPORT = "view_user_support"
+    CREATE_SUPPORT_TICKETS = "create_support_tickets"
+    VIEW_SUPPORT_TICKETS = "view_support_tickets"
+    MANAGE_SUPPORT_TICKETS = "manage_support_tickets"
+    MANAGE_SUPPORT = "manage_support"
     
     # Notifications
     MANAGE_NOTIFICATIONS = "manage_notifications"
@@ -129,6 +133,9 @@ ROLE_PERMISSIONS = {
         Permission.MANAGE_COMPANY_SUPPORT,
         Permission.MANAGE_TEAM_SUPPORT,
         Permission.VIEW_USER_SUPPORT,
+        Permission.CREATE_SUPPORT_TICKETS,
+        Permission.VIEW_SUPPORT_TICKETS,
+        Permission.MANAGE_SUPPORT_TICKETS,
         
         # Notifications
         Permission.MANAGE_NOTIFICATIONS,
@@ -171,6 +178,8 @@ ROLE_PERMISSIONS = {
         # Support and Notifications
         Permission.MANAGE_TEAM_SUPPORT,
         Permission.VIEW_USER_SUPPORT,
+        Permission.CREATE_SUPPORT_TICKETS,
+        Permission.VIEW_SUPPORT_TICKETS,
         
         # Notifications
         Permission.VIEW_TEAM_NOTIFICATIONS,
@@ -195,6 +204,7 @@ ROLE_PERMISSIONS = {
         
         # Support and Notifications
         Permission.VIEW_USER_SUPPORT,
+        Permission.CREATE_SUPPORT_TICKETS,
         
         # Notifications
         Permission.VIEW_OWN_NOTIFICATIONS
@@ -212,6 +222,7 @@ ROLE_PERMISSIONS = {
         
         # Support and Notifications
         Permission.VIEW_USER_SUPPORT,
+        Permission.CREATE_SUPPORT_TICKETS,
         
         # Notifications
         Permission.VIEW_OWN_NOTIFICATIONS

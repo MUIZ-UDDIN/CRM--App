@@ -36,6 +36,8 @@ from app.api.calls import router as calls_router
 from app.api.teams import router as teams_router
 from app.api.notifications import router as notifications_router
 from app.api.billing_updated import router as billing_router
+from app.api.data_export import router as data_export_router
+from app.api.data_import import router as data_import_router
 
 
 @asynccontextmanager
@@ -194,6 +196,18 @@ app.include_router(
 app.include_router(
     billing_router,
     tags=["Billing"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    data_export_router,
+    tags=["Data Export"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    data_import_router,
+    tags=["Data Import"],
     dependencies=[Depends(get_current_user)]
 )
 

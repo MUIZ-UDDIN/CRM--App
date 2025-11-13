@@ -26,6 +26,10 @@ from ..models.calls import Call
 from ..models.contacts import Contact
 from ..models.documents import Document
 from ..models.users import User
+from ..middleware.tenant import get_tenant_context
+from ..middleware.permissions import has_permission
+from ..models.permissions import Permission
+from .analytics_permissions import enforce_analytics_permissions, filter_analytics_by_permission
 import json
 
 router = APIRouter()
@@ -60,13 +64,32 @@ async def get_pipeline_analytics(
 ):
     """Get pipeline analytics with real database queries"""
     
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "pipeline")
+    
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
-    # Build query filters - use company_id for multi-tenancy
+    # Build query filters based on access level
     filters = [Deal.is_deleted == False]
-    if company_id:
-        filters.append(Deal.company_id == company_id)
+    
+    # Apply access level filters
+    if access_level == "all":
+        # Super admin can see all data
+        pass
+    elif access_level == "company":
+        # Company admin can see company data
+        if company_id:
+            filters.append(Deal.company_id == company_id)
+    elif access_level == "team":
+        # Team manager can see team data
+        if team_id:
+            filters.append(Deal.team_id == uuid.UUID(team_id))
+        elif current_user.get('team_id'):
+            filters.append(Deal.team_id == uuid.UUID(current_user.get('team_id')))
+    elif access_level == "own":
+        # Regular user can see own data
+        filters.append(Deal.owner_id == owner_id)
     
     if date_from:
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
