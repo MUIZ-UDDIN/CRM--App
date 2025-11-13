@@ -35,6 +35,7 @@ from app.api.sms import router as sms_router
 from app.api.calls import router as calls_router
 from app.api.teams import router as teams_router
 from app.api.notifications import router as notifications_router
+from app.api.billing_updated import router as billing_router
 
 
 @asynccontextmanager
@@ -187,6 +188,12 @@ app.include_router(
     notifications_router,
     prefix="/api/notifications",
     tags=["Notifications"],
+    dependencies=[Depends(get_current_user)]
+)
+
+app.include_router(
+    billing_router,
+    tags=["Billing"],
     dependencies=[Depends(get_current_user)]
 )
 
