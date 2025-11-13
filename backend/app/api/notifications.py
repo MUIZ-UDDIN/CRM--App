@@ -17,12 +17,13 @@ from app.middleware.tenant import get_tenant_context
 from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
 
-router = APIRouter(prefix="/api/notifications", tags=["notifications"])
+# Use the correct prefix without /api since it's added in main.py
+router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 # Debug logging
 import logging
 logger = logging.getLogger("uvicorn")
-logger.info("Notifications router initialized with prefix: /api/notifications")
+logger.info("Notifications router initialized with prefix: /notifications")
 
 
 # Pydantic Models
