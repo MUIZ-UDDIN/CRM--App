@@ -10,6 +10,7 @@ import {
 import axios from 'axios';
 import toast from 'react-hot-toast';
 import adminAnalyticsService from '../services/adminAnalyticsService';
+import FallbackAdminDashboard from '../components/dashboards/FallbackAdminDashboard';
 
 // Use environment variable or config for API URL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -37,6 +38,7 @@ export default function SuperAdminDashboard() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [apiError, setApiError] = useState(false);
 
   useEffect(() => {
     fetchCompanies();
@@ -44,6 +46,8 @@ export default function SuperAdminDashboard() {
 
   const fetchCompanies = async () => {
     try {
+      setApiError(false); // Reset error state on each attempt
+      
       // First try to use the adminAnalyticsService
       try {
         const analyticsData = await adminAnalyticsService.getCompanyAnalytics();
@@ -64,10 +68,11 @@ export default function SuperAdminDashboard() {
 
       setCompanies(response.data);
     } catch (error: any) {
-      toast.error('Failed to load companies');
-      console.error(error);
+      console.error('Failed to load companies:', error);
       // Set empty array to avoid undefined errors
       setCompanies([]);
+      // Set API error flag to true to show fallback dashboard
+      setApiError(true);
     } finally {
       setLoading(false);
     }
@@ -184,6 +189,11 @@ export default function SuperAdminDashboard() {
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
+  }
+  
+  // If there was an API error, show the fallback dashboard
+  if (apiError) {
+    return <FallbackAdminDashboard />;
   }
 
   return (
