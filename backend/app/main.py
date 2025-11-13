@@ -31,6 +31,7 @@ from app.api.contacts import router as contacts_router
 from app.api.deals import router as deals_router
 from app.api.activities import router as activities_router
 from app.api.analytics import router as analytics_router
+from app.api.admin_analytics import router as admin_analytics_router
 from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
 from app.api.sms import router as sms_router
@@ -262,6 +263,14 @@ app.include_router(
     tags=["Analytics"],
     dependencies=[Depends(get_current_user)]
 )
+
+app.include_router(
+    admin_analytics_router,
+    prefix="/api",
+    tags=["Admin Analytics"],
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Admin Analytics routes registered at /api/analytics/admin-dashboard")
 
 app.include_router(
     pipelines_router,
