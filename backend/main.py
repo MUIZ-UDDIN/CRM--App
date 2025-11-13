@@ -185,7 +185,6 @@ app.include_router(
 
 app.include_router(
     notifications_router,
-    prefix="/api",
     tags=["Notifications"],
     dependencies=[Depends(get_current_user)]
 )
