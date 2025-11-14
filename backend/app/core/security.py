@@ -115,9 +115,24 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             
         # Verify the token
         token = credentials.credentials
-        payload = verify_token(token)
-        if payload is None:
-            print(f"Invalid token: {token[:10]}...")
+        print(f"DEBUG: Processing token: {token[:15]}...")
+        
+        # TEMPORARY FIX: Try to decode token without verification for debugging
+        try:
+            # First try normal verification
+            payload = verify_token(token)
+            if payload is None:
+                print(f"Invalid token: {token[:15]}...")
+                # For debugging, try to decode without verification
+                try:
+                    import jwt
+                    debug_payload = jwt.decode(token, options={"verify_signature": False})
+                    print(f"DEBUG: Token payload without verification: {debug_payload}")
+                except Exception as e:
+                    print(f"DEBUG: Could not decode token even without verification: {e}")
+                raise credentials_exception
+        except Exception as e:
+            print(f"DEBUG: Token verification error: {e}")
             raise credentials_exception
         
         # Extract email from token
