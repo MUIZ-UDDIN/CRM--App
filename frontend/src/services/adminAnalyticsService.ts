@@ -15,21 +15,24 @@ export interface AdminAnalyticsFilters {
 // Get admin dashboard analytics
 export const getAdminDashboardAnalytics = async (filters?: AdminAnalyticsFilters) => {
   try {
-    const response = await apiClient.get('/analytics/admin-dashboard', { params: filters });
+    // Add timeout to prevent hanging requests
+    const response = await apiClient.get('/analytics/admin-dashboard', { 
+      params: filters,
+      timeout: 10000 // 10 second timeout
+    });
     return response.data;
-  } catch (error) {
+  } catch (error: any) {
+    // Log detailed error information
     console.error('Error fetching admin dashboard analytics:', error);
-    // Return fallback data if the server returns an error
-    return {
-      companies_count: 0,
-      active_users_count: 0,
-      total_deals_count: 0,
-      total_pipeline_value: 0,
-      recent_activities: [],
-      companies_by_size: [],
-      deals_by_stage: [],
-      user_activity: []
-    };
+    console.error('Error details:', {
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data,
+      url: error.config?.url
+    });
+    
+    // Rethrow the error to allow proper handling by the component
+    throw error;
   }
 };
 

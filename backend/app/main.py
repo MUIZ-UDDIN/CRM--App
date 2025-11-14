@@ -272,6 +272,16 @@ app.include_router(
 )
 logger.info("✅ Admin Analytics routes registered at /api/analytics/admin-dashboard")
 
+# Register a direct route for admin dashboard to ensure it's accessible
+from app.api.admin_analytics import get_admin_dashboard_analytics
+app.add_api_route(
+    "/api/analytics/admin-dashboard",
+    get_admin_dashboard_analytics,
+    dependencies=[Depends(get_current_user)],
+    methods=["GET"],
+    tags=["Admin Analytics"]
+)
+
 app.include_router(
     pipelines_router,
     prefix="/api",

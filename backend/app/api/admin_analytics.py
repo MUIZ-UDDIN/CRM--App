@@ -43,10 +43,16 @@ async def get_admin_dashboard_analytics(
     user_role = current_user.get('role', '').lower() if current_user.get('role') else ''
     is_super_admin = user_role in ['super_admin', 'super admin', 'superadmin']
     
+    # For debugging, log the role check result
+    logger.info(f"Is super admin check result: {is_super_admin}, user_role: {user_role}")
+    
     if not is_super_admin:
-        # Return mock data instead of raising an error
+        # Instead of returning mock data, raise a proper error
         logger.warning(f"Non-admin user {current_user.get('email')} attempted to access admin dashboard")
-        return get_mock_admin_dashboard_data()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only super admins can access admin dashboard analytics"
+        )
     
     # Initialize default values
     company_count = 0

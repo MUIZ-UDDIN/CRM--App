@@ -66,9 +66,22 @@ def create_refresh_token(data: dict) -> str:
 def verify_token(token: str) -> Optional[dict]:
     """Verify and decode JWT token"""
     try:
+        # Add more detailed logging for token verification
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        
+        # Validate expiration time explicitly
+        if 'exp' in payload:
+            expiration = datetime.fromtimestamp(payload['exp'])
+            if expiration < datetime.utcnow():
+                print(f"Token expired at {expiration}, current time: {datetime.utcnow()}")
+                return None
+        
         return payload
-    except JWTError:
+    except JWTError as e:
+        print(f"JWT verification error: {str(e)}")
+        return None
+    except Exception as e:
+        print(f"Unexpected error during token verification: {str(e)}")
         return None
 
 
@@ -95,33 +108,57 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     )
     
     try:
-        payload = verify_token(credentials.credentials)
+        # Check if credentials exist
+        if not credentials or not credentials.credentials:
+            print("No credentials provided")
+            raise credentials_exception
+            
+        # Verify the token
+        token = credentials.credentials
+        payload = verify_token(token)
         if payload is None:
+            print(f"Invalid token: {token[:10]}...")
             raise credentials_exception
         
+        # Extract email from token
         email: str = payload.get("sub")
         if email is None:
+            print("Token missing 'sub' claim")
             raise credentials_exception
             
         # Fetch the user from database
-        user = db.query(UserModel).filter(UserModel.email == email).first()
-        if user is None:
+        try:
+            user = db.query(UserModel).filter(UserModel.email == email).first()
+            if user is None:
+                print(f"User not found for email: {email}")
+                raise credentials_exception
+                
+            # Check if user is active
+            if not user.is_active:
+                print(f"User {email} is not active")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
+                
+            # Prepare user data
+            user_data = {
+                "id": str(user.id),
+                "email": user.email,
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
+                "company_id": str(user.company_id) if user.company_id else None,
+                "team_id": str(user.team_id) if user.team_id else None,
+                "is_active": True
+            }
+            return user_data
+        except Exception as db_error:
+            print(f"Database error while fetching user: {str(db_error)}")
             raise credentials_exception
             
-        # Prepare user data
-        user_data = {
-            "id": str(user.id),
-            "email": user.email,
-            "first_name": user.first_name,
-            "last_name": user.last_name,
-            "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
-            "company_id": str(user.company_id) if user.company_id else None,
-            "team_id": str(user.team_id) if user.team_id else None,
-            "is_active": True
-        }
-        return user_data
-        
-    except JWTError:
+    except JWTError as jwt_error:
+        print(f"JWT error: {str(jwt_error)}")
+        raise credentials_exception
+    except Exception as e:
+        print(f"Unexpected error in get_current_user: {str(e)}")
         raise credentials_exception
 
 
