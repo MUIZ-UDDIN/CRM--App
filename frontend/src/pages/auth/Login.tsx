@@ -57,33 +57,8 @@ export default function Login() {
     setIsSubmitting(true);
 
     try {
-      // Call the API directly instead of going through context
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `Login failed: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.access_token) {
-        throw new Error('No access token received');
-      }
-      
-      // Set token directly in localStorage
-      localStorage.setItem('token', data.access_token);
-      
-      // Store user data
-      if (data.user) {
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
+      // Use the login function from AuthContext instead of direct API call
+      const result = await login(email, password);
       
       // Handle remember me
       if (rememberMe) {
@@ -94,8 +69,28 @@ export default function Login() {
         localStorage.removeItem('rememberMe');
       }
       
+      // Verify token is in localStorage
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // If token is missing, set it from the result
+        if (result && result.access_token) {
+          localStorage.setItem('token', result.access_token);
+        } else {
+          throw new Error('No access token received');
+        }
+      }
+      
+      // Double check user data is stored
+      if (result && result.user) {
+        localStorage.setItem('user', JSON.stringify(result.user));
+      }
+      
       toast.success('Login successful!');
-      setLoginSuccess(true);
+      
+      // Force a page reload to ensure all auth state is properly initialized
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 500);
       
     } catch (error: any) {
       toast.error(error.message || 'Login failed');

@@ -131,10 +131,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Try to validate token with API
+          // Try to get cached user data first
+          const cachedUserData = localStorage.getItem('user');
+          let user: User | null = null;
+          
+          if (cachedUserData) {
+            try {
+              const parsedUser = JSON.parse(cachedUserData);
+              user = {
+                id: parsedUser.id,
+                email: parsedUser.email,
+                firstName: parsedUser.first_name || parsedUser.firstName,
+                lastName: parsedUser.last_name || parsedUser.lastName,
+                role: parsedUser.role || 'User',
+                company_id: parsedUser.company_id,
+                teamId: parsedUser.team_id,
+              };
+              
+              // Set auth state with cached data first for faster UI loading
+              dispatch({
+                type: 'AUTH_SUCCESS',
+                payload: { user, token },
+              });
+            } catch (parseError) {
+              console.error('Failed to parse cached user data:', parseError);
+            }
+          }
+          
+          // Always validate with API regardless of cached data
           try {
             const userData = await apiService.getCurrentUser();
-            const user: User = {
+            const validatedUser: User = {
               id: userData.id,
               email: userData.email,
               firstName: userData.first_name || userData.firstName,
@@ -144,17 +171,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
               teamId: userData.team_id,
             };
             
+            // Update localStorage with fresh data
+            localStorage.setItem('user', JSON.stringify(userData));
+            
+            // Update auth state with validated data
             dispatch({
               type: 'AUTH_SUCCESS',
-              payload: { user, token },
+              payload: { user: validatedUser, token },
             });
           } catch (apiError) {
             console.error('API user validation failed:', apiError);
-            localStorage.removeItem('token');
-            dispatch({ type: 'LOGOUT' });
+            
+            // If we have cached user data, keep the user logged in but show a warning
+            if (user) {
+              console.warn('Using cached user data due to API validation failure');
+            } else {
+              // No cached data and API failed, force logout
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              dispatch({ type: 'LOGOUT' });
+            }
           }
         } catch (error) {
+          console.error('Auth check failed:', error);
           localStorage.removeItem('token');
+          localStorage.removeItem('user');
           dispatch({ type: 'LOGOUT' });
         }
       } else {
@@ -169,49 +210,65 @@ export function AuthProvider({ children }: AuthProviderProps) {
     dispatch({ type: 'AUTH_START' });
 
     try {
-      // Try to use the real API first
-      try {
-        const response = await apiService.login(email, password);
-        
-        if (!response || !response.access_token) {
-          throw new Error('Invalid login response');
-        }
-        
-        const user: User = {
-          id: response.user.id,
-          email: response.user.email,
-          firstName: response.user.first_name || response.user.firstName,
-          lastName: response.user.last_name || response.user.lastName,
-          role: response.user.role || 'User',
-          company_id: response.user.company_id,
-          teamId: response.user.team_id,
-        };
-        
-        const token = response.access_token;
-        
-        // Ensure token is set in localStorage
-        localStorage.setItem('token', token);
-        
-        // Update auth state
-        dispatch({
-          type: 'AUTH_SUCCESS',
-          payload: { user, token },
-        });
-        
-        // Store user data in localStorage as backup
-        localStorage.setItem('user', JSON.stringify(user));
-        
-        return response;
-      } catch (apiError: any) {
-        console.error('API login error:', apiError);
-        throw apiError;
+      // Clear any existing tokens to prevent stale auth state
+      localStorage.removeItem('token');
+      
+      // Make the login API call
+      const response = await apiService.login(email, password);
+      
+      if (!response || !response.access_token) {
+        throw new Error('Invalid login response: No access token received');
       }
+      
+      // Extract user data from response
+      if (!response.user) {
+        throw new Error('Invalid login response: No user data received');
+      }
+      
+      const user: User = {
+        id: response.user.id,
+        email: response.user.email,
+        firstName: response.user.first_name || response.user.firstName,
+        lastName: response.user.last_name || response.user.lastName,
+        role: response.user.role || 'User',
+        company_id: response.user.company_id,
+        teamId: response.user.team_id,
+      };
+      
+      const token = response.access_token;
+      
+      // Ensure token is set in localStorage
+      localStorage.setItem('token', token);
+      
+      // Store user data in localStorage as backup
+      localStorage.setItem('user', JSON.stringify(response.user));
+      
+      // Update auth state
+      dispatch({
+        type: 'AUTH_SUCCESS',
+        payload: { user, token },
+      });
+      
+      // Verify the token was actually set
+      const storedToken = localStorage.getItem('token');
+      if (!storedToken) {
+        console.error('Token was not stored in localStorage');
+        localStorage.setItem('token', token); // Try again
+      }
+      
+      return response;
     } catch (error: any) {
       console.error('Login error:', error);
+      
+      // Clear any partial auth state
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      
       dispatch({
         type: 'AUTH_ERROR',
         payload: error.message || 'Login failed',
       });
+      
       throw error;
     }
   };
