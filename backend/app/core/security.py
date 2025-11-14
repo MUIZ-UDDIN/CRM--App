@@ -138,13 +138,33 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
                 print(f"User {email} is not active")
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Inactive user")
                 
-            # Prepare user data
+            # Get user role - try both fields for compatibility
+            user_role = None
+            if hasattr(user, 'user_role'):
+                if hasattr(user.user_role, 'value'):
+                    user_role = user.user_role.value
+                else:
+                    user_role = str(user.user_role)
+            
+            # Use legacy role field as fallback
+            if not user_role and hasattr(user, 'role'):
+                user_role = user.role
+            
+            # Default to 'company_user' if no role found
+            if not user_role:
+                user_role = 'company_user'
+            
+            # Log the role information for debugging
+            print(f"User {user.email} role: {user_role}")
+            
+            # Prepare user data with both role fields for compatibility
             user_data = {
                 "id": str(user.id),
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
+                "role": user_role,  # Primary role field
+                "user_role": user_role,  # Add user_role field for compatibility
                 "company_id": str(user.company_id) if user.company_id else None,
                 "team_id": str(user.team_id) if user.team_id else None,
                 "is_active": True
@@ -190,13 +210,33 @@ async def get_current_user_ws(token: str) -> dict:
             if user is None or not user.is_active:
                 raise HTTPException(status_code=401, detail="User not found or inactive")
             
-            # Prepare user data
+            # Get user role - try both fields for compatibility
+            user_role = None
+            if hasattr(user, 'user_role'):
+                if hasattr(user.user_role, 'value'):
+                    user_role = user.user_role.value
+                else:
+                    user_role = str(user.user_role)
+            
+            # Use legacy role field as fallback
+            if not user_role and hasattr(user, 'role'):
+                user_role = user.role
+            
+            # Default to 'company_user' if no role found
+            if not user_role:
+                user_role = 'company_user'
+            
+            # Log the role information for debugging
+            print(f"WS User {user.email} role: {user_role}")
+            
+            # Prepare user data with both role fields for compatibility
             user_data = {
                 "id": str(user.id),
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role),
+                "role": user_role,  # Primary role field
+                "user_role": user_role,  # Add user_role field for compatibility
                 "company_id": str(user.company_id) if user.company_id else None,
                 "team_id": str(user.team_id) if user.team_id else None,
                 "is_active": True

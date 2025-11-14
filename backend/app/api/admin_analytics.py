@@ -36,19 +36,34 @@ async def get_admin_dashboard_analytics(
     context = get_tenant_context(current_user)
     
     # Only super admins can access this endpoint
-    # Add debug logging to help diagnose the issue
-    logger.info(f"User role: {current_user.get('role')}, type: {type(current_user.get('role'))}")
+    # Add extensive debug logging to help diagnose the issue
+    logger.info(f"User data: {current_user}")
+    logger.info(f"User role from 'role' field: {current_user.get('role')}, type: {type(current_user.get('role'))}")
+    logger.info(f"User role from context: {context.user_role}, type: {type(context.user_role)}")
     
-    # More flexible role check that handles string variations
-    user_role = current_user.get('role', '').lower() if current_user.get('role') else ''
-    is_super_admin = user_role in ['super_admin', 'super admin', 'superadmin']
+    # Use the TenantContext method for super admin check
+    is_super_admin = context.is_super_admin()
     
     # For debugging, log the role check result
-    logger.info(f"Is super admin check result: {is_super_admin}, user_role: {user_role}")
+    logger.info(f"Is super admin check result: {is_super_admin}")
+    
+    # Fallback check if the context method fails
+    if not is_super_admin:
+        # Try all possible variations of super admin role
+        user_role_str = str(current_user.get('role', '')).lower()
+        fallback_check = user_role_str in ['super_admin', 'super admin', 'superadmin']
+        logger.info(f"Fallback super admin check: {fallback_check}, user_role_str: {user_role_str}")
+        
+        if fallback_check:
+            is_super_admin = True
+            logger.info("Using fallback super admin check")
     
     if not is_super_admin:
-        # Instead of returning mock data, raise a proper error
+        # Log detailed information about the user
         logger.warning(f"Non-admin user {current_user.get('email')} attempted to access admin dashboard")
+        logger.warning(f"User details: {current_user}")
+        
+        # Return 403 Forbidden with clear message
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only super admins can access admin dashboard analytics"

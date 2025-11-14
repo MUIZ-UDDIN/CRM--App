@@ -28,9 +28,28 @@ class TenantContext:
     
     def is_super_admin(self) -> bool:
         """Check if current user is super admin"""
+        # Handle dict user object with both 'role' and 'user_role' fields
+        if isinstance(self.user, dict):
+            # Try both fields that might contain role information
+            role_value = self.user.get('role')
+            user_role_value = self.user.get('user_role')
+            
+            # Check both fields
+            if isinstance(role_value, str) and role_value.lower() in ['super_admin', 'super admin', 'superadmin']:
+                return True
+            if isinstance(user_role_value, str) and user_role_value.lower() in ['super_admin', 'super admin', 'superadmin']:
+                return True
+                
+        # Handle string user_role
         if isinstance(self.user_role, str):
-            return self.user_role.lower() in ['super_admin', 'super admin']
-        return self.user_role == UserRole.SUPER_ADMIN
+            return self.user_role.lower() in ['super_admin', 'super admin', 'superadmin']
+            
+        # Handle enum user_role
+        if hasattr(self.user_role, 'value'):
+            return self.user_role == UserRole.SUPER_ADMIN or self.user_role.value.lower() == 'super_admin'
+            
+        # Final fallback check
+        return False
     
     def is_company_admin(self) -> bool:
         """Check if current user is company admin"""
