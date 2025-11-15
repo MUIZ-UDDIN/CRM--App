@@ -33,8 +33,10 @@ export default function SupportTickets() {
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+  const [showAssignModal, setShowAssignModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
+  const [assigneeId, setAssigneeId] = useState('');
 
   const [newTicket, setNewTicket] = useState({
     subject: '',
@@ -83,6 +85,19 @@ export default function SupportTickets() {
       fetchTickets();
     } catch (error) {
       toast.error('Failed to update ticket');
+    }
+  };
+
+  const assignTicket = async () => {
+    if (!selectedTicket || !assigneeId) return;
+    try {
+      await apiClient.post(`/support-tickets/${selectedTicket.id}/assign?assigned_to_id=${assigneeId}`);
+      toast.success('Ticket assigned successfully');
+      setShowAssignModal(false);
+      setAssigneeId('');
+      fetchTickets();
+    } catch (error) {
+      toast.error('Failed to assign ticket');
     }
   };
 
@@ -238,8 +253,7 @@ export default function SupportTickets() {
                         <button
                           onClick={() => {
                             setSelectedTicket(ticket);
-                            toast('Assign feature coming soon', { icon: '👤' });
-                            // TODO: Open assign modal
+                            setShowAssignModal(true);
                           }}
                           className="text-purple-600 hover:text-purple-800 text-sm font-medium"
                         >
@@ -362,6 +376,55 @@ export default function SupportTickets() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Ticket Modal */}
+      {showAssignModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <h2 className="text-xl font-bold mb-4">Assign Ticket</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Assign ticket: <span className="font-medium">{selectedTicket.subject}</span>
+            </p>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Assign To (User ID) *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={assigneeId}
+                  onChange={(e) => setAssigneeId(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter user ID"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Note: You need the user's ID. A user selector will be added soon.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowAssignModal(false);
+                  setAssigneeId('');
+                }}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={assignTicket}
+                disabled={!assigneeId}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Assign
+              </button>
+            </div>
           </div>
         </div>
       )}

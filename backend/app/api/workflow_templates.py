@@ -209,66 +209,76 @@ async def use_template(
     db: Session = Depends(get_db)
 ):
     """Create a workflow from a template"""
-    company_id = current_user.get('company_id')
-    user_id = current_user.get('id')
-    
-    if not company_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User must belong to a company"
+    try:
+        company_id = current_user.get('company_id')
+        user_id = current_user.get('id')
+        
+        if not company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User must belong to a company"
+            )
+        
+        # Get template
+        template = db.query(WorkflowTemplate).filter(WorkflowTemplate.id == uuid.UUID(template_id)).first()
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        # Check access
+        if not template.is_global and str(template.company_id) != company_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Create workflow from template
+        new_workflow = Workflow(
+            id=uuid.uuid4(),
+            name=workflow_name,
+            description=f"Created from template: {template.name}",
+            trigger_type=template.trigger_type,
+            trigger_config=template.trigger_config,
+            actions=template.actions,
+            conditions=template.conditions,
+            is_active=True,
+            company_id=uuid.UUID(company_id),
+            created_by_id=uuid.UUID(user_id),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-    
-    # Get template
-    template = db.query(WorkflowTemplate).filter(WorkflowTemplate.id == uuid.UUID(template_id)).first()
-    
-    if not template:
-        raise HTTPException(status_code=404, detail="Template not found")
-    
-    # Check access
-    if not template.is_global and str(template.company_id) != company_id:
-        raise HTTPException(status_code=403, detail="Access denied")
-    
-    # Create workflow from template
-    new_workflow = Workflow(
-        id=uuid.uuid4(),
-        name=workflow_name,
-        description=f"Created from template: {template.name}",
-        trigger_type=template.trigger_type,
-        trigger_config=template.trigger_config,
-        actions=template.actions,
-        conditions=template.conditions,
-        is_active=True,
-        company_id=uuid.UUID(company_id),
-        created_by_id=uuid.UUID(user_id),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
-    )
-    
-    db.add(new_workflow)
-    
-    # Track usage
-    usage = TemplateUsage(
-        id=uuid.uuid4(),
-        template_id=template.id,
-        workflow_id=new_workflow.id,
-        company_id=uuid.UUID(company_id),
-        created_by_id=uuid.UUID(user_id),
-        created_at=datetime.utcnow()
-    )
-    
-    db.add(usage)
-    
-    # Increment usage count
-    template.usage_count += 1
-    
-    db.commit()
-    db.refresh(new_workflow)
-    
-    return {
-        "message": "Workflow created from template successfully",
-        "workflow_id": str(new_workflow.id),
-        "workflow_name": new_workflow.name
-    }
+        
+        db.add(new_workflow)
+        
+        # Track usage
+        usage = TemplateUsage(
+            id=uuid.uuid4(),
+            template_id=template.id,
+            workflow_id=new_workflow.id,
+            company_id=uuid.UUID(company_id),
+            created_by_id=uuid.UUID(user_id),
+            created_at=datetime.utcnow()
+        )
+        
+        db.add(usage)
+        
+        # Increment usage count
+        template.usage_count += 1
+        
+        db.commit()
+        db.refresh(new_workflow)
+        
+        return {
+            "message": "Workflow created from template successfully",
+            "workflow_id": str(new_workflow.id),
+            "workflow_name": new_workflow.name
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create workflow from template: {str(e)}"
+        )
 
 
 @router.delete("/{template_id}")

@@ -400,3 +400,56 @@ async def delete_ticket(
     db.commit()
     
     return {"message": "Ticket deleted successfully"}
+
+
+@router.post("/{ticket_id}/assign")
+async def assign_ticket(
+    ticket_id: str,
+    assigned_to_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Assign a ticket to a user"""
+    try:
+        context = get_tenant_context(current_user)
+        company_id = current_user.get('company_id')
+        
+        # Get ticket
+        ticket = db.query(SupportTicket).filter(SupportTicket.id == uuid.UUID(ticket_id)).first()
+        
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Ticket not found")
+        
+        # Check permissions
+        if not context.is_super_admin() and str(ticket.company_id) != company_id:
+            raise HTTPException(status_code=403, detail="Access denied")
+        
+        # Verify assignee exists and belongs to same company
+        assignee = db.query(User).filter(User.id == uuid.UUID(assigned_to_id)).first()
+        if not assignee:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        if not context.is_super_admin() and str(assignee.company_id) != company_id:
+            raise HTTPException(status_code=403, detail="Can only assign to users in your company")
+        
+        # Assign ticket
+        ticket.assigned_to_id = uuid.UUID(assigned_to_id)
+        ticket.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(ticket)
+        
+        return {
+            "message": "Ticket assigned successfully",
+            "ticket_id": str(ticket.id),
+            "assigned_to": f"{assignee.first_name} {assignee.last_name}"
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to assign ticket: {str(e)}"
+        )
