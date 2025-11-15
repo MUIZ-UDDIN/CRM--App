@@ -72,6 +72,7 @@ const navigation: NavItem[] = [
       { name: 'Templates', href: '/workflow-templates' },
       { name: 'Custom Fields', href: '/custom-fields' },
       { name: 'Settings', href: '/settings' },
+      { name: 'Team', href: '/settings?tab=team' },
     ]
   },
 ];

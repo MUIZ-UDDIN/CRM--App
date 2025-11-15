@@ -64,14 +64,27 @@ async def create_ticket(
 ):
     """Create a support ticket - All roles can create"""
     try:
+        context = get_tenant_context(current_user)
         company_id = current_user.get('company_id')
         user_id = current_user.get('id')
         
-        if not company_id:
+        # Regular users must belong to a company
+        if not company_id and not context.is_super_admin():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User must belong to a company"
             )
+        
+        # For Super Admin without company_id, use first company as default
+        if not company_id and context.is_super_admin():
+            from app.models.companies import Company
+            first_company = db.query(Company).first()
+            if not first_company:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="No companies found in system"
+                )
+            company_id = str(first_company.id)
         
         # Map priority string to enum
         priority_map = {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ActionButtons from '../components/common/ActionButtons';
 import { useAuth } from '../contexts/AuthContext';
@@ -33,7 +34,9 @@ interface Integration {
 }
 
 export default function Settings() {
-  const [activeTab, setActiveTab] = useState<TabType>('team');
+  const [searchParams] = useSearchParams();
+  const tabFromUrl = searchParams.get('tab') as TabType | null;
+  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'team');
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);

@@ -3,7 +3,7 @@
 Seed default workflow templates
 """
 
-from app.core.database import sync_engine, get_db
+from app.core.database import sync_engine, get_db, Base
 from app.models.workflow_templates import WorkflowTemplate
 from app.models.users import User
 from app.models.companies import Company
@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session
 import uuid
 from datetime import datetime
 import json
+
+# Import all models to ensure they're registered
+from app.models import users, companies, workflows
 
 def get_super_admin():
     """Get first super admin user"""
