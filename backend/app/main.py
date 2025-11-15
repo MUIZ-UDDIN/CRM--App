@@ -50,6 +50,7 @@ from app.api.search import router as search_router
 from app.api.websocket import router as websocket_router
 from app.api.team import router as team_router
 from app.api.teams import router as teams_router
+from app.api.billing import router as billing_router
 
 # Import with error handling for debugging
 try:
@@ -356,6 +357,10 @@ if notifications_router:
     logger.info("✅ Notifications routes registered")
 else:
     logger.warning("⚠️ Notifications router not loaded - skipping registration")
+
+# Billing and Subscription Management
+app.include_router(billing_router)
+logger.info("✅ Billing routes registered")
 
 app.include_router(
     twilio_settings_router,
