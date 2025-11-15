@@ -101,14 +101,16 @@ function CompanyAdminDashboard() {
                 <FaHandshake className="text-green-500 text-xl" />
               </div>
               <div className="text-right">
-                <h3 className="text-2xl font-bold">
+                <h3 className="text-2xl font-bold" title={`$${(stats.metrics?.total_deal_value || 0).toLocaleString()}`}>
                   ${(() => {
                     const value = stats.metrics?.total_deal_value || 0;
-                    if (value >= 1000000000000) return (value / 1000000000000).toFixed(1) + 'T';
-                    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
-                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-                    return value.toLocaleString();
+                    const absValue = Math.abs(value);
+                    if (absValue >= 1e15) return (value / 1e15).toFixed(0) + 'Q';
+                    if (absValue >= 1e12) return (value / 1e12).toFixed(absValue >= 1e14 ? 0 : 1) + 'T';
+                    if (absValue >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                    if (absValue >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                    if (absValue >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+                    return Math.round(value).toLocaleString();
                   })()}
                 </h3>
                 <p className="text-gray-500">Deal Value</p>

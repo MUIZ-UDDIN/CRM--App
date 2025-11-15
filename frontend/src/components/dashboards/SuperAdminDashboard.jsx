@@ -135,14 +135,18 @@ function SuperAdminDashboard() {
                 <FaCreditCard className="text-purple-500 text-xl" />
               </div>
               <div className="text-right">
-                <h3 className="text-2xl font-bold">
+                <h3 className="text-2xl font-bold" title={`$${(stats.total_pipeline_value || 0).toLocaleString()}`}>
                   ${(() => {
                     const value = stats.total_pipeline_value || 0;
-                    if (value >= 1000000000000) return (value / 1000000000000).toFixed(1) + 'T';
-                    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
-                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
-                    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
-                    return value.toLocaleString();
+                    const absValue = Math.abs(value);
+                    
+                    // Format with appropriate suffix, keeping display under 6 characters
+                    if (absValue >= 1e15) return (value / 1e15).toFixed(0) + 'Q'; // Quadrillion
+                    if (absValue >= 1e12) return (value / 1e12).toFixed(absValue >= 1e14 ? 0 : 1) + 'T'; // Trillion
+                    if (absValue >= 1e9) return (value / 1e9).toFixed(1) + 'B'; // Billion
+                    if (absValue >= 1e6) return (value / 1e6).toFixed(1) + 'M'; // Million
+                    if (absValue >= 1e3) return (value / 1e3).toFixed(1) + 'K'; // Thousand
+                    return Math.round(value).toLocaleString();
                   })()}
                 </h3>
                 <p className="text-gray-500">Pipeline Value</p>
