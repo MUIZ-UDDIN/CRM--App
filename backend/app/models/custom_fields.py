@@ -3,13 +3,13 @@ Custom Fields Model - Allows companies to add custom fields to entities
 """
 
 import enum
-from sqlalchemy import Column, String, Text, Boolean, Integer, DateTime, ForeignKey, Enum as SQLEnum, JSON
+from sqlalchemy import Column, String, Text, Boolean, Integer, DateTime, ForeignKey, Enum as SQLEnum, JSON as JSONB
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
-from app.core.database import Base
+from .base import BaseModel
 
 
 class FieldType(str, enum.Enum):
@@ -32,7 +32,7 @@ class EntityType(str, enum.Enum):
     ACTIVITY = "activity"
 
 
-class CustomField(Base):
+class CustomField(BaseModel):
     __tablename__ = "custom_fields"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -68,7 +68,7 @@ class CustomField(Base):
     )
 
 
-class CustomFieldValue(Base):
+class CustomFieldValue(BaseModel):
     __tablename__ = "custom_field_values"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
