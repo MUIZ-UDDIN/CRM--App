@@ -70,10 +70,7 @@ const navigation: NavItem[] = [
       { name: 'Files', href: '/files' },
       { name: 'Workflows', href: '/workflows' },
       { name: 'Templates', href: '/workflow-templates' },
-      { name: 'Custom Fields', href: '/custom-fields' },
       { name: 'Import Data', href: '/import' },
-      { name: 'Billing', href: '/billing' },
-      { name: 'Settings', href: '/settings' },
     ]
   },
 ];
@@ -932,6 +929,16 @@ export default function MainLayout() {
                       >
                         <CogIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
                         <span>Account Settings</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowProfile(false);
+                          navigate('/billing');
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        <CreditCardIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
+                        <span>Billing</span>
                       </button>
                       <button 
                         onClick={() => {
