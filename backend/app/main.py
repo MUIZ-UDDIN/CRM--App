@@ -117,9 +117,11 @@ except Exception as e:
 
 try:
     from app.api.custom_fields import router as custom_fields_router
-    logger.info("✅ Custom Fields router imported successfully")
+    logger.info(f"✅ Custom Fields router imported successfully: {custom_fields_router}")
 except Exception as e:
+    import traceback
     logger.error(f"❌ Failed to import Custom Fields router: {e}")
+    logger.error(traceback.format_exc())
     custom_fields_router = None
 
 try:
@@ -522,7 +524,8 @@ if custom_fields_router:
         custom_fields_router,
         prefix="/api"
     )
-    logger.info("✅ Custom Fields routes registered")
+    logger.info(f"✅ Custom Fields routes registered at /api/custom-fields")
+    logger.info(f"   Router routes: {[route.path for route in custom_fields_router.routes]}")
 else:
     logger.warning("⚠️ Custom Fields router not loaded - skipping registration")
 

@@ -245,6 +245,7 @@ async def use_template(
         )
         
         db.add(new_workflow)
+        db.flush()  # Flush to get the workflow ID in database before creating usage
         
         # Track usage
         usage = TemplateUsage(
