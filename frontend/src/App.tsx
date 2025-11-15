@@ -32,6 +32,8 @@ import ScheduledSMS from './pages/ScheduledSMS';
 import PhoneNumbers from './pages/PhoneNumbers';
 import Calls from './pages/Calls';
 import SearchResults from './pages/SearchResults';
+import SupportTickets from './pages/SupportTickets';
+import CustomFields from './pages/CustomFields';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
@@ -123,6 +125,8 @@ function App() {
                 <Route path="settings" element={<Settings />} />
                 <Route path="team" element={<TeamManagement />} />
                 <Route path="admin" element={<SuperAdminDashboard />} />
+                <Route path="support-tickets" element={<SupportTickets />} />
+                <Route path="custom-fields" element={<CustomFields />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="inbox" element={<Inbox />} />
