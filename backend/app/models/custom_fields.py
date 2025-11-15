@@ -9,7 +9,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
-from .base import BaseModel
+from .base import Base
 
 
 class FieldType(str, enum.Enum):
@@ -32,7 +32,7 @@ class EntityType(str, enum.Enum):
     ACTIVITY = "activity"
 
 
-class CustomField(BaseModel):
+class CustomField(Base):
     __tablename__ = "custom_fields"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -68,7 +68,7 @@ class CustomField(BaseModel):
     )
 
 
-class CustomFieldValue(BaseModel):
+class CustomFieldValue(Base):
     __tablename__ = "custom_field_values"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

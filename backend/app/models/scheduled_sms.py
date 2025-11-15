@@ -8,10 +8,10 @@ from sqlalchemy.orm import relationship
 import uuid
 from datetime import datetime
 
-from .base import BaseModel
+from .base import Base
 
 
-class ScheduledSMS(BaseModel):
+class ScheduledSMS(Base):
     __tablename__ = "scheduled_sms"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

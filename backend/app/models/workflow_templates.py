@@ -8,7 +8,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 import uuid
 
-from .base import BaseModel
+from .base import Base
 
 
 class TemplateCategory(str, enum.Enum):
@@ -20,7 +20,7 @@ class TemplateCategory(str, enum.Enum):
     GENERAL = "general"
 
 
-class WorkflowTemplate(BaseModel):
+class WorkflowTemplate(Base):
     __tablename__ = "workflow_templates"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -51,7 +51,7 @@ class WorkflowTemplate(BaseModel):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
 
-class TemplateUsage(BaseModel):
+class TemplateUsage(Base):
     __tablename__ = "template_usage"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

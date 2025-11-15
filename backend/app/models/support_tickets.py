@@ -9,7 +9,7 @@ from sqlalchemy.orm import relationship
 from datetime import datetime
 import uuid
 
-from .base import BaseModel
+from .base import Base
 
 
 class TicketStatus(str, enum.Enum):
@@ -26,7 +26,7 @@ class TicketPriority(str, enum.Enum):
     URGENT = "urgent"
 
 
-class SupportTicket(BaseModel):
+class SupportTicket(Base):
     __tablename__ = "support_tickets"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
