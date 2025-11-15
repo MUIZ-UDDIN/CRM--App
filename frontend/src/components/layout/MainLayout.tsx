@@ -619,22 +619,13 @@ export default function MainLayout() {
                             ))}
                             {/* Add Admin Dashboard for super admins in More dropdown */}
                             {item.name === 'More' && (user?.role === 'super_admin' || user?.role === 'Super Admin') && (
-                              <>
-                                <Link
-                                  to="/admin"
-                                  onClick={() => setOpenDropdown(null)}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-200"
-                                >
-                                  Admin Dashboard
-                                </Link>
-                                <Link
-                                  to="/billing-management"
-                                  onClick={() => setOpenDropdown(null)}
-                                  className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                                >
-                                  Billing Management
-                                </Link>
-                              </>
+                              <Link
+                                to="/admin"
+                                onClick={() => setOpenDropdown(null)}
+                                className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-t border-gray-200"
+                              >
+                                Admin Dashboard
+                              </Link>
                             )}
                           </div>
                         )}
@@ -1000,32 +991,18 @@ export default function MainLayout() {
                       })}
                       {/* Add Admin Dashboard for super admins in More section */}
                       {item.name === 'More' && (user?.role === 'super_admin' || user?.role === 'Super Admin') && (
-                        <>
-                          <Link
-                            to="/admin"
-                            onClick={() => setShowMobileMenu(false)}
-                            className={clsx(
-                              'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ml-3 border-t border-gray-200 mt-2 pt-3',
-                              location.pathname === '/admin'
-                                ? 'bg-primary-50 text-primary-600 border border-primary-200'
-                                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                          )}
-                        >
-                          <span>Admin Dashboard</span>
-                        </Link>
                         <Link
-                          to="/billing-management"
+                          to="/admin"
                           onClick={() => setShowMobileMenu(false)}
                           className={clsx(
-                            'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ml-3',
-                            location.pathname === '/billing-management'
+                            'flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors duration-200 ml-3 border-t border-gray-200 mt-2 pt-3',
+                            location.pathname === '/admin'
                               ? 'bg-primary-50 text-primary-600 border border-primary-200'
                               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-                          )}
-                        >
-                          <span>Billing Management</span>
-                        </Link>
-                        </>
+                        )}
+                      >
+                        <span>Admin Dashboard</span>
+                      </Link>
                       )}
                     </div>
                   );
