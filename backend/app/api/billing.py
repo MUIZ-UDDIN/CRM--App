@@ -863,3 +863,71 @@ async def activate_subscription(
     db.commit()
     
     return {"message": "Subscription activated successfully"}
+
+
+@router.get("/subscription")
+async def get_current_subscription(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get current user's company subscription (Company Admin)"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=404, detail="No company associated with user")
+    
+    subscription = db.query(Subscription).filter(
+        Subscription.company_id == uuid.UUID(company_id)
+    ).first()
+    
+    if not subscription:
+        raise HTTPException(status_code=404, detail="No subscription found")
+    
+    # Get user count
+    user_count = db.query(User).filter(User.company_id == uuid.UUID(company_id)).count()
+    
+    # Get plan details
+    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.id == subscription.plan_id).first()
+    
+    return {
+        "id": str(subscription.id),
+        "plan_name": plan.name if plan else "Unknown",
+        "status": subscription.status,
+        "billing_cycle": subscription.billing_cycle,
+        "monthly_price": float(plan.monthly_price) if plan else 0,
+        "user_count": user_count,
+        "total_amount": float(plan.monthly_price) * user_count if plan else 0,
+        "current_period_start": subscription.current_period_start.isoformat() if subscription.current_period_start else None,
+        "current_period_end": subscription.current_period_end.isoformat() if subscription.current_period_end else None,
+        "trial_ends_at": subscription.trial_ends_at.isoformat() if subscription.trial_ends_at else None,
+        "card_last_4": subscription.card_last_4,
+        "card_brand": subscription.card_brand,
+        "auto_renew": subscription.auto_renew
+    }
+
+
+@router.get("/invoices")
+async def get_company_invoices(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get invoices for current user's company (Company Admin)"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=404, detail="No company associated with user")
+    
+    invoices = db.query(Invoice).filter(
+        Invoice.company_id == uuid.UUID(company_id)
+    ).order_by(Invoice.created_at.desc()).limit(50).all()
+    
+    return [
+        {
+            "id": str(inv.id),
+            "invoice_number": inv.invoice_number,
+            "amount": float(inv.amount),
+            "status": inv.status,
+            "due_date": inv.due_date.isoformat() if inv.due_date else None,
+            "paid_at": inv.paid_at.isoformat() if inv.paid_at else None,
+            "invoice_pdf": inv.invoice_pdf
+        }
+        for inv in invoices
+    ]

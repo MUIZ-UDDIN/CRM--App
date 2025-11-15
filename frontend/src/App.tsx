@@ -22,6 +22,7 @@ import TeamManagement from './pages/TeamManagement';
 // TeamsPage removed - functionality integrated into Settings
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SuperAdminBilling from './pages/SuperAdminBilling';
+import CompanyBilling from './pages/CompanyBilling';
 import PipelineSettings from './pages/PipelineSettings';
 import Workflows from './pages/Workflows';
 import Inbox from './pages/Inbox';
@@ -36,7 +37,6 @@ import SearchResults from './pages/SearchResults';
 import SupportTickets from './pages/SupportTickets';
 import CustomFields from './pages/CustomFields';
 import WorkflowTemplates from './pages/WorkflowTemplates';
-import BillingManagement from './pages/BillingManagement';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import AcceptInvitation from './pages/auth/AcceptInvitation';
@@ -129,10 +129,10 @@ function App() {
                 <Route path="team" element={<TeamManagement />} />
                 <Route path="admin" element={<SuperAdminDashboard />} />
                 <Route path="admin/billing" element={<SuperAdminBilling />} />
+                <Route path="billing" element={<CompanyBilling />} />
                 <Route path="support-tickets" element={<SupportTickets />} />
                 <Route path="custom-fields" element={<CustomFields />} />
                 <Route path="workflow-templates" element={<WorkflowTemplates />} />
-                <Route path="billing-management" element={<BillingManagement />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />
                 <Route path="inbox" element={<Inbox />} />
