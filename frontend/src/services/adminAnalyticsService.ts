@@ -15,10 +15,16 @@ export interface AdminAnalyticsFilters {
 // Get admin dashboard analytics
 export const getAdminDashboardAnalytics = async (filters?: AdminAnalyticsFilters) => {
   try {
+    // Get token explicitly
+    const token = localStorage.getItem('token');
+    
     // Add timeout to prevent hanging requests
     const response = await apiClient.get('/admin-analytics/dashboard', { 
       params: filters,
-      timeout: 10000 // 10 second timeout
+      timeout: 10000, // 10 second timeout
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` })
+      }
     });
     return response.data;
   } catch (error: any) {
