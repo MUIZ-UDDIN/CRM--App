@@ -265,11 +265,11 @@ app.include_router(
 )
 
 # Register admin analytics routes with the correct prefix
+# NO dependencies - permission check is done inside the endpoint
 app.include_router(
     admin_analytics_router,
     prefix="/api",  # Router has /admin-analytics prefix, so final URL is /api/admin-analytics/dashboard
     tags=["Admin Analytics"]
-    # NO dependencies - permission check is done inside the endpoint
 )
 logger.info("✅ Admin Analytics routes registered at /api/admin-analytics/dashboard")
 
