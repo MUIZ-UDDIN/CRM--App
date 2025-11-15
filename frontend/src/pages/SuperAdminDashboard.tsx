@@ -79,15 +79,27 @@ export default function SuperAdminDashboard() {
   };
 
   const getSubscriptionBadge = (company: Company) => {
-    if (company.subscription_status === 'trial') {
+    const status = company.subscription_status || company.status || 'active';
+    
+    if (status === 'trial' || company.plan === 'free') {
       const daysLeft = company.days_remaining || 0;
       
       // Show "Expired" if 0 days left
-      if (daysLeft === 0) {
+      if (daysLeft === 0 && status === 'trial') {
         return (
           <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center gap-1">
             <XCircleIcon className="w-3 h-3" />
             Expired
+          </span>
+        );
+      }
+      
+      // Free plan is considered trial
+      if (company.plan === 'free') {
+        return (
+          <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 flex items-center gap-1">
+            <ClockIcon className="w-3 h-3" />
+            Trial
           </span>
         );
       }
@@ -101,7 +113,7 @@ export default function SuperAdminDashboard() {
       );
     }
 
-    if (company.subscription_status === 'active') {
+    if (status === 'active') {
       return (
         <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 flex items-center gap-1">
           <CheckCircleIcon className="w-3 h-3" />
@@ -110,23 +122,24 @@ export default function SuperAdminDashboard() {
       );
     }
 
-    if (company.subscription_status === 'expired') {
+    if (status === 'expired' || status === 'suspended') {
       return (
         <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center gap-1">
           <XCircleIcon className="w-3 h-3" />
-          Expired
+          {status === 'suspended' ? 'Suspended' : 'Expired'}
         </span>
       );
     }
 
     return (
       <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-        {company.subscription_status}
+        {status}
       </span>
     );
   };
 
   const getPlanBadge = (company: Company) => {
+    const plan = company.plan || 'free';
     const colors = {
       free: 'bg-gray-100 text-gray-800',
       pro: 'bg-blue-100 text-blue-800',
@@ -134,27 +147,10 @@ export default function SuperAdminDashboard() {
       trial: 'bg-yellow-100 text-yellow-800'
     };
 
-    // Show "Trial" badge for companies on trial, regardless of their plan
-    if (company.subscription_status === 'trial') {
-      return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-          TRIAL
-        </span>
-      );
-    }
-
-    // Handle missing plan gracefully
-    if (!company.plan) {
-      return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-          NO PLAN
-        </span>
-      );
-    }
-
-    const plan = company.plan.toLowerCase();
+    const color = colors[plan.toLowerCase() as keyof typeof colors] || colors.free;
+    
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[plan as keyof typeof colors] || colors.free}`}>
+      <span className={`px-2 py-1 text-xs font-medium rounded-full ${color}`}>
         {company.plan.toUpperCase()}
       </span>
     );

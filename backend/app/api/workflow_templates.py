@@ -235,12 +235,11 @@ async def use_template(
             name=workflow_name,
             description=f"Created from template: {template.name}",
             trigger_type=template.trigger_type,
-            trigger_config=template.trigger_config,
+            trigger_conditions=template.trigger_config,  # Map trigger_config to trigger_conditions
             actions=template.actions,
-            conditions=template.conditions,
-            is_active=True,
+            status='active',
+            owner_id=uuid.UUID(user_id),
             company_id=uuid.UUID(company_id),
-            created_by_id=uuid.UUID(user_id),
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow()
         )

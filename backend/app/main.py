@@ -520,8 +520,7 @@ else:
 if custom_fields_router:
     app.include_router(
         custom_fields_router,
-        prefix="/api",
-        dependencies=[Depends(get_current_user)]
+        prefix="/api"
     )
     logger.info("✅ Custom Fields routes registered")
 else:
