@@ -108,6 +108,20 @@ except Exception as e:
     logger.error(f"❌ Failed to import Twilio Client router: {e}")
     twilio_client_router = None
 
+try:
+    from app.api.support_tickets import router as support_tickets_router
+    logger.info("✅ Support Tickets router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import Support Tickets router: {e}")
+    support_tickets_router = None
+
+try:
+    from app.api.custom_fields import router as custom_fields_router
+    logger.info("✅ Custom Fields router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import Custom Fields router: {e}")
+    custom_fields_router = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -483,6 +497,28 @@ app.include_router(
     tags=["WebSocket"]
 )
 logger.info("✅ WebSocket routes registered")
+
+# Support Tickets System
+if support_tickets_router:
+    app.include_router(
+        support_tickets_router,
+        prefix="/api",
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Support Tickets routes registered")
+else:
+    logger.warning("⚠️ Support Tickets router not loaded - skipping registration")
+
+# Custom Fields System
+if custom_fields_router:
+    app.include_router(
+        custom_fields_router,
+        prefix="/api",
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Custom Fields routes registered")
+else:
+    logger.warning("⚠️ Custom Fields router not loaded - skipping registration")
 
 # Register custom error handlers to prevent database query exposure
 register_error_handlers(app)
