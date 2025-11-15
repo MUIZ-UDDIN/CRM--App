@@ -191,53 +191,63 @@ async def get_custom_fields(
     db: Session = Depends(get_db)
 ):
     """Get custom fields for the company"""
-    context = get_tenant_context(current_user)
-    company_id = current_user.get('company_id')
-    
-    if not company_id and not context.is_super_admin():
+    try:
+        context = get_tenant_context(current_user)
+        company_id = current_user.get('company_id')
+        
+        if not company_id and not context.is_super_admin():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User must belong to a company"
+            )
+        
+        # Build query
+        query = db.query(CustomField)
+        
+        if not context.is_super_admin():
+            query = query.filter(CustomField.company_id == uuid.UUID(company_id))
+        
+        if entity_type:
+            try:
+                entity_type_enum = EntityType(entity_type.lower())
+                query = query.filter(CustomField.entity_type == entity_type_enum)
+            except ValueError:
+                pass
+        
+        if active_only:
+            query = query.filter(CustomField.is_active == True)
+        
+        fields = query.order_by(CustomField.display_order, CustomField.created_at).all()
+        
+        return [
+            CustomFieldResponse(
+                id=str(f.id),
+                name=f.name,
+                field_key=f.field_key,
+                field_type=f.field_type.value,
+                entity_type=f.entity_type.value,
+                description=f.description,
+                is_required=f.is_required,
+                is_active=f.is_active,
+                default_value=f.default_value,
+                options=f.options,
+                show_in_list=f.show_in_list,
+                show_in_detail=f.show_in_detail,
+                display_order=f.display_order,
+                company_id=str(f.company_id),
+                created_at=f.created_at
+            )
+            for f in fields
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User must belong to a company"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch custom fields: {str(e)}"
         )
-    
-    # Build query
-    query = db.query(CustomField)
-    
-    if not context.is_super_admin():
-        query = query.filter(CustomField.company_id == uuid.UUID(company_id))
-    
-    if entity_type:
-        try:
-            entity_type_enum = EntityType(entity_type.lower())
-            query = query.filter(CustomField.entity_type == entity_type_enum)
-        except ValueError:
-            pass
-    
-    if active_only:
-        query = query.filter(CustomField.is_active == True)
-    
-    fields = query.order_by(CustomField.display_order, CustomField.created_at).all()
-    
-    return [
-        CustomFieldResponse(
-            id=str(f.id),
-            name=f.name,
-            field_key=f.field_key,
-            field_type=f.field_type.value,
-            entity_type=f.entity_type.value,
-            description=f.description,
-            is_required=f.is_required,
-            is_active=f.is_active,
-            default_value=f.default_value,
-            options=f.options,
-            show_in_list=f.show_in_list,
-            show_in_detail=f.show_in_detail,
-            display_order=f.display_order,
-            company_id=str(f.company_id),
-            created_at=f.created_at
-        )
-        for f in fields
-    ]
 
 
 @router.patch("/{field_id}", response_model=CustomFieldResponse)
