@@ -267,11 +267,11 @@ app.include_router(
 # Register admin analytics routes with the correct prefix
 app.include_router(
     admin_analytics_router,
-    prefix="/api",  # This is correct because the router already has /analytics prefix
-    tags=["Admin Analytics"],
-    dependencies=[Depends(get_current_user)]
+    prefix="/api",  # Router has /admin-analytics prefix, so final URL is /api/admin-analytics/dashboard
+    tags=["Admin Analytics"]
+    # NO dependencies - permission check is done inside the endpoint
 )
-logger.info("✅ Admin Analytics routes registered at /api/analytics/admin-dashboard")
+logger.info("✅ Admin Analytics routes registered at /api/admin-analytics/dashboard")
 
 # Add direct debug route for testing admin dashboard access
 from app.api.admin_analytics import get_admin_dashboard_analytics
