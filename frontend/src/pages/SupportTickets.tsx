@@ -234,6 +234,18 @@ export default function SupportTickets() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
+                      {!ticket.assigned_to_id && (
+                        <button
+                          onClick={() => {
+                            setSelectedTicket(ticket);
+                            toast.info('Assign feature coming soon');
+                            // TODO: Open assign modal
+                          }}
+                          className="text-purple-600 hover:text-purple-800 text-sm font-medium"
+                        >
+                          Assign
+                        </button>
+                      )}
                       {ticket.status === 'open' && (
                         <button
                           onClick={() => updateTicketStatus(ticket.id, 'in_progress')}

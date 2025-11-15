@@ -66,11 +66,11 @@ export default function BillingManagement() {
       
       setCompanies(mockBilling);
       
-      // Calculate stats
+      // Calculate stats - FREE plans are considered trial
       const totalMRR = mockBilling.reduce((sum, c) => sum + c.mrr, 0);
-      const active = mockBilling.filter(c => c.status === 'active').length;
-      const trial = mockBilling.filter(c => c.status === 'trial').length;
-      const expired = mockBilling.filter(c => c.status === 'expired').length;
+      const active = mockBilling.filter(c => c.status === 'active' && c.plan !== 'free').length;
+      const trial = mockBilling.filter(c => c.plan === 'free' || c.status === 'trial').length;
+      const expired = mockBilling.filter(c => c.status === 'expired' || c.status === 'suspended').length;
       
       setStats({
         total_mrr: totalMRR,
@@ -251,30 +251,21 @@ export default function BillingManagement() {
                     {company.users_count}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
-                    {new Date(company.next_billing).toLocaleDateString()}
+                    {new Date(company.next_billing).toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => navigate('/admin')}
-                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
-                        title="View in Admin Dashboard"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                        View
-                      </button>
-                      <button 
-                        onClick={() => {
-                          // Navigate to admin dashboard with company filter
-                          navigate('/admin', { state: { companyId: company.company_id } });
-                        }}
-                        className="flex items-center gap-1 text-gray-600 hover:text-gray-800 text-sm"
-                        title="Edit Company"
-                      >
-                        <PencilIcon className="h-4 w-4" />
-                        Edit
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => {
+                        // Open company details in a new view or modal
+                        toast.info(`Viewing details for ${company.company_name}`);
+                        // TODO: Implement company details view
+                      }}
+                      className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      title="View Company Details"
+                    >
+                      <EyeIcon className="h-4 w-4" />
+                      View
+                    </button>
                   </td>
                 </tr>
               ))}
