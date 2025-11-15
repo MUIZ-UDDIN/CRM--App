@@ -78,7 +78,7 @@ class Email(BaseModel):
     subject = Column(String(500), nullable=False)
     body_html = Column(Text)
     body_text = Column(Text)
-    snippet = Column(String(500))  # Preview text like Gmail
+    # snippet = Column(String(500))  # Preview text like Gmail - TODO: Add migration
     
     # Sender/Recipient
     from_email = Column(String(255), nullable=False, index=True)
