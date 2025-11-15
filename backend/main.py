@@ -193,7 +193,11 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 
+logger.info(f"🔵 About to include billing router: {billing_router}")
+logger.info(f"🔵 Billing router prefix: {billing_router.prefix}")
+logger.info(f"🔵 Billing router routes: {len(billing_router.routes)}")
 app.include_router(billing_router)
+logger.info("✅ Billing router included successfully")
 
 app.include_router(
     data_export_router,
