@@ -122,6 +122,13 @@ except Exception as e:
     logger.error(f"❌ Failed to import Custom Fields router: {e}")
     custom_fields_router = None
 
+try:
+    from app.api.workflow_templates import router as workflow_templates_router
+    logger.info("✅ Workflow Templates router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import Workflow Templates router: {e}")
+    workflow_templates_router = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -519,6 +526,17 @@ if custom_fields_router:
     logger.info("✅ Custom Fields routes registered")
 else:
     logger.warning("⚠️ Custom Fields router not loaded - skipping registration")
+
+# Workflow Templates System
+if workflow_templates_router:
+    app.include_router(
+        workflow_templates_router,
+        prefix="/api",
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Workflow Templates routes registered")
+else:
+    logger.warning("⚠️ Workflow Templates router not loaded - skipping registration")
 
 # Register custom error handlers to prevent database query exposure
 register_error_handlers(app)
