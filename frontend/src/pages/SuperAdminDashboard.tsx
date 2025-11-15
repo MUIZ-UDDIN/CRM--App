@@ -338,8 +338,10 @@ export default function SuperAdminDashboard() {
                       <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
                         <BuildingOfficeIcon className="w-6 h-6 text-blue-600" />
                       </div>
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">{company.name}</div>
+                      <div className="ml-4 min-w-0">
+                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={company.name}>
+                          {company.name}
+                        </div>
                         <div className="text-sm text-gray-500">{company.id.slice(0, 8)}...</div>
                       </div>
                     </div>
