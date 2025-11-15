@@ -21,8 +21,18 @@ const suppressedErrors = new WeakSet();
 // Add auth token and version to requests
 apiClient.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
+  
+  // Ensure headers object exists
+  if (!config.headers) {
+    config.headers = {} as any;
+  }
+  
+  // Always set Authorization header if token exists
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('🔐 Axios Interceptor: Added Authorization header');
+  } else {
+    console.warn('⚠️ Axios Interceptor: No token found in localStorage');
   }
   
   // Add version query param for cache busting
