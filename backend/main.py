@@ -35,7 +35,7 @@ from app.api.sms import router as sms_router
 from app.api.calls import router as calls_router
 from app.api.teams import router as teams_router
 from app.api.notifications import router as notifications_router
-from app.api.billing_updated import router as billing_router
+from app.api.billing import router as billing_router
 from app.api.data_export import router as data_export_router
 from app.api.data_import import router as data_import_router
 
