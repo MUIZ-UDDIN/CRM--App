@@ -17,14 +17,15 @@ import { FaBuilding, FaUsers, FaCreditCard, FaExclamationTriangle } from 'react-
 function SuperAdminDashboard() {
   // State for dashboard data
   const [stats, setStats] = useState({
-    totalCompanies: 0,
-    activeCompanies: 0,
-    trialCompanies: 0,
-    suspendedCompanies: 0,
-    totalUsers: 0,
-    totalRevenue: 0,
-    pendingPayments: 0,
-    recentCompanies: []
+    companies_count: 0,
+    active_users_count: 0,
+    total_users_count: 0,
+    total_deals_count: 0,
+    total_pipeline_value: 0,
+    recent_activities: [],
+    companies_by_size: [],
+    deals_by_stage: [],
+    user_activity: []
   });
   
   const [loading, setLoading] = useState(true);
@@ -98,14 +99,14 @@ function SuperAdminDashboard() {
                 <FaBuilding className="text-blue-500 text-xl" />
               </div>
               <div className="text-right">
-                <h3 className="text-3xl font-bold">{stats.totalCompanies}</h3>
+                <h3 className="text-3xl font-bold">{stats.companies_count || 0}</h3>
                 <p className="text-gray-500">Total Companies</p>
               </div>
             </div>
           </div>
           <div className="bg-gray-50 px-6 py-3">
             <p className="text-xs text-gray-500">
-              Active: {stats.activeCompanies} | Trial: {stats.trialCompanies} | Suspended: {stats.suspendedCompanies}
+              System-wide metrics
             </p>
           </div>
         </div>
@@ -117,7 +118,7 @@ function SuperAdminDashboard() {
                 <FaUsers className="text-green-500 text-xl" />
               </div>
               <div className="text-right">
-                <h3 className="text-3xl font-bold">{stats.totalUsers}</h3>
+                <h3 className="text-3xl font-bold">{stats.total_users_count || 0}</h3>
                 <p className="text-gray-500">Total Users</p>
               </div>
             </div>
@@ -134,13 +135,13 @@ function SuperAdminDashboard() {
                 <FaCreditCard className="text-purple-500 text-xl" />
               </div>
               <div className="text-right">
-                <h3 className="text-3xl font-bold">${stats.totalRevenue.toLocaleString()}</h3>
-                <p className="text-gray-500">Total Revenue</p>
+                <h3 className="text-3xl font-bold">${(stats.total_pipeline_value || 0).toLocaleString()}</h3>
+                <p className="text-gray-500">Pipeline Value</p>
               </div>
             </div>
           </div>
           <div className="bg-gray-50 px-6 py-3">
-            <p className="text-xs text-gray-500">Monthly recurring</p>
+            <p className="text-xs text-gray-500">Total deals value</p>
           </div>
         </div>
         
@@ -151,13 +152,13 @@ function SuperAdminDashboard() {
                 <FaExclamationTriangle className="text-yellow-500 text-xl" />
               </div>
               <div className="text-right">
-                <h3 className="text-3xl font-bold">${stats.pendingPayments.toLocaleString()}</h3>
-                <p className="text-gray-500">Pending Payments</p>
+                <h3 className="text-3xl font-bold">{stats.total_deals_count || 0}</h3>
+                <p className="text-gray-500">Total Deals</p>
               </div>
             </div>
           </div>
           <div className="bg-gray-50 px-6 py-3">
-            <p className="text-xs text-gray-500">Requires attention</p>
+            <p className="text-xs text-gray-500">Across all companies</p>
           </div>
         </div>
       </div>
