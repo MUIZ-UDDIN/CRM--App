@@ -135,7 +135,13 @@ function SuperAdminDashboard() {
                 <FaCreditCard className="text-purple-500 text-xl" />
               </div>
               <div className="text-right">
-                <h3 className="text-3xl font-bold">${(stats.total_pipeline_value || 0).toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold">
+                  ${(stats.total_pipeline_value || 0) >= 1000000 
+                    ? ((stats.total_pipeline_value || 0) / 1000000).toFixed(1) + 'M'
+                    : (stats.total_pipeline_value || 0) >= 1000
+                    ? ((stats.total_pipeline_value || 0) / 1000).toFixed(1) + 'K'
+                    : (stats.total_pipeline_value || 0).toLocaleString()}
+                </h3>
                 <p className="text-gray-500">Pipeline Value</p>
               </div>
             </div>
@@ -159,21 +165,6 @@ function SuperAdminDashboard() {
           </div>
           <div className="bg-gray-50 px-6 py-3">
             <p className="text-xs text-gray-500">Across all companies</p>
-          </div>
-        </div>
-      </div>
-      
-      {/* Revenue Chart */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h5 className="font-medium text-gray-700">Monthly Subscription Revenue</h5>
-        </div>
-        <div className="p-6">
-          <div className="h-80 w-full">
-            {/* Replace with a simple placeholder for now */}
-            <div className="flex items-center justify-center h-full bg-gray-50 rounded border border-gray-200">
-              <p className="text-gray-500">Revenue Chart (Requires Chart.js or other library compatible with your stack)</p>
-            </div>
           </div>
         </div>
       </div>
@@ -202,7 +193,13 @@ function SuperAdminDashboard() {
                 {stats.recent_activities.map((activity) => (
                   <tr key={activity.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">{activity.type}</td>
-                    <td className="px-6 py-4 text-sm text-gray-900">{activity.title}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900 max-w-md">
+                      <div className="truncate" title={activity.title}>
+                        {activity.title && activity.title.length > 80 
+                          ? activity.title.substring(0, 80) + '...' 
+                          : activity.title}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{activity.user_name}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
@@ -223,29 +220,6 @@ function SuperAdminDashboard() {
           ) : (
             <p className="text-gray-500 text-center py-4">No recent activities</p>
           )}
-        </div>
-      </div>
-      
-      {/* Quick Actions */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <h5 className="font-medium text-gray-700">Quick Actions</h5>
-        </div>
-        <div className="p-6">
-          <div className="flex flex-wrap gap-4">
-            <Link to="/companies/new" className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
-              Add New Company
-            </Link>
-            <Link to="/billing/plans" className="bg-cyan-600 hover:bg-cyan-700 text-white py-2 px-4 rounded">
-              Manage Subscription Plans
-            </Link>
-            <Link to="/support/tickets" className="bg-yellow-600 hover:bg-yellow-700 text-white py-2 px-4 rounded">
-              View Support Tickets
-            </Link>
-            <Link to="/admin/settings" className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded">
-              System Settings
-            </Link>
-          </div>
         </div>
       </div>
     </div>
