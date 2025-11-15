@@ -1,5 +1,6 @@
 """
 Billing and subscription management API endpoints
+Updated: 2025-11-16
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
