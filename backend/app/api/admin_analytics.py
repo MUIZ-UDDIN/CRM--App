@@ -24,10 +24,10 @@ import logging
 # Set up logger
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/analytics", tags=["admin_analytics"])
+router = APIRouter(prefix="/admin-analytics", tags=["admin_analytics"])
 
 
-@router.get("/admin-dashboard")
+@router.get("/dashboard")
 async def get_admin_dashboard_analytics(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
