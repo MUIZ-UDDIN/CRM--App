@@ -13,6 +13,10 @@ import uuid
 from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models.deals import Deal as DealModel, DealStatus
+from ..models.users import User
+from ..middleware.tenant import get_tenant_context
+from ..middleware.permissions import has_permission
+from ..models.permissions import Permission
 
 router = APIRouter()
 
@@ -349,6 +353,40 @@ def update_deal(
     # Track status changes for workflow triggers
     old_status = deal.status
     old_stage_id = deal.stage_id
+    
+    # Check permission for deal assignment (owner_id change)
+    if 'owner_id' in deal_data and deal_data['owner_id'] != str(deal.owner_id):
+        context = get_tenant_context(current_user)
+        user_id = current_user.get('id')
+        user_team_id = current_user.get('team_id')
+        new_owner_id = deal_data['owner_id']
+        
+        # Get the new owner to check their team
+        new_owner = db.query(User).filter(User.id == uuid.UUID(new_owner_id)).first()
+        
+        if not new_owner:
+            raise HTTPException(status_code=404, detail="New owner not found")
+        
+        # Check assignment permissions based on role
+        can_assign = False
+        
+        if context.is_super_admin():
+            # Super Admin can assign anywhere
+            can_assign = True
+        elif has_permission(current_user, Permission.ASSIGN_COMPANY_LEADS):
+            # Company Admin can assign within company
+            if str(new_owner.company_id) == company_id:
+                can_assign = True
+        elif has_permission(current_user, Permission.ASSIGN_TEAM_LEADS) and user_team_id:
+            # Sales Manager can assign to their team members
+            if str(new_owner.team_id) == user_team_id:
+                can_assign = True
+        
+        if not can_assign:
+            raise HTTPException(
+                status_code=403,
+                detail="You don't have permission to assign deals to this user"
+            )
     
     # Update fields
     for field, value in deal_data.items():
