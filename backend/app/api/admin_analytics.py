@@ -108,6 +108,58 @@ async def get_admin_dashboard_analytics(
         )
 
 
+@router.get("/companies")
+async def get_companies_analytics(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get companies analytics - Super Admin only"""
+    try:
+        user_role = current_user.get('role', 'user')
+        
+        # Only super admins can see all companies
+        if user_role != 'super_admin':
+            raise HTTPException(
+                status_code=403,
+                detail="Only Super Admins can view all companies analytics"
+            )
+        
+        # Get all companies with user counts
+        companies = db.query(Company).all()
+        companies_data = []
+        
+        for company in companies:
+            user_count = db.query(User).filter(User.company_id == company.id).count()
+            deal_count = db.query(Deal).filter(Deal.company_id == company.id).count()
+            total_value = db.query(func.sum(Deal.value)).filter(
+                Deal.company_id == company.id
+            ).scalar() or 0
+            
+            companies_data.append({
+                "id": str(company.id),
+                "name": company.name,
+                "user_count": user_count,
+                "deal_count": deal_count,
+                "total_value": float(total_value),
+                "status": company.status if hasattr(company, 'status') else "active",
+                "created_at": company.created_at.isoformat() if company.created_at else None
+            })
+        
+        return {
+            "companies": companies_data,
+            "total_companies": len(companies_data)
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error fetching companies analytics: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch companies analytics: {str(e)}"
+        )
+
+
 def get_company_size_category(user_count: int) -> str:
     """Categorize company by size"""
     if user_count <= 5:
