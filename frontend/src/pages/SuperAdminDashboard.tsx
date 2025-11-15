@@ -143,6 +143,15 @@ export default function SuperAdminDashboard() {
       );
     }
 
+    // Handle missing plan gracefully
+    if (!company.plan) {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+          NO PLAN
+        </span>
+      );
+    }
+
     const plan = company.plan.toLowerCase();
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${colors[plan as keyof typeof colors] || colors.free}`}>
@@ -152,7 +161,7 @@ export default function SuperAdminDashboard() {
   };
 
   const filteredCompanies = companies.filter(company => {
-    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = (company.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     // Handle filter matching
     let matchesFilter = false;

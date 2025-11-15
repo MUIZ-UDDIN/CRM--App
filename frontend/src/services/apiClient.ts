@@ -30,9 +30,6 @@ apiClient.interceptors.request.use((config) => {
   // Always set Authorization header if token exists
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-    console.log('🔐 Axios Interceptor: Added Authorization header');
-  } else {
-    console.warn('⚠️ Axios Interceptor: No token found in localStorage');
   }
   
   // Add version query param for cache busting
@@ -89,21 +86,12 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
-    // Log all API errors for debugging
-    console.error('API Error:', {
-      status: error.response?.status,
-      url: originalRequest?.url,
-      method: originalRequest?.method,
-      data: error.response?.data
-    });
+    // Silently handle API errors
     
     // If error is 401 and we haven't tried to refresh the token yet
     if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log('Attempting to handle 401 error');
       
-      // TEMPORARY FIX: For debugging, don't redirect immediately
-      // Instead, show a message and let the user stay on the page
-      console.warn('Authentication error - token may be invalid or expired');
+      // Handle authentication error
       
       // If we're already refreshing, queue this request
       if (isRefreshing) {
@@ -119,12 +107,10 @@ apiClient.interceptors.response.use(
       try {
         // Try to refresh the token
         const token = localStorage.getItem('token');
-        console.log('Current token:', token ? `${token.substring(0, 15)}...` : 'No token');
         
         if (token) {
           // Try to refresh token
           try {
-            console.log('Attempting to refresh token...');
             const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
               headers: { Authorization: `Bearer ${token}` }
             });
@@ -132,7 +118,6 @@ apiClient.interceptors.response.use(
             if (response.data && response.data.access_token) {
               // Update the token
               const newToken = response.data.access_token;
-              console.log('Token refreshed successfully');
               localStorage.setItem('token', newToken);
               
               // Update headers for the original request
@@ -146,17 +131,11 @@ apiClient.interceptors.response.use(
             }
           } catch (refreshError) {
             // Token refresh failed
-            console.error('Token refresh failed:', refreshError);
             processQueue(refreshError, null);
-            
-            // TEMPORARY: Don't redirect, just log the error
-            console.warn('Authentication failed but staying on page for debugging');
             return Promise.reject(refreshError);
           }
         }
         
-        // TEMPORARY: Don't redirect, just log the error
-        console.warn('No token or refresh failed, but staying on page for debugging');
         return Promise.reject(error);
       } finally {
         isRefreshing = false;
