@@ -62,23 +62,15 @@ const navigation: NavItem[] = [
       { name: 'Calls', href: '/calls' },
     ]
   },
-  { name: 'Support Tickets', href: '/support-tickets', icon: TicketIcon },
-  { 
-    name: 'Automation', 
-    icon: SparklesIcon,
-    children: [
-      { name: 'Workflows', href: '/workflows' },
-      { name: 'Templates', href: '/workflow-templates' },
-      { name: 'Custom Fields', href: '/custom-fields' },
-    ]
-  },
   { 
     name: 'More', 
     icon: FolderIcon,
     children: [
       { name: 'Activities', href: '/activities' },
       { name: 'Files', href: '/files' },
-      { name: 'Team', href: '/team' },
+      { name: 'Workflows', href: '/workflows' },
+      { name: 'Templates', href: '/workflow-templates' },
+      { name: 'Custom Fields', href: '/custom-fields' },
       { name: 'Settings', href: '/settings' },
     ]
   },
@@ -938,6 +930,16 @@ export default function MainLayout() {
                       >
                         <CogIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
                         <span>Account Settings</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowProfile(false);
+                          navigate('/support-tickets');
+                        }}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        <TicketIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
+                        <span>Support Tickets</span>
                       </button>
                       <hr className="my-2" />
                       <button 

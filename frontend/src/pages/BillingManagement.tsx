@@ -4,9 +4,12 @@ import {
   BuildingOfficeIcon,
   CheckCircleIcon,
   XCircleIcon,
-  ClockIcon
+  ClockIcon,
+  EyeIcon,
+  PencilIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
 
@@ -25,6 +28,7 @@ interface CompanyBilling {
 
 export default function BillingManagement() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<CompanyBilling[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -224,8 +228,10 @@ export default function BillingManagement() {
                 <tr key={company.company_id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2" />
-                      <span className="font-medium text-gray-900">{company.company_name}</span>
+                      <BuildingOfficeIcon className="h-5 w-5 text-gray-400 mr-2 flex-shrink-0" />
+                      <span className="font-medium text-gray-900 truncate max-w-xs" title={company.company_name}>
+                        {company.company_name}
+                      </span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -249,10 +255,23 @@ export default function BillingManagement() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <button className="text-blue-600 hover:text-blue-800 text-sm">
+                      <button 
+                        onClick={() => navigate('/admin')}
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm"
+                        title="View in Admin Dashboard"
+                      >
+                        <EyeIcon className="h-4 w-4" />
                         View
                       </button>
-                      <button className="text-gray-600 hover:text-gray-800 text-sm">
+                      <button 
+                        onClick={() => {
+                          // Navigate to admin dashboard with company filter
+                          navigate('/admin', { state: { companyId: company.company_id } });
+                        }}
+                        className="flex items-center gap-1 text-gray-600 hover:text-gray-800 text-sm"
+                        title="Edit Company"
+                      >
+                        <PencilIcon className="h-4 w-4" />
                         Edit
                       </button>
                     </div>
