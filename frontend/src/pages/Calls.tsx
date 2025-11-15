@@ -80,45 +80,14 @@ export default function CallsNew() {
       }, 2000);
     });
     
-    // WebSocket for real-time call updates
-    const WS_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
-    let ws: WebSocket | null = null;
-    
-    const connectWebSocket = () => {
-      if (!token) return;
-      
-      ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
-      
-      ws.onopen = () => {
-        // WebSocket connected
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'incoming_call' || data.type === 'call_status_update') {
-            fetchCalls();
-          }
-        } catch (error) {
-          console.error('WebSocket message error:', error);
-        }
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-      
-      ws.onclose = () => {
-        setTimeout(connectWebSocket, 5000);
-      };
-    };
-    
-    connectWebSocket();
+    // WebSocket disabled - using polling instead (backend doesn't support WebSocket yet)
+    // Polling - check for call updates every 15 seconds
+    const pollInterval = setInterval(() => {
+      fetchCalls();
+    }, 15000);
     
     return () => {
-      if (ws) {
-        ws.close();
-      }
+      clearInterval(pollInterval);
     };
   }, [selectedTab, token]);
 

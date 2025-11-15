@@ -50,18 +50,15 @@ export const getAdminDashboardAnalytics = async (filters?: AdminAnalyticsFilters
   }
 };
 
-// Get company analytics
+// Get company analytics - DISABLED (endpoint doesn't exist in backend)
+// TODO: Implement /api/analytics/companies endpoint in backend
 export const getCompanyAnalytics = async (filters?: AdminAnalyticsFilters) => {
-  try {
-    const response = await apiClient.get('/analytics/companies', { params: filters });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching company analytics:', error);
-    return {
-      companies: [],
-      total_companies: 0
-    };
-  }
+  // Return empty data since endpoint doesn't exist yet
+  console.warn('getCompanyAnalytics: Endpoint /analytics/companies not implemented in backend');
+  return {
+    companies: [],
+    total_companies: 0
+  };
 };
 
 // Get user analytics

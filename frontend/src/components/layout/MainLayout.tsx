@@ -214,63 +214,17 @@ export default function MainLayout() {
     };
   }, []);
 
-  // WebSocket for real-time notifications
+  // WebSocket for real-time notifications - DISABLED (backend doesn't support WebSocket yet)
+  // TODO: Re-enable when backend WebSocket support is added
   useEffect(() => {
-    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-    const WS_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
-    let ws: WebSocket | null = null;
-    
-    const connectWebSocket = () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      
-      ws = new WebSocket(`${WS_URL}/ws?token=${token}`);
-      
-      ws.onopen = () => {
-        // WebSocket connected
-      };
-      
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          
-          if (data.type === 'incoming_call') {
-            // Refresh notifications immediately
-            fetchNotifications();
-            fetchUnreadCount();
-            
-            // Play notification sound (optional)
-            const audio = new Audio('/notification.mp3');
-            audio.play().catch(() => {});
-          } else if (data.type === 'call_status_update') {
-            // Call status changed (answered, ended, etc.)
-            if (data.status === 'in-progress' || data.status === 'completed') {
-              // Call was answered or ended - clear the notification
-              fetchNotifications();
-              fetchUnreadCount();
-            }
-          }
-        } catch (error) {
-          console.error('WebSocket message error:', error);
-        }
-      };
-      
-      ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-      };
-      
-      ws.onclose = () => {
-        // Reconnect after disconnect
-        setTimeout(connectWebSocket, 5000);
-      };
-    };
-    
-    connectWebSocket();
+    // Polling fallback for notifications - check every 30 seconds
+    const pollInterval = setInterval(() => {
+      fetchNotifications();
+      fetchUnreadCount();
+    }, 30000);
     
     return () => {
-      if (ws) {
-        ws.close();
-      }
+      clearInterval(pollInterval);
     };
   }, []);
 
