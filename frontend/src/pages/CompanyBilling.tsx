@@ -95,8 +95,21 @@ export default function CompanyBilling() {
   if (!subscription) {
     return (
       <div className="p-6 max-w-7xl mx-auto">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
-          <p className="text-yellow-800">No active subscription found. Please contact support.</p>
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+          <h3 className="text-lg font-semibold text-blue-900 mb-2">Billing Management</h3>
+          <p className="text-blue-800 mb-4">
+            {user?.role === 'super_admin' || user?.role === 'Super Admin' 
+              ? 'As a Super Admin, please use the Admin Billing page to manage all subscriptions.'
+              : 'No active subscription found. Please contact support.'}
+          </p>
+          {(user?.role === 'super_admin' || user?.role === 'Super Admin') && (
+            <button
+              onClick={() => window.location.href = '/admin/billing'}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              Go to Admin Billing
+            </button>
+          )}
         </div>
       </div>
     );
