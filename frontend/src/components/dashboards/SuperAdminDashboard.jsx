@@ -38,7 +38,7 @@ function SuperAdminDashboard() {
         setLoading(true);
         
         // Get super admin dashboard stats
-        const response = await axios.get(`${API_URL}/api/analytics/admin-dashboard`);
+        const response = await axios.get(`${API_URL}/api/admin-analytics/dashboard`);
         
         setStats(response.data);
         setError(null);

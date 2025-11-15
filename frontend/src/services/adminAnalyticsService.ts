@@ -16,7 +16,7 @@ export interface AdminAnalyticsFilters {
 export const getAdminDashboardAnalytics = async (filters?: AdminAnalyticsFilters) => {
   try {
     // Add timeout to prevent hanging requests
-    const response = await apiClient.get('/analytics/admin-dashboard', { 
+    const response = await apiClient.get('/admin-analytics/dashboard', { 
       params: filters,
       timeout: 10000 // 10 second timeout
     });
