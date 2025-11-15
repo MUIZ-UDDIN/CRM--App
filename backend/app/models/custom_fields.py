@@ -46,8 +46,8 @@ class CustomField(Base):
     is_required = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True)
     default_value = Column(Text, nullable=True)
-    options = Column(JSON, nullable=True)  # For select/multi-select fields
-    validation_rules = Column(JSON, nullable=True)  # Custom validation rules
+    options = Column(JSONB, nullable=True)  # For select/multi-select fields
+    validation_rules = Column(JSONB, nullable=True)  # Custom validation rules
     
     # Ordering and display
     display_order = Column(Integer, default=0)
