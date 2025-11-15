@@ -7,8 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
-import { API_URL } from '../../config';
+import { getAdminDashboardAnalytics } from '../../services/adminAnalyticsService';
 import { FaBuilding, FaUsers, FaCreditCard, FaExclamationTriangle } from 'react-icons/fa';
 
 /**
@@ -37,10 +36,10 @@ function SuperAdminDashboard() {
       try {
         setLoading(true);
         
-        // Get super admin dashboard stats
-        const response = await axios.get(`${API_URL}/api/admin-analytics/dashboard`);
+        // Get super admin dashboard stats using the service with proper auth
+        const data = await getAdminDashboardAnalytics();
         
-        setStats(response.data);
+        setStats(data);
         setError(null);
       } catch (err) {
         console.error('Failed to load dashboard data:', err);
