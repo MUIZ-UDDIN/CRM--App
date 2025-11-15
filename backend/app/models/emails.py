@@ -74,71 +74,39 @@ class Email(BaseModel):
     """Email model - Gmail-like functionality"""
     __tablename__ = 'emails'
     
-    # Basic Information
+    # Basic Information (matching actual DB schema)
     subject = Column(String(500), nullable=False)
     body_html = Column(Text)
     body_text = Column(Text)
-    # snippet = Column(String(500))  # Preview text like Gmail - TODO: Add migration
     
-    # Sender/Recipient
-    from_email = Column(String(255), nullable=False, index=True)
-    from_name = Column(String(255))
-    to_email = Column(String(255), nullable=False, index=True)
-    to_name = Column(String(255))
-    cc = Column(String(1000))  # Comma-separated CC emails
-    bcc = Column(String(1000))  # Comma-separated BCC emails
-    reply_to = Column(String(255))
+    # Sender/Recipient (matching actual DB schema)
+    from_email = Column(String(255), nullable=False)
+    to_email = Column(String(255), nullable=False)
+    cc_emails = Column(JSONB)  # JSON array of CC emails
     
-    # Gmail-like Features
-    thread_id = Column(String(255), index=True)  # For email threading/conversations
-    in_reply_to = Column(String(255))  # Message-ID of email being replied to
-    references = Column(Text)  # Full reference chain
-    labels = Column(ARRAY(String), default=[])  # Gmail-style labels
-    is_starred = Column(Boolean, default=False, index=True)
-    is_important = Column(Boolean, default=False)
-    is_read = Column(Boolean, default=False, index=True)
-    is_archived = Column(Boolean, default=False)
-    is_deleted = Column(Boolean, default=False, index=True)
-    is_spam = Column(Boolean, default=False)
+    # Status (matching actual DB schema)
+    status = Column(SQLEnum(EmailStatus), default=EmailStatus.DRAFT, nullable=False)
     
-    # Status & Provider
-    status = Column(SQLEnum(EmailStatus), default=EmailStatus.DRAFT, nullable=False, index=True)
-    provider = Column(SQLEnum(EmailProvider), default=EmailProvider.SENDGRID, nullable=False)
-    direction = Column(String(20), default="outbound")  # inbound or outbound
-    
-    # Attachments
-    has_attachments = Column(Boolean, default=False)
-    attachments = Column(JSONB, default=[])  # Array of attachment metadata
-    
-    # Relations
-    contact_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
-    deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'), index=True)
+    # Relations (matching actual DB schema)
+    contact_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'))
+    deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'))
     template_id = Column(UUID(as_uuid=True), ForeignKey('email_templates.id'))
-    campaign_id = Column(UUID(as_uuid=True), ForeignKey('email_campaigns.id'), index=True)
-    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
-    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=False, index=True)
+    campaign_id = Column(UUID(as_uuid=True), ForeignKey('email_campaigns.id'))
+    owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
+    company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'))
     
-    # Tracking
-    sent_at = Column(DateTime, index=True)
+    # Tracking (matching actual DB schema)
+    sent_at = Column(DateTime)
     delivered_at = Column(DateTime)
-    read_at = Column(DateTime)
     opened_at = Column(DateTime)
     clicked_at = Column(DateTime)
     bounced_at = Column(DateTime)
-    replied_at = Column(DateTime)
+    open_count = Column(Integer)
+    click_count = Column(Integer)
     
-    open_count = Column(Integer, default=0)
-    click_count = Column(Integer, default=0)
-    
-    # Email Provider Data
-    provider_message_id = Column(String(255), index=True)  # SendGrid/Gmail message ID
-    gmail_message_id = Column(String(255), index=True)  # Gmail specific ID
-    gmail_thread_id = Column(String(255), index=True)  # Gmail thread ID
-    provider_data = Column(JSONB, default={})
-    
-    # Metadata
-    headers = Column(JSONB, default={})  # Email headers
-    raw_data = Column(JSONB, default={})  # Full raw email data
+    # Provider Integration (matching actual DB schema)
+    provider_message_id = Column(String(255))
+    provider_data = Column(JSONB)
     
     # Relationships
     contact = relationship('Contact', back_populates='emails')
