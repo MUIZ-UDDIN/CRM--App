@@ -238,6 +238,8 @@ async def use_template(
             trigger_conditions=template.trigger_config,  # Map trigger_config to trigger_conditions
             actions=template.actions,
             status='active',
+            is_active=True,
+            is_deleted=False,
             owner_id=uuid.UUID(user_id),
             company_id=uuid.UUID(company_id),
             created_at=datetime.utcnow(),
