@@ -81,7 +81,7 @@ class CustomFieldValue(Base):
     value_number = Column(Integer, nullable=True)
     value_boolean = Column(Boolean, nullable=True)
     value_date = Column(DateTime, nullable=True)
-    value_json = Column(JSON, nullable=True)  # For multi-select and complex types
+    value_json = Column(JSONB, nullable=True)  # For multi-select and complex types
     
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
