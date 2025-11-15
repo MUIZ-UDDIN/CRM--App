@@ -79,98 +79,108 @@ async def create_custom_field(
     db: Session = Depends(get_db)
 ):
     """Create a custom field - Company Admin only"""
-    context = get_tenant_context(current_user)
-    company_id = current_user.get('company_id')
-    user_id = current_user.get('id')
-    
-    # Only Company Admin and Super Admin can create custom fields
-    if not context.is_super_admin() and not has_permission(current_user, Permission.CUSTOMIZE_COMPANY_CRM):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Company Admins can create custom fields"
-        )
-    
-    if not company_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User must belong to a company"
-        )
-    
-    # Validate field_type
     try:
-        field_type_enum = FieldType(field.field_type.lower())
-    except ValueError:
+        context = get_tenant_context(current_user)
+        company_id = current_user.get('company_id')
+        user_id = current_user.get('id')
+        
+        # Only Company Admin and Super Admin can create custom fields
+        if not context.is_super_admin() and not has_permission(current_user, Permission.CUSTOMIZE_COMPANY_CRM):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only Company Admins can create custom fields"
+            )
+        
+        if not company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User must belong to a company"
+            )
+        
+        # Validate field_type
+        try:
+            field_type_enum = FieldType(field.field_type.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid field_type. Must be one of: {[ft.value for ft in FieldType]}"
+            )
+        
+        # Validate entity_type
+        try:
+            entity_type_enum = EntityType(field.entity_type.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid entity_type. Must be one of: {[et.value for et in EntityType]}"
+            )
+        
+        # Check if field_key already exists for this company and entity
+        existing = db.query(CustomField).filter(
+            and_(
+                CustomField.company_id == uuid.UUID(company_id),
+                CustomField.entity_type == entity_type_enum,
+                CustomField.field_key == field.field_key
+            )
+        ).first()
+        
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Field key '{field.field_key}' already exists for {field.entity_type}"
+            )
+        
+        # Create custom field
+        new_field = CustomField(
+            id=uuid.uuid4(),
+            name=field.name,
+            field_key=field.field_key,
+            field_type=field_type_enum,
+            entity_type=entity_type_enum,
+            description=field.description,
+            is_required=field.is_required,
+            is_active=True,
+            default_value=field.default_value,
+            options=field.options,
+            show_in_list=field.show_in_list,
+            show_in_detail=field.show_in_detail,
+            display_order=0,
+            company_id=uuid.UUID(company_id),
+            created_by_id=uuid.UUID(user_id),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        
+        db.add(new_field)
+        db.commit()
+        db.refresh(new_field)
+        
+        return CustomFieldResponse(
+            id=str(new_field.id),
+            name=new_field.name,
+            field_key=new_field.field_key,
+            field_type=new_field.field_type.value,
+            entity_type=new_field.entity_type.value,
+            description=new_field.description,
+            is_required=new_field.is_required,
+            is_active=new_field.is_active,
+            default_value=new_field.default_value,
+            options=new_field.options,
+            show_in_list=new_field.show_in_list,
+            show_in_detail=new_field.show_in_detail,
+            display_order=new_field.display_order,
+            company_id=str(new_field.company_id),
+            created_at=new_field.created_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid field_type. Must be one of: {[ft.value for ft in FieldType]}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create custom field: {str(e)}"
         )
-    
-    # Validate entity_type
-    try:
-        entity_type_enum = EntityType(field.entity_type.lower())
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid entity_type. Must be one of: {[et.value for et in EntityType]}"
-        )
-    
-    # Check if field_key already exists for this company and entity
-    existing = db.query(CustomField).filter(
-        and_(
-            CustomField.company_id == uuid.UUID(company_id),
-            CustomField.entity_type == entity_type_enum,
-            CustomField.field_key == field.field_key
-        )
-    ).first()
-    
-    if existing:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Field key '{field.field_key}' already exists for {field.entity_type}"
-        )
-    
-    # Create custom field
-    new_field = CustomField(
-        id=uuid.uuid4(),
-        name=field.name,
-        field_key=field.field_key,
-        field_type=field_type_enum,
-        entity_type=entity_type_enum,
-        description=field.description,
-        is_required=field.is_required,
-        is_active=True,
-        default_value=field.default_value,
-        options=field.options,
-        show_in_list=field.show_in_list,
-        show_in_detail=field.show_in_detail,
-        display_order=0,
-        company_id=uuid.UUID(company_id),
-        created_by_id=uuid.UUID(user_id),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
-    )
-    
-    db.add(new_field)
-    db.commit()
-    db.refresh(new_field)
-    
-    return CustomFieldResponse(
-        id=str(new_field.id),
-        name=new_field.name,
-        field_key=new_field.field_key,
-        field_type=new_field.field_type.value,
-        entity_type=new_field.entity_type.value,
-        description=new_field.description,
-        is_required=new_field.is_required,
-        is_active=new_field.is_active,
-        default_value=new_field.default_value,
-        options=new_field.options,
-        show_in_list=new_field.show_in_list,
-        show_in_detail=new_field.show_in_detail,
-        display_order=new_field.display_order,
-        company_id=str(new_field.company_id),
-        created_at=new_field.created_at
-    )
 
 
 @router.get("/", response_model=List[CustomFieldResponse])

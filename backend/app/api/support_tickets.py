@@ -63,58 +63,72 @@ async def create_ticket(
     db: Session = Depends(get_db)
 ):
     """Create a support ticket - All roles can create"""
-    company_id = current_user.get('company_id')
-    user_id = current_user.get('id')
-    
-    if not company_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User must belong to a company"
+    try:
+        company_id = current_user.get('company_id')
+        user_id = current_user.get('id')
+        
+        if not company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User must belong to a company"
+            )
+        
+        # Map priority string to enum
+        priority_map = {
+            'low': TicketPriority.LOW,
+            'medium': TicketPriority.MEDIUM,
+            'high': TicketPriority.HIGH,
+            'urgent': TicketPriority.URGENT
+        }
+        
+        new_ticket = SupportTicket(
+            id=uuid.uuid4(),
+            subject=ticket.subject,
+            description=ticket.description,
+            status=TicketStatus.OPEN,
+            priority=priority_map.get(ticket.priority.lower(), TicketPriority.MEDIUM),
+            category=ticket.category,
+            created_by_id=uuid.UUID(user_id),
+            company_id=uuid.UUID(company_id),
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
         )
-    
-    # Map priority string to enum
-    priority_map = {
-        'low': TicketPriority.LOW,
-        'medium': TicketPriority.MEDIUM,
-        'high': TicketPriority.HIGH,
-        'urgent': TicketPriority.URGENT
-    }
-    
-    new_ticket = SupportTicket(
-        id=uuid.uuid4(),
-        subject=ticket.subject,
-        description=ticket.description,
-        status=TicketStatus.OPEN,
-        priority=priority_map.get(ticket.priority.lower(), TicketPriority.MEDIUM),
-        category=ticket.category,
-        created_by_id=uuid.UUID(user_id),
-        company_id=uuid.UUID(company_id),
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow()
-    )
-    
-    db.add(new_ticket)
-    db.commit()
-    db.refresh(new_ticket)
-    
-    # Get creator info
-    creator = db.query(User).filter(User.id == new_ticket.created_by_id).first()
-    
-    return TicketResponse(
-        id=str(new_ticket.id),
-        subject=new_ticket.subject,
-        description=new_ticket.description,
-        status=new_ticket.status.value,
-        priority=new_ticket.priority.value,
-        category=new_ticket.category,
-        created_by_id=str(new_ticket.created_by_id),
-        created_by_name=f"{creator.first_name} {creator.last_name}" if creator else "Unknown",
-        assigned_to_id=str(new_ticket.assigned_to_id) if new_ticket.assigned_to_id else None,
-        assigned_to_name=None,
-        company_id=str(new_ticket.company_id),
-        created_at=new_ticket.created_at,
-        updated_at=new_ticket.updated_at
-    )
+        
+        db.add(new_ticket)
+        db.commit()
+        db.refresh(new_ticket)
+        
+        # Get creator info
+        try:
+            creator = db.query(User).filter(User.id == new_ticket.created_by_id).first()
+            creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown"
+        except Exception:
+            creator_name = "Unknown"
+        
+        return TicketResponse(
+            id=str(new_ticket.id),
+            subject=new_ticket.subject,
+            description=new_ticket.description,
+            status=new_ticket.status.value,
+            priority=new_ticket.priority.value,
+            category=new_ticket.category,
+            created_by_id=str(new_ticket.created_by_id),
+            created_by_name=creator_name,
+            assigned_to_id=str(new_ticket.assigned_to_id) if new_ticket.assigned_to_id else None,
+            assigned_to_name=None,
+            company_id=str(new_ticket.company_id),
+            created_at=new_ticket.created_at,
+            updated_at=new_ticket.updated_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create ticket: {str(e)}"
+        )
 
 
 @router.get("/", response_model=List[TicketResponse])

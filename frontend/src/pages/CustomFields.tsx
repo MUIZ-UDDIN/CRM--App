@@ -88,16 +88,17 @@ export default function CustomFields() {
     e.preventDefault();
     
     // Generate field_key from name if not provided
-    if (!formData.field_key) {
-      formData.field_key = 'custom_' + formData.name.toLowerCase().replace(/\s+/g, '_');
+    const submitData = { ...formData };
+    if (!submitData.field_key) {
+      submitData.field_key = 'custom_' + submitData.name.toLowerCase().replace(/\s+/g, '_');
     }
 
     try {
       if (editingField) {
-        await apiClient.patch(`/custom-fields/${editingField.id}`, formData);
+        await apiClient.patch(`/custom-fields/${editingField.id}`, submitData);
         toast.success('Field updated successfully');
       } else {
-        await apiClient.post('/custom-fields/', formData);
+        await apiClient.post('/custom-fields/', submitData);
         toast.success('Field created successfully');
       }
       
