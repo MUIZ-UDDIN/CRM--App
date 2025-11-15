@@ -131,34 +131,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       const token = localStorage.getItem('token');
       if (token) {
         try {
-          // Try to get cached user data first
-          const cachedUserData = localStorage.getItem('user');
-          let user: User | null = null;
-          
-          if (cachedUserData) {
-            try {
-              const parsedUser = JSON.parse(cachedUserData);
-              user = {
-                id: parsedUser.id,
-                email: parsedUser.email,
-                firstName: parsedUser.first_name || parsedUser.firstName,
-                lastName: parsedUser.last_name || parsedUser.lastName,
-                role: parsedUser.role || 'User',
-                company_id: parsedUser.company_id,
-                teamId: parsedUser.team_id,
-              };
-              
-              // Set auth state with cached data first for faster UI loading
-              dispatch({
-                type: 'AUTH_SUCCESS',
-                payload: { user, token },
-              });
-            } catch (parseError) {
-              console.error('Failed to parse cached user data:', parseError);
-            }
-          }
-          
-          // Always validate with API regardless of cached data
+          // Validate with API directly (no double refresh)
           try {
             const userData = await apiService.getCurrentUser();
             const validatedUser: User = {
@@ -181,16 +154,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
           } catch (apiError) {
             console.error('API user validation failed:', apiError);
-            
-            // If we have cached user data, keep the user logged in but show a warning
-            if (user) {
-              console.warn('Using cached user data due to API validation failure');
-            } else {
-              // No cached data and API failed, force logout
-              localStorage.removeItem('token');
-              localStorage.removeItem('user');
-              dispatch({ type: 'LOGOUT' });
-            }
+            // API failed, force logout
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            dispatch({ type: 'LOGOUT' });
           }
         } catch (error) {
           console.error('Auth check failed:', error);
