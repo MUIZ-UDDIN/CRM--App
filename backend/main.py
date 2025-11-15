@@ -193,11 +193,7 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 
-app.include_router(
-    billing_router,
-    tags=["Billing"],
-    dependencies=[Depends(get_current_user)]
-)
+app.include_router(billing_router)
 
 app.include_router(
     data_export_router,
