@@ -151,7 +151,7 @@ export default function SuperAdminDashboard() {
     
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${color}`}>
-        {company.plan.toUpperCase()}
+        {plan.toUpperCase()}
       </span>
     );
   };
