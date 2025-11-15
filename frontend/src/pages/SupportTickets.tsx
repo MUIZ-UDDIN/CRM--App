@@ -238,7 +238,7 @@ export default function SupportTickets() {
                         <button
                           onClick={() => {
                             setSelectedTicket(ticket);
-                            toast.info('Assign feature coming soon');
+                            toast('Assign feature coming soon', { icon: '👤' });
                             // TODO: Open assign modal
                           }}
                           className="text-purple-600 hover:text-purple-800 text-sm font-medium"

@@ -257,7 +257,7 @@ export default function BillingManagement() {
                     <button 
                       onClick={() => {
                         // Open company details in a new view or modal
-                        toast.info(`Viewing details for ${company.company_name}`);
+                        toast(`Viewing details for ${company.company_name}`, { icon: '👁️' });
                         // TODO: Implement company details view
                       }}
                       className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
