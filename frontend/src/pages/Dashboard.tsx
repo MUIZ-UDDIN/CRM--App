@@ -5,21 +5,26 @@
  */
 
 import React from 'react';
+// @ts-ignore - JS file without type definitions
 import { usePermissions } from '../hooks/usePermissions';
+// @ts-ignore - JSX components without type definitions
 import SuperAdminDashboard from '../components/dashboards/SuperAdminDashboard';
+// @ts-ignore
 import CompanyAdminDashboard from '../components/dashboards/CompanyAdminDashboard';
+// @ts-ignore
 import SalesManagerDashboard from '../components/dashboards/SalesManagerDashboard';
+// @ts-ignore
 import SalesRepDashboard from '../components/dashboards/SalesRepDashboard';
 
 /**
  * Dashboard Page Component
- * @returns {React.Component} Dashboard component
+ * @returns Dashboard component
  */
-function Dashboard() {
+function Dashboard(): JSX.Element {
   const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
   
   // Render different dashboard based on user role
-  const renderDashboard = () => {
+  const renderDashboard = (): JSX.Element => {
     if (isSuperAdmin()) {
       return <SuperAdminDashboard />;
     }
