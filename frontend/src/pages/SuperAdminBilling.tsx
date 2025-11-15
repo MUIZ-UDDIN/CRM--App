@@ -9,7 +9,7 @@ import {
   BanknotesIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
-import apiClient from '../utils/apiClient';
+import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
 
 interface CompanySubscription {

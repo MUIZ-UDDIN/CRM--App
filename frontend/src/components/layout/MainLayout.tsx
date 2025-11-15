@@ -71,6 +71,7 @@ const navigation: NavItem[] = [
       { name: 'Workflows', href: '/workflows' },
       { name: 'Templates', href: '/workflow-templates' },
       { name: 'Custom Fields', href: '/custom-fields' },
+      { name: 'Import Data', href: '/import' },
       { name: 'Billing', href: '/billing' },
       { name: 'Settings', href: '/settings' },
     ]

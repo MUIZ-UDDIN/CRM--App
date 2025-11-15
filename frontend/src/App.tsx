@@ -23,6 +23,7 @@ import TeamManagement from './pages/TeamManagement';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SuperAdminBilling from './pages/SuperAdminBilling';
 import CompanyBilling from './pages/CompanyBilling';
+import DataImport from './pages/DataImport';
 import PipelineSettings from './pages/PipelineSettings';
 import Workflows from './pages/Workflows';
 import Inbox from './pages/Inbox';
@@ -130,6 +131,7 @@ function App() {
                 <Route path="admin" element={<SuperAdminDashboard />} />
                 <Route path="admin/billing" element={<SuperAdminBilling />} />
                 <Route path="billing" element={<CompanyBilling />} />
+                <Route path="import" element={<DataImport />} />
                 <Route path="support-tickets" element={<SupportTickets />} />
                 <Route path="custom-fields" element={<CustomFields />} />
                 <Route path="workflow-templates" element={<WorkflowTemplates />} />
