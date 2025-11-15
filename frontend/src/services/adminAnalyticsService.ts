@@ -18,14 +18,22 @@ export const getAdminDashboardAnalytics = async (filters?: AdminAnalyticsFilters
     // Get token explicitly
     const token = localStorage.getItem('token');
     
+    console.log('🔑 Admin Dashboard Request:', {
+      hasToken: !!token,
+      tokenPreview: token ? token.substring(0, 30) + '...' : 'NO TOKEN',
+      url: '/admin-analytics/dashboard'
+    });
+    
     // Add timeout to prevent hanging requests
     const response = await apiClient.get('/admin-analytics/dashboard', { 
       params: filters,
       timeout: 10000, // 10 second timeout
       headers: {
-        ...(token && { Authorization: `Bearer ${token}` })
+        'Authorization': `Bearer ${token}`
       }
     });
+    
+    console.log('✅ Admin Dashboard Response:', response.status);
     return response.data;
   } catch (error: any) {
     // Log detailed error information
