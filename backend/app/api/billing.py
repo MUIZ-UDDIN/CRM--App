@@ -732,3 +732,134 @@ async def billing_dashboard(
         "total_revenue": total_revenue,
         "plan_distribution": plan_counts
     }
+
+
+@router.get("/subscriptions/all")
+async def get_all_subscriptions(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get all company subscriptions (Super Admin only)"""
+    if not has_permission(current_user, Permission.MANAGE_BILLING):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied"
+        )
+    
+    subscriptions = db.query(Subscription).join(Company).join(SubscriptionPlan).all()
+    
+    result = []
+    for sub in subscriptions:
+        # Get user count for the company
+        user_count = db.query(User).filter(User.company_id == sub.company_id).count()
+        
+        result.append({
+            "id": str(sub.id),
+            "company_id": str(sub.company_id),
+            "company_name": sub.company.name,
+            "plan_name": sub.plan.name,
+            "status": sub.status,
+            "billing_cycle": sub.billing_cycle,
+            "monthly_price": float(sub.plan.monthly_price),
+            "user_count": user_count,
+            "total_amount": float(sub.plan.monthly_price) * user_count,
+            "current_period_start": sub.current_period_start.isoformat() if sub.current_period_start else None,
+            "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None,
+            "trial_ends_at": sub.trial_ends_at.isoformat() if sub.trial_ends_at else None,
+            "card_last_4": sub.card_last_4,
+            "card_brand": sub.card_brand,
+            "auto_renew": sub.auto_renew,
+            "payment_provider": sub.payment_provider
+        })
+    
+    return result
+
+
+@router.patch("/plans/update-price")
+async def update_plan_price(
+    monthly_price: float,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Update the monthly price for the plan (Super Admin only)"""
+    if not has_permission(current_user, Permission.MANAGE_BILLING):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied"
+        )
+    
+    # Get the first active plan (assuming single plan model)
+    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active plan found")
+    
+    plan.monthly_price = Decimal(str(monthly_price))
+    plan.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(plan)
+    
+    return {"message": "Plan price updated successfully", "new_price": float(plan.monthly_price)}
+
+
+@router.post("/subscriptions/{subscription_id}/suspend")
+async def suspend_subscription(
+    subscription_id: str,
+    reason: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Suspend a subscription (Super Admin only)"""
+    if not has_permission(current_user, Permission.MANAGE_BILLING):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied"
+        )
+    
+    subscription = db.query(Subscription).filter(Subscription.id == uuid.UUID(subscription_id)).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    subscription.status = "suspended"
+    subscription.updated_at = datetime.utcnow()
+    
+    # Also suspend the company
+    company = db.query(Company).filter(Company.id == subscription.company_id).first()
+    if company:
+        company.status = "suspended"
+        company.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return {"message": "Subscription suspended successfully", "reason": reason}
+
+
+@router.post("/subscriptions/{subscription_id}/activate")
+async def activate_subscription(
+    subscription_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Activate a suspended subscription (Super Admin only)"""
+    if not has_permission(current_user, Permission.MANAGE_BILLING):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied"
+        )
+    
+    subscription = db.query(Subscription).filter(Subscription.id == uuid.UUID(subscription_id)).first()
+    if not subscription:
+        raise HTTPException(status_code=404, detail="Subscription not found")
+    
+    subscription.status = "active"
+    subscription.updated_at = datetime.utcnow()
+    
+    # Also activate the company
+    company = db.query(Company).filter(Company.id == subscription.company_id).first()
+    if company:
+        company.status = "active"
+        company.updated_at = datetime.utcnow()
+    
+    db.commit()
+    
+    return {"message": "Subscription activated successfully"}

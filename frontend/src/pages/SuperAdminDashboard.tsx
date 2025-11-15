@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   BuildingOfficeIcon, 
   UsersIcon,
   ClockIcon,
   CheckCircleIcon,
   XCircleIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  CreditCardIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -32,6 +34,7 @@ interface Company {
 }
 
 export default function SuperAdminDashboard() {
+  const navigate = useNavigate();
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -204,9 +207,18 @@ export default function SuperAdminDashboard() {
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-[1920px] mx-auto">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1">Manage all companies and subscriptions</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Manage all companies and subscriptions</p>
+        </div>
+        <button
+          onClick={() => navigate('/admin/billing')}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        >
+          <CreditCardIcon className="w-5 h-5" />
+          Billing Management
+        </button>
       </div>
 
       {/* Stats Cards */}
@@ -358,15 +370,25 @@ export default function SuperAdminDashboard() {
                     {new Date(company.created_at).toLocaleDateString('en-US')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <button 
-                      onClick={() => {
-                        setSelectedCompany(company);
-                        setShowDetailsModal(true);
-                      }}
-                      className="text-blue-600 hover:text-blue-800 font-medium"
-                    >
-                      View Details
-                    </button>
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          setSelectedCompany(company);
+                          setShowDetailsModal(true);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 font-medium"
+                      >
+                        View Details
+                      </button>
+                      {company.status === 'active' && (
+                        <button 
+                          onClick={() => navigate(`/admin/billing`)}
+                          className="text-orange-600 hover:text-orange-800 font-medium"
+                        >
+                          Manage Billing
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

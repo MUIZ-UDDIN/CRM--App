@@ -20,6 +20,7 @@ from ..core.security import (
 from ..core.database import get_db
 from ..core.validators import validate_password_strength
 from ..models.users import User as UserModel, Role as RoleModel
+from ..models.companies import Company
 
 router = APIRouter()
 security = HTTPBearer()
@@ -99,6 +100,16 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    # Check if company is suspended
+    if user.company_id:
+        company = db.query(Company).filter(Company.id == user.company_id).first()
+        if company and company.status == "suspended":
+            logger.warning(f"Login blocked for suspended company: {company.name}")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your company account has been suspended. Please contact support for assistance.",
+            )
     
     logger.info(f"Successful login for email: {request.email}, role: {user.user_role}")
     
