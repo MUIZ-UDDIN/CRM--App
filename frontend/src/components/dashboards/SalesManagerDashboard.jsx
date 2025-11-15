@@ -112,11 +112,14 @@ function SalesManagerDashboard() {
               </div>
               <div className="text-right">
                 <h3 className="text-2xl font-bold">
-                  ${(stats.metrics?.team_deal_value || 0) >= 1000000 
-                    ? ((stats.metrics?.team_deal_value || 0) / 1000000).toFixed(1) + 'M'
-                    : (stats.metrics?.team_deal_value || 0) >= 1000
-                    ? ((stats.metrics?.team_deal_value || 0) / 1000).toFixed(1) + 'K'
-                    : (stats.metrics?.team_deal_value || 0).toLocaleString()}
+                  ${(() => {
+                    const value = stats.metrics?.team_deal_value || 0;
+                    if (value >= 1000000000000) return (value / 1000000000000).toFixed(1) + 'T';
+                    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                    return value.toLocaleString();
+                  })()}
                 </h3>
                 <p className="text-gray-500">Team Value</p>
               </div>

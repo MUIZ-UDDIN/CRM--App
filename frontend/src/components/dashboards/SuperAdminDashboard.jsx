@@ -136,11 +136,14 @@ function SuperAdminDashboard() {
               </div>
               <div className="text-right">
                 <h3 className="text-2xl font-bold">
-                  ${(stats.total_pipeline_value || 0) >= 1000000 
-                    ? ((stats.total_pipeline_value || 0) / 1000000).toFixed(1) + 'M'
-                    : (stats.total_pipeline_value || 0) >= 1000
-                    ? ((stats.total_pipeline_value || 0) / 1000).toFixed(1) + 'K'
-                    : (stats.total_pipeline_value || 0).toLocaleString()}
+                  ${(() => {
+                    const value = stats.total_pipeline_value || 0;
+                    if (value >= 1000000000000) return (value / 1000000000000).toFixed(1) + 'T';
+                    if (value >= 1000000000) return (value / 1000000000).toFixed(1) + 'B';
+                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                    return value.toLocaleString();
+                  })()}
                 </h3>
                 <p className="text-gray-500">Pipeline Value</p>
               </div>
