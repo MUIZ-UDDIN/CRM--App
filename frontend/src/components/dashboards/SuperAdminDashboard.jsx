@@ -178,53 +178,51 @@ function SuperAdminDashboard() {
         </div>
       </div>
       
-      {/* Recent Companies */}
+      {/* Recent Activities */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="border-b border-gray-200 px-6 py-4 flex justify-between items-center">
-          <h5 className="font-medium text-gray-700">Recently Added Companies</h5>
-          <Link to="/companies" className="text-sm bg-white hover:bg-gray-50 text-blue-600 py-1 px-3 border border-blue-600 rounded">
-            View All Companies
+          <h5 className="font-medium text-gray-700">Recent Activities</h5>
+          <Link to="/activities" className="text-sm bg-white hover:bg-gray-50 text-blue-600 py-1 px-3 border border-blue-600 rounded">
+            View All Activities
           </Link>
         </div>
         <div className="p-6 overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead>
-              <tr>
-                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company Name</th>
-                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
-                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subscription</th>
-                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trial Ends</th>
-                <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {stats.recentCompanies.map((company) => (
-                <tr key={company.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{company.name}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${company.status.toLowerCase() === 'active' ? 'bg-green-100 text-green-800' : ''}
-                      ${company.status.toLowerCase() === 'trial' ? 'bg-blue-100 text-blue-800' : ''}
-                      ${company.status.toLowerCase() === 'suspended' ? 'bg-red-100 text-red-800' : ''}
-                    `}>
-                      {company.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{company.user_count}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${company.monthly_price}/mo</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {company.trial_ends_at ? new Date(company.trial_ends_at).toLocaleDateString() : 'N/A'}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <Link to={`/companies/${company.id}`} className="text-blue-600 hover:text-blue-900">
-                      View
-                    </Link>
-                  </td>
+          {stats.recent_activities && stats.recent_activities.length > 0 ? (
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {stats.recent_activities.map((activity) => (
+                  <tr key={activity.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">{activity.type}</td>
+                    <td className="px-6 py-4 text-sm text-gray-900">{activity.title}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{activity.user_name}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                        ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                        ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                      `}>
+                        {activity.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {new Date(activity.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p className="text-gray-500 text-center py-4">No recent activities</p>
+          )}
         </div>
       </div>
       
