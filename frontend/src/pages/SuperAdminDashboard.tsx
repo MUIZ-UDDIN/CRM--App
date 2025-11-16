@@ -7,7 +7,9 @@ import {
   CheckCircleIcon,
   XCircleIcon,
   MagnifyingGlassIcon,
-  CreditCardIcon
+  CreditCardIcon,
+  ShieldExclamationIcon,
+  PlayIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -46,6 +48,42 @@ export default function SuperAdminDashboard() {
   useEffect(() => {
     fetchCompanies();
   }, []);
+
+  const handleSuspendCompany = async (companyId: string) => {
+    if (!confirm('Are you sure you want to suspend this company? All users will be unable to access the system.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_URL}/api/billing/subscriptions/${companyId}/suspend`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Company suspended successfully');
+      fetchCompanies();
+    } catch (error: any) {
+      console.error('Failed to suspend company:', error);
+      toast.error(error.response?.data?.detail || 'Failed to suspend company');
+    }
+  };
+
+  const handleActivateCompany = async (companyId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_URL}/api/billing/subscriptions/${companyId}/activate`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Company activated successfully');
+      fetchCompanies();
+    } catch (error: any) {
+      console.error('Failed to activate company:', error);
+      toast.error(error.response?.data?.detail || 'Failed to activate company');
+    }
+  };
 
   const fetchCompanies = async () => {
     try {
@@ -370,7 +408,7 @@ export default function SuperAdminDashboard() {
                     {new Date(company.created_at).toLocaleDateString('en-US')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <button 
                         onClick={() => {
                           setSelectedCompany(company);
@@ -380,12 +418,29 @@ export default function SuperAdminDashboard() {
                       >
                         View Details
                       </button>
-                      {company.status === 'active' && (
+                      <button 
+                        onClick={() => navigate(`/admin/billing`)}
+                        className="text-orange-600 hover:text-orange-800 font-medium"
+                      >
+                        Billing
+                      </button>
+                      {company.status === 'active' ? (
                         <button 
-                          onClick={() => navigate(`/admin/billing`)}
-                          className="text-orange-600 hover:text-orange-800 font-medium"
+                          onClick={() => handleSuspendCompany(company.id)}
+                          className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium"
+                          title="Suspend Company"
                         >
-                          Manage Billing
+                          <ShieldExclamationIcon className="w-4 h-4" />
+                          Suspend
+                        </button>
+                      ) : (
+                        <button 
+                          onClick={() => handleActivateCompany(company.id)}
+                          className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium"
+                          title="Activate Company"
+                        >
+                          <PlayIcon className="w-4 h-4" />
+                          Activate
                         </button>
                       )}
                     </div>
