@@ -35,7 +35,7 @@ from app.api.admin_analytics import router as admin_analytics_router
 from app.api.role_based_analytics import router as role_analytics_router
 from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
-from app.api.sms import router as sms_router
+# from app.api.sms import router as sms_router  # Removed - replaced by sms_enhanced
 from app.api.twilio_settings import router as twilio_settings_router
 from app.api.quotes import router as quotes_router
 from app.api.calls import router as calls_router
