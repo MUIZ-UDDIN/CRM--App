@@ -394,7 +394,7 @@ export default function SuperAdminDashboard() {
               </tr>
             ) : (
               filteredCompanies.map((company) => (
-                <tr key={company.id} className="hover:bg-gray-50">
+                <tr key={company.id} className="hover:bg-gray-50 relative">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">

@@ -806,7 +806,7 @@ async def update_plan_price(
 @router.post("/subscriptions/{subscription_id}/suspend")
 async def suspend_subscription(
     subscription_id: str,
-    reason: str,
+    reason: str = "Suspended by admin",
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
@@ -817,9 +817,23 @@ async def suspend_subscription(
             detail="Permission denied"
         )
     
-    subscription = db.query(Subscription).filter(Subscription.id == uuid.UUID(subscription_id)).first()
+    # Try to find subscription by ID, if not found, try to find by company_id
+    try:
+        subscription = db.query(Subscription).filter(Subscription.id == uuid.UUID(subscription_id)).first()
+    except ValueError:
+        # subscription_id might be company_id
+        subscription = db.query(Subscription).filter(Subscription.company_id == uuid.UUID(subscription_id)).first()
+    
     if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
+        # If no subscription exists, just suspend the company directly
+        company = db.query(Company).filter(Company.id == uuid.UUID(subscription_id)).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        company.status = "suspended"
+        company.updated_at = datetime.utcnow()
+        db.commit()
+        return {"message": "Company suspended successfully (no subscription found)", "reason": reason}
     
     subscription.status = "suspended"
     subscription.updated_at = datetime.utcnow()
@@ -848,9 +862,23 @@ async def activate_subscription(
             detail="Permission denied"
         )
     
-    subscription = db.query(Subscription).filter(Subscription.id == uuid.UUID(subscription_id)).first()
+    # Try to find subscription by ID, if not found, try to find by company_id
+    try:
+        subscription = db.query(Subscription).filter(Subscription.id == uuid.UUID(subscription_id)).first()
+    except ValueError:
+        # subscription_id might be company_id
+        subscription = db.query(Subscription).filter(Subscription.company_id == uuid.UUID(subscription_id)).first()
+    
     if not subscription:
-        raise HTTPException(status_code=404, detail="Subscription not found")
+        # If no subscription exists, just activate the company directly
+        company = db.query(Company).filter(Company.id == uuid.UUID(subscription_id)).first()
+        if not company:
+            raise HTTPException(status_code=404, detail="Company not found")
+        
+        company.status = "active"
+        company.updated_at = datetime.utcnow()
+        db.commit()
+        return {"message": "Company activated successfully (no subscription found)"}
     
     subscription.status = "active"
     subscription.updated_at = datetime.utcnow()
