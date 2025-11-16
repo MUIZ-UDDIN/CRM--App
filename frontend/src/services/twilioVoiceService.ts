@@ -18,7 +18,18 @@ class TwilioVoiceService {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+      }).catch(error => {
+        // Suppress 404 errors in console (endpoint may not be available)
+        if (error.response?.status !== 404) {
+          throw error;
+        }
+        return null;
       });
+      
+      if (!response) {
+        console.warn('Twilio voice service not available');
+        return;
+      }
 
       const { token: twilioToken, identity } = response.data;
 
@@ -113,7 +124,15 @@ class TwilioVoiceService {
         headers: {
           Authorization: `Bearer ${token}`,
         },
+      }).catch(error => {
+        // Suppress 404 errors in console
+        if (error.response?.status !== 404) {
+          console.error('Failed to refresh Twilio token:', error);
+        }
+        return null;
       });
+      
+      if (!response) return;
 
       const { token: twilioToken } = response.data;
       this.device?.updateToken(twilioToken);
