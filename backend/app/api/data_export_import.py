@@ -150,11 +150,22 @@ def apply_tenant_filters(query, entity_type: str, context, current_user: dict):
             if user_team_id:
                 # Get all users in the team
                 from app.models.users import User
-                team_user_ids = [str(u.id) for u in db.query(User).filter(User.team_id == user_team_id).all()]
+                team_user_ids = [str(u.id) for u in db.query(User).filter(
+                    User.team_id == user_team_id,
+                    User.is_deleted == False
+                ).all()]
                 
                 # Filter by owner_id in team_user_ids
                 if hasattr(model, 'owner_id'):
-                    query = query.filter(model.owner_id.in_([uuid.UUID(id) for id in team_user_ids]))
+                    if team_user_ids:
+                        query = query.filter(model.owner_id.in_([uuid.UUID(id) for id in team_user_ids]))
+                    else:
+                        # Team exists but no members, show own data
+                        query = query.filter(model.owner_id == user_id)
+            else:
+                # No team assigned, show own data
+                if hasattr(model, 'owner_id'):
+                    query = query.filter(model.owner_id == user_id)
         elif has_permission(current_user, Permission.VIEW_OWN_DATA):
             # Regular users can only see their own data
             if hasattr(model, 'owner_id'):

@@ -282,17 +282,33 @@ async def get_contact(
     
     # Sales manager can view contacts owned by anyone in their team
     if has_permission(current_user, Permission.VIEW_TEAM_DATA):
-        # Get all users in the team
-        from app.models.users import User
-        team_user_ids = [str(u.id) for u in db.query(User).filter(User.team_id == user_team_id).all()]
-        
-        if str(contact.owner_id) in team_user_ids:
-            return contact
+        if user_team_id:
+            # Get all users in the team
+            from app.models.users import User
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            
+            if team_user_ids and str(contact.owner_id) in team_user_ids:
+                return contact
+            elif not team_user_ids and str(contact.owner_id) == str(user_id):
+                # Team exists but no members, allow own contacts
+                return contact
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied to this contact"
+                )
         else:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied to this contact"
-            )
+            # No team assigned, allow own contacts
+            if str(contact.owner_id) == str(user_id):
+                return contact
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied to this contact"
+                )
     
     # Regular users can only view their own contacts
     if has_permission(current_user, Permission.VIEW_OWN_DATA):
@@ -411,14 +427,33 @@ async def delete_contact(
         pass
     elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
         # Sales manager can delete contacts owned by anyone in their team
-        from app.models.users import User
-        team_user_ids = [str(u.id) for u in db.query(User).filter(User.team_id == user_team_id).all()]
-        
-        if str(contact.owner_id) not in team_user_ids:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied to this contact"
-            )
+        if user_team_id:
+            from app.models.users import User
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            
+            if team_user_ids:
+                if str(contact.owner_id) not in team_user_ids:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied to this contact"
+                    )
+            else:
+                # Team exists but no members, allow own contacts only
+                if str(contact.owner_id) != str(user_id):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Access denied to this contact"
+                    )
+        else:
+            # No team assigned, allow own contacts only
+            if str(contact.owner_id) != str(user_id):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied to this contact"
+                )
     elif has_permission(current_user, Permission.VIEW_OWN_DATA):
         # Regular users can only delete their own contacts
         if str(contact.owner_id) != str(user_id):
