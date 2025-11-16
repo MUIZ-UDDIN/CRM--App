@@ -12,7 +12,7 @@ from pydantic import BaseModel, UUID4
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
-from app.models import Company, User
+from app.models import Company, User, AuditLog, AuditAction
 from app.models.deals import Deal
 from app.models.contacts import Contact
 
@@ -153,6 +153,19 @@ async def suspend_company(
     company.subscription_status = 'suspended'
     db.commit()
     
+    # Log the action
+    audit_log = AuditLog(
+        user_id=current_user.get('id'),
+        user_email=current_user.get('email'),
+        action=AuditAction.SUSPEND,
+        resource_type='company',
+        resource_id=company.id,
+        details=f"Company '{company.name}' suspended by Super Admin",
+        metadata={'company_name': company.name, 'company_id': str(company.id)}
+    )
+    db.add(audit_log)
+    db.commit()
+    
     return {
         "message": f"Company '{company.name}' has been suspended successfully",
         "company_id": str(company.id),
@@ -191,6 +204,19 @@ async def unsuspend_company(
     else:
         company.subscription_status = 'active'
     
+    db.commit()
+    
+    # Log the action
+    audit_log = AuditLog(
+        user_id=current_user.get('id'),
+        user_email=current_user.get('email'),
+        action=AuditAction.UNSUSPEND,
+        resource_type='company',
+        resource_id=company.id,
+        details=f"Company '{company.name}' unsuspended by Super Admin",
+        metadata={'company_name': company.name, 'company_id': str(company.id)}
+    )
+    db.add(audit_log)
     db.commit()
     
     return {
@@ -237,7 +263,56 @@ async def delete_company(
     
     db.commit()
     
+    # Log the action
+    audit_log = AuditLog(
+        user_id=current_user.get('id'),
+        user_email=current_user.get('email'),
+        action=AuditAction.DELETE,
+        resource_type='company',
+        resource_id=company.id,
+        details=f"Company '{company.name}' deleted by Super Admin",
+        metadata={'company_name': company.name, 'company_id': str(company.id)}
+    )
+    db.add(audit_log)
+    db.commit()
+    
     return {
         "message": f"Company '{company.name}' has been deleted successfully",
         "company_id": str(company.id)
     }
+
+
+@router.get("/audit-logs")
+async def get_audit_logs(
+    limit: int = 50,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get recent audit logs for platform actions
+    Only accessible by Super Admin
+    """
+    # Verify super_admin role
+    if current_user.get('role') != 'super_admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This endpoint is only accessible to Super Admins"
+        )
+    
+    # Get recent audit logs for company management actions
+    logs = db.query(AuditLog).filter(
+        AuditLog.resource_type == 'company',
+        AuditLog.action.in_([AuditAction.SUSPEND, AuditAction.UNSUSPEND, AuditAction.DELETE])
+    ).order_by(AuditLog.created_at.desc()).limit(limit).all()
+    
+    return [
+        {
+            "id": str(log.id),
+            "action": log.action.value if hasattr(log.action, 'value') else str(log.action),
+            "target_company": log.metadata.get('company_name') if log.metadata else 'Unknown',
+            "performed_by": log.user_email,
+            "timestamp": log.created_at.isoformat(),
+            "details": log.details
+        }
+        for log in logs
+    ]

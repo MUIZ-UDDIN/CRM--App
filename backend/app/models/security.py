@@ -20,6 +20,9 @@ class AuditAction(str, enum.Enum):
     LOGOUT = "logout"
     EXPORT = "export"
     IMPORT = "import"
+    SUSPEND = "suspend"
+    UNSUSPEND = "unsuspend"
+    PLATFORM_VIEW = "platform_view"
 
 
 class SecurityEventType(str, enum.Enum):

@@ -21,6 +21,7 @@ import Notifications from './pages/Notifications';
 import TeamsPage from './pages/TeamsPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SuperAdminBilling from './pages/SuperAdminBilling';
+import PlatformDashboard from './pages/PlatformDashboard';
 import CompanyBilling from './pages/CompanyBilling';
 import DataImport from './pages/DataImport';
 import PipelineSettings from './pages/PipelineSettings';
@@ -129,6 +130,7 @@ function App() {
                 <Route path="settings/custom-fields" element={<CustomFields />} />
                 <Route path="team" element={<TeamsPage />} />
                 <Route path="admin" element={<SuperAdminDashboard />} />
+                <Route path="admin/platform" element={<PlatformDashboard />} />
                 <Route path="admin/billing" element={<SuperAdminBilling />} />
                 <Route path="billing" element={<CompanyBilling />} />
                 <Route path="import" element={<DataImport />} />
