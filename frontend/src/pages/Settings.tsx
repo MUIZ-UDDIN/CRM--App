@@ -4,17 +4,23 @@ import toast from 'react-hot-toast';
 import ActionButtons from '../components/common/ActionButtons';
 import { useAuth } from '../contexts/AuthContext';
 import * as twilioService from '../services/twilioService';
+import apiClient from '../services/apiClient';
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
   ShieldCheckIcon,
+  CreditCardIcon,
   PuzzlePieceIcon,
   PlusIcon,
   XMarkIcon,
   AdjustmentsHorizontalIcon,
+  BanknotesIcon,
+  DocumentTextIcon,
+  CheckCircleIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'team' | 'company' | 'security' | 'integrations' | 'custom_fields';
+type TabType = 'team' | 'company' | 'security' | 'billing' | 'integrations' | 'custom_fields';
 
 interface TeamMember {
   id: string;
@@ -33,6 +39,32 @@ interface Integration {
   icon: string;
 }
 
+interface Subscription {
+  id: string;
+  plan_name: string;
+  status: string;
+  billing_cycle: string;
+  monthly_price: number;
+  user_count: number;
+  total_amount: number;
+  current_period_start: string;
+  current_period_end: string;
+  trial_ends_at: string | null;
+  card_last_4: string | null;
+  card_brand: string | null;
+  auto_renew: boolean;
+}
+
+interface Invoice {
+  id: string;
+  invoice_number: string;
+  amount: number;
+  status: string;
+  due_date: string;
+  paid_at: string | null;
+  invoice_pdf: string | null;
+}
+
 export default function Settings() {
   const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
@@ -47,6 +79,10 @@ export default function Settings() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [billingLoading, setBillingLoading] = useState(false);
+  
   const { token, user } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
   
@@ -73,6 +109,8 @@ export default function Settings() {
     } else if (activeTab === 'company') {
       // Fetch company details from backend
       fetchCompanyDetails();
+    } else if (activeTab === 'billing') {
+      fetchBillingData();
     } else if (activeTab === 'integrations') {
       // Check Twilio connection from backend
       checkTwilioConnection();
@@ -177,6 +215,43 @@ export default function Settings() {
     } catch (error) {
       console.error('Error fetching company details:', error);
     }
+  };
+
+  const fetchBillingData = async () => {
+    setBillingLoading(true);
+    try {
+      const [subResponse, invoicesResponse] = await Promise.all([
+        apiClient.get('/billing/subscription'),
+        apiClient.get('/billing/invoices')
+      ]);
+      setSubscription(subResponse.data);
+      setInvoices(invoicesResponse.data);
+    } catch (error: any) {
+      console.error('Failed to load billing data:', error);
+      if (error.response?.status !== 404) {
+        toast.error('Failed to load billing data');
+      }
+    } finally {
+      setBillingLoading(false);
+    }
+  };
+
+  const handleUpdatePayment = () => {
+    // Redirect to Square payment form
+    toast('Redirecting to payment processor...');
+    window.open('https://squareup.com/dashboard', '_blank');
+  };
+
+  const getStatusBadge = (status: string) => {
+    const badges = {
+      active: 'bg-green-100 text-green-800',
+      trial: 'bg-yellow-100 text-yellow-800',
+      expired: 'bg-red-100 text-red-800',
+      paid: 'bg-green-100 text-green-800',
+      open: 'bg-yellow-100 text-yellow-800',
+      void: 'bg-gray-100 text-gray-800'
+    };
+    return badges[status as keyof typeof badges] || badges.void;
   };
 
   const checkTwilioConnection = async () => {
@@ -369,6 +444,7 @@ export default function Settings() {
     { id: 'team' as TabType, name: 'Team', icon: UserGroupIcon },
     { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
     { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
+    { id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon },
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
     { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
   ];
@@ -1208,6 +1284,182 @@ export default function Settings() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'billing' && (
+          <div className="space-y-6">
+            {billingLoading ? (
+              <div className="flex items-center justify-center h-64">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              </div>
+            ) : !subscription ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">Billing Management</h3>
+                <p className="text-blue-800 mb-4">
+                  {isSuperAdmin
+                    ? 'As a Super Admin, please use the Admin Billing page to manage all subscriptions.'
+                    : 'No active subscription found. Please contact support.'}
+                </p>
+                {isSuperAdmin && (
+                  <button
+                    onClick={() => window.location.href = '/admin/billing'}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    Go to Admin Billing
+                  </button>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Subscription Overview */}
+                <div className="bg-white shadow rounded-lg p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h2 className="text-xl font-semibold text-gray-900">Subscription Overview</h2>
+                    <span className={`px-3 py-1 text-sm font-medium rounded-full ${getStatusBadge(subscription.status)}`}>
+                      {subscription.status.toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="flex items-start space-x-3">
+                      <BanknotesIcon className="w-6 h-6 text-blue-600 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600">Plan</p>
+                        <p className="text-lg font-semibold text-gray-900">{subscription.plan_name}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <CheckCircleIcon className="w-6 h-6 text-green-600 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600">Users</p>
+                        <p className="text-lg font-semibold text-gray-900">{subscription.user_count}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start space-x-3">
+                      <ClockIcon className="w-6 h-6 text-purple-600 mt-1" />
+                      <div>
+                        <p className="text-sm text-gray-600">Billing Cycle</p>
+                        <p className="text-lg font-semibold text-gray-900 capitalize">{subscription.billing_cycle}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-6 border-t border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="text-sm text-gray-600">Total Amount</p>
+                        <p className="text-2xl font-bold text-gray-900">${subscription.total_amount.toFixed(2)}</p>
+                        <p className="text-sm text-gray-600 mt-1">
+                          ${subscription.monthly_price.toFixed(2)} × {subscription.user_count} users
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm text-gray-600">Next Billing Date</p>
+                        <p className="text-lg font-semibold text-gray-900">
+                          {new Date(subscription.current_period_end).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {subscription.trial_ends_at && (
+                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800">
+                        <strong>Trial Period:</strong> Your trial ends on{' '}
+                        {new Date(subscription.trial_ends_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Payment Method */}
+                <div className="bg-white shadow rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Payment Method</h3>
+                  {subscription.card_last_4 ? (
+                    <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <CreditCardIcon className="w-8 h-8 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">
+                            {subscription.card_brand} •••• {subscription.card_last_4}
+                          </p>
+                          <p className="text-sm text-gray-600">Primary payment method</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleUpdatePayment}
+                        className="px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+                      >
+                        Update
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="p-4 border border-gray-200 rounded-lg">
+                      <p className="text-sm text-gray-600 mb-3">No payment method on file</p>
+                      <button
+                        onClick={handleUpdatePayment}
+                        className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                      >
+                        Add Payment Method
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Invoices */}
+                <div className="bg-white shadow rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Invoices</h3>
+                  {invoices.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full divide-y divide-gray-200">
+                        <thead>
+                          <tr>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {invoices.map((invoice) => (
+                            <tr key={invoice.id}>
+                              <td className="px-4 py-3 text-sm text-gray-900">{invoice.invoice_number}</td>
+                              <td className="px-4 py-3 text-sm text-gray-900">${invoice.amount.toFixed(2)}</td>
+                              <td className="px-4 py-3">
+                                <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(invoice.status)}`}>
+                                  {invoice.status}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-gray-600">
+                                {new Date(invoice.due_date).toLocaleDateString()}
+                              </td>
+                              <td className="px-4 py-3">
+                                {invoice.invoice_pdf && (
+                                  <a
+                                    href={invoice.invoice_pdf}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm text-blue-600 hover:text-blue-700"
+                                  >
+                                    <DocumentTextIcon className="w-5 h-5 inline" />
+                                  </a>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-600">No invoices found</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
