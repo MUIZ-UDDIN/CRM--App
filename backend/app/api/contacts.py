@@ -83,18 +83,32 @@ async def get_contacts(
         query = query.filter(ContactModel.company_id == company_id)
     elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
         # Sales manager can see contacts owned by anyone in their team
-        if not user_team_id:
-            return []
-        
-        # Get all users in the team
-        from app.models.users import User
-        team_user_ids = [str(u.id) for u in db.query(User).filter(User.team_id == user_team_id).all()]
-        
-        # Filter contacts owned by team members
-        query = query.filter(
-            ContactModel.company_id == company_id,
-            ContactModel.owner_id.in_([uuid.UUID(id) for id in team_user_ids])
-        )
+        if user_team_id:
+            # Get all users in the team
+            from app.models.users import User
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            
+            # Filter contacts owned by team members
+            if team_user_ids:
+                query = query.filter(
+                    ContactModel.company_id == company_id,
+                    ContactModel.owner_id.in_([uuid.UUID(id) for id in team_user_ids])
+                )
+            else:
+                # Team exists but has no members, show own contacts
+                query = query.filter(
+                    ContactModel.company_id == company_id,
+                    ContactModel.owner_id == uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+                )
+        else:
+            # No team assigned, show own contacts
+            query = query.filter(
+                ContactModel.company_id == company_id,
+                ContactModel.owner_id == uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            )
     elif has_permission(current_user, Permission.VIEW_OWN_DATA):
         # Regular users can only see their own contacts
         query = query.filter(
