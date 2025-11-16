@@ -131,6 +131,10 @@ export default function Settings() {
     if (activeTab === 'company') {
       // Fetch company details from backend
       fetchCompanyDetails();
+    } else if (activeTab === 'team') {
+      fetchTeams();
+    } else if (activeTab === 'team_members') {
+      fetchTeamMembers();
     } else if (activeTab === 'billing') {
       fetchBillingData();
     } else if (activeTab === 'integrations') {
@@ -138,6 +142,12 @@ export default function Settings() {
       checkTwilioConnection();
     }
   }, [activeTab]);
+
+  useEffect(() => {
+    if (selectedTeam) {
+      fetchTeamMembersForTeam(selectedTeam.id);
+    }
+  }, [selectedTeam]);
 
   const fetchTeamMembers = async () => {
     try {
@@ -255,6 +265,128 @@ export default function Settings() {
       }
     } finally {
       setBillingLoading(false);
+    }
+  };
+
+  const fetchTeams = async () => {
+    try {
+      const response = await apiClient.get('/teams');
+      setTeams(response.data);
+      
+      // If teams exist, select the first one by default
+      if (response.data.length > 0 && !selectedTeam) {
+        setSelectedTeam(response.data[0]);
+      }
+    } catch (error: any) {
+      console.error('Failed to load teams:', error);
+      if (error.response?.status !== 404) {
+        toast.error('Failed to load teams');
+      }
+    }
+  };
+
+  const fetchTeamMembersForTeam = async (teamId: string) => {
+    try {
+      const response = await apiClient.get(`/teams/${teamId}/members`);
+      setTeamMembers(response.data);
+    } catch (error: any) {
+      console.error('Failed to load team members:', error);
+      toast.error('Failed to load team members');
+    }
+  };
+
+  const fetchAvailableUsers = async () => {
+    try {
+      const response = await apiClient.get(`/companies/${user?.company_id}/users`);
+      // Filter out users who are already in a team
+      const availableUsers = response.data.filter((u: any) => !u.team_id);
+      setAvailableUsers(availableUsers);
+    } catch (error: any) {
+      console.error('Failed to load available users:', error);
+      toast.error('Failed to load available users');
+    }
+  };
+
+  const handleCreateTeam = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      const response = await apiClient.post('/teams', teamForm);
+      toast.success('Team created successfully');
+      setTeams([...teams, response.data]);
+      setSelectedTeam(response.data);
+      setShowCreateTeamModal(false);
+      setTeamForm({ name: '', description: '' });
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to create team');
+    }
+  };
+
+  const handleDeleteTeam = async (teamId: string) => {
+    if (!confirm('Are you sure you want to delete this team? All members will be unassigned.')) {
+      return;
+    }
+    
+    try {
+      await apiClient.delete(`/teams/${teamId}`);
+      toast.success('Team deleted successfully');
+      setTeams(teams.filter(team => team.id !== teamId));
+      setSelectedTeam(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to delete team');
+    }
+  };
+
+  const handleAddMemberToTeam = async () => {
+    if (!selectedTeam || !selectedUserId) return;
+    
+    try {
+      await apiClient.post(`/teams/${selectedTeam.id}/members`, {
+        user_id: selectedUserId
+      });
+      
+      toast.success('Member added to team');
+      fetchTeamMembersForTeam(selectedTeam.id);
+      setShowAddMemberModal(false);
+      setSelectedUserId('');
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to add member to team');
+    }
+  };
+
+  const handleRemoveMemberFromTeam = async (userId: string) => {
+    if (!selectedTeam) return;
+    
+    if (!confirm('Are you sure you want to remove this member from the team?')) {
+      return;
+    }
+    
+    try {
+      await apiClient.delete(`/teams/${selectedTeam.id}/members/${userId}`);
+      toast.success('Member removed from team');
+      fetchTeamMembersForTeam(selectedTeam.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to remove member from team');
+    }
+  };
+
+  const handleSetTeamLead = async (userId: string) => {
+    if (!selectedTeam) return;
+    
+    try {
+      await apiClient.post(`/teams/${selectedTeam.id}/lead/${userId}`, {});
+      toast.success('Team lead set successfully');
+      
+      // Update the selected team with the new team lead
+      setSelectedTeam({
+        ...selectedTeam,
+        team_lead_id: userId
+      });
+      
+      // Refresh team members to update roles
+      fetchTeamMembersForTeam(selectedTeam.id);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to set team lead');
     }
   };
 
@@ -464,6 +596,8 @@ export default function Settings() {
 
   const tabs = [
     { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
+    { id: 'team' as TabType, name: 'Teams', icon: UserGroupIcon },
+    { id: 'team_members' as TabType, name: 'Team Members', icon: UserIcon },
     { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
     { id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon },
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
@@ -574,7 +708,11 @@ export default function Settings() {
 
   const handleEditTeamMember = (member: TeamMember) => {
     setSelectedMember(member);
-    setTeamMemberForm({ name: member.name, email: member.email, role: member.role });
+    setTeamMemberForm({ 
+      name: member.name || `${member.first_name || ''} ${member.last_name || ''}`.trim(), 
+      email: member.email, 
+      role: member.role || member.user_role || 'Regular User' 
+    });
     setRoleSearchTerm('');
     setShowEditTeamModal(true);
   };
@@ -1117,6 +1255,249 @@ export default function Settings() {
           </div>
         )}
 
+        {activeTab === 'team' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Teams</h2>
+                <p className="text-gray-600 mt-1">Manage your teams and team members</p>
+              </div>
+              {(isCompanyAdmin || isSuperAdmin) && (
+                <button
+                  onClick={() => setShowCreateTeamModal(true)}
+                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <PlusCircleIcon className="w-5 h-5" />
+                  Create Team
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Teams List */}
+              <div className="lg:col-span-1 bg-white rounded-lg shadow overflow-hidden">
+                <div className="p-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-800">Teams</h3>
+                </div>
+                <div className="divide-y divide-gray-200">
+                  {teams.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      <UserGroupIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                      <p>No teams yet</p>
+                      {(isCompanyAdmin || isSuperAdmin) && (
+                        <p className="text-sm mt-1">Create your first team to get started</p>
+                      )}
+                    </div>
+                  ) : (
+                    teams.map((team) => (
+                      <div
+                        key={team.id}
+                        onClick={() => setSelectedTeam(team)}
+                        className={`p-4 cursor-pointer hover:bg-gray-50 ${
+                          selectedTeam?.id === team.id ? 'bg-blue-50' : ''
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900">{team.name}</div>
+                        {team.description && (
+                          <div className="text-sm text-gray-500 truncate">{team.description}</div>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Team Details */}
+              <div className="lg:col-span-3 bg-white rounded-lg shadow overflow-hidden">
+                {!selectedTeam ? (
+                  <div className="p-6 text-center text-gray-500">
+                    <UserGroupIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                    <p className="text-lg">Select a team to view details</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="p-6 border-b border-gray-200">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900">{selectedTeam.name}</h3>
+                          {selectedTeam.description && (
+                            <p className="text-gray-600 mt-1">{selectedTeam.description}</p>
+                          )}
+                        </div>
+                        {(isCompanyAdmin || isSuperAdmin) && (
+                          <button
+                            onClick={() => handleDeleteTeam(selectedTeam.id)}
+                            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                            title="Delete team"
+                          >
+                            <TrashIcon className="w-5 h-5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Team Members */}
+                    <div className="p-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h4 className="text-lg font-semibold text-gray-900">Team Members</h4>
+                        {(isCompanyAdmin || isSuperAdmin) && (
+                          <button
+                            onClick={() => {
+                              fetchAvailableUsers();
+                              setShowAddMemberModal(true);
+                            }}
+                            className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                          >
+                            <UserPlusIcon className="w-4 h-4" />
+                            Add Member
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                            <tr>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Member</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                              {(isCompanyAdmin || isSuperAdmin) && (
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                              )}
+                            </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                            {teamMembers.length === 0 ? (
+                              <tr>
+                                <td colSpan={(isCompanyAdmin || isSuperAdmin) ? 4 : 3} className="px-6 py-12 text-center text-gray-500">
+                                  <UserIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                                  <p>No team members yet</p>
+                                </td>
+                              </tr>
+                            ) : (
+                              teamMembers.map((member) => (
+                                <tr key={member.id} className="hover:bg-gray-50">
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <div className="flex items-center">
+                                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                        <span className="text-blue-600 font-semibold">
+                                          {member.first_name?.[0]}{member.last_name?.[0]}
+                                        </span>
+                                      </div>
+                                      <div className="ml-4">
+                                        <div className="text-sm font-medium text-gray-900">
+                                          {member.first_name} {member.last_name}
+                                          {selectedTeam.team_lead_id === member.id && (
+                                            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
+                                              Team Lead
+                                            </span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.email}</td>
+                                  <td className="px-6 py-4 whitespace-nowrap">
+                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
+                                      {member.user_role || member.role}
+                                    </span>
+                                  </td>
+                                  {(isCompanyAdmin || isSuperAdmin) && (
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                      <div className="flex items-center gap-2">
+                                        {selectedTeam.team_lead_id !== member.id && (
+                                          <button
+                                            onClick={() => handleSetTeamLead(member.id)}
+                                            className="p-1 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded"
+                                            title="Set as Team Lead"
+                                          >
+                                            <CheckCircleIcon className="w-5 h-5" />
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={() => handleRemoveMemberFromTeam(member.id)}
+                                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                                          title="Remove from team"
+                                        >
+                                          <TrashIcon className="w-5 h-5" />
+                                        </button>
+                                      </div>
+                                    </td>
+                                  )}
+                                </tr>
+                              ))
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'team_members' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
+              {(isCompanyAdmin || isSuperAdmin) && (
+                <button
+                  onClick={handleOpenAddModal}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                >
+                  <PlusIcon className="w-5 h-5" />
+                  Add Member
+                </button>
+              )}
+            </div>
+
+            <div className="bg-white shadow rounded-lg overflow-hidden">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                    {(isCompanyAdmin || isSuperAdmin) && (
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    )}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {teamMembers.map((member) => (
+                    <tr key={member.id}>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
+                        {member.name || `${member.first_name} ${member.last_name}`}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{member.role || member.user_role}</td>
+                      <td className="px-6 py-4 text-sm">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {member.status}
+                        </span>
+                      </td>
+                      {(isCompanyAdmin || isSuperAdmin) && (
+                        <td className="px-6 py-4 text-right">
+                          <ActionButtons
+                            onEdit={() => handleEditTeamMember(member)}
+                            onDelete={() => handleDeleteTeamMember(member)}
+                            showView={false}
+                          />
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'security' && (
           <div className="bg-white shadow rounded-lg p-4 sm:p-6">
             <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Security Settings</h2>
@@ -1429,6 +1810,123 @@ export default function Settings() {
           </div>
         )}
       </div>
+
+      {/* Create Team Modal */}
+      {showCreateTeamModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Create New Team</h2>
+            
+            <form onSubmit={handleCreateTeam} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Team Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  maxLength={100}
+                  value={teamForm.name}
+                  onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Sales Team"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  maxLength={500}
+                  value={teamForm.description}
+                  onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Team description (optional)"
+                  rows={3}
+                />
+                <p className="mt-1 text-xs text-gray-500">{teamForm.description.length}/500 characters</p>
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowCreateTeamModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Create Team
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Member to Team Modal */}
+      {showAddMemberModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Add Team Member</h2>
+            
+            {availableUsers.length === 0 ? (
+              <div className="text-center py-6">
+                <UserIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                <p className="text-gray-500">No available users to add</p>
+                <p className="text-sm text-gray-500 mt-1">All users are already assigned to teams</p>
+                <button
+                  onClick={() => setShowAddMemberModal(false)}
+                  className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Select User *
+                  </label>
+                  <select
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="">Select a user</option>
+                    {availableUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.first_name} {user.last_name} ({user.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddMemberModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddMemberToTeam}
+                    disabled={!selectedUserId}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Add to Team
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Add Team Member Modal */}
       {showAddTeamModal && (
