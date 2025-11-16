@@ -87,16 +87,24 @@ def verify_token(token: str) -> Optional[dict]:
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[UserModel]:
     """Authenticate user with email and password"""
-    user = db.query(UserModel).filter(
+    # Get all users with this email (multi-tenant support)
+    users = db.query(UserModel).filter(
         UserModel.email == email,
         UserModel.is_deleted == False,
         UserModel.is_active == True
-    ).first()
-    if not user:
+    ).order_by(UserModel.last_login.desc().nullslast(), UserModel.created_at.desc()).all()
+    
+    if not users:
         return None
-    if not verify_password(password, user.hashed_password):
-        return None
-    return user
+    
+    # Try to authenticate with each user account (different companies)
+    for user in users:
+        if verify_password(password, user.hashed_password):
+            # Return the first user that matches the password
+            # Priority: most recently logged in, then most recently created
+            return user
+    
+    return None
 
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)) -> dict:

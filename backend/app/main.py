@@ -32,6 +32,7 @@ from app.api.deals import router as deals_router
 from app.api.activities import router as activities_router
 from app.api.analytics import router as analytics_router
 from app.api.admin_analytics import router as admin_analytics_router
+from app.api.role_based_analytics import router as role_analytics_router
 from app.api.pipelines import router as pipelines_router
 from app.api.inbox import router as inbox_router
 from app.api.sms import router as sms_router
@@ -296,6 +297,13 @@ app.include_router(
     tags=["Admin Analytics"]
 )
 logger.info("✅ Admin Analytics routes registered at /api/admin-analytics/dashboard")
+
+# Register role-based analytics routes
+app.include_router(
+    role_analytics_router,
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Role Analytics routes registered at /api/role-analytics/dashboard")
 
 # Add direct debug route for testing admin dashboard access
 from app.api.admin_analytics import get_admin_dashboard_analytics
