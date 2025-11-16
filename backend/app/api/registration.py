@@ -172,12 +172,18 @@ async def register_company(
     4. Return access token for immediate login
     """
     
-    # Check if email already exists
-    existing_user = db.query(User).filter(User.email == request.admin_email.lower()).first()
-    if existing_user:
+    # Check if email already exists with the SAME company name (prevent duplicate company registration)
+    # Note: Same email CAN exist in different companies (multi-tenant support)
+    existing_company_with_email = db.query(User).join(Company).filter(
+        User.email == request.admin_email.lower(),
+        Company.name == request.company_name,
+        User.is_deleted == False
+    ).first()
+    
+    if existing_company_with_email:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="This email address is already registered. Please use a different email or try logging in."
+            detail="This email is already registered for this company. Please try logging in."
         )
     
     # Check if company name already exists
