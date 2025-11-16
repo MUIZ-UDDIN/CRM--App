@@ -83,10 +83,18 @@ async def get_pipeline_analytics(
             filters.append(Deal.company_id == company_id)
     elif access_level == "team":
         # Team manager can see team data
-        if team_id:
-            filters.append(Deal.team_id == uuid.UUID(team_id))
-        elif current_user.get('team_id'):
-            filters.append(Deal.team_id == uuid.UUID(current_user.get('team_id')))
+        # Note: Deal doesn't have team_id, need to filter by owner's team
+        # For now, filter by deals owned by current user (team filtering requires join)
+        if current_user.get('team_id'):
+            # Get team members
+            team_member_ids = db.query(User.id).filter(
+                User.team_id == uuid.UUID(current_user.get('team_id')),
+                User.is_deleted == False
+            ).all()
+            if team_member_ids:
+                filters.append(Deal.owner_id.in_([m[0] for m in team_member_ids]))
+            else:
+                filters.append(Deal.owner_id == owner_id)
     elif access_level == "own":
         # Regular user can see own data
         filters.append(Deal.owner_id == owner_id)

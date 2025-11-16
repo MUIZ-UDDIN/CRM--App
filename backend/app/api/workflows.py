@@ -82,49 +82,17 @@ async def get_workflows(
     )
     
     # Apply permission-based filters
+    # Note: Workflow model doesn't have 'scope' or 'team_id' fields
+    # Filtering by company_id and owner_id only
     if context.is_super_admin() or has_permission(current_user, Permission.MANAGE_COMPANY_AUTOMATIONS):
         # Can see all workflows in the company
         pass
     elif has_permission(current_user, Permission.MANAGE_TEAM_AUTOMATIONS):
-        # Can see team and personal workflows
-        if scope == "company":
-            # Can only see company workflows (read-only)
-            query = query.filter(Workflow.scope == "company")
-        elif scope == "team":
-            # Can see team workflows for their team
-            if team_id:
-                query = query.filter(Workflow.scope == "team", Workflow.team_id == team_id)
-            elif user_team_id:
-                query = query.filter(Workflow.scope == "team", Workflow.team_id == user_team_id)
-            else:
-                return []
-        elif scope == "user":
-            # Can see personal workflows
-            query = query.filter(Workflow.scope == "user", Workflow.owner_id == user_id)
-        else:
-            # Default: see team and personal workflows
-            if user_team_id:
-                query = query.filter(
-                    (Workflow.scope == "team") & (Workflow.team_id == user_team_id) |
-                    (Workflow.scope == "user") & (Workflow.owner_id == user_id) |
-                    (Workflow.scope == "company")
-                )
-            else:
-                query = query.filter(
-                    (Workflow.scope == "user") & (Workflow.owner_id == user_id) |
-                    (Workflow.scope == "company")
-                )
+        # Can see all workflows in company (team managers have broad access)
+        pass
     elif has_permission(current_user, Permission.USE_PERSONAL_AUTOMATIONS):
-        # Can only see personal workflows and company workflows
-        if scope == "company":
-            query = query.filter(Workflow.scope == "company")
-        elif scope == "user":
-            query = query.filter(Workflow.scope == "user", Workflow.owner_id == user_id)
-        else:
-            query = query.filter(
-                (Workflow.scope == "user") & (Workflow.owner_id == user_id) |
-                (Workflow.scope == "company")
-            )
+        # Can only see their own workflows
+        query = query.filter(Workflow.owner_id == user_id)
     else:
         # No permissions to view workflows
         return []
