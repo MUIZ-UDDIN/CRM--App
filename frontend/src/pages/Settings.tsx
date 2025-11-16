@@ -23,9 +23,10 @@ import {
   PencilIcon,
   TrashIcon,
   PlusCircleIcon,
+  PhoneIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields';
+type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields' | 'phone_numbers';
 
 interface TeamMember {
   id: string;
@@ -604,6 +605,7 @@ export default function Settings() {
     { id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon },
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
     { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
+    { id: 'phone_numbers' as TabType, name: 'Phone Numbers', icon: PhoneIcon },
   ];
 
   const handleAddTeamMember = async () => {
@@ -1792,7 +1794,7 @@ export default function Settings() {
                           </button>
                           {phoneNumbers.length > 0 && (
                             <button
-                              onClick={() => window.location.href = '/phone-numbers'}
+                              onClick={() => setActiveTab('phone_numbers')}
                               className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                             >
                               📱 Manage Phone Numbers
@@ -2582,6 +2584,71 @@ export default function Settings() {
               Click "Manage Custom Fields" to create and configure custom fields for your organization.
             </p>
           </div>
+        </div>
+      )}
+
+      {activeTab === 'phone_numbers' && (
+        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <div>
+              <h2 className="text-lg font-medium text-gray-900">Phone Numbers</h2>
+              <p className="text-sm text-gray-600 mt-1">Manage your Twilio phone numbers for SMS and calling</p>
+            </div>
+            <button
+              onClick={handleSyncPhoneNumbers}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+            >
+              <ArrowPathIcon className="w-5 h-5" />
+              Sync Phone Numbers
+            </button>
+          </div>
+          
+          {phoneNumbers.length === 0 ? (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900">
+                No phone numbers found. Click "Sync Phone Numbers" to import your Twilio phone numbers.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone Number</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Friendly Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Capabilities</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rotation</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {phoneNumbers.map((number: any) => (
+                    <tr key={number.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{number.phone_number}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{number.friendly_name || '-'}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex gap-2">
+                          {number.capabilities?.sms && <span className="px-2 py-1 text-xs bg-green-100 text-green-800 rounded">SMS</span>}
+                          {number.capabilities?.voice && <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">Voice</span>}
+                          {number.capabilities?.mms && <span className="px-2 py-1 text-xs bg-purple-100 text-purple-800 rounded">MMS</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className={`px-2 py-1 text-xs rounded ${number.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {number.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className={`px-2 py-1 text-xs rounded ${number.use_for_rotation ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'}`}>
+                          {number.use_for_rotation ? 'Enabled' : 'Disabled'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
     </div>
