@@ -6,6 +6,7 @@ import axios from 'axios';
 const API_URL = 'https://sunstonecrm.com/api';
 
 interface CompanyInfo {
+  name: string;
   subscription_status: string;
   trial_ends_at: string | null;
   days_remaining: number;
@@ -53,6 +54,7 @@ export default function TrialBanner() {
         
         // Always set company info if company exists (even without trial_ends_at)
         setCompanyInfo({
+          name: company.name,
           subscription_status: company.subscription_status || 'trial',
           trial_ends_at: company.trial_ends_at,
           days_remaining: Math.max(0, daysRemaining)
@@ -70,8 +72,8 @@ export default function TrialBanner() {
 
   // Don't show for Sunstone company users (platform owner)
   // Sunstone is the company that owns the CRM platform, so they don't have trials
-  const isSunstoneCompany = userEmail === 'admin@sunstonecrm.com' || 
-                            userEmail.endsWith('@sunstonecrm.com') ||
+  const isSunstoneCompany = companyInfo.name === 'Sunstone' || 
+                            companyInfo.name === 'SunStone' ||
                             companyInfo.subscription_status === 'platform_owner';
   
   if (isSunstoneCompany) {
