@@ -340,7 +340,7 @@ async def get_role_based_pipeline_analytics(
             "deals": [
                 {
                     "id": str(deal.id),
-                    "name": deal.name,
+                    "name": deal.title,  # Deal model uses 'title' not 'name'
                     "value": float(deal.value),
                     "status": deal.status
                 }
@@ -614,7 +614,7 @@ def get_team_deals_pipeline(db: Session, team_id: str) -> List[Dict[str, Any]]:
     return [
         {
             "id": str(deal.id),
-            "name": deal.name,
+            "name": deal.title,  # Deal model uses 'title' not 'name'
             "value": float(deal.value),
             "status": deal.status,
             "owner_id": str(deal.owner_id),
