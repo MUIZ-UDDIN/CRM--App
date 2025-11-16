@@ -20,7 +20,7 @@ import {
   ClockIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'team' | 'company' | 'security' | 'billing' | 'integrations' | 'custom_fields';
+type TabType = 'company' | 'security' | 'billing' | 'integrations' | 'custom_fields';
 
 interface TeamMember {
   id: string;
@@ -68,7 +68,7 @@ interface Invoice {
 export default function Settings() {
   const [searchParams] = useSearchParams();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
-  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'team');
+  const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'company');
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -104,9 +104,7 @@ export default function Settings() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'team') {
-      fetchTeamMembers();
-    } else if (activeTab === 'company') {
+    if (activeTab === 'company') {
       // Fetch company details from backend
       fetchCompanyDetails();
     } else if (activeTab === 'billing') {
@@ -441,7 +439,6 @@ export default function Settings() {
   };
 
   const tabs = [
-    { id: 'team' as TabType, name: 'Team', icon: UserGroupIcon },
     { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
     { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
     { id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon },
@@ -859,56 +856,6 @@ export default function Settings() {
       setIsSavingTwilio(false);
     }
   };
-  
-  const handleUpdatePayment = () => {
-    // Validate card number (16 digits)
-    if (!/^\d{16}$/.test(billingForm.cardNumber.replace(/\s/g, ''))) {
-      toast.error('Please enter a valid 16-digit card number');
-      return;
-    }
-
-    // Validate expiry (MM/YY format)
-    if (!/^(0[1-9]|1[0-2])\/\d{2}$/.test(billingForm.cardExpiry)) {
-      toast.error('Please enter expiry in MM/YY format');
-      return;
-    }
-
-    // Check if expiry date is in the future
-    const [month, year] = billingForm.cardExpiry.split('/');
-    const expiryDate = new Date(2000 + parseInt(year), parseInt(month) - 1);
-    const today = new Date();
-    if (expiryDate < today) {
-      toast.error('Card expiry date must be in the future');
-      return;
-    }
-
-    // Validate CVC (3-4 digits)
-    if (!/^\d{3,4}$/.test(billingForm.cardCVC)) {
-      toast.error('Please enter a valid 3 or 4-digit CVC');
-      return;
-    }
-
-    // Validate cardholder name
-    if (!billingForm.cardholderName.trim()) {
-      toast.error('Please enter cardholder name');
-      return;
-    }
-
-    // Calculate next billing date (30 days from now)
-    const nextDate = new Date();
-    nextDate.setDate(nextDate.getDate() + 30);
-
-    // Save billing info
-    const billingData = {
-      ...billingForm,
-      nextBillingDate: nextDate.toISOString(),
-      lastUpdated: new Date().toISOString(),
-    };
-    localStorage.setItem('billingSettings', JSON.stringify(billingData));
-    setBillingForm(billingData);
-    setShowUpdatePaymentModal(false);
-    toast.success('Payment method updated successfully');
-  };
 
   const handleChangePassword = async () => {
     if (!securityForm.currentPassword || !securityForm.newPassword || !securityForm.confirmPassword) {
@@ -1014,82 +961,6 @@ export default function Settings() {
             ))}
           </nav>
         </div>
-
-        {activeTab === 'team' && (
-          <div className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-              <h2 className="text-lg font-medium text-gray-900">Team Members</h2>
-              {isAdmin && (
-                <button
-                  onClick={handleOpenAddModal}
-                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 w-full sm:w-auto justify-center"
-                >
-                  <PlusIcon className="h-4 w-4 mr-2" />
-                  Add Member
-                </button>
-              )}
-            </div>
-            
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-              {teamMembers.map((member) => (
-                <div key={member.id} className="bg-white shadow rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-semibold text-gray-900 truncate" title={member.name}>{member.name}</h3>
-                      <p className="text-xs text-gray-600 truncate mt-1">{member.email}</p>
-                    </div>
-                    {isAdmin && (
-                      <ActionButtons
-                        onEdit={() => handleEditTeamMember(member)}
-                        onDelete={() => handleDeleteTeamMember(member)}
-                        showView={false}
-                      />
-                    )}
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <span className="text-xs text-gray-500">Role:</span>
-                    <span className="text-xs font-medium text-gray-900 capitalize">{member.role}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Desktop Table */}
-            <div className="hidden md:block bg-white shadow rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {teamMembers.map((member) => (
-                    <tr key={member.id}>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900"><div className="truncate max-w-xs" title={member.name}>{member.name}</div></td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{member.role}</td>
-                      <td className="px-6 py-4 text-right">
-                        {isAdmin ? (
-                          <ActionButtons
-                            onEdit={() => handleEditTeamMember(member)}
-                            onDelete={() => handleDeleteTeamMember(member)}
-                            showView={false}
-                          />
-                        ) : (
-                          <span className="text-sm text-gray-400">No actions</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
 
         {activeTab === 'company' && (
           <div className="bg-white shadow rounded-lg p-4 sm:p-6">
