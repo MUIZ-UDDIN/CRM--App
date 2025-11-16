@@ -86,24 +86,26 @@ def verify_token(token: str) -> Optional[dict]:
 
 
 def authenticate_user(db: Session, email: str, password: str) -> Optional[UserModel]:
-    """Authenticate user with email and password"""
-    # Get all users with this email (multi-tenant support)
+    """Authenticate user with email and password (multi-tenant support)"""
+    # Get all users with this email (same email can exist in different companies)
     users = db.query(UserModel).filter(
         UserModel.email == email,
         UserModel.is_deleted == False,
         UserModel.is_active == True
-    ).order_by(UserModel.last_login.desc().nullslast(), UserModel.created_at.desc()).all()
+    ).all()
     
     if not users:
         return None
     
-    # Try to authenticate with each user account (different companies)
+    # Try to authenticate with each user account
+    # The correct account is determined by BOTH email AND password
+    # Each company account can have a different password
     for user in users:
         if verify_password(password, user.hashed_password):
-            # Return the first user that matches the password
-            # Priority: most recently logged in, then most recently created
+            # Found the matching account (email + password match)
             return user
     
+    # No account matched the email + password combination
     return None
 
 
