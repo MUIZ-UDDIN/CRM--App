@@ -88,6 +88,12 @@ export default function Settings() {
   const navigate = useNavigate();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
   const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'company');
+  
+  // Helper function to change tab and update URL
+  const changeTab = (tab: TabType) => {
+    setActiveTab(tab);
+    navigate(`/settings?tab=${tab}`, { replace: true });
+  };
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
@@ -1110,7 +1116,7 @@ export default function Settings() {
             {tabs.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => changeTab(tab.id)}
                 className={`flex items-center py-3 sm:py-4 px-3 sm:px-4 border-b-2 font-medium text-xs sm:text-sm whitespace-nowrap flex-shrink-0 ${
                   activeTab === tab.id
                     ? 'border-primary-500 text-primary-600'
@@ -1794,7 +1800,7 @@ export default function Settings() {
                           </button>
                           {phoneNumbers.length > 0 && (
                             <button
-                              onClick={() => setActiveTab('phone_numbers')}
+                              onClick={() => changeTab('phone_numbers')}
                               className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                             >
                               📱 Manage Phone Numbers
