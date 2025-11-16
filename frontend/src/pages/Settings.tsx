@@ -18,17 +18,34 @@ import {
   DocumentTextIcon,
   CheckCircleIcon,
   ClockIcon,
+  UserPlusIcon,
+  UserIcon,
+  PencilIcon,
+  TrashIcon,
+  PlusCircleIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'company' | 'security' | 'billing' | 'integrations' | 'custom_fields';
+type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields';
 
 interface TeamMember {
   id: string;
-  name: string;
+  name?: string;
   email: string;
-  role: string;
+  first_name?: string;
+  last_name?: string;
+  role?: string;
+  user_role?: string;
   status: string;
-  joined_at: string;
+  joined_at?: string;
+  created_at?: string;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  description: string | null;
+  company_id: string;
+  team_lead_id: string | null;
 }
 
 interface Integration {
@@ -79,6 +96,13 @@ export default function Settings() {
   const [showRoleDropdown, setShowRoleDropdown] = useState(false);
   
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teams, setTeams] = useState<Team[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
+  const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [availableUsers, setAvailableUsers] = useState<TeamMember[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [teamForm, setTeamForm] = useState({ name: '', description: '' });
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -340,7 +364,7 @@ export default function Settings() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const [teamForm, setTeamForm] = useState({ name: '', email: '', role: 'Regular User' });
+  const [teamMemberForm, setTeamMemberForm] = useState({ name: '', email: '', role: 'Regular User' });
   const [companyForm, setCompanyForm] = useState(() => {
     // Load company settings from localStorage on mount
     const saved = localStorage.getItem('companySettings');
@@ -448,40 +472,40 @@ export default function Settings() {
 
   const handleAddTeamMember = async () => {
     // Validate inputs
-    if (!teamForm.name.trim()) {
+    if (!teamMemberForm.name.trim()) {
       toast.error('Please enter a name for the team member.');
       return;
     }
-    if (!teamForm.email.trim()) {
+    if (!teamMemberForm.email.trim()) {
       toast.error('Please enter an email address.');
       return;
     }
-    if (!teamForm.role) {
+    if (!teamMemberForm.role) {
       toast.error('Please select a role for the team member.');
       return;
     }
     
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(teamForm.email)) {
+    if (!emailRegex.test(teamMemberForm.email)) {
       toast.error('Please enter a valid email address.');
       return;
     }
     
     // Check for HTML tags or script tags
-    if (/<[^>]+>/gi.test(teamForm.name)) {
+    if (/<[^>]+>/gi.test(teamMemberForm.name)) {
       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
     }
     
     // Validate name length
-    if (teamForm.name.length > 100) {
+    if (teamMemberForm.name.length > 100) {
       toast.error('Name is too long. Maximum 100 characters allowed.');
       return;
     }
     
     // Split name into first and last
-    const trimmedName = teamForm.name.trim();
+    const trimmedName = teamMemberForm.name.trim();
     if (!trimmedName || trimmedName.length < 2) {
       toast.error('Please enter a valid name (at least 2 characters).');
       return;
@@ -493,7 +517,7 @@ export default function Settings() {
     const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
     
     // Validate name contains only letters, spaces, hyphens, and apostrophes
-    if (!/^[a-zA-Z\s\-']+$/.test(teamForm.name)) {
+    if (!/^[a-zA-Z\s\-']+$/.test(teamMemberForm.name)) {
       toast.error('Name can only contain letters, spaces, hyphens, and apostrophes.');
       return;
     }
@@ -506,10 +530,10 @@ export default function Settings() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: teamForm.email.toLowerCase(),
+          email: teamMemberForm.email.toLowerCase(),
           first_name: firstName,
           last_name: lastName,
-          role: teamForm.role,
+          role: teamMemberForm.role,
         }),
       });
       
@@ -517,7 +541,7 @@ export default function Settings() {
         const data = await response.json();
         toast.success(data.message || `Team member added successfully! Default password: ${data.default_password}`);
         setShowAddTeamModal(false);
-        setTeamForm({ name: '', email: '', role: 'Regular User' });
+        setTeamMemberForm({ name: '', email: '', role: 'Regular User' });
         setRoleSearchTerm('');
         // Refresh team members list
         setTimeout(() => {
@@ -543,14 +567,14 @@ export default function Settings() {
   };
 
   const handleOpenAddModal = () => {
-    setTeamForm({ name: '', email: '', role: 'Regular User' });
+    setTeamMemberForm({ name: '', email: '', role: 'Regular User' });
     setRoleSearchTerm('');
     setShowAddTeamModal(true);
   };
 
   const handleEditTeamMember = (member: TeamMember) => {
     setSelectedMember(member);
-    setTeamForm({ name: member.name, email: member.email, role: member.role });
+    setTeamMemberForm({ name: member.name, email: member.email, role: member.role });
     setRoleSearchTerm('');
     setShowEditTeamModal(true);
   };
@@ -660,27 +684,27 @@ export default function Settings() {
     if (!selectedMember) return;
     
     // Validate inputs
-    if (!teamForm.name.trim()) {
+    if (!teamMemberForm.name.trim()) {
       toast.error('Please enter a name');
       return;
     }
-    if (!teamForm.email.trim()) {
+    if (!teamMemberForm.email.trim()) {
       toast.error('Please enter an email address');
       return;
     }
-    if (teamForm.name.length > 255) {
+    if (teamMemberForm.name.length > 255) {
       toast.error('Name cannot exceed 255 characters');
       return;
     }
     
     // Check for any HTML tags or script tags
-    if (/<[^>]+>/gi.test(teamForm.name)) {
+    if (/<[^>]+>/gi.test(teamMemberForm.name)) {
       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
     }
     
     try {
-      const [firstName, ...lastNameParts] = teamForm.name.split(' ');
+      const [firstName, ...lastNameParts] = teamMemberForm.name.split(' ');
       const response = await fetch(`${API_BASE_URL}/api/users/${selectedMember.id}`, {
         method: 'PUT',
         headers: {
@@ -690,8 +714,8 @@ export default function Settings() {
         body: JSON.stringify({
           first_name: firstName,
           last_name: lastNameParts.join(' ') || 'User',
-          email: teamForm.email,
-          role: teamForm.role,
+          email: teamMemberForm.email,
+          role: teamMemberForm.role,
         }),
       });
       
@@ -704,7 +728,7 @@ export default function Settings() {
         try {
           const errorData = await response.json();
           if (errorData.detail?.includes('already') || errorData.detail?.includes('in use')) {
-            toast.error(`Email '${teamForm.email}' is already in use by another user`);
+            toast.error(`Email '${teamMemberForm.email}' is already in use by another user`);
           } else {
             toast.error(errorData.detail || 'Failed to update team member');
           }
@@ -1424,7 +1448,7 @@ export default function Settings() {
                 <input
                   type="text"
                   placeholder="Enter full name"
-                  value={teamForm.name}
+                  value={teamMemberForm.name}
                   maxLength={100}
                   onChange={(e) => {
                     const value = e.target.value;
@@ -1433,7 +1457,7 @@ export default function Settings() {
                       return;
                     }
                     if (!/<[^>]*>/gi.test(value)) {
-                      setTeamForm({...teamForm, name: value});
+                      setTeamMemberForm({...teamMemberForm, name: value});
                     } else {
                       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                     }
@@ -1449,7 +1473,7 @@ export default function Settings() {
                   required
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  {teamForm.name.length}/100 characters
+                  {teamMemberForm.name.length}/100 characters
                 </div>
               </div>
               <div>
@@ -1460,8 +1484,8 @@ export default function Settings() {
                   type="email"
                   placeholder="user@example.com"
                   maxLength={255}
-                  value={teamForm.email}
-                  onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
+                  value={teamMemberForm.email}
+                  onChange={(e) => setTeamMemberForm({...teamMemberForm, email: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
@@ -1487,7 +1511,7 @@ export default function Settings() {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={teamForm.role || "Search and select role..."}
+                    placeholder={teamMemberForm.role || "Search and select role..."}
                     value={roleSearchTerm}
                     onChange={(e) => {
                       setRoleSearchTerm(e.target.value);
@@ -1506,7 +1530,7 @@ export default function Settings() {
                           <div
                             key={role}
                             onClick={() => {
-                              setTeamForm({...teamForm, role});
+                              setTeamMemberForm({...teamMemberForm, role});
                               setRoleSearchTerm('');
                               setShowRoleDropdown(false);
                             }}
@@ -1524,7 +1548,7 @@ export default function Settings() {
                           >
                             <span
                               onClick={() => {
-                                setTeamForm({...teamForm, role});
+                                setTeamMemberForm({...teamMemberForm, role});
                                 setRoleSearchTerm('');
                                 setShowRoleDropdown(false);
                               }}
@@ -1555,7 +1579,7 @@ export default function Settings() {
                 <button
                   onClick={() => {
                     setShowAddTeamModal(false);
-                    setTeamForm({ name: '', email: '', role: 'Regular User' });
+                    setTeamMemberForm({ name: '', email: '', role: 'Regular User' });
                     setRoleSearchTerm('');
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -1592,11 +1616,11 @@ export default function Settings() {
                 <input
                   type="text"
                   placeholder="Enter full name"
-                  value={teamForm.name}
+                  value={teamMemberForm.name}
                   onChange={(e) => {
                     const value = e.target.value;
                     if (!/<[^>]*>/gi.test(value)) {
-                      setTeamForm({...teamForm, name: value});
+                      setTeamMemberForm({...teamMemberForm, name: value});
                     } else {
                       toast.error('HTML tags are not allowed in name');
                     }
@@ -1613,7 +1637,7 @@ export default function Settings() {
                   required
                 />
                 <div className="text-xs text-gray-500 mt-1">
-                  {teamForm.name.length}/255 characters
+                  {teamMemberForm.name.length}/255 characters
                 </div>
               </div>
               <div>
@@ -1623,8 +1647,8 @@ export default function Settings() {
                 <input
                   type="email"
                   placeholder="Enter email address"
-                  value={teamForm.email}
-                  onChange={(e) => setTeamForm({...teamForm, email: e.target.value})}
+                  value={teamMemberForm.email}
+                  onChange={(e) => setTeamMemberForm({...teamMemberForm, email: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                   required
                 />
@@ -1647,7 +1671,7 @@ export default function Settings() {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder={teamForm.role || "Search and select role..."}
+                    placeholder={teamMemberForm.role || "Search and select role..."}
                     value={roleSearchTerm}
                     onChange={(e) => {
                       setRoleSearchTerm(e.target.value);
@@ -1666,7 +1690,7 @@ export default function Settings() {
                           <div
                             key={role}
                             onClick={() => {
-                              setTeamForm({...teamForm, role});
+                              setTeamMemberForm({...teamMemberForm, role});
                               setRoleSearchTerm('');
                               setShowRoleDropdown(false);
                             }}
@@ -1684,7 +1708,7 @@ export default function Settings() {
                           >
                             <span
                               onClick={() => {
-                                setTeamForm({...teamForm, role});
+                                setTeamMemberForm({...teamMemberForm, role});
                                 setRoleSearchTerm('');
                                 setShowRoleDropdown(false);
                               }}
