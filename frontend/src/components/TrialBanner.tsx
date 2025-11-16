@@ -72,8 +72,8 @@ export default function TrialBanner() {
 
   // Don't show for Sunstone company users (platform owner)
   // Sunstone is the company that owns the CRM platform, so they don't have trials
-  const isSunstoneCompany = companyInfo.name === 'Sunstone' || 
-                            companyInfo.name === 'SunStone' ||
+  const companyNameLower = companyInfo.name?.toLowerCase() || '';
+  const isSunstoneCompany = companyNameLower.includes('sunstone') ||
                             companyInfo.subscription_status === 'platform_owner';
   
   if (isSunstoneCompany) {
