@@ -2,7 +2,7 @@
 User and Role models
 """
 
-from sqlalchemy import Column, String, Boolean, ForeignKey, Table, DateTime, Enum
+from sqlalchemy import Column, String, Boolean, ForeignKey, Table, DateTime, Enum, Index, text
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID
 import enum
@@ -49,6 +49,10 @@ class Role(BaseModel):
 class User(BaseModel):
     """User model with multi-tenant support"""
     __tablename__ = 'users'
+    __table_args__ = (
+        # Email should be unique per company, not globally (multi-tenant support)
+        Index('idx_users_email_company', 'email', 'company_id', unique=True, postgresql_where=text("is_deleted = false")),
+    )
     
     # Multi-tenant fields
     company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)  # NULL for super_admin
@@ -56,7 +60,7 @@ class User(BaseModel):
     status = Column(String(50), default='active', nullable=False)
     
     # Basic info
-    email = Column(String(255), unique=True, nullable=False, index=True)
+    email = Column(String(255), nullable=False, index=True)  # Removed unique=True, using composite index instead
     hashed_password = Column(String(255), nullable=False)
     first_name = Column(String(100), nullable=False)
     last_name = Column(String(100), nullable=False)

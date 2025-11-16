@@ -156,24 +156,18 @@ async def add_team_member(
             detail="No company context found. Please ensure you are logged in with a company account. Super Admin should have a company_id assigned."
         )
     
-    # Check if email already exists in ANY company (emails must be globally unique)
+    # Check if email already exists in THIS company (allow same email in different companies)
     existing_user = db.query(User).filter(
         User.email == request.email.lower(),
+        User.company_id == company_id,
         User.is_deleted == False
     ).first()
     
     if existing_user:
-        # Check if user is in a different company
-        if str(existing_user.company_id) != str(company_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"The email address '{request.email}' is already registered in another company. Please use a different email address."
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"The email address '{request.email}' is already registered in your company. Please use a different email address."
-            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"The email address '{request.email}' is already registered in your company. Please use a different email address."
+        )
     
     try:
         # Create new team member with default password
