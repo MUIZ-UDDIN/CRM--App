@@ -576,7 +576,9 @@ export default function Analytics() {
                   setDateRange('last30days');
                   setSelectedUser('all');
                   setSelectedPipeline('all');
-                  setFilterApplied(false);
+                  setFilterApplied(true);
+                  // Trigger data fetch after clearing filters
+                  setTimeout(() => fetchAllAnalytics(), 0);
                 }}
                 className="text-sm text-blue-600 hover:text-blue-800 font-medium"
               >
