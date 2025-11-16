@@ -4,8 +4,12 @@
 -- Drop the existing unique constraint on email
 ALTER TABLE users DROP CONSTRAINT IF EXISTS users_email_key;
 
--- Drop the existing index on email
+-- Drop the existing indexes on email (both possible names)
 DROP INDEX IF EXISTS ix_users_email;
+DROP INDEX IF EXISTS idx_users_email;
+
+-- Drop existing composite index if it exists (in case migration is re-run)
+DROP INDEX IF EXISTS idx_users_email_company;
 
 -- Create a new composite unique index on email + company_id
 -- This ensures email is unique within a company, but can exist in multiple companies
