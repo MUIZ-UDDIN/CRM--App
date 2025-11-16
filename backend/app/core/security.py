@@ -110,140 +110,106 @@ def authenticate_user(db: Session, email: str, password: str) -> Optional[UserMo
 
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)) -> dict:
-    """Get current user from JWT token"""
+    """Get current user from JWT token (multi-tenant support)"""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
     
-    # EMERGENCY FIX: Create a default admin user to return in case of any errors
-    default_admin_user = {
-        "id": "default_admin_id",
-        "email": "admin@example.com",
-        "first_name": "Admin",
-        "last_name": "User",
-        "role": "super_admin",
-        "user_role": "super_admin",
-        "company_id": None,
-        "team_id": None,
-        "is_active": True
-    }
-    
     try:
         # Check if credentials exist
         if not credentials or not credentials.credentials:
-            print("No credentials provided - EMERGENCY FIX: Returning default admin user")
-            return default_admin_user
+            raise credentials_exception
             
         # Verify the token
         token = credentials.credentials
-        print(f"DEBUG: Processing token: {token[:15]}...")
+        payload = verify_token(token)
         
-        # Try to decode token with verification first
-        try:
-            payload = verify_token(token)
-            if payload is None:
-                print(f"Invalid token: {token[:15]}... - EMERGENCY FIX: Trying without verification")
-                # Try to decode without verification
-                try:
-                    import jwt
-                    debug_payload = jwt.decode(token, options={"verify_signature": False})
-                    print(f"DEBUG: Token payload without verification: {debug_payload}")
-                    
-                    # Use the payload from non-verified token
-                    if "sub" in debug_payload:
-                        email = debug_payload.get("sub")
-                        print(f"Using email from non-verified token: {email}")
-                        
-                        # Try to get user from database
-                        try:
-                            user = db.query(UserModel).filter(UserModel.email == email).first()
-                            if user:
-                                print(f"Found user in database: {user.email}")
-                                return {
-                                    "id": str(user.id),
-                                    "email": user.email,
-                                    "first_name": user.first_name,
-                                    "last_name": user.last_name,
-                                    "role": "super_admin",  # Force super_admin role
-                                    "user_role": "super_admin",  # Force super_admin role
-                                    "company_id": str(user.company_id) if user.company_id else None,
-                                    "team_id": str(user.team_id) if user.team_id else None,
-                                    "is_active": True
-                                }
-                        except Exception as db_error:
-                            print(f"Database error: {db_error} - EMERGENCY FIX: Returning default admin user")
-                            return default_admin_user
-                except Exception as e:
-                    print(f"DEBUG: Could not decode token even without verification: {e}")
-                    return default_admin_user
-                    
-                return default_admin_user
-        except Exception as e:
-            print(f"DEBUG: Token verification error: {e} - EMERGENCY FIX: Returning default admin user")
-            return default_admin_user
+        if payload is None:
+            raise credentials_exception
         
-        # Extract email from token
+        # Extract user_id from token (preferred for multi-tenant)
+        user_id: str = payload.get("user_id")
         email: str = payload.get("sub")
-        if email is None:
-            print("Token missing 'sub' claim")
+        
+        if not user_id and not email:
             raise credentials_exception
             
-        # Fetch the user from database
-        try:
-            user = db.query(UserModel).filter(UserModel.email == email).first()
-            if user is None:
-                print(f"User not found for email: {email} - EMERGENCY FIX: Returning default admin user")
-                return default_admin_user
+        # Fetch the user from database using user_id (more accurate for multi-tenant)
+        user = None
+        if user_id:
+            try:
+                import uuid
+                user = db.query(UserModel).filter(UserModel.id == uuid.UUID(user_id)).first()
+            except (ValueError, AttributeError):
+                pass
+        
+        # Fallback to email if user_id not found (backward compatibility)
+        if not user and email:
+            # For multi-tenant: if token has company_id, use it to find correct user
+            company_id = payload.get("company_id")
+            if company_id:
+                try:
+                    import uuid
+                    user = db.query(UserModel).filter(
+                        UserModel.email == email,
+                        UserModel.company_id == uuid.UUID(company_id)
+                    ).first()
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Final fallback: get first user with email (old behavior)
+            if not user:
+                user = db.query(UserModel).filter(UserModel.email == email).first()
+        
+        if user is None:
+            raise credentials_exception
                 
             # Check if user is active
-            if not user.is_active:
-                print(f"User {email} is not active - EMERGENCY FIX: Activating user")
-                # Instead of failing, just proceed with the user
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive"
+            )
                 
-            # Get user role - try both fields for compatibility
-            user_role = None
-            if hasattr(user, 'user_role'):
-                if hasattr(user.user_role, 'value'):
-                    user_role = user.user_role.value
-                else:
-                    user_role = str(user.user_role)
+        # Get user role - try both fields for compatibility
+        user_role = None
+        if hasattr(user, 'user_role'):
+            if hasattr(user.user_role, 'value'):
+                user_role = user.user_role.value
+            else:
+                user_role = str(user.user_role)
+        
+        # Use legacy role field as fallback
+        if not user_role and hasattr(user, 'role'):
+            user_role = user.role
+        
+        # Default to 'user' if no role found
+        if not user_role:
+            user_role = 'user'
+        
+        # Prepare user data with actual role (not forced)
+        user_data = {
+            "id": str(user.id),
+            "email": user.email,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "role": user_role,
+            "user_role": user_role,
+            "company_id": str(user.company_id) if user.company_id else None,
+            "team_id": str(user.team_id) if user.team_id else None,
+            "is_active": True
+        }
+        return user_data
             
-            # Use legacy role field as fallback
-            if not user_role and hasattr(user, 'role'):
-                user_role = user.role
-            
-            # Default to 'super_admin' if no role found - EMERGENCY FIX
-            if not user_role:
-                user_role = 'super_admin'  # Force super_admin role
-            
-            # Log the role information for debugging
-            print(f"User {user.email} role: {user_role} - EMERGENCY FIX: Setting to super_admin")
-            
-            # Prepare user data with both role fields for compatibility
-            user_data = {
-                "id": str(user.id),
-                "email": user.email,
-                "first_name": user.first_name,
-                "last_name": user.last_name,
-                "role": "super_admin",  # Force super_admin role - EMERGENCY FIX
-                "user_role": "super_admin",  # Force super_admin role - EMERGENCY FIX
-                "company_id": str(user.company_id) if user.company_id else None,
-                "team_id": str(user.team_id) if user.team_id else None,
-                "is_active": True
-            }
-            return user_data
-        except Exception as db_error:
-            print(f"Database error while fetching user: {str(db_error)} - EMERGENCY FIX: Returning default admin user")
-            return default_admin_user
-            
-    except JWTError as jwt_error:
-        print(f"JWT error: {str(jwt_error)} - EMERGENCY FIX: Returning default admin user")
-        return default_admin_user
+    except JWTError:
+        raise credentials_exception
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Unexpected error in get_current_user: {str(e)} - EMERGENCY FIX: Returning default admin user")
-        return default_admin_user
+        print(f"Unexpected error in get_current_user: {str(e)}")
+        raise credentials_exception
 
 
 def get_current_active_user(current_user: dict = Depends(get_current_user)) -> dict:

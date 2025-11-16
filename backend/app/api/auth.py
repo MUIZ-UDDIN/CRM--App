@@ -113,9 +113,14 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
     
     logger.info(f"Successful login for email: {request.email}, role: {user.user_role}")
     
-    # Create tokens
-    access_token = create_access_token(data={"sub": user.email})
-    refresh_token = create_refresh_token(data={"sub": user.email})
+    # Create tokens with user_id and company_id for multi-tenant support
+    token_data = {
+        "sub": user.email,
+        "user_id": str(user.id),
+        "company_id": str(user.company_id) if user.company_id else None
+    }
+    access_token = create_access_token(data=token_data)
+    refresh_token = create_refresh_token(data=token_data)
     
     # Update last login
     user.last_login = datetime.utcnow()

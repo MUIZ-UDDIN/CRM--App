@@ -166,19 +166,13 @@ export default function Settings() {
       
       const currentUser = await userResponse.json();
       
-      // Determine which endpoint to call based on user role
-      let apiUrl;
-      if (currentUser.role === 'super_admin' || currentUser.role === 'Super Admin') {
-        // Super Admin sees all users
-        apiUrl = `${API_BASE_URL}/api/users/`;
-      } else {
-        // Company users see only their company's users
-        if (!currentUser.company_id) {
-          toast.error('Company not found. Please contact support.');
-          return;
-        }
-        apiUrl = `${API_BASE_URL}/api/companies/${currentUser.company_id}/users`;
+      // All users (including Super Admin) see only their company's users
+      // Super Admin manages their own company (e.g., Sunstone)
+      if (!currentUser.company_id) {
+        toast.error('Company not found. Please contact support.');
+        return;
       }
+      const apiUrl = `${API_BASE_URL}/api/companies/${currentUser.company_id}/users`;
       
       const response = await fetch(apiUrl, {
         headers: {
