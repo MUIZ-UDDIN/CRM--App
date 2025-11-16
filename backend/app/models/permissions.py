@@ -83,7 +83,55 @@ class Permission(str, enum.Enum):
 
 # Define role permissions mapping
 ROLE_PERMISSIONS = {
-    UserRole.SUPER_ADMIN: [p for p in Permission],  # Super Admin has all permissions
+    UserRole.SUPER_ADMIN: [
+        # Platform Management (Super Admin exclusive)
+        Permission.VIEW_ALL_COMPANIES,
+        Permission.MANAGE_COMPANIES,
+        Permission.CREATE_COMPANY,
+        Permission.DELETE_COMPANY,
+        Permission.SUSPEND_COMPANY,
+        Permission.MANAGE_BILLING,  # Platform-level billing management
+        
+        # Own Company Management (same as Company Admin for their company)
+        Permission.EDIT_COMPANY,
+        Permission.VIEW_BILLING,
+        Permission.MANAGE_COMPANY_ADMINS,
+        Permission.MANAGE_COMPANY_USERS,
+        Permission.MANAGE_TEAM_USERS,
+        Permission.VIEW_COMPANY_DATA,
+        Permission.VIEW_TEAM_DATA,
+        Permission.VIEW_OWN_DATA,
+        Permission.VIEW_COMPANY_ANALYTICS,
+        Permission.VIEW_TEAM_ANALYTICS,
+        Permission.VIEW_OWN_ANALYTICS,
+        Permission.ASSIGN_COMPANY_LEADS,
+        Permission.ASSIGN_TEAM_LEADS,
+        Permission.MANAGE_OWN_LEADS,
+        Permission.MANAGE_COMPANY_INTEGRATIONS,
+        Permission.MANAGE_TEAM_INTEGRATIONS,
+        Permission.USE_INTEGRATIONS,
+        Permission.MANAGE_COMPANY_AUTOMATIONS,
+        Permission.MANAGE_TEAM_AUTOMATIONS,
+        Permission.USE_PERSONAL_AUTOMATIONS,
+        Permission.CUSTOMIZE_COMPANY_CRM,
+        Permission.VIEW_TEAM_CRM_SETTINGS,
+        Permission.EXPORT_COMPANY_DATA,
+        Permission.EXPORT_TEAM_DATA,
+        Permission.IMPORT_COMPANY_DATA,
+        Permission.IMPORT_TEAM_DATA,
+        Permission.MANAGE_SYSTEM_SUPPORT,
+        Permission.MANAGE_COMPANY_SUPPORT,
+        Permission.MANAGE_TEAM_SUPPORT,
+        Permission.VIEW_USER_SUPPORT,
+        Permission.CREATE_SUPPORT_TICKETS,
+        Permission.VIEW_SUPPORT_TICKETS,
+        Permission.MANAGE_SUPPORT_TICKETS,
+        Permission.MANAGE_SUPPORT,
+        Permission.MANAGE_NOTIFICATIONS,
+        Permission.VIEW_COMPANY_NOTIFICATIONS,
+        Permission.VIEW_TEAM_NOTIFICATIONS,
+        Permission.VIEW_OWN_NOTIFICATIONS
+    ],
     
     UserRole.COMPANY_ADMIN: [
         # Company Management

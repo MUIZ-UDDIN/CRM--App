@@ -52,6 +52,7 @@ from app.api.websocket import router as websocket_router
 from app.api.team import router as team_router
 from app.api.teams import router as teams_router
 from app.api.billing import router as billing_router
+from app.api.platform import router as platform_router
 
 # Import with error handling for debugging
 try:
@@ -503,6 +504,13 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 logger.info("✅ Company Management routes registered")
+
+# Platform Management (Super Admin only)
+app.include_router(
+    platform_router,
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Platform Management routes registered at /api/platform")
 
 # Global Search
 app.include_router(
