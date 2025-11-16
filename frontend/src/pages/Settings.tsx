@@ -496,7 +496,7 @@ export default function Settings() {
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
-  const [teamMemberForm, setTeamMemberForm] = useState({ name: '', email: '', role: 'Regular User' });
+  const [teamMemberForm, setTeamMemberForm] = useState({ first_name: '', last_name: '', email: '', role: 'Regular User' });
   const [companyForm, setCompanyForm] = useState(() => {
     // Load company settings from localStorage on mount
     const saved = localStorage.getItem('companySettings');
@@ -606,8 +606,12 @@ export default function Settings() {
 
   const handleAddTeamMember = async () => {
     // Validate inputs
-    if (!teamMemberForm.name.trim()) {
-      toast.error('Please enter a name for the team member.');
+    if (!teamMemberForm.first_name.trim()) {
+      toast.error('Please enter a first name for the team member.');
+      return;
+    }
+    if (!teamMemberForm.last_name.trim()) {
+      toast.error('Please enter a last name for the team member.');
       return;
     }
     if (!teamMemberForm.email.trim()) {
@@ -627,32 +631,20 @@ export default function Settings() {
     }
     
     // Check for HTML tags or script tags
-    if (/<[^>]+>/gi.test(teamMemberForm.name)) {
+    if (/<[^>]+>/gi.test(teamMemberForm.first_name) || /<[^>]+>/gi.test(teamMemberForm.last_name)) {
       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
     }
     
     // Validate name length
-    if (teamMemberForm.name.length > 100) {
-      toast.error('Name is too long. Maximum 100 characters allowed.');
+    if (teamMemberForm.first_name.length > 50 || teamMemberForm.last_name.length > 50) {
+      toast.error('Names are too long. Maximum 50 characters each.');
       return;
     }
-    
-    // Split name into first and last
-    const trimmedName = teamMemberForm.name.trim();
-    if (!trimmedName || trimmedName.length < 2) {
-      toast.error('Please enter a valid name (at least 2 characters).');
-      return;
-    }
-    
-    const nameParts = trimmedName.split(/\s+/);
-    // If no space, treat entire name as first name with empty last name
-    const firstName = nameParts[0];
-    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
     
     // Validate name contains only letters, spaces, hyphens, and apostrophes
-    if (!/^[a-zA-Z\s\-']+$/.test(teamMemberForm.name)) {
-      toast.error('Name can only contain letters, spaces, hyphens, and apostrophes.');
+    if (!/^[a-zA-Z\s\-']+$/.test(teamMemberForm.first_name) || !/^[a-zA-Z\s\-']+$/.test(teamMemberForm.last_name)) {
+      toast.error('Names can only contain letters, spaces, hyphens, and apostrophes.');
       return;
     }
     
@@ -665,8 +657,8 @@ export default function Settings() {
         },
         body: JSON.stringify({
           email: teamMemberForm.email.toLowerCase(),
-          first_name: firstName,
-          last_name: lastName,
+          first_name: teamMemberForm.first_name.trim(),
+          last_name: teamMemberForm.last_name.trim(),
           role: teamMemberForm.role,
         }),
       });
@@ -675,7 +667,7 @@ export default function Settings() {
         const data = await response.json();
         toast.success(data.message || `Team member added successfully! Default password: ${data.default_password}`);
         setShowAddTeamModal(false);
-        setTeamMemberForm({ name: '', email: '', role: 'Regular User' });
+        setTeamMemberForm({ first_name: '', last_name: '', email: '', role: 'Regular User' });
         setRoleSearchTerm('');
         // Refresh team members list
         setTimeout(() => {
@@ -701,7 +693,7 @@ export default function Settings() {
   };
 
   const handleOpenAddModal = () => {
-    setTeamMemberForm({ name: '', email: '', role: 'Regular User' });
+    setTeamMemberForm({ first_name: '', last_name: '', email: '', role: 'Regular User' });
     setRoleSearchTerm('');
     setShowAddTeamModal(true);
   };
@@ -709,7 +701,8 @@ export default function Settings() {
   const handleEditTeamMember = (member: TeamMember) => {
     setSelectedMember(member);
     setTeamMemberForm({ 
-      name: member.name || `${member.first_name || ''} ${member.last_name || ''}`.trim(), 
+      first_name: member.first_name || '', 
+      last_name: member.last_name || '',
       email: member.email, 
       role: member.role || member.user_role || 'Regular User' 
     });
@@ -822,27 +815,30 @@ export default function Settings() {
     if (!selectedMember) return;
     
     // Validate inputs
-    if (!teamMemberForm.name.trim()) {
-      toast.error('Please enter a name');
+    if (!teamMemberForm.first_name.trim()) {
+      toast.error('Please enter a first name');
+      return;
+    }
+    if (!teamMemberForm.last_name.trim()) {
+      toast.error('Please enter a last name');
       return;
     }
     if (!teamMemberForm.email.trim()) {
       toast.error('Please enter an email address');
       return;
     }
-    if (teamMemberForm.name.length > 255) {
-      toast.error('Name cannot exceed 255 characters');
+    if (teamMemberForm.first_name.length > 50 || teamMemberForm.last_name.length > 50) {
+      toast.error('Names cannot exceed 50 characters each');
       return;
     }
     
     // Check for any HTML tags or script tags
-    if (/<[^>]+>/gi.test(teamMemberForm.name)) {
+    if (/<[^>]+>/gi.test(teamMemberForm.first_name) || /<[^>]+>/gi.test(teamMemberForm.last_name)) {
       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
     }
     
     try {
-      const [firstName, ...lastNameParts] = teamMemberForm.name.split(' ');
       const response = await fetch(`${API_BASE_URL}/api/users/${selectedMember.id}`, {
         method: 'PUT',
         headers: {
@@ -850,8 +846,8 @@ export default function Settings() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          first_name: firstName,
-          last_name: lastNameParts.join(' ') || 'User',
+          first_name: teamMemberForm.first_name.trim(),
+          last_name: teamMemberForm.last_name.trim(),
           email: teamMemberForm.email,
           role: teamMemberForm.role,
         }),
@@ -1939,39 +1935,48 @@ export default function Settings() {
               </button>
             </div>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter full name"
-                  value={teamMemberForm.name}
-                  maxLength={100}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value.length > 100) {
-                      toast.error('Name cannot exceed 100 characters');
-                      return;
-                    }
-                    if (!/<[^>]*>/gi.test(value)) {
-                      setTeamMemberForm({...teamMemberForm, name: value});
-                    } else {
-                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const pastedText = e.clipboardData.getData('text');
-                    if (/<[^>]*>/gi.test(pastedText)) {
-                      e.preventDefault();
-                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
-                    }
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  required
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {teamMemberForm.name.length}/100 characters
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="John"
+                    value={teamMemberForm.first_name}
+                    maxLength={50}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!/<[^>]*>/gi.test(value)) {
+                        setTeamMemberForm({...teamMemberForm, first_name: value});
+                      } else {
+                        toast.error('HTML tags are not allowed');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Doe"
+                    value={teamMemberForm.last_name}
+                    maxLength={50}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!/<[^>]*>/gi.test(value)) {
+                        setTeamMemberForm({...teamMemberForm, last_name: value});
+                      } else {
+                        toast.error('HTML tags are not allowed');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  />
                 </div>
               </div>
               <div>
@@ -2077,7 +2082,7 @@ export default function Settings() {
                 <button
                   onClick={() => {
                     setShowAddTeamModal(false);
-                    setTeamMemberForm({ name: '', email: '', role: 'Regular User' });
+                    setTeamMemberForm({ first_name: '', last_name: '', email: '', role: 'Regular User' });
                     setRoleSearchTerm('');
                   }}
                   className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
@@ -2107,35 +2112,48 @@ export default function Settings() {
               </button>
             </div>
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter full name"
-                  value={teamMemberForm.name}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (!/<[^>]*>/gi.test(value)) {
-                      setTeamMemberForm({...teamMemberForm, name: value});
-                    } else {
-                      toast.error('HTML tags are not allowed in name');
-                    }
-                  }}
-                  onPaste={(e) => {
-                    const pastedText = e.clipboardData.getData('text');
-                    if (/<[^>]*>/gi.test(pastedText)) {
-                      e.preventDefault();
-                      toast.error('HTML tags are not allowed in name');
-                    }
-                  }}
-                  maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  required
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {teamMemberForm.name.length}/255 characters
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="John"
+                    value={teamMemberForm.first_name}
+                    maxLength={50}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!/<[^>]*>/gi.test(value)) {
+                        setTeamMemberForm({...teamMemberForm, first_name: value});
+                      } else {
+                        toast.error('HTML tags are not allowed');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Doe"
+                    value={teamMemberForm.last_name}
+                    maxLength={50}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!/<[^>]*>/gi.test(value)) {
+                        setTeamMemberForm({...teamMemberForm, last_name: value});
+                      } else {
+                        toast.error('HTML tags are not allowed');
+                      }
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  />
                 </div>
               </div>
               <div>
