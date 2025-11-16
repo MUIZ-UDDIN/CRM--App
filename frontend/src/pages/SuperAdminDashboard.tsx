@@ -9,7 +9,8 @@ import {
   MagnifyingGlassIcon,
   CreditCardIcon,
   ShieldExclamationIcon,
-  PlayIcon
+  PlayIcon,
+  EllipsisVerticalIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -44,6 +45,7 @@ export default function SuperAdminDashboard() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [apiError, setApiError] = useState(false);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCompanies();
@@ -64,8 +66,12 @@ export default function SuperAdminDashboard() {
       toast.success('Company suspended successfully');
       fetchCompanies();
     } catch (error: any) {
-      console.error('Failed to suspend company:', error);
-      toast.error(error.response?.data?.detail || 'Failed to suspend company');
+      // Don't log 404 errors to console
+      if (error.response?.status !== 404) {
+        console.error('Failed to suspend company:', error);
+      }
+      const errorMsg = error.response?.data?.detail || 'Failed to suspend company';
+      toast.error(errorMsg);
     }
   };
 
@@ -80,8 +86,12 @@ export default function SuperAdminDashboard() {
       toast.success('Company activated successfully');
       fetchCompanies();
     } catch (error: any) {
-      console.error('Failed to activate company:', error);
-      toast.error(error.response?.data?.detail || 'Failed to activate company');
+      // Don't log 404 errors to console
+      if (error.response?.status !== 404) {
+        console.error('Failed to activate company:', error);
+      }
+      const errorMsg = error.response?.data?.detail || 'Failed to activate company';
+      toast.error(errorMsg);
     }
   };
 
@@ -408,7 +418,7 @@ export default function SuperAdminDashboard() {
                     {new Date(company.created_at).toLocaleDateString('en-US')}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
                       <button 
                         onClick={() => {
                           setSelectedCompany(company);
@@ -418,31 +428,65 @@ export default function SuperAdminDashboard() {
                       >
                         View Details
                       </button>
-                      <button 
-                        onClick={() => navigate(`/admin/billing`)}
-                        className="text-orange-600 hover:text-orange-800 font-medium"
-                      >
-                        Billing
-                      </button>
-                      {company.status === 'active' ? (
-                        <button 
-                          onClick={() => handleSuspendCompany(company.id)}
-                          className="flex items-center gap-1 text-red-600 hover:text-red-800 font-medium"
-                          title="Suspend Company"
+                      
+                      {/* Dropdown Menu */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setOpenDropdownId(openDropdownId === company.id ? null : company.id)}
+                          className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                          title="More actions"
                         >
-                          <ShieldExclamationIcon className="w-4 h-4" />
-                          Suspend
+                          <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
                         </button>
-                      ) : (
-                        <button 
-                          onClick={() => handleActivateCompany(company.id)}
-                          className="flex items-center gap-1 text-green-600 hover:text-green-800 font-medium"
-                          title="Activate Company"
-                        >
-                          <PlayIcon className="w-4 h-4" />
-                          Activate
-                        </button>
-                      )}
+                        
+                        {openDropdownId === company.id && (
+                          <>
+                            {/* Backdrop to close dropdown */}
+                            <div 
+                              className="fixed inset-0 z-10" 
+                              onClick={() => setOpenDropdownId(null)}
+                            />
+                            
+                            {/* Dropdown Menu */}
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                              <button
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  navigate(`/admin/billing`);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <CreditCardIcon className="w-4 h-4" />
+                                Manage Billing
+                              </button>
+                              
+                              {company.status === 'active' ? (
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    handleSuspendCompany(company.id);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <ShieldExclamationIcon className="w-4 h-4" />
+                                  Suspend Company
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setOpenDropdownId(null);
+                                    handleActivateCompany(company.id);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
+                                >
+                                  <PlayIcon className="w-4 h-4" />
+                                  Activate Company
+                                </button>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>

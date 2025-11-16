@@ -259,9 +259,15 @@ export default function Settings() {
       setSubscription(subResponse.data);
       setInvoices(invoicesResponse.data);
     } catch (error: any) {
-      console.error('Failed to load billing data:', error);
+      // Don't log 404 errors (expected for Super Admin or companies without subscriptions)
       if (error.response?.status !== 404) {
+        console.error('Failed to load billing data:', error);
         toast.error('Failed to load billing data');
+      }
+      // Set empty data for 404
+      if (error.response?.status === 404) {
+        setSubscription(null);
+        setInvoices([]);
       }
     } finally {
       setBillingLoading(false);

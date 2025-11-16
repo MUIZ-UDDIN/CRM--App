@@ -148,11 +148,21 @@ async def add_team_member(
         )
     
     company_id = current_user.get("company_id")
+    
+    # Super Admin needs to specify company_id or we should get it from context
+    # For now, if Super Admin, they should not use this endpoint directly
+    # They should manage users through company-specific endpoints
     if not company_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="No company found for your account. Please contact support."
-        )
+        if user_role == 'super_admin':
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Super Admin cannot add team members directly. Please use the company-specific user management interface or specify a company."
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No company found for your account. Please contact support."
+            )
     
     # Check if email already exists (case-insensitive)
     existing_user = db.query(User).filter(
@@ -214,7 +224,9 @@ async def add_team_member(
     except Exception as e:
         db.rollback()
         import logging
+        import traceback
         logging.error(f"Error adding team member: {str(e)}")
+        logging.error(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="We encountered an issue adding the team member. Please try again or contact support if the problem persists."
