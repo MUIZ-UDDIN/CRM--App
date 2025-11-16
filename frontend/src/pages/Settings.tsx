@@ -24,6 +24,7 @@ import {
   TrashIcon,
   PlusCircleIcon,
   PhoneIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
 type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields' | 'phone_numbers';
