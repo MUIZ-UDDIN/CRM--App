@@ -68,14 +68,13 @@ export default function TrialBanner() {
   // Don't show banner if dismissed, loading, or no company info
   if (loading || dismissed || !companyInfo) return null;
 
-  // Don't show for super_admin (application owner) - check all variations
-  const isSuperAdmin = userRole === 'super_admin' || 
-                       userRole === 'Super Admin' || 
-                       userRole === 'SUPER_ADMIN' ||
-                       userRole.toLowerCase() === 'super_admin' ||
-                       userEmail === 'admin@sunstonecrm.com';
+  // Don't show for Sunstone company users (platform owner)
+  // Sunstone is the company that owns the CRM platform, so they don't have trials
+  const isSunstoneCompany = userEmail === 'admin@sunstonecrm.com' || 
+                            userEmail.endsWith('@sunstonecrm.com') ||
+                            companyInfo.subscription_status === 'platform_owner';
   
-  if (isSuperAdmin) {
+  if (isSunstoneCompany) {
     return null;
   }
 

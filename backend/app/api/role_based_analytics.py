@@ -41,39 +41,62 @@ async def get_role_based_dashboard(
         "tables": []
     }
     
-    # Super Admin - System-wide analytics
+    # Super Admin - Company-wide analytics (same as Company Admin)
+    # Super Admin manages their own company (e.g., Sunstone), not all companies
     if context.is_super_admin():
-        # Get company counts
-        company_count = db.query(func.count(User.company_id.distinct())).scalar() or 0
-        user_count = db.query(func.count(User.id)).filter(User.is_deleted == False).scalar() or 0
+        if not company_id:
+            # Fallback: return empty metrics if no company
+            response["metrics"] = {
+                "total_users": 0,
+                "total_teams": 0,
+                "total_deals": 0,
+                "total_deal_value": 0.0,
+                "total_contacts": 0
+            }
+            return response
         
+        # Get company-wide metrics (same as Company Admin)
         response["metrics"] = {
-            "total_companies": company_count,
-            "total_users": user_count,
-            "active_users": db.query(func.count(User.id)).filter(User.is_deleted == False, User.status == 'active').scalar() or 0,
-            "total_deals": db.query(func.count(Deal.id)).filter(Deal.is_deleted == False).scalar() or 0,
-            "total_deal_value": float(db.query(func.sum(Deal.value)).filter(Deal.is_deleted == False).scalar() or 0),
+            "total_users": db.query(func.count(User.id)).filter(
+                User.company_id == company_id,
+                User.is_deleted == False
+            ).scalar() or 0,
+            "total_teams": db.query(func.count(Team.id)).filter(
+                Team.company_id == company_id
+            ).scalar() or 0,
+            "total_deals": db.query(func.count(Deal.id)).filter(
+                Deal.company_id == company_id,
+                Deal.is_deleted == False
+            ).scalar() or 0,
+            "total_deal_value": float(db.query(func.sum(Deal.value)).filter(
+                Deal.company_id == company_id,
+                Deal.is_deleted == False
+            ).scalar() or 0),
+            "total_contacts": db.query(func.count(Contact.id)).filter(
+                Contact.company_id == company_id,
+                Contact.is_deleted == False
+            ).scalar() or 0
         }
         
-        # Add system-wide charts
+        # Add company-wide charts
         response["charts"] = [
             {
                 "type": "bar",
-                "title": "Users by Company",
-                "data": get_users_by_company(db)
+                "title": "Deals by Team",
+                "data": get_deals_by_team(db, company_id)
             },
             {
-                "type": "line",
-                "title": "System Growth",
-                "data": get_system_growth(db)
+                "type": "pie",
+                "title": "Deal Status Distribution",
+                "data": get_deal_status_distribution(db, company_id)
             }
         ]
         
-        # Add system-wide tables
+        # Add company-wide tables
         response["tables"] = [
             {
-                "title": "Top Companies by Deal Value",
-                "data": get_top_companies_by_deal_value(db)
+                "title": "Top Performers",
+                "data": get_top_performers(db, company_id)
             }
         ]
     
@@ -127,10 +150,15 @@ async def get_role_based_dashboard(
     # Sales Manager - Team-wide analytics
     elif has_permission(current_user, Permission.VIEW_TEAM_ANALYTICS):
         if not user_team_id:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User is not assigned to a team"
-            )
+            # Return empty metrics instead of error
+            response["metrics"] = {
+                "team_members": 0,
+                "team_deals": 0,
+                "team_deal_value": 0.0,
+                "team_activities": 0
+            }
+            response["message"] = "You are not assigned to a team yet. Please contact your administrator."
+            return response
         
         # Get team-wide metrics
         response["metrics"] = {
