@@ -6,8 +6,11 @@ import {
   XCircleIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
+import { handleApiError } from '../utils/errorHandler';
 
 type EntityType = 'contacts' | 'deals' | 'companies' | 'leads';
 
@@ -23,10 +26,15 @@ interface ImportResult {
 }
 
 export default function DataImport() {
+  const { user } = useAuth();
+  const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
   const [selectedType, setSelectedType] = useState<EntityType>('contacts');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  
+  // Check if user can import data
+  const canImportData = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   const entityTypes = [
     { value: 'contacts', label: 'Contacts', description: 'Import customer contacts' },
@@ -74,8 +82,7 @@ export default function DataImport() {
       setResult(response.data);
       toast.success(`Import started! Processing ${response.data.total_rows || 0} rows`);
     } catch (error: any) {
-      console.error('Import failed:', error);
-      toast.error(error.response?.data?.detail || 'Failed to import data');
+      handleApiError(error, { toastMessage: 'Failed to import data' });
     } finally {
       setUploading(false);
     }
@@ -101,6 +108,19 @@ export default function DataImport() {
     
     toast.success('Template downloaded');
   };
+
+  // Permission check
+  if (!canImportData) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="font-semibold text-yellow-900 mb-2">Data Import Restricted</div>
+          <p className="text-yellow-800">You don't have permission to import company data.</p>
+          <p className="text-yellow-700 text-sm mt-2">💡 Contact your Company Admin to request a data import or to get import permissions.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

@@ -6,8 +6,10 @@ import {
   TagIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
+import { handleApiError } from '../utils/errorHandler';
 
 interface Template {
   id: string;
@@ -31,10 +33,14 @@ const CATEGORIES = [
 
 export default function WorkflowTemplates() {
   const { user } = useAuth();
+  const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Check if user can manage automations
+  const canManageAutomations = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   useEffect(() => {
     fetchTemplates();
@@ -50,7 +56,7 @@ export default function WorkflowTemplates() {
       const response = await apiClient.get('/workflow-templates/', { params });
       setTemplates(response.data);
     } catch (error) {
-      toast.error('Failed to load templates');
+      handleApiError(error, { toastMessage: 'Failed to load templates' });
     } finally {
       setLoading(false);
     }
@@ -66,7 +72,7 @@ export default function WorkflowTemplates() {
       });
       toast.success('Workflow created successfully!');
     } catch (error) {
-      toast.error('Failed to create workflow');
+      handleApiError(error, { toastMessage: 'Failed to create workflow' });
     }
   };
 
@@ -79,6 +85,19 @@ export default function WorkflowTemplates() {
     const cat = CATEGORIES.find(c => c.value === category);
     return cat?.icon || '⚙️';
   };
+
+  // Permission check
+  if (!canManageAutomations) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="font-semibold text-yellow-900 mb-2">Automation Management Restricted</div>
+          <p className="text-yellow-800">You don't have permission to manage workflow templates.</p>
+          <p className="text-yellow-700 text-sm mt-2">💡 Contact your administrator to request access to automation features.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
