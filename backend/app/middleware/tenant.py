@@ -79,6 +79,25 @@ class TenantContext:
             return True  # Super admin can access all companies
         return str(self.company_id) == str(company_id)
     
+    def get_role_name(self) -> str:
+        """Get the user's role name as a string"""
+        if isinstance(self.user, dict):
+            # Try both role fields
+            role = self.user.get('role') or self.user.get('user_role')
+            if isinstance(role, str):
+                return role
+        
+        # Handle string user_role
+        if isinstance(self.user_role, str):
+            return self.user_role
+        
+        # Handle enum user_role
+        if hasattr(self.user_role, 'value'):
+            return self.user_role.value
+        
+        # Fallback
+        return 'user'
+    
     def enforce_tenant_isolation(self, query, model):
         """
         Automatically filter query by company_id and team_id based on user role
