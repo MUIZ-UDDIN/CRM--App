@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
+import { handleApiError } from '../utils/errorHandler';
 
 interface CustomField {
   id: string;
@@ -44,12 +46,16 @@ const ENTITY_TYPES = [
 
 export default function CustomFields() {
   const { user } = useAuth();
+  const { hasPermission, isCompanyAdmin, isSuperAdmin } = usePermissions();
   const [fields, setFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingField, setEditingField] = useState<CustomField | null>(null);
   const [filterEntity, setFilterEntity] = useState<string>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Check if user can customize CRM
+  const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -79,7 +85,7 @@ export default function CustomFields() {
       const response = await apiClient.get('/custom-fields/', { params });
       setFields(response.data);
     } catch (error) {
-      toast.error('Failed to load custom fields');
+      handleApiError(error, { toastMessage: 'Failed to load custom fields' });
     } finally {
       setLoading(false);
     }
@@ -196,13 +202,14 @@ export default function CustomFields() {
   const needsOptions = formData.field_type === 'select' || formData.field_type === 'multi_select';
 
   // Check if user has permission (Company Admin or Super Admin)
-  const canManageFields = user?.role === 'super_admin' || user?.role === 'company_admin';
-
-  if (!canManageFields) {
+  // Permission check - use the canCustomizeCRM variable defined earlier
+  if (!canCustomizeCRM) {
     return (
       <div className="p-6">
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="font-semibold text-yellow-900 mb-2">CRM Customization Restricted</div>
           <p className="text-yellow-800">Only Company Admins can manage custom fields.</p>
+          <p className="text-yellow-700 text-sm mt-2">💡 Contact your administrator to request custom fields or pipeline changes.</p>
         </div>
       </div>
     );

@@ -6,6 +6,8 @@
 import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import * as pipelinesService from '../services/pipelinesService';
+import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import {
   PlusIcon,
   XMarkIcon,
@@ -14,6 +16,7 @@ import {
   Bars3Icon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { handleApiError } from '../utils/errorHandler';
 
 interface Stage {
   id: string;
@@ -31,6 +34,8 @@ interface Pipeline {
 }
 
 export default function PipelineSettings() {
+  const { user } = useAuth();
+  const { isCompanyAdmin, isSuperAdmin } = usePermissions();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState('');
   const [showAddStageModal, setShowAddStageModal] = useState(false);
@@ -40,6 +45,9 @@ export default function PipelineSettings() {
   const [newStageProbability, setNewStageProbability] = useState(50);
   const [loading, setLoading] = useState(false);
   const [isAddingStage, setIsAddingStage] = useState(false);
+  
+  // Check if user can customize CRM
+  const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin();
 
   const resetStageForm = () => {
     setNewStageName('');
@@ -275,6 +283,19 @@ export default function PipelineSettings() {
       toast.error(errorMessage);
     }
   };
+
+  // Permission check
+  if (!canCustomizeCRM) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="font-semibold text-yellow-900 mb-2">CRM Customization Restricted</div>
+          <p className="text-yellow-800">Only Company Admins can manage pipeline settings.</p>
+          <p className="text-yellow-700 text-sm mt-2">💡 Contact your administrator to request pipeline changes.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-full">
