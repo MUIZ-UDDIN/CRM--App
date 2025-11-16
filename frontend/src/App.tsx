@@ -18,8 +18,7 @@ import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Notifications from './pages/Notifications';
-import TeamManagement from './pages/TeamManagement';
-// TeamsPage removed - functionality integrated into Settings
+import TeamsPage from './pages/TeamsPage';
 import SuperAdminDashboard from './pages/SuperAdminDashboard';
 import SuperAdminBilling from './pages/SuperAdminBilling';
 import CompanyBilling from './pages/CompanyBilling';
@@ -127,7 +126,7 @@ function App() {
                 <Route path="pipeline-settings" element={<PipelineSettings />} />
                 <Route path="workflows" element={<Workflows />} />
                 <Route path="settings" element={<Settings />} />
-                <Route path="team" element={<TeamManagement />} />
+                <Route path="team" element={<TeamsPage />} />
                 <Route path="admin" element={<SuperAdminDashboard />} />
                 <Route path="admin/billing" element={<SuperAdminBilling />} />
                 <Route path="billing" element={<CompanyBilling />} />
