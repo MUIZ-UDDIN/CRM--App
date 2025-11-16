@@ -8,14 +8,13 @@ import {
   UserGroupIcon,
   BuildingOfficeIcon,
   ShieldCheckIcon,
-  CreditCardIcon,
   PuzzlePieceIcon,
   PlusIcon,
   XMarkIcon,
   AdjustmentsHorizontalIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'team' | 'company' | 'security' | 'billing' | 'integrations' | 'custom_fields';
+type TabType = 'team' | 'company' | 'security' | 'integrations' | 'custom_fields';
 
 interface TeamMember {
   id: string;
@@ -370,7 +369,6 @@ export default function Settings() {
     { id: 'team' as TabType, name: 'Team', icon: UserGroupIcon },
     { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
     { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
-    { id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon },
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
     { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
   ];
@@ -1208,69 +1206,6 @@ export default function Settings() {
                 >
                   Delete My Account
                 </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'billing' && (
-          <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-            <div className="flex items-center justify-between mb-4 sm:mb-6">
-              <h2 className="text-lg font-medium text-gray-900">Billing & Subscription</h2>
-              <span className="px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">Demo Mode</span>
-            </div>
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-sm text-blue-800">
-                <strong>Note:</strong> This is a demo billing interface. Payment information is stored locally for demonstration purposes only.
-              </p>
-            </div>
-            <div className="space-y-6">
-              <div className="border border-gray-200 rounded-lg p-6">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{billingForm.plan} Plan</h3>
-                    <p className="text-sm text-gray-600 mt-1">Billed {billingForm.billingCycle}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-bold text-gray-900">$99</p>
-                    <p className="text-sm text-gray-600">/month</p>
-                  </div>
-                </div>
-                <div className="mt-4 pt-4 border-t border-gray-200">
-                  <p className="text-sm text-gray-600">Next billing date: {getNextBillingDate()}</p>
-                </div>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-gray-900 mb-4">Payment Method</h3>
-                {billingForm.cardNumber ? (
-                  <div className="border border-gray-200 rounded-lg p-4 flex items-center justify-between">
-                    <div className="flex items-center">
-                      <CreditCardIcon className="h-8 w-8 text-gray-400 mr-3" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">
-                          •••• •••• •••• {billingForm.cardNumber.slice(-4)}
-                        </p>
-                        <p className="text-sm text-gray-600">Expires {billingForm.cardExpiry}</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setShowUpdatePaymentModal(true)}
-                      className="text-sm text-primary-600 hover:text-primary-700 font-medium"
-                    >
-                      Update
-                    </button>
-                  </div>
-                ) : (
-                  <div className="border border-gray-200 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-3">No payment method on file</p>
-                    <button 
-                      onClick={() => setShowUpdatePaymentModal(true)}
-                      className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
-                    >
-                      Add Payment Method
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
           </div>
