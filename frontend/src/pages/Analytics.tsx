@@ -60,9 +60,9 @@ export default function Analytics() {
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
   
   // Check if user can see all company data and filter by user
-  // super_admin, company_admin, and admin: Can see all company data + filter by user
+  // super_admin, company_admin, admin, sales_manager: Can see company/team data + filter by user
   // company_user: See only their own data
-  const canFilterByUser = currentUser && ['super_admin', 'company_admin', 'admin'].includes(currentUser.role);
+  const canFilterByUser = currentUser && ['super_admin', 'company_admin', 'admin', 'sales_manager'].includes(currentUser.role);
   
   // Debug logging
   useEffect(() => {
