@@ -18,6 +18,7 @@ import {
   Trash2,
   RefreshCw
 } from 'lucide-react';
+import PlatformAnalytics from '../components/platform/PlatformAnalytics';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://sunstonecrm.com';
 
@@ -290,6 +291,11 @@ const PlatformDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Platform Analytics */}
+      {metrics && metrics.companies.length > 0 && (
+        <PlatformAnalytics companies={metrics.companies} />
+      )}
 
       {/* Companies Table */}
       <div className="bg-white rounded-lg shadow">

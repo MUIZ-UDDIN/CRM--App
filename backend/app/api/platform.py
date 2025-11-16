@@ -7,14 +7,24 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from pydantic import BaseModel, UUID4
+from functools import lru_cache
+import hashlib
+import json
 
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models import Company, User, AuditLog, AuditAction
 from app.models.deals import Deal
 from app.models.contacts import Contact
+
+# Simple in-memory cache for platform metrics
+_platform_cache = {
+    'data': None,
+    'timestamp': None,
+    'ttl': 300  # 5 minutes cache
+}
 
 router = APIRouter(prefix="/api/platform", tags=["Platform Management"])
 
@@ -48,11 +58,13 @@ class PlatformDashboardResponse(BaseModel):
 @router.get("/dashboard", response_model=PlatformDashboardResponse)
 async def get_platform_dashboard(
     current_user: dict = Depends(get_current_active_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    force_refresh: bool = False
 ):
     """
     Get platform-wide dashboard metrics
     Only accessible by Super Admin
+    Cached for 5 minutes for performance
     """
     # Verify super_admin role
     if current_user.get('role') != 'super_admin':
@@ -60,6 +72,14 @@ async def get_platform_dashboard(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="This endpoint is only accessible to Super Admins"
         )
+    
+    # Check cache
+    now = datetime.utcnow()
+    if (not force_refresh and 
+        _platform_cache['data'] is not None and 
+        _platform_cache['timestamp'] is not None and
+        (now - _platform_cache['timestamp']).total_seconds() < _platform_cache['ttl']):
+        return _platform_cache['data']
     
     # Get all companies
     all_companies = db.query(Company).all()
@@ -112,7 +132,7 @@ async def get_platform_dashboard(
             created_at=company.created_at
         ))
     
-    return PlatformDashboardResponse(
+    response = PlatformDashboardResponse(
         total_companies=len(all_companies),
         active_subscriptions=active_count,
         trial_companies=trial_count,
@@ -123,6 +143,12 @@ async def get_platform_dashboard(
         total_revenue=total_revenue,
         companies=companies_info
     )
+    
+    # Update cache
+    _platform_cache['data'] = response
+    _platform_cache['timestamp'] = now
+    
+    return response
 
 
 @router.post("/companies/{company_id}/suspend")
@@ -165,6 +191,9 @@ async def suspend_company(
     )
     db.add(audit_log)
     db.commit()
+    
+    # Invalidate cache
+    _platform_cache['data'] = None
     
     return {
         "message": f"Company '{company.name}' has been suspended successfully",
@@ -218,6 +247,9 @@ async def unsuspend_company(
     )
     db.add(audit_log)
     db.commit()
+    
+    # Invalidate cache
+    _platform_cache['data'] = None
     
     return {
         "message": f"Company '{company.name}' has been unsuspended successfully",
@@ -275,6 +307,9 @@ async def delete_company(
     )
     db.add(audit_log)
     db.commit()
+    
+    # Invalidate cache
+    _platform_cache['data'] = None
     
     return {
         "message": f"Company '{company.name}' has been deleted successfully",
