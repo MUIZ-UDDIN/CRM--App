@@ -87,10 +87,8 @@ export default function Login() {
       
       toast.success('Login successful!');
       
-      // Force a page reload to ensure all auth state is properly initialized
-      setTimeout(() => {
-        window.location.href = '/dashboard';
-      }, 500);
+      // Navigate without full page reload
+      navigate('/dashboard');
       
     } catch (error: any) {
       toast.error(error.message || 'Login failed');
