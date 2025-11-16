@@ -407,12 +407,9 @@ async def remove_team_member(
             detail="User is not in this team"
         )
     
-    # Check if user is the team lead
+    # If user is the team lead, remove team lead designation
     if str(team.team_lead_id) == str(user_id):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot remove team lead. Assign a new team lead first."
-        )
+        team.team_lead_id = None
     
     # Remove user from team
     user.team_id = None

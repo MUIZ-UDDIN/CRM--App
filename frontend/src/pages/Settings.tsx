@@ -1445,10 +1445,10 @@ export default function Settings() {
               {(isCompanyAdmin || isSuperAdmin) && (
                 <button
                   onClick={handleOpenAddModal}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
                 >
-                  <PlusIcon className="w-5 h-5" />
-                  Add Member
+                  <UserPlusIcon className="w-5 h-5" />
+                  Invite Team Member
                 </button>
               )}
             </div>
@@ -1928,12 +1928,12 @@ export default function Settings() {
         </div>
       )}
 
-      {/* Add Team Member Modal */}
+      {/* Invite Team Member Modal */}
       {showAddTeamModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Add Team Member</h3>
+              <h3 className="text-lg font-medium text-gray-900">Invite Team Member</h3>
               <button onClick={() => setShowAddTeamModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -2088,7 +2088,7 @@ export default function Settings() {
                   onClick={handleAddTeamMember}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
                 >
-                  Add Member
+                  Send Invitation
                 </button>
               </div>
             </div>

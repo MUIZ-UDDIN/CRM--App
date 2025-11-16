@@ -170,14 +170,23 @@ async def add_team_member(
         # Create new team member with default password
         default_password = "ChangeMe123!"
         
+        # Map role to user_role (lowercase with underscores)
+        role_mapping = {
+            'Admin': 'company_admin',
+            'Sales Manager': 'sales_manager',
+            'Sales Rep': 'sales_rep',
+            'Regular User': 'company_user',
+            'Support': 'support'
+        }
+        user_role = role_mapping.get(request.role, 'company_user')
+        
         new_user = User(
             email=request.email.lower(),
             hashed_password=get_password_hash(default_password),
             first_name=request.first_name,
             last_name=request.last_name,
             phone=request.phone,
-            user_role=request.role,
-            role=request.role,
+            user_role=user_role,
             status='active',
             company_id=company_id,
             is_active=True,
