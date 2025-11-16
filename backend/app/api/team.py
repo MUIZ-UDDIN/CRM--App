@@ -89,9 +89,9 @@ class AddTeamMemberRequest(BaseModel):
         
         v = v.strip()
         
-        # Prevent super_admin role assignment
-        if v.lower() in ['super_admin', 'super admin']:
-            raise ValueError('Super Admin role cannot be assigned. This role is reserved for system administrators.')
+        # Prevent super_admin and admin role assignment through team member invitation
+        if v.lower() in ['super_admin', 'super admin', 'admin', 'company_admin', 'company admin']:
+            raise ValueError('Admin roles cannot be assigned through team member invitation. These roles are reserved for system administrators.')
         
         # Character limit
         if len(v) > 50:
