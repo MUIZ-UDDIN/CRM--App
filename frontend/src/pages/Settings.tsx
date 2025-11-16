@@ -2573,7 +2573,7 @@ export default function Settings() {
               <p className="text-sm text-gray-600 mt-1">Manage custom fields for contacts, deals, and companies</p>
             </div>
             <button
-              onClick={() => window.location.href = '/custom-fields'}
+              onClick={() => navigate('/settings/custom-fields')}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
               <AdjustmentsHorizontalIcon className="w-5 h-5" />

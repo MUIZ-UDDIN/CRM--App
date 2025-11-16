@@ -210,19 +210,25 @@ export default function SuperAdminDashboard() {
   const filteredCompanies = companies.filter(company => {
     const matchesSearch = (company.name || '').toLowerCase().includes(searchTerm.toLowerCase());
     
+    // Use subscription_status if available, otherwise fall back to status
+    const companyStatus = company.subscription_status || company.status || 'active';
+    
     // Handle filter matching
     let matchesFilter = false;
     if (filterStatus === 'all') {
       matchesFilter = true;
     } else if (filterStatus === 'expired') {
       // Match expired subscriptions OR trials with 0 days remaining
-      matchesFilter = company.subscription_status === 'expired' || 
-                     (company.subscription_status === 'trial' && (company.days_remaining || 0) === 0);
+      matchesFilter = companyStatus === 'expired' || 
+                     (companyStatus === 'trial' && (company.days_remaining || 0) === 0);
     } else if (filterStatus === 'trial') {
       // Match only active trials (days remaining > 0)
-      matchesFilter = company.subscription_status === 'trial' && (company.days_remaining || 0) > 0;
+      matchesFilter = companyStatus === 'trial' && (company.days_remaining || 0) > 0;
+    } else if (filterStatus === 'suspended') {
+      // Match suspended companies
+      matchesFilter = company.status === 'suspended' || companyStatus === 'suspended';
     } else {
-      matchesFilter = company.subscription_status === filterStatus;
+      matchesFilter = companyStatus === filterStatus;
     }
     
     return matchesSearch && matchesFilter;
@@ -353,7 +359,7 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* Companies Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow overflow-visible">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
@@ -448,7 +454,7 @@ export default function SuperAdminDashboard() {
                             />
                             
                             {/* Dropdown Menu */}
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20">
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                               <button
                                 onClick={() => {
                                   setOpenDropdownId(null);

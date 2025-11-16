@@ -126,13 +126,13 @@ function App() {
                 <Route path="pipeline-settings" element={<PipelineSettings />} />
                 <Route path="workflows" element={<Workflows />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="settings/custom-fields" element={<CustomFields />} />
                 <Route path="team" element={<TeamsPage />} />
                 <Route path="admin" element={<SuperAdminDashboard />} />
                 <Route path="admin/billing" element={<SuperAdminBilling />} />
                 <Route path="billing" element={<CompanyBilling />} />
                 <Route path="import" element={<DataImport />} />
                 <Route path="support-tickets" element={<SupportTickets />} />
-                <Route path="custom-fields" element={<CustomFields />} />
                 <Route path="workflow-templates" element={<WorkflowTemplates />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />

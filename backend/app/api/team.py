@@ -149,20 +149,12 @@ async def add_team_member(
     
     company_id = current_user.get("company_id")
     
-    # Super Admin needs to specify company_id or we should get it from context
-    # For now, if Super Admin, they should not use this endpoint directly
-    # They should manage users through company-specific endpoints
+    # If no company_id, this is an error - even Super Admin needs a company context
     if not company_id:
-        if user_role == 'super_admin':
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Super Admin cannot add team members directly. Please use the company-specific user management interface or specify a company."
-            )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No company found for your account. Please contact support."
-            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No company context found. Please ensure you are logged in with a company account. Super Admin should have a company_id assigned."
+        )
     
     # Check if email already exists (case-insensitive)
     existing_user = db.query(User).filter(
