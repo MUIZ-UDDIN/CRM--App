@@ -257,17 +257,18 @@ async def get_role_based_dashboard(
                 ).scalar() or 0
             }
             
-            # Add personal charts
+            # Add personal charts - convert UUID to string for helper functions
+            user_id_str = str(user_id_uuid)
             response["charts"] = [
                 {
                     "type": "pie",
                     "title": "My Deal Status",
-                    "data": get_personal_deal_status(db, user_id)
+                    "data": get_personal_deal_status(db, user_id_str)
                 },
                 {
                     "type": "line",
                     "title": "My Activity Trend",
-                    "data": get_personal_activity_trend(db, user_id)
+                    "data": get_personal_activity_trend(db, user_id_str)
                 }
             ]
             
@@ -275,10 +276,15 @@ async def get_role_based_dashboard(
             response["tables"] = [
                 {
                     "title": "My Recent Activities",
-                    "data": get_personal_recent_activities(db, user_id)
+                    "data": get_personal_recent_activities(db, user_id_str)
                 }
             ]
         except Exception as e:
+            # Log the actual error for debugging
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error loading personal analytics for user {user_id}: {str(e)}", exc_info=True)
+            
             # If there's any error, return empty metrics instead of failing
             response["metrics"] = {
                 "my_deals": 0,
@@ -288,7 +294,8 @@ async def get_role_based_dashboard(
             }
             response["charts"] = []
             response["tables"] = []
-            response["message"] = "Unable to load analytics data. Please try again later."
+            response["message"] = f"Unable to load analytics data: {str(e)}"
+            response["error_details"] = str(e)  # Include error for debugging
     
     return response
 
