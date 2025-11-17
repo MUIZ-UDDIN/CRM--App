@@ -112,7 +112,7 @@ async def get_quotes(
         query = db.query(QuoteModel).filter(
             and_(
                 QuoteModel.company_id == company_id,
-                QuoteModel.created_by.in_([uuid.UUID(uid) for uid in team_user_ids]),
+                QuoteModel.owner_id.in_([uuid.UUID(uid) for uid in team_user_ids]),
                 QuoteModel.is_deleted == False
             )
         )
@@ -121,7 +121,7 @@ async def get_quotes(
         query = db.query(QuoteModel).filter(
             and_(
                 QuoteModel.company_id == company_id,
-                QuoteModel.created_by == uuid.UUID(user_id),
+                QuoteModel.owner_id == uuid.UUID(user_id),
                 QuoteModel.is_deleted == False
             )
         )
