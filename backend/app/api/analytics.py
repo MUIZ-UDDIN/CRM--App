@@ -11,6 +11,7 @@ from sqlalchemy import func, and_, or_, case
 import uuid
 import io
 import csv
+import logging
 from reportlab.lib.pagesizes import letter, A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
