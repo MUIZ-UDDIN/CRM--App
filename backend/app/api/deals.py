@@ -560,10 +560,20 @@ def delete_deal(
             detail="User must belong to a company"
         )
     
+    # Convert deal_id to UUID
+    try:
+        deal_uuid = uuid.UUID(deal_id)
+        company_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+    except (ValueError, AttributeError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid ID format: {str(e)}"
+        )
+    
     deal = db.query(DealModel).filter(
         and_(
-            DealModel.id == uuid.UUID(deal_id),
-            DealModel.company_id == uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
+            DealModel.id == deal_uuid,
+            DealModel.company_id == company_uuid,
             DealModel.is_deleted == False
         )
     ).first()
