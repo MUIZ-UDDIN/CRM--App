@@ -99,26 +99,42 @@ async def get_teams(
     current_user: dict = Depends(get_current_active_user)
 ):
     """
-    Get all teams for current user's company
-    Super Admin can see all teams
+    Get teams based on user role:
+    - Super Admin: all teams
+    - Company Admin: all company teams
+    - Sales Manager/Rep: only their own team
     """
-    user_role = current_user.get("role")
+    user_role = current_user.get("role") or current_user.get("user_role")
     company_id = current_user.get("company_id")
+    user_team_id = current_user.get("team_id")
     
     # Super admin can see all teams
-    if user_role.lower() == "super_admin":
+    if user_role and user_role.lower() == "super_admin":
         teams = db.query(Team).all()
         return teams
     
-    # Company users can only see teams in their company
+    # Company users must have a company
     if not company_id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Company ID not found"
         )
     
-    teams = db.query(Team).filter(Team.company_id == company_id).all()
-    return teams
+    # Company Admin sees all company teams
+    if user_role and user_role.lower() == "company_admin":
+        teams = db.query(Team).filter(Team.company_id == company_id).all()
+        return teams
+    
+    # Sales Managers and Sales Reps see only their own team
+    if user_team_id:
+        teams = db.query(Team).filter(
+            Team.company_id == company_id,
+            Team.id == user_team_id
+        ).all()
+        return teams
+    
+    # Users without a team see no teams
+    return []
 
 
 @router.get("/{team_id}", response_model=TeamResponse)

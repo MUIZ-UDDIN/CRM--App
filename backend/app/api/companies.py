@@ -382,8 +382,12 @@ def list_company_users(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List all users in a company"""
+    """List users in a company - role-based filtering"""
+    from ..middleware.permissions import has_permission
+    from ..models.permissions import Permission
+    
     context = get_tenant_context(current_user)
+    user_team_id = current_user.team_id if hasattr(current_user, 'team_id') else current_user.get('team_id')
     
     if not context.can_access_company(company_id):
         raise HTTPException(
@@ -391,10 +395,28 @@ def list_company_users(
             detail="Access denied to this company"
         )
     
-    users = db.query(User).filter(
-        User.company_id == company_id,
-        User.is_deleted == False
-    ).all()
+    # Role-based filtering
+    if context.is_super_admin() or has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Super Admin and Company Admin see all company users
+        users = db.query(User).filter(
+            User.company_id == company_id,
+            User.is_deleted == False
+        ).all()
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees only team members
+        users = db.query(User).filter(
+            User.company_id == company_id,
+            User.team_id == user_team_id,
+            User.is_deleted == False
+        ).all()
+    else:
+        # Sales Reps and regular users see only themselves
+        user_id = current_user.id if hasattr(current_user, 'id') else current_user.get('id')
+        users = db.query(User).filter(
+            User.company_id == company_id,
+            User.id == user_id,
+            User.is_deleted == False
+        ).all()
     
     return [
         {

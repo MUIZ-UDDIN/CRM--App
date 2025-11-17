@@ -140,7 +140,7 @@ async def get_quotes(
             status=q.status.value if q.status else "draft",
             client_id=str(q.client_id) if q.client_id else None,
             deal_id=str(q.deal_id) if q.deal_id else None,
-            owner_id=str(q.owner_id),
+            owner_id=str(q.owner_id) if q.owner_id else None,
             valid_until=q.valid_until.isoformat() if q.valid_until else None,
             created_at=q.created_at.isoformat() if q.created_at else "",
             updated_at=q.updated_at.isoformat() if q.updated_at else ""
