@@ -426,17 +426,31 @@ async def update_user(
             raise HTTPException(status_code=400, detail="Email already in use")
         user.email = email_lower
     if user_update.role is not None:
+        # Normalize role from display name to database format
+        role_mapping = {
+            'Admin': 'company_admin',
+            'Company Admin': 'company_admin',
+            'Sales Manager': 'sales_manager',
+            'Sales Rep': 'sales_rep',
+            'Regular User': 'company_user',
+            'Support': 'support',
+            'User': 'company_user'
+        }
+        
+        # Get normalized role (or use as-is if already normalized)
+        normalized_role = role_mapping.get(user_update.role, user_update.role.lower().replace(' ', '_'))
+        
         # Prevent assigning super_admin role
         # Only admin@sunstonecrm.com can be super_admin
-        if user_update.role.lower() in ['super_admin', 'super admin']:
+        if normalized_role in ['super_admin', 'super admin']:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Super Admin role cannot be assigned. Only the system super admin (admin@sunstonecrm.com) has this role."
             )
         
-        user.role = user_update.role
+        user.role = normalized_role
         # Also update user_role to match
-        user.user_role = user_update.role
+        user.user_role = normalized_role
     
     user.updated_at = datetime.utcnow()
     db.commit()
