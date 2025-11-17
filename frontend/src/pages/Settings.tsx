@@ -27,7 +27,7 @@ import {
   ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields' | 'phone_numbers';
+type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields';
 
 interface TeamMember {
   id: string;
@@ -88,12 +88,22 @@ export default function Settings() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
+  const subPageFromUrl = searchParams.get('subpage');
   const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'company');
+  const [integrationsSubPage, setIntegrationsSubPage] = useState<string | null>(subPageFromUrl);
   
   // Helper function to change tab and update URL
   const changeTab = (tab: TabType) => {
     setActiveTab(tab);
+    setIntegrationsSubPage(null);
     navigate(`/settings?tab=${tab}`, { replace: true });
+  };
+  
+  // Helper function to navigate to integrations subpage
+  const navigateToIntegrationsSubPage = (subpage: string) => {
+    setActiveTab('integrations');
+    setIntegrationsSubPage(subpage);
+    navigate(`/settings?tab=integrations&subpage=${subpage}`, { replace: true });
   };
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
@@ -623,7 +633,6 @@ export default function Settings() {
     ...(!isSuperAdmin ? [{ id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon }] : []),
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
     { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
-    { id: 'phone_numbers' as TabType, name: 'Phone Numbers', icon: PhoneIcon },
   ];
 
   const handleAddTeamMember = async () => {
@@ -1774,7 +1783,7 @@ export default function Settings() {
           </div>
         )}
 
-        {activeTab === 'integrations' && (
+        {activeTab === 'integrations' && !integrationsSubPage && (
           <div className="space-y-4 sm:space-y-6">
             <h2 className="text-lg font-medium text-gray-900">Integrations</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -1829,7 +1838,7 @@ export default function Settings() {
                           </button>
                           {phoneNumbers.length > 0 && (
                             <button
-                              onClick={() => changeTab('phone_numbers')}
+                              onClick={() => navigateToIntegrationsSubPage('phone-numbers')}
                               className="w-full px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                             >
                               📱 Manage Phone Numbers
@@ -2635,10 +2644,19 @@ export default function Settings() {
         </div>
       )}
 
-      {activeTab === 'phone_numbers' && (
+      {activeTab === 'integrations' && integrationsSubPage === 'phone-numbers' && (
         <div className="bg-white shadow rounded-lg p-4 sm:p-6">
           <div className="flex items-center justify-between mb-4 sm:mb-6">
             <div>
+              <button
+                onClick={() => {
+                  setIntegrationsSubPage(null);
+                  navigate('/settings?tab=integrations', { replace: true });
+                }}
+                className="text-sm text-gray-600 hover:text-gray-900 mb-2 flex items-center gap-1"
+              >
+                ← Back to Integrations
+              </button>
               <h2 className="text-lg font-medium text-gray-900">Phone Numbers</h2>
               <p className="text-sm text-gray-600 mt-1">Manage your Twilio phone numbers for SMS and calling</p>
             </div>
