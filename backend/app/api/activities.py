@@ -65,15 +65,43 @@ def get_activities(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all activities from database (company-scoped)"""
+    """Get activities based on user role - Sales Reps see only their own"""
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
+    
     if not company_id:
         return []
     
-    query = db.query(ActivityModel).filter(
-        ActivityModel.company_id == company_id,
-        ActivityModel.is_deleted == False
-    )
+    # Role-based filtering
+    if context.is_super_admin():
+        query = db.query(ActivityModel).filter(ActivityModel.is_deleted == False)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company activities
+        query = db.query(ActivityModel).filter(
+            ActivityModel.company_id == company_id,
+            ActivityModel.is_deleted == False
+        )
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees only their team's activities
+        from ..models.users import User
+        team_user_ids = [str(u.id) for u in db.query(User).filter(
+            User.team_id == user_team_id,
+            User.is_deleted == False
+        ).all()]
+        query = db.query(ActivityModel).filter(
+            ActivityModel.company_id == company_id,
+            ActivityModel.owner_id.in_(team_user_ids),
+            ActivityModel.is_deleted == False
+        )
+    else:
+        # Sales Reps see ONLY their own activities
+        query = db.query(ActivityModel).filter(
+            ActivityModel.company_id == company_id,
+            ActivityModel.owner_id == user_id,
+            ActivityModel.is_deleted == False
+        )
     
     # Handle type filter (accept both activity_type and type)
     filter_type = activity_type or type

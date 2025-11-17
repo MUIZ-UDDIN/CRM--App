@@ -74,22 +74,49 @@ def get_deals(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all deals for current user's company"""
+    """Get deals based on user role - Sales Reps see only their own"""
+    context = get_tenant_context(current_user)
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
+    user_team_id = current_user.get('team_id')
     
-    # All users (including super admin) see only their company's deals
-    if company_id:
+    if not company_id:
+        # Fallback to owner-based if no company
+        query = db.query(DealModel).filter(
+            and_(
+                DealModel.owner_id == user_id,
+                DealModel.is_deleted == False
+            )
+        )
+    elif context.is_super_admin():
+        # Super admin sees all companies (but typically filtered by company context)
+        query = db.query(DealModel).filter(DealModel.is_deleted == False)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company deals
         query = db.query(DealModel).filter(
             and_(
                 DealModel.company_id == company_id,
                 DealModel.is_deleted == False
             )
         )
-    else:
-        # Fallback to owner-based if no company
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees only their team's deals
+        team_user_ids = [str(u.id) for u in db.query(User).filter(
+            User.team_id == user_team_id,
+            User.is_deleted == False
+        ).all()]
         query = db.query(DealModel).filter(
             and_(
+                DealModel.company_id == company_id,
+                DealModel.owner_id.in_([uuid.UUID(uid) for uid in team_user_ids]),
+                DealModel.is_deleted == False
+            )
+        )
+    else:
+        # Sales Reps see ONLY their own deals
+        query = db.query(DealModel).filter(
+            and_(
+                DealModel.company_id == company_id,
                 DealModel.owner_id == user_id,
                 DealModel.is_deleted == False
             )
