@@ -208,56 +208,64 @@ async def get_role_based_dashboard(
             }
         ]
     
-    # Regular User - Personal analytics
-    elif has_permission(current_user, Permission.VIEW_OWN_ANALYTICS):
-        # Get personal metrics
-        response["metrics"] = {
-            "my_deals": db.query(func.count(Deal.id)).filter(
-                Deal.owner_id == uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
-                Deal.is_deleted == False
-            ).scalar() or 0,
-            "my_deal_value": float(db.query(func.sum(Deal.value)).filter(
-                Deal.owner_id == uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
-                Deal.is_deleted == False
-            ).scalar() or 0),
-            "my_activities": db.query(func.count(Activity.id)).filter(
-                Activity.owner_id == uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
-                Activity.is_deleted == False
-            ).scalar() or 0,
-            "my_contacts": db.query(func.count(Contact.id)).filter(
-                Contact.owner_id == uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
-                Contact.is_deleted == False
-            ).scalar() or 0
-        }
-        
-        # Add personal charts
-        response["charts"] = [
-            {
-                "type": "pie",
-                "title": "My Deal Status",
-                "data": get_personal_deal_status(db, user_id)
-            },
-            {
-                "type": "line",
-                "title": "My Activity Trend",
-                "data": get_personal_activity_trend(db, user_id)
-            }
-        ]
-        
-        # Add personal tables
-        response["tables"] = [
-            {
-                "title": "My Recent Activities",
-                "data": get_personal_recent_activities(db, user_id)
-            }
-        ]
-    
-    # No analytics permission
+    # Regular User / Sales Rep - Personal analytics
+    # Allow all authenticated users to view their own analytics
     else:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to view analytics"
-        )
+        # Get personal metrics for any authenticated user
+        try:
+            user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            
+            response["metrics"] = {
+                "my_deals": db.query(func.count(Deal.id)).filter(
+                    Deal.owner_id == user_id_uuid,
+                    Deal.is_deleted == False
+                ).scalar() or 0,
+                "my_deal_value": float(db.query(func.sum(Deal.value)).filter(
+                    Deal.owner_id == user_id_uuid,
+                    Deal.is_deleted == False
+                ).scalar() or 0),
+                "my_activities": db.query(func.count(Activity.id)).filter(
+                    Activity.owner_id == user_id_uuid,
+                    Activity.is_deleted == False
+                ).scalar() or 0,
+                "my_contacts": db.query(func.count(Contact.id)).filter(
+                    Contact.owner_id == user_id_uuid,
+                    Contact.is_deleted == False
+                ).scalar() or 0
+            }
+            
+            # Add personal charts
+            response["charts"] = [
+                {
+                    "type": "pie",
+                    "title": "My Deal Status",
+                    "data": get_personal_deal_status(db, user_id)
+                },
+                {
+                    "type": "line",
+                    "title": "My Activity Trend",
+                    "data": get_personal_activity_trend(db, user_id)
+                }
+            ]
+            
+            # Add personal tables
+            response["tables"] = [
+                {
+                    "title": "My Recent Activities",
+                    "data": get_personal_recent_activities(db, user_id)
+                }
+            ]
+        except Exception as e:
+            # If there's any error, return empty metrics instead of failing
+            response["metrics"] = {
+                "my_deals": 0,
+                "my_deal_value": 0.0,
+                "my_activities": 0,
+                "my_contacts": 0
+            }
+            response["charts"] = []
+            response["tables"] = []
+            response["message"] = "Unable to load analytics data. Please try again later."
     
     return response
 
