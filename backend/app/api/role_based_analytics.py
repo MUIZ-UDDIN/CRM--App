@@ -30,8 +30,13 @@ async def get_role_based_dashboard(
     """Get role-based dashboard analytics"""
     context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
-    user_id = current_user.get('id')
+    user_id = current_user.get('id') or current_user.get('user_id') or current_user.get('sub')
     user_team_id = current_user.get('team_id')
+    
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"Dashboard request - User ID: {user_id}, Type: {type(user_id)}, Company: {company_id}, Team: {user_team_id}")
     
     # Base response structure
     response = {
@@ -213,13 +218,31 @@ async def get_role_based_dashboard(
     else:
         # Get personal metrics for any authenticated user
         try:
-            user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            # Handle both string and UUID types for user_id
+            if isinstance(user_id, str):
+                user_id_uuid = uuid.UUID(user_id)
+            elif isinstance(user_id, uuid.UUID):
+                user_id_uuid = user_id
+            else:
+                # Try to convert to UUID
+                user_id_uuid = uuid.UUID(str(user_id))
+            
+            # Debug: Check if we can find any deals for this user
+            total_deals = db.query(func.count(Deal.id)).filter(
+                Deal.owner_id == user_id_uuid,
+                Deal.is_deleted == False
+            ).scalar() or 0
+            
+            # If no deals found, also check with company_id filter
+            if total_deals == 0 and company_id:
+                total_deals = db.query(func.count(Deal.id)).filter(
+                    Deal.owner_id == user_id_uuid,
+                    Deal.company_id == company_id,
+                    Deal.is_deleted == False
+                ).scalar() or 0
             
             response["metrics"] = {
-                "my_deals": db.query(func.count(Deal.id)).filter(
-                    Deal.owner_id == user_id_uuid,
-                    Deal.is_deleted == False
-                ).scalar() or 0,
+                "my_deals": total_deals,
                 "my_deal_value": float(db.query(func.sum(Deal.value)).filter(
                     Deal.owner_id == user_id_uuid,
                     Deal.is_deleted == False
