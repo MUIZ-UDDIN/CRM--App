@@ -6,6 +6,10 @@ import * as dealsService from '../services/dealsService';
 import ActionButtons from '../components/common/ActionButtons';
 import SearchableContactSelect from '../components/common/SearchableContactSelect';
 import { useSubmitOnce } from '../hooks/useSubmitOnce';
+import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
+import apiClient from '../services/apiClient';
+import { handleApiError } from '../utils/errorHandler';
 import { 
   PlusIcon, 
   XMarkIcon,
@@ -15,6 +19,7 @@ import {
   MagnifyingGlassIcon,
   ChevronDownIcon,
   ArrowPathIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline';
 
 interface Deal {
@@ -28,6 +33,17 @@ interface Deal {
   pipeline_id: string;
   expected_close_date?: string;
   status?: string;
+  owner_id?: string;
+  owner_name?: string;
+}
+
+interface AssignableUser {
+  id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  team_id?: string;
 }
 
 interface Stage {
@@ -38,6 +54,8 @@ interface Stage {
 }
 
 export default function Deals() {
+  const { user } = useAuth();
+  const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddDealModal, setShowAddDealModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -48,6 +66,9 @@ export default function Deals() {
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedStages, setExpandedStages] = useState<string[]>([]);
+  const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
+  const [showAssignModal, setShowAssignModal] = useState(false);
+  const [dealToAssign, setDealToAssign] = useState<Deal | null>(null);
   const [dealFormData, setDealFormData] = useState({
     title: '',
     value: '',
@@ -58,6 +79,9 @@ export default function Deals() {
     expectedCloseDate: '',
     status: 'open'
   });
+  
+  // Check if user can assign deals
+  const canAssignDeals = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   // Get today's date in YYYY-MM-DD format for min date
   const getTodayDate = () => {
@@ -313,10 +337,43 @@ export default function Deals() {
       
       setDeals(grouped);
     } catch (error) {
-      console.error('Error fetching deals:', error);
-      toast.error('Failed to load deals');
+      handleApiError(error, { toastMessage: 'Failed to load deals' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch assignable users
+  const fetchAssignableUsers = async () => {
+    if (!canAssignDeals) return;
+    
+    try {
+      const response = await apiClient.get('/users/assignable/list');
+      setAssignableUsers(response.data);
+    } catch (error) {
+      handleApiError(error, { toastMessage: 'Failed to load assignable users' });
+    }
+  };
+
+  // Assign deal to user
+  const assignDeal = async (dealId: string, userId: string) => {
+    try {
+      await apiClient.patch(`/deals/${dealId}`, { owner_id: userId });
+      toast.success('Deal assigned successfully');
+      setShowAssignModal(false);
+      setDealToAssign(null);
+      fetchDeals(); // Refresh deals
+    } catch (error) {
+      handleApiError(error, { toastMessage: 'Failed to assign deal' });
+    }
+  };
+
+  // Open assignment modal
+  const openAssignModal = (deal: Deal) => {
+    setDealToAssign(deal);
+    setShowAssignModal(true);
+    if (assignableUsers.length === 0) {
+      fetchAssignableUsers();
     }
   };
 
@@ -826,6 +883,40 @@ export default function Deals() {
                                     <UserIcon className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
                                     <span className="truncate" title={deal.contact}>{deal.contact}</span>
                                   </div>
+                                  {/* Owner Info */}
+                                  {deal.owner_name && (
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center text-xs text-gray-500">
+                                        <UserCircleIcon className="h-4 w-4 mr-1 flex-shrink-0" />
+                                        <span className="truncate" title={deal.owner_name}>{deal.owner_name}</span>
+                                      </div>
+                                      {canAssignDeals && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            openAssignModal(deal);
+                                          }}
+                                          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+                                          title="Reassign deal"
+                                        >
+                                          Reassign
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+                                  {!deal.owner_name && canAssignDeals && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        openAssignModal(deal);
+                                      }}
+                                      className="flex items-center text-xs text-primary-600 hover:text-primary-700 font-medium"
+                                      title="Assign deal"
+                                    >
+                                      <UserCircleIcon className="h-4 w-4 mr-1" />
+                                      Assign to user
+                                    </button>
+                                  )}
                                   <div className="mt-2 flex flex-wrap gap-2">
                                     {/* Status Badge */}
                                     <span className={`inline-block px-2 py-1 rounded text-xs font-medium ${
@@ -1189,6 +1280,77 @@ export default function Deals() {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
               >
                 Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assignment Modal */}
+      {showAssignModal && dealToAssign && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={() => setShowAssignModal(false)}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Assign Deal</h3>
+              <button onClick={() => setShowAssignModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Assign <span className="font-semibold">"{dealToAssign.title}"</span> to:
+              </p>
+              
+              {assignableUsers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <UserCircleIcon className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+                  <p>No users available for assignment</p>
+                </div>
+              ) : (
+                <div className="max-h-64 overflow-y-auto space-y-2">
+                  {assignableUsers.map((user) => (
+                    <button
+                      key={user.id}
+                      onClick={() => assignDeal(dealToAssign.id, user.id)}
+                      className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                        dealToAssign.owner_id === user.id
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-gray-200 hover:border-primary-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {user.first_name} {user.last_name}
+                          </div>
+                          <div className="text-sm text-gray-500">{user.email}</div>
+                          <div className="text-xs text-gray-400 mt-1">
+                            {user.role === 'super_admin' ? 'Super Admin' :
+                             user.role === 'company_admin' ? 'Company Admin' :
+                             user.role === 'sales_manager' ? 'Sales Manager' :
+                             user.role === 'sales_rep' ? 'Sales Rep' : user.role}
+                          </div>
+                        </div>
+                        {dealToAssign.owner_id === user.id && (
+                          <span className="text-xs font-medium text-primary-600">Current</span>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowAssignModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
               </button>
             </div>
           </div>
