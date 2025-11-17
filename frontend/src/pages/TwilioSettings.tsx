@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { PhoneIcon, CheckCircleIcon, XCircleIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import toast from 'react-hot-toast';
+import { handleApiError } from '../utils/errorHandler';
 
 interface TwilioSettings {
   id: string;
@@ -50,6 +52,8 @@ interface SyncStatus {
 }
 
 export default function TwilioSettings() {
+  const { token, user } = useAuth();
+  const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
   const [settings, setSettings] = useState<TwilioSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,7 +63,9 @@ export default function TwilioSettings() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [showForm, setShowForm] = useState(false);
-  const { token } = useAuth();
+  
+  // Check if user can configure integrations
+  const canConfigureIntegrations = isSuperAdmin() || isCompanyAdmin();
 
   const [formData, setFormData] = useState({
     account_sid: '',
@@ -337,6 +343,19 @@ export default function TwilioSettings() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  // Permission check - only Super Admin and Company Admin can configure
+  if (!canConfigureIntegrations) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="font-semibold text-yellow-900 mb-2">Integration Configuration Restricted</div>
+          <p className="text-yellow-800">Only Company Admins can configure Twilio integration settings.</p>
+          <p className="text-yellow-700 text-sm mt-2">💡 Contact your Company Admin to configure SMS and voice call integrations.</p>
+        </div>
       </div>
     );
   }
