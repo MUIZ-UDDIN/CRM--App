@@ -1133,7 +1133,21 @@ export default function Settings() {
 
         {activeTab === 'company' && (
           <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-4 sm:mb-6">Company Information</h2>
+            <div className="flex items-center justify-between mb-4 sm:mb-6">
+              <h2 className="text-lg font-medium text-gray-900">Company Information</h2>
+              {!isAdmin && (
+                <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                  View Only
+                </span>
+              )}
+            </div>
+            {!isAdmin && (
+              <div className="mb-4 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                <p className="text-sm text-yellow-800">
+                  💡 Only Company Admins can edit company settings. Contact your administrator to make changes.
+                </p>
+              </div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1144,7 +1158,8 @@ export default function Settings() {
                   value={companyForm.name}
                   onChange={(e) => setCompanyForm({...companyForm, name: e.target.value})}
                   maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  disabled={!isAdmin}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
                 />
                 <div className="text-xs text-gray-500 mt-1">
@@ -1251,14 +1266,16 @@ export default function Settings() {
                 </div>
               </div>
             </div>
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={handleSaveCompanySettings}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
-              >
-                Save Changes
-              </button>
-            </div>
+            {isAdmin && (
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={handleSaveCompanySettings}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                >
+                  Save Changes
+                </button>
+              </div>
+            )}
           </div>
         )}
 
