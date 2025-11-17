@@ -2,7 +2,7 @@
 Quotes API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import and_, desc
@@ -17,6 +17,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.enums import TA_CENTER, TA_RIGHT
+from app.middleware.tenant import get_tenant_context
+from app.middleware.permissions import has_permission
+from app.models.permissions import Permission
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
@@ -321,11 +324,14 @@ async def delete_quote(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete quote"""
+    """Delete quote - Only Managers and Admins"""
+    context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
     quote = db.query(QuoteModel).filter(
         and_(
@@ -336,7 +342,26 @@ async def delete_quote(
     ).first()
     
     if not quote:
-        raise HTTPException(status_code=404, detail="Quote not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
+    
+    # Only Managers and Admins can delete quotes
+    if context.is_super_admin():
+        pass
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+        pass
+    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+        if user_team_id:
+            from app.models.users import User
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            if str(quote.created_by) not in team_user_ids:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete quotes from your team members.")
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not assigned to a team.")
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to delete quotes. Only managers and administrators can delete quotes.")
     
     quote.is_deleted = True
     db.commit()

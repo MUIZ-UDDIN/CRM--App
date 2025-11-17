@@ -13,6 +13,9 @@ from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models.sms import SMSMessage as SMSModel, SMSDirection, SMSStatus
 from ..services.twilio_service import TwilioService
+from ..middleware.tenant import get_tenant_context
+from ..middleware.permissions import has_permission
+from ..models.permissions import Permission
 
 router = APIRouter()
 twilio_service = TwilioService()
@@ -144,14 +147,36 @@ async def delete_sms_message(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Delete SMS message"""
+    """Delete SMS message - Only Managers and Admins"""
+    context = get_tenant_context(current_user)
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
+    
     message = db.query(SMSModel).filter(
-        SMSModel.id == message_id,
-        SMSModel.user_id == current_user["id"]
+        SMSModel.id == message_id
     ).first()
     
     if not message:
         raise HTTPException(status_code=404, detail="SMS message not found")
+    
+    # Only Managers and Admins can delete SMS
+    if context.is_super_admin():
+        pass
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+        pass
+    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+        if user_team_id:
+            from ..models.users import User
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            if str(message.user_id) not in team_user_ids:
+                raise HTTPException(status_code=403, detail="You can only delete SMS from your team members.")
+        else:
+            raise HTTPException(status_code=403, detail="You are not assigned to a team.")
+    else:
+        raise HTTPException(status_code=403, detail="You don't have permission to delete SMS messages. Only managers and administrators can delete SMS.")
     
     db.delete(message)
     db.commit()

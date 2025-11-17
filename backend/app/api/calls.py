@@ -13,6 +13,9 @@ from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models.calls import Call as CallModel, CallDirection, CallStatus
 from ..services.twilio_service import TwilioService
+from ..middleware.tenant import get_tenant_context
+from ..middleware.permissions import has_permission
+from ..models.permissions import Permission
 
 router = APIRouter()
 twilio_service = TwilioService()
@@ -275,12 +278,15 @@ async def delete_call(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Delete call record"""
+    """Delete call record - Only Managers and Admins"""
     import uuid
+    context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
     call = db.query(CallModel).filter(
         CallModel.id == call_id,
@@ -288,7 +294,26 @@ async def delete_call(
     ).first()
     
     if not call:
-        raise HTTPException(status_code=404, detail="Call not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Call not found")
+    
+    # Only Managers and Admins can delete calls
+    if context.is_super_admin():
+        pass
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+        pass
+    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+        if user_team_id:
+            from ..models.users import User
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            if str(call.user_id) not in team_user_ids:
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete calls from your team members.")
+        else:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You are not assigned to a team.")
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to delete calls. Only managers and administrators can delete calls.")
     
     db.delete(call)
     db.commit()
