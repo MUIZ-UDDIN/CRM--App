@@ -634,8 +634,10 @@ export default function Deals() {
       setShowDeleteModal(false);
       setDealToDelete(null);
       fetchDeals();
-    } catch (error) {
-      toast.error('Failed to delete deal');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to delete deal';
+      toast.error(errorMessage);
+      setShowDeleteModal(false);
     }
   };
 
