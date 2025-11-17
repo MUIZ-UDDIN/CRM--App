@@ -100,8 +100,9 @@ export default function TeamsPage() {
       
       setTeamMembers(response.data);
     } catch (error: any) {
-      toast.error('Failed to load team members');
-      console.error(error);
+      console.error('Failed to load team members:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to load team members';
+      toast.error(errorMessage);
     }
   };
 

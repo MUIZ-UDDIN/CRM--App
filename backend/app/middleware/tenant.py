@@ -263,11 +263,11 @@ def validate_team_access(user: User, team_id: str):
     if user_role.lower() in ['super_admin', 'company_admin']:
         return user
     
-    # Team members (sales_manager, sales_rep, company_user, support) can access their own team
+    # Sales managers and team members can access their own team
     if user_team_id and str(user_team_id) == str(team_id):
         return user
     
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail="Access denied to this team"
+        detail="You don't have permission to access this team. You can only view your own team members."
     )

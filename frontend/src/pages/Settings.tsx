@@ -200,9 +200,10 @@ export default function Settings() {
           joined_at: user.created_at?.split('T')[0] || 'N/A',
         })));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching team members:', error);
-      toast.error('Failed to load team members');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to load team members';
+      toast.error(errorMessage);
     }
   };
 
@@ -301,7 +302,8 @@ export default function Settings() {
       setTeamMembers(response.data);
     } catch (error: any) {
       console.error('Failed to load team members:', error);
-      toast.error('Failed to load team members');
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to load team members';
+      toast.error(errorMessage);
     }
   };
 
