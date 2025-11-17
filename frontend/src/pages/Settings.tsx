@@ -2227,22 +2227,26 @@ export default function Settings() {
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="Search roles..."
-                      value={roleSearchTerm}
+                      placeholder={!teamMemberForm.role ? "Search and select role..." : ""}
+                      value={roleSearchTerm || teamMemberForm.role || ''}
                       onChange={(e) => {
                         setRoleSearchTerm(e.target.value);
                         setShowRoleDropdown(true);
                       }}
-                      onFocus={() => setShowRoleDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowRoleDropdown(false), 200)}
+                      onFocus={(e) => {
+                        // Clear the input to show dropdown when focused
+                        if (!roleSearchTerm && teamMemberForm.role) {
+                          setRoleSearchTerm('');
+                        }
+                        setShowRoleDropdown(true);
+                      }}
+                      onBlur={() => setTimeout(() => {
+                        setShowRoleDropdown(false);
+                        setRoleSearchTerm(''); // Clear search term when closing
+                      }, 200)}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                       required
                     />
-                    {!roleSearchTerm && teamMemberForm.role && (
-                      <div className="absolute inset-y-0 left-0 flex items-center px-3 pointer-events-none">
-                        <span className="text-gray-900">{teamMemberForm.role}</span>
-                      </div>
-                    )}
                   </div>
                   {showRoleDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
