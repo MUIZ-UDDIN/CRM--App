@@ -433,7 +433,24 @@ export default function Workflows() {
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1 min-w-0 overflow-hidden">
-                        <h3 className="text-lg font-semibold text-gray-900 break-words">{workflow.name}</h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="text-lg font-semibold text-gray-900 break-words">{workflow.name}</h3>
+                          {workflow.scope && (
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${
+                              workflow.scope === 'global' ? 'bg-purple-100 text-purple-700' :
+                              workflow.scope === 'company' ? 'bg-blue-100 text-blue-700' :
+                              workflow.scope === 'team' ? 'bg-green-100 text-green-700' :
+                              'bg-gray-100 text-gray-700'
+                            }`}>
+                              {workflow.scope === 'global' && <GlobeAltIcon className="w-3 h-3" />}
+                              {workflow.scope === 'company' && <BuildingOfficeIcon className="w-3 h-3" />}
+                              {workflow.scope === 'team' && <UserGroupIcon className="w-3 h-3" />}
+                              {workflow.scope === 'global' ? 'Global' :
+                               workflow.scope === 'company' ? 'Company' :
+                               workflow.scope === 'team' ? 'Team' : 'Personal'}
+                            </span>
+                          )}
+                        </div>
                         <p className="text-sm text-gray-600 mt-1 break-words overflow-wrap-anywhere line-clamp-2">{workflow.description}</p>
                       </div>
                       <span className={`ml-3 inline-flex px-3 py-1 text-xs font-semibold rounded-full flex-shrink-0 ${
