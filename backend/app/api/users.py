@@ -540,3 +540,74 @@ async def delete_user(
     db.commit()
     
     return {"message": "User deleted successfully"}
+
+
+@router.get("/assignable/list", response_model=List[UserResponse])
+async def get_assignable_users(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get list of users that current user can assign deals/leads to"""
+    context = get_tenant_context(current_user)
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
+    team_id = current_user.get('team_id')
+    
+    # Super Admin can assign to anyone in any company
+    if context.is_super_admin():
+        users = db.query(UserModel).filter(
+            UserModel.is_deleted == False,
+            UserModel.is_active == True
+        ).all()
+    
+    # Company Admin can assign within their company
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
+        if not company_id:
+            return []
+        users = db.query(UserModel).filter(
+            UserModel.company_id == company_id,
+            UserModel.is_deleted == False,
+            UserModel.is_active == True
+        ).all()
+    
+    # Sales Manager can assign to their team members
+    elif has_permission(current_user, Permission.MANAGE_TEAM_USERS):
+        if not team_id:
+            # If no team, can only assign to self
+            users = db.query(UserModel).filter(
+                UserModel.id == user_id,
+                UserModel.is_deleted == False
+            ).all()
+        else:
+            users = db.query(UserModel).filter(
+                UserModel.team_id == team_id,
+                UserModel.is_deleted == False,
+                UserModel.is_active == True
+            ).all()
+    
+    # Sales Rep cannot assign
+    else:
+        return []
+    
+    return [
+        UserResponse(
+            id=str(user.id),
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            role=user.user_role.value if isinstance(user.user_role, UserRole) else user.user_role,
+            user_role=user.user_role.value if isinstance(user.user_role, UserRole) else user.user_role,
+            company_id=str(user.company_id) if user.company_id else None,
+            phone=user.phone,
+            title=user.title,
+            department=user.department,
+            location=user.location,
+            bio=user.bio,
+            avatar=user.avatar,
+            team_id=str(user.team_id) if user.team_id else None,
+            is_active=user.is_active,
+            created_at=user.created_at,
+            status=user.status.value if user.status else None
+        )
+        for user in users
+    ]
