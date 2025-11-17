@@ -635,7 +635,10 @@ export default function Deals() {
       setDealToDelete(null);
       fetchDeals();
     } catch (error: any) {
-      const errorMessage = error.response?.data?.detail || 'Failed to delete deal';
+      console.error('Delete deal error:', error);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to delete deal';
       toast.error(errorMessage);
       setShowDeleteModal(false);
     }
