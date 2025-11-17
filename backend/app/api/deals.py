@@ -365,7 +365,13 @@ def update_deal(
     db: Session = Depends(get_db)
 ):
     """Update a specific deal"""
+    import logging
+    logger = logging.getLogger(__name__)
+    
     company_id = current_user.get('company_id')
+    user_id = current_user.get('id')
+    
+    logger.info(f"Update deal request - Deal ID: {deal_id}, User: {user_id}, Company: {company_id}, Data: {deal_data}")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="User must belong to a company")
@@ -379,7 +385,8 @@ def update_deal(
     ).first()
     
     if not deal:
-        raise HTTPException(status_code=404, detail="Deal not found")
+        logger.warning(f"Deal not found - ID: {deal_id}, Company: {company_id}")
+        raise HTTPException(status_code=404, detail="Deal not found or you don't have access to it")
     
     # Track status changes for workflow triggers
     old_status = deal.status
@@ -408,15 +415,20 @@ def update_deal(
             # Company Admin can assign within company
             if str(new_owner.company_id) == company_id:
                 can_assign = True
-        elif has_permission(current_user, Permission.ASSIGN_TEAM_LEADS) and user_team_id:
+        elif has_permission(current_user, Permission.ASSIGN_TEAM_LEADS):
             # Sales Manager can assign to their team members
-            if str(new_owner.team_id) == user_team_id:
+            if user_team_id and str(new_owner.team_id) == user_team_id:
                 can_assign = True
+            # Sales Manager can also assign to themselves
+            elif str(new_owner.id) == user_id:
+                can_assign = True
+        
+        # Sales Reps cannot assign deals (no ASSIGN permission)
         
         if not can_assign:
             raise HTTPException(
                 status_code=403,
-                detail="You don't have permission to assign deals to this user"
+                detail="You don't have permission to assign deals to this user. Sales Managers can only assign to their team members."
             )
     
     # Update fields
