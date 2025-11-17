@@ -607,7 +607,7 @@ async def get_assignable_users(
             team_id=str(user.team_id) if user.team_id else None,
             is_active=user.is_active,
             created_at=user.created_at,
-            status=user.status.value if user.status else None
+            status=user.status.value if hasattr(user.status, 'value') else user.status
         )
         for user in users
     ]
