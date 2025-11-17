@@ -2,7 +2,7 @@
 Deals API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from pydantic import BaseModel
 from datetime import datetime
