@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   PlusIcon, 
   RocketLaunchIcon,
@@ -32,6 +33,7 @@ const CATEGORIES = [
 ];
 
 export default function WorkflowTemplates() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -109,7 +111,7 @@ export default function WorkflowTemplates() {
         </div>
         {user?.role === 'super_admin' && (
           <button
-            onClick={() => window.location.href = '/workflows'}
+            onClick={() => navigate('/workflows')}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
           >
             <PlusIcon className="h-5 w-5" />
