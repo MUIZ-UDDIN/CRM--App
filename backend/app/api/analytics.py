@@ -103,7 +103,9 @@ async def get_pipeline_analytics(
     if date_from:
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
     if date_to:
-        filters.append(Deal.created_at <= datetime.fromisoformat(date_to))
+        # Add one day to include the entire end date
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        filters.append(Deal.created_at < end_date)
     if user_id:
         filters.append(Deal.owner_id == uuid.UUID(user_id))
     if pipeline_id:
@@ -226,7 +228,9 @@ async def get_activity_analytics(
     if date_from:
         filters.append(Activity.created_at >= datetime.fromisoformat(date_from))
     if date_to:
-        filters.append(Activity.created_at <= datetime.fromisoformat(date_to))
+        # Add one day to include the entire end date
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        filters.append(Activity.created_at < end_date)
     if user_id:
         filters.append(Activity.owner_id == uuid.UUID(user_id))
     if activity_type:
