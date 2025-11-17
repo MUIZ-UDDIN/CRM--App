@@ -579,10 +579,10 @@ def delete_deal(
     if context.is_super_admin():
         # Super admin can delete any deal
         pass
-    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
         # Company admin can delete any deal in their company
         pass
-    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
         # Sales manager can only delete deals from their team
         if user_team_id:
             team_user_ids = [str(u.id) for u in db.query(User).filter(

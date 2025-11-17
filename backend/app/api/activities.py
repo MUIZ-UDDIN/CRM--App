@@ -304,14 +304,14 @@ def delete_activity(
     if context.is_super_admin():
         # Super admin can delete any activity
         pass
-    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
         # Company admin can delete any activity in their company
         if str(activity.company_id) != str(context.company_id):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You don't have permission to delete activities from other companies."
             )
-    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
         # Sales manager can only delete activities from their team
         if user_team_id:
             from ..models.users import User

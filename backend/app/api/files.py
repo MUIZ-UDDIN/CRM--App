@@ -657,9 +657,9 @@ async def delete_file(
     # Only Managers and Admins can delete files
     if context.is_super_admin():
         pass
-    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
         pass
-    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
         if user_team_id:
             from app.models.users import User
             team_user_ids = [str(u.id) for u in db.query(User).filter(

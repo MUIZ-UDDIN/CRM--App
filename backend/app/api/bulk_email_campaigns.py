@@ -309,8 +309,8 @@ async def delete_campaign(
     
     # Only Managers and Admins can delete campaigns
     if not (context.is_super_admin() or 
-            has_permission(current_user, Permission.MANAGE_COMPANY_DATA) or
-            has_permission(current_user, Permission.MANAGE_TEAM_DATA)):
+            has_permission(current_user, Permission.VIEW_COMPANY_DATA) or
+            has_permission(current_user, Permission.VIEW_TEAM_DATA)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to delete campaigns. Only managers and administrators can delete campaigns."

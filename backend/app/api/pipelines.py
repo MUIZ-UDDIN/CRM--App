@@ -155,7 +155,7 @@ async def delete_pipeline(
     context = get_tenant_context(current_user)
     
     # Only Super Admin and Company Admin can delete pipelines (CRM customization)
-    if not (context.is_super_admin() or has_permission(current_user, Permission.MANAGE_COMPANY_DATA)):
+    if not (context.is_super_admin() or has_permission(current_user, Permission.CUSTOMIZE_COMPANY_CRM)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to delete pipelines. Only administrators can modify CRM customization settings."
@@ -281,7 +281,7 @@ async def delete_stage(
     context = get_tenant_context(current_user)
     
     # Only Super Admin and Company Admin can delete stages (CRM customization)
-    if not (context.is_super_admin() or has_permission(current_user, Permission.MANAGE_COMPANY_DATA)):
+    if not (context.is_super_admin() or has_permission(current_user, Permission.CUSTOMIZE_COMPANY_CRM)):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to delete pipeline stages. Only administrators can modify CRM customization settings."

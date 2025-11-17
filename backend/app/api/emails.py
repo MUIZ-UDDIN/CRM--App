@@ -409,10 +409,10 @@ async def delete_email(
     if context.is_super_admin():
         # Super admin can delete any email
         pass
-    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
         # Company admin can delete any email in their company
         pass
-    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
         # Sales manager can only delete emails from their team
         if user_team_id:
             from app.models.users import User
