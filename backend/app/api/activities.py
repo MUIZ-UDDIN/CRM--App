@@ -2,7 +2,7 @@
 Activities API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import List, Optional
@@ -14,6 +14,9 @@ import uuid
 from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models.activities import Activity as ActivityModel, ActivityType, ActivityStatus
+from ..middleware.tenant import get_tenant_context
+from ..middleware.permissions import has_permission
+from ..models.permissions import Permission
 
 router = APIRouter()
 
@@ -242,18 +245,71 @@ def delete_activity(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Delete a specific activity"""
-    activity = db.query(ActivityModel).filter(ActivityModel.id == activity_id).first()
+    """Delete a specific activity - Only Managers and Admins"""
+    context = get_tenant_context(current_user)
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
+    
+    # Check if activity exists
+    activity = db.query(ActivityModel).filter(
+        ActivityModel.id == activity_id,
+        ActivityModel.is_deleted == False
+    ).first()
+    
     if not activity:
-        raise HTTPException(status_code=404, detail="Activity not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Activity not found"
+        )
     
-    # Check if user owns this activity
-    if str(activity.owner_id) != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this activity")
+    # CRITICAL: Only Managers and Admins can delete activities
+    # Sales Reps CANNOT delete activities per permission matrix
+    if context.is_super_admin():
+        # Super admin can delete any activity
+        pass
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+        # Company admin can delete any activity in their company
+        if str(activity.company_id) != str(context.company_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to delete activities from other companies."
+            )
+    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+        # Sales manager can only delete activities from their team
+        if user_team_id:
+            from ..models.users import User
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            
+            if str(activity.owner_id) not in team_user_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only delete activities from your team members. This activity belongs to someone outside your team."
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not assigned to a team. Please contact your administrator."
+            )
+    else:
+        # Sales Reps and regular users CANNOT delete activities
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete activities. Only managers and administrators can delete activities. Please contact your manager if you need to remove an activity."
+        )
     
-    db.delete(activity)
+    # Soft delete
+    activity.is_deleted = True
+    activity.updated_at = datetime.utcnow()
+    
     db.commit()
-    return {"message": "Activity deleted successfully"}
+    
+    return {
+        "message": "Activity deleted successfully",
+        "id": str(activity_id)
+    }
 
 
 @router.patch("/{activity_id}")
@@ -433,26 +489,3 @@ def complete_activity(
     }
 
 
-@router.delete("/{activity_id}")
-def delete_activity(
-    activity_id: str,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_active_user)
-):
-    """Delete an activity"""
-    activity = db.query(ActivityModel).filter(ActivityModel.id == activity_id).first()
-    if not activity:
-        raise HTTPException(status_code=404, detail="Activity not found")
-    
-    # Check if user owns this activity
-    if str(activity.owner_id) != current_user["id"]:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this activity")
-    
-    # Actually delete the activity from database
-    db.delete(activity)
-    db.commit()
-    
-    return {
-        "message": "Activity deleted successfully",
-        "id": str(activity_id)
-    }

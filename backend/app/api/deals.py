@@ -521,11 +521,17 @@ def delete_deal(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a specific deal"""
+    """Delete a specific deal - Only Managers and Admins"""
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="User must belong to a company")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User must belong to a company"
+        )
     
     deal = db.query(DealModel).filter(
         and_(
@@ -536,7 +542,43 @@ def delete_deal(
     ).first()
     
     if not deal:
-        raise HTTPException(status_code=404, detail="Deal not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Deal not found"
+        )
+    
+    # CRITICAL: Only Managers and Admins can delete deals
+    # Sales Reps CANNOT delete deals per permission matrix
+    if context.is_super_admin():
+        # Super admin can delete any deal
+        pass
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_DATA):
+        # Company admin can delete any deal in their company
+        pass
+    elif has_permission(current_user, Permission.MANAGE_TEAM_DATA):
+        # Sales manager can only delete deals from their team
+        if user_team_id:
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            
+            if str(deal.owner_id) not in team_user_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only delete deals from your team members. This deal belongs to someone outside your team."
+                )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You are not assigned to a team. Please contact your administrator."
+            )
+    else:
+        # Sales Reps and regular users CANNOT delete deals
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete deals. Only managers and administrators can delete deals. Please contact your manager if you need to remove a deal."
+        )
     
     # Soft delete
     deal.is_deleted = True

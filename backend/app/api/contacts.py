@@ -454,18 +454,12 @@ async def delete_contact(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Access denied to this contact"
                 )
-    elif has_permission(current_user, Permission.VIEW_OWN_DATA):
-        # Regular users can only delete their own contacts
-        if str(contact.owner_id) != str(user_id):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied to this contact"
-            )
     else:
-        # No permission to delete contacts
+        # CRITICAL: Sales Reps and regular users CANNOT delete contacts
+        # Only Managers and Admins can delete contacts per permission matrix
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You don't have permission to delete contacts"
+            detail="You don't have permission to delete contacts. Only managers and administrators can delete contacts. Please contact your administrator if you need to remove a contact."
         )
     
     try:
