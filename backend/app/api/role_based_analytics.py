@@ -729,9 +729,9 @@ def get_personal_recent_activities(db: Session, user_id: str) -> List[Dict[str, 
     return [
         {
             "id": str(activity.id),
-            "type": activity.type,
-            "title": activity.title,
-            "status": activity.status,
+            "type": activity.type.value if hasattr(activity.type, 'value') else str(activity.type),
+            "subject": activity.subject,  # Activity has 'subject' not 'title'
+            "status": activity.status.value if hasattr(activity.status, 'value') else str(activity.status),
             "due_date": activity.due_date.isoformat() if activity.due_date else None,
             "created_at": activity.created_at.isoformat()
         }
