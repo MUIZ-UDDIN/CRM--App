@@ -2,7 +2,7 @@
 Pipeline and Pipeline Stage API endpoints
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, validator
@@ -10,6 +10,9 @@ from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models import Pipeline, PipelineStage, Deal
 from datetime import datetime
+from ..middleware.tenant import get_tenant_context
+from ..middleware.permissions import has_permission
+from ..models.permissions import Permission
 
 router = APIRouter()
 
@@ -148,11 +151,20 @@ async def delete_pipeline(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Soft delete pipeline"""
+    """Soft delete pipeline - Only Admins (CRM Customization)"""
+    context = get_tenant_context(current_user)
+    
+    # Only Super Admin and Company Admin can delete pipelines (CRM customization)
+    if not (context.is_super_admin() or has_permission(current_user, Permission.MANAGE_COMPANY_DATA)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete pipelines. Only administrators can modify CRM customization settings."
+        )
+    
     pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
     
     if not pipeline:
-        raise HTTPException(status_code=404, detail="Pipeline not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pipeline not found")
     
     # Check if there are deals in this pipeline
     deal_count = db.query(Deal).filter(
@@ -162,7 +174,7 @@ async def delete_pipeline(
     
     if deal_count > 0:
         raise HTTPException(
-            status_code=400,
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot delete pipeline with {deal_count} active deals"
         )
     
@@ -265,11 +277,20 @@ async def delete_stage(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Delete pipeline stage"""
+    """Delete pipeline stage - Only Admins (CRM Customization)"""
+    context = get_tenant_context(current_user)
+    
+    # Only Super Admin and Company Admin can delete stages (CRM customization)
+    if not (context.is_super_admin() or has_permission(current_user, Permission.MANAGE_COMPANY_DATA)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete pipeline stages. Only administrators can modify CRM customization settings."
+        )
+    
     stage = db.query(PipelineStage).filter(PipelineStage.id == stage_id).first()
     
     if not stage:
-        raise HTTPException(status_code=404, detail="Stage not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Stage not found")
     
     # Check if there are deals in this stage
     deal_count = db.query(Deal).filter(
