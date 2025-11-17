@@ -154,64 +154,89 @@ async def get_role_based_dashboard(
     
     # Sales Manager - Team-wide analytics
     elif has_permission(current_user, Permission.VIEW_TEAM_ANALYTICS):
-        if not user_team_id:
-            # Return empty metrics instead of error
+        # If Sales Manager has a team_id, show team metrics
+        # If no team_id, show company-wide metrics (all users in their company)
+        if user_team_id:
+            # Get team-wide metrics
             response["metrics"] = {
-                "team_members": 0,
-                "team_deals": 0,
-                "team_deal_value": 0.0,
-                "team_activities": 0
+                "team_members": db.query(func.count(User.id)).filter(
+                    User.team_id == user_team_id,
+                    User.is_deleted == False
+                ).scalar() or 0,
+                "team_deals": db.query(func.count(Deal.id)).filter(
+                    Deal.owner_id.in_(
+                        db.query(User.id).filter(User.team_id == user_team_id)
+                    ),
+                    Deal.is_deleted == False
+                ).scalar() or 0,
+                "team_deal_value": float(db.query(func.sum(Deal.value)).filter(
+                    Deal.owner_id.in_(
+                        db.query(User.id).filter(User.team_id == user_team_id)
+                    ),
+                    Deal.is_deleted == False
+                ).scalar() or 0),
+                "team_activities": db.query(func.count(Activity.id)).filter(
+                    Activity.owner_id.in_(
+                        db.query(User.id).filter(User.team_id == user_team_id)
+                    ),
+                    Activity.is_deleted == False
+                ).scalar() or 0
             }
-            response["message"] = "You are not assigned to a team yet. Please contact your administrator."
-            return response
-        
-        # Get team-wide metrics
-        response["metrics"] = {
-            "team_members": db.query(func.count(User.id)).filter(
-                User.team_id == user_team_id,
-                User.is_deleted == False
-            ).scalar() or 0,
-            "team_deals": db.query(func.count(Deal.id)).filter(
-                Deal.owner_id.in_(
-                    db.query(User.id).filter(User.team_id == user_team_id)
-                ),
-                Deal.is_deleted == False
-            ).scalar() or 0,
-            "team_deal_value": float(db.query(func.sum(Deal.value)).filter(
-                Deal.owner_id.in_(
-                    db.query(User.id).filter(User.team_id == user_team_id)
-                ),
-                Deal.is_deleted == False
-            ).scalar() or 0),
-            "team_activities": db.query(func.count(Activity.id)).filter(
-                Activity.owner_id.in_(
-                    db.query(User.id).filter(User.team_id == user_team_id)
-                ),
-                Activity.is_deleted == False
-            ).scalar() or 0
-        }
-        
-        # Add team-wide charts
-        response["charts"] = [
-            {
-                "type": "bar",
-                "title": "Team Member Performance",
-                "data": get_team_member_performance(db, user_team_id)
-            },
-            {
-                "type": "line",
-                "title": "Team Activity Trend",
-                "data": get_team_activity_trend(db, user_team_id)
+        else:
+            # No team assigned - show company-wide metrics
+            if not company_id:
+                response["metrics"] = {
+                    "team_members": 0,
+                    "team_deals": 0,
+                    "team_deal_value": 0.0,
+                    "team_activities": 0
+                }
+                response["message"] = "No company associated with your account."
+                return response
+            
+            response["metrics"] = {
+                "team_members": db.query(func.count(User.id)).filter(
+                    User.company_id == company_id,
+                    User.is_deleted == False
+                ).scalar() or 0,
+                "team_deals": db.query(func.count(Deal.id)).filter(
+                    Deal.company_id == company_id,
+                    Deal.is_deleted == False
+                ).scalar() or 0,
+                "team_deal_value": float(db.query(func.sum(Deal.value)).filter(
+                    Deal.company_id == company_id,
+                    Deal.is_deleted == False
+                ).scalar() or 0),
+                "team_activities": db.query(func.count(Activity.id)).filter(
+                    Activity.owner_id.in_(
+                        db.query(User.id).filter(User.company_id == company_id)
+                    ),
+                    Activity.is_deleted == False
+                ).scalar() or 0
             }
-        ]
         
-        # Add team-wide tables
-        response["tables"] = [
-            {
-                "title": "Team Deals Pipeline",
-                "data": get_team_deals_pipeline(db, user_team_id)
-            }
-        ]
+        # Add team-wide charts (only if team_id exists)
+        if user_team_id:
+            response["charts"] = [
+                {
+                    "type": "bar",
+                    "title": "Team Member Performance",
+                    "data": get_team_member_performance(db, user_team_id)
+                },
+                {
+                    "type": "line",
+                    "title": "Team Activity Trend",
+                    "data": get_team_activity_trend(db, user_team_id)
+                }
+            ]
+            
+            # Add team-wide tables
+            response["tables"] = [
+                {
+                    "title": "Team Deals Pipeline",
+                    "data": get_team_deals_pipeline(db, user_team_id)
+                }
+            ]
     
     # Regular User / Sales Rep - Personal analytics
     # Allow all authenticated users to view their own analytics
