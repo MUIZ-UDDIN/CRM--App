@@ -368,24 +368,35 @@ def update_deal(
     import logging
     logger = logging.getLogger(__name__)
     
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
     user_id = current_user.get('id')
     
     logger.info(f"Update deal request - Deal ID: {deal_id}, User: {user_id}, Company: {company_id}, Data: {deal_data}")
     
-    if not company_id:
-        raise HTTPException(status_code=403, detail="User must belong to a company")
-    
-    deal = db.query(DealModel).filter(
-        and_(
-            DealModel.id == uuid.UUID(deal_id),
-            DealModel.company_id == uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
-            DealModel.is_deleted == False
-        )
-    ).first()
+    # Super Admin can access deals from any company
+    if context.is_super_admin():
+        deal = db.query(DealModel).filter(
+            and_(
+                DealModel.id == uuid.UUID(deal_id),
+                DealModel.is_deleted == False
+            )
+        ).first()
+    else:
+        # Regular users must belong to a company
+        if not company_id:
+            raise HTTPException(status_code=403, detail="User must belong to a company")
+        
+        deal = db.query(DealModel).filter(
+            and_(
+                DealModel.id == uuid.UUID(deal_id),
+                DealModel.company_id == uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
+                DealModel.is_deleted == False
+            )
+        ).first()
     
     if not deal:
-        logger.warning(f"Deal not found - ID: {deal_id}, Company: {company_id}")
+        logger.warning(f"Deal not found - ID: {deal_id}, Company: {company_id}, Super Admin: {context.is_super_admin()}")
         raise HTTPException(status_code=404, detail="Deal not found or you don't have access to it")
     
     # Track status changes for workflow triggers
@@ -394,8 +405,6 @@ def update_deal(
     
     # Check permission for deal assignment (owner_id change)
     if 'owner_id' in deal_data and deal_data['owner_id'] != str(deal.owner_id):
-        context = get_tenant_context(current_user)
-        user_id = current_user.get('id')
         user_team_id = current_user.get('team_id')
         new_owner_id = deal_data['owner_id']
         
