@@ -852,31 +852,23 @@ export default function Analytics() {
             <h3 className="text-base sm:text-lg font-medium text-gray-900">Revenue Trend</h3>
           </div>
           <div className="p-4 sm:p-6">
-            {revenueAnalytics?.monthly_revenue && revenueAnalytics.monthly_revenue.length > 0 ? (
-              <ResponsiveContainer width="100%" height={250} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                <AreaChart data={revenueData}>
-                  <defs>
-                    <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ fontSize: '11px' }} />
-                  <Legend wrapperStyle={{ fontSize: '11px' }} />
-                  <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#colorRevenue)" />
-                  <Area type="monotone" dataKey="target" stroke="#10B981" fillOpacity={0} strokeDasharray="5 5" />
-                </AreaChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                <ChartBarIcon className="h-16 w-16 mb-3" />
-                <p className="text-lg font-medium">No Revenue Data Available</p>
-                <p className="text-sm mt-1">Revenue data will appear here once deals are won</p>
-              </div>
-            )}
+            <ResponsiveContainer width="100%" height={250} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+              <AreaChart data={revenueData}>
+                <defs>
+                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <Tooltip contentStyle={{ fontSize: '11px' }} />
+                <Legend wrapperStyle={{ fontSize: '11px' }} />
+                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#colorRevenue)" />
+                <Area type="monotone" dataKey="target" stroke="#10B981" fillOpacity={0} strokeDasharray="5 5" />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
 
@@ -926,26 +918,18 @@ export default function Analytics() {
               <h3 className="text-base sm:text-lg font-medium text-gray-900">Weekly Activities</h3>
             </div>
             <div className="p-4 sm:p-6">
-              {activityAnalytics?.activities_by_user && activityAnalytics.activities_by_user.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                  <BarChart data={activityData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                    <XAxis dataKey="day" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                    <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                    <Tooltip contentStyle={{ fontSize: '11px' }} />
-                    <Legend wrapperStyle={{ fontSize: '11px' }} />
-                    <Bar dataKey="calls" fill="#10B981" />
-                    <Bar dataKey="emails" fill="#3B82F6" />
-                    <Bar dataKey="meetings" fill="#8B5CF6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex flex-col items-center justify-center h-64 text-gray-400">
-                  <CalendarIcon className="h-16 w-16 mb-3" />
-                  <p className="text-lg font-medium">No Activity Data Available</p>
-                  <p className="text-sm mt-1">Activity data will appear here once you log calls, emails, and meetings</p>
-                </div>
-              )}
+              <ResponsiveContainer width="100%" height={250} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+                <BarChart data={activityData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis dataKey="day" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                  <Tooltip contentStyle={{ fontSize: '11px' }} />
+                  <Legend wrapperStyle={{ fontSize: '11px' }} />
+                  <Bar dataKey="calls" fill="#10B981" />
+                  <Bar dataKey="emails" fill="#3B82F6" />
+                  <Bar dataKey="meetings" fill="#8B5CF6" />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         </div>
