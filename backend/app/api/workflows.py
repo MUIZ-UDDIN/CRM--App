@@ -382,22 +382,34 @@ async def delete_workflow(
     if not workflow:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
     
-    # Permission check based on workflow scope
+    # Permission check based on workflow ownership
+    # Note: Workflow model doesn't have scope/team_id/created_by fields, only owner_id
     if context.is_super_admin():
+        # Super admin can delete any workflow
         pass
     elif has_permission(current_user, Permission.MANAGE_COMPANY_AUTOMATIONS):
-        # Company admin can delete company and team workflows
+        # Company admin can delete any workflow in their company
         pass
     elif has_permission(current_user, Permission.MANAGE_TEAM_AUTOMATIONS):
-        # Sales manager can delete team workflows only
-        if workflow.scope not in ['team', 'personal']:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete team-level workflows.")
-        if workflow.scope == 'team' and str(workflow.team_id) != str(user_team_id):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete workflows from your team.")
+        # Sales manager can delete workflows owned by their team members
+        from app.models.users import User
+        team_user_ids = [str(u.id) for u in db.query(User).filter(
+            User.team_id == user_team_id,
+            User.is_deleted == False
+        ).all()]
+        
+        if str(workflow.owner_id) not in team_user_ids:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="You can only delete workflows owned by your team members."
+            )
     else:
-        # Sales reps can only delete their own personal workflows
-        if workflow.scope != 'personal' or str(workflow.created_by) != str(user_id):
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own personal workflows.")
+        # Sales reps can only delete their own workflows
+        if str(workflow.owner_id) != str(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="You can only delete your own workflows."
+            )
     
     workflow.is_deleted = True
     db.commit()
