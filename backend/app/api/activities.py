@@ -278,9 +278,18 @@ def delete_activity(
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
     
+    # Convert activity_id to UUID
+    try:
+        activity_uuid = uuid.UUID(activity_id)
+    except (ValueError, AttributeError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid activity ID format"
+        )
+    
     # Check if activity exists
     activity = db.query(ActivityModel).filter(
-        ActivityModel.id == activity_id,
+        ActivityModel.id == activity_uuid,
         ActivityModel.is_deleted == False
     ).first()
     
