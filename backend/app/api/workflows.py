@@ -225,9 +225,9 @@ async def create_workflow(
         status=status,
         actions=[],  # Empty actions array
         owner_id=user_id,
-        company_id=company_id,
-        scope=scope,
-        team_id=team_id if scope == "team" else None
+        company_id=company_id
+        # Note: Workflow model doesn't have scope or team_id fields
+        # Scope is determined by owner_id and permissions
     )
     
     db.add(new_workflow)
