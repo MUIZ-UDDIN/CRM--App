@@ -179,14 +179,39 @@ async def get_activity_analytics(
     - Activity distribution by user/team
     """
     
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "activities")
+    
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
-    is_superuser = current_user.get("is_superuser", False)
+    company_id = current_user.get('company_id')
     
     # Base filters
-    company_id = current_user.get('company_id')
     filters = [Activity.is_deleted == False]
-    if company_id:
-        filters.append(Activity.company_id == company_id)
+    
+    # Apply access level filters
+    if access_level == "all":
+        # Super admin can see all data
+        pass
+    elif access_level == "company":
+        # Company admin can see company data
+        if company_id:
+            filters.append(Activity.company_id == company_id)
+    elif access_level == "team":
+        # Team manager can see team data
+        if current_user.get('team_id'):
+            # Get team members
+            team_member_ids = db.query(User.id).filter(
+                User.team_id == uuid.UUID(current_user.get('team_id')),
+                User.is_deleted == False
+            ).all()
+            if team_member_ids:
+                filters.append(Activity.owner_id.in_([m[0] for m in team_member_ids]))
+            else:
+                filters.append(Activity.owner_id == owner_id)
+    elif access_level == "own":
+        # Regular user can see own data
+        filters.append(Activity.owner_id == owner_id)
+    
     if date_from:
         filters.append(Activity.created_at >= datetime.fromisoformat(date_from))
     if date_to:
@@ -298,6 +323,9 @@ async def get_revenue_analytics(
     db: Session = Depends(get_db)
 ):
     """Get revenue analytics with real monthly data"""
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "revenue")
+    
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
@@ -315,14 +343,37 @@ async def get_revenue_analytics(
         else:
             month_end = month_date.replace(month=month_date.month + 1, day=1)
         
-        # Build filters
+        # Build filters based on access level
         filters = [
-            Deal.company_id == company_id if company_id else Deal.owner_id == owner_id,
             Deal.is_deleted == False,
             Deal.status == DealStatus.WON,
             Deal.actual_close_date >= month_start,
             Deal.actual_close_date < month_end
         ]
+        
+        # Apply access level filters
+        if access_level == "all":
+            # Super admin can see all data
+            pass
+        elif access_level == "company":
+            # Company admin can see company data
+            if company_id:
+                filters.append(Deal.company_id == company_id)
+        elif access_level == "team":
+            # Team manager can see team data
+            if current_user.get('team_id'):
+                # Get team members
+                team_member_ids = db.query(User.id).filter(
+                    User.team_id == uuid.UUID(current_user.get('team_id')),
+                    User.is_deleted == False
+                ).all()
+                if team_member_ids:
+                    filters.append(Deal.owner_id.in_([m[0] for m in team_member_ids]))
+                else:
+                    filters.append(Deal.owner_id == owner_id)
+        elif access_level == "own":
+            # Regular user can see own data
+            filters.append(Deal.owner_id == owner_id)
         
         # Apply user filter
         if user_id:
