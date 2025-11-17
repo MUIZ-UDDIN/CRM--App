@@ -82,18 +82,49 @@ async def get_quotes(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get all quotes for company"""
+    """Get quotes based on user role - Sales Reps see only their own"""
+    context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_id = current_user.get("id")
+    user_team_id = current_user.get('team_id')
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
-    query = db.query(QuoteModel).filter(
-        and_(
-            QuoteModel.company_id == company_id,
-            QuoteModel.is_deleted == False
+    # Role-based filtering
+    if context.is_super_admin():
+        query = db.query(QuoteModel).filter(QuoteModel.is_deleted == False)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company quotes
+        query = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.company_id == company_id,
+                QuoteModel.is_deleted == False
+            )
         )
-    )
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team quotes
+        from app.models.users import User
+        team_user_ids = [str(u.id) for u in db.query(User).filter(
+            User.team_id == user_team_id,
+            User.is_deleted == False
+        ).all()]
+        query = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.company_id == company_id,
+                QuoteModel.created_by.in_([uuid.UUID(uid) for uid in team_user_ids]),
+                QuoteModel.is_deleted == False
+            )
+        )
+    else:
+        # Sales Reps see ONLY their own quotes
+        query = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.company_id == company_id,
+                QuoteModel.created_by == uuid.UUID(user_id),
+                QuoteModel.is_deleted == False
+            )
+        )
     
     if status:
         query = query.filter(QuoteModel.status == status)

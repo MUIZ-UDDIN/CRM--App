@@ -65,13 +65,42 @@ async def get_emails(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get emails by type (inbox, sent, draft, trash) for company"""
+    """Get emails by type - Sales Reps see only their own emails"""
+    from app.middleware.tenant import get_tenant_context
+    from app.middleware.permissions import has_permission
+    from app.models.permissions import Permission
+    
+    context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_id = current_user.get("id")
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    query = db.query(EmailModel).filter(EmailModel.company_id == company_id)
+    # Role-based filtering
+    if context.is_super_admin():
+        query = db.query(EmailModel)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company emails
+        query = db.query(EmailModel).filter(EmailModel.company_id == company_id)
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team emails
+        from app.models.users import User
+        team_user_ids = [str(u.id) for u in db.query(User).filter(
+            User.team_id == user_team_id,
+            User.is_deleted == False
+        ).all()]
+        query = db.query(EmailModel).filter(
+            EmailModel.company_id == company_id,
+            EmailModel.owner_id.in_([uuid.UUID(uid) for uid in team_user_ids])
+        )
+    else:
+        # Sales Reps see ONLY their own emails
+        query = db.query(EmailModel).filter(
+            EmailModel.company_id == company_id,
+            EmailModel.owner_id == uuid.UUID(user_id)
+        )
     
     # Filter by type
     if type == "inbox":
