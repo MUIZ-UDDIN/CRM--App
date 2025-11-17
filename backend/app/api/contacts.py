@@ -151,25 +151,40 @@ async def create_contact(
     if not company_id:
         raise HTTPException(status_code=400, detail="User must belong to a company")
     
-    # Check for existing contact with same email in the SAME company
-    existing_contact = db.query(ContactModel).filter(
-        and_(
-            ContactModel.email == contact.email,
-            ContactModel.company_id == company_id,
-            ContactModel.is_deleted == False
-        )
-    ).first()
+    user_id = current_user["id"]
+    user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    context = get_tenant_context(current_user)
+    
+    # Check for existing contact with same email
+    # Sales Reps check only their own contacts, Managers/Admins check company-wide
+    if context.is_super_admin() or has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Check company-wide for admins
+        existing_contact = db.query(ContactModel).filter(
+            and_(
+                ContactModel.email == contact.email,
+                ContactModel.company_id == company_id,
+                ContactModel.is_deleted == False
+            )
+        ).first()
+    else:
+        # Check only user's own contacts for Sales Reps
+        existing_contact = db.query(ContactModel).filter(
+            and_(
+                ContactModel.email == contact.email,
+                ContactModel.owner_id == user_id_uuid,
+                ContactModel.is_deleted == False
+            )
+        ).first()
     
     if existing_contact:
-        raise HTTPException(status_code=400, detail="Contact with this email already exists in your company")
+        raise HTTPException(status_code=400, detail="A contact with this email already exists. Please use a different email.")
     
     try:
         # Use provided owner_id or default to current user
         if contact.owner_id:
             owner_id = uuid.UUID(contact.owner_id)
         else:
-            user_id = current_user["id"]
-            owner_id = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            owner_id = user_id_uuid
         
         # Create contact dict without owner_id to avoid duplication
         contact_data = contact.dict(exclude={'owner_id'})
@@ -351,18 +366,33 @@ async def update_contact(
     
     update_data = contact_update.dict(exclude_unset=True)
     if "email" in update_data:
-        # Check for duplicate email in the SAME company (excluding soft-deleted contacts)
-        existing_contact = db.query(ContactModel).filter(
-            and_(
-                ContactModel.email == update_data["email"],
-                ContactModel.company_id == company_id,
-                ContactModel.id != contact_id,
-                ContactModel.is_deleted == False
-            )
-        ).first()
+        # Check for duplicate email
+        # Sales Reps check only their own contacts, Managers/Admins check company-wide
+        user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        
+        if context.is_super_admin() or has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+            # Check company-wide for admins
+            existing_contact = db.query(ContactModel).filter(
+                and_(
+                    ContactModel.email == update_data["email"],
+                    ContactModel.company_id == company_id,
+                    ContactModel.id != contact_id,
+                    ContactModel.is_deleted == False
+                )
+            ).first()
+        else:
+            # Check only user's own contacts for Sales Reps
+            existing_contact = db.query(ContactModel).filter(
+                and_(
+                    ContactModel.email == update_data["email"],
+                    ContactModel.owner_id == user_id_uuid,
+                    ContactModel.id != contact_id,
+                    ContactModel.is_deleted == False
+                )
+            ).first()
         
         if existing_contact:
-            raise HTTPException(status_code=400, detail="Contact with this email already exists in your company")
+            raise HTTPException(status_code=400, detail="A contact with this email already exists. Please use a different email.")
     
     try:
         for field, value in update_data.items():

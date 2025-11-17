@@ -200,14 +200,29 @@ async def create_quote(
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    # Check for duplicate quote with same title for this company
-    existing_quote = db.query(QuoteModel).filter(
-        and_(
-            QuoteModel.title == quote_data.title,
-            QuoteModel.company_id == company_id,
-            QuoteModel.is_deleted == False
-        )
-    ).first()
+    # Check for duplicate quote with same title
+    # Sales Reps can only have unique titles in their own quotes
+    # Managers and Admins check company-wide
+    context = get_tenant_context(current_user)
+    
+    if context.is_super_admin() or has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Check company-wide for admins
+        existing_quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.title == quote_data.title,
+                QuoteModel.company_id == company_id,
+                QuoteModel.is_deleted == False
+            )
+        ).first()
+    else:
+        # Check only user's own quotes for Sales Reps
+        existing_quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.title == quote_data.title,
+                QuoteModel.owner_id == user_id,
+                QuoteModel.is_deleted == False
+            )
+        ).first()
     
     if existing_quote:
         raise HTTPException(

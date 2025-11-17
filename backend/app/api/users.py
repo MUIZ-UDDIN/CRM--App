@@ -603,7 +603,7 @@ async def get_assignable_users(
             department=user.department,
             location=user.location,
             bio=user.bio,
-            avatar=user.avatar,
+            avatar=user.avatar_url,
             team_id=str(user.team_id) if user.team_id else None,
             is_active=user.is_active,
             created_at=user.created_at,
