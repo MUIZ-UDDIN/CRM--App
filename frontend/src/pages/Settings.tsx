@@ -2224,19 +2224,26 @@ export default function Settings() {
                   )}
                 </div>
                 <div className="relative">
-                  <input
-                    type="text"
-                    placeholder={teamMemberForm.role || "Search and select role..."}
-                    value={roleSearchTerm}
-                    onChange={(e) => {
-                      setRoleSearchTerm(e.target.value);
-                      setShowRoleDropdown(true);
-                    }}
-                    onFocus={() => setShowRoleDropdown(true)}
-                    onBlur={() => setTimeout(() => setShowRoleDropdown(false), 200)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Search roles..."
+                      value={roleSearchTerm}
+                      onChange={(e) => {
+                        setRoleSearchTerm(e.target.value);
+                        setShowRoleDropdown(true);
+                      }}
+                      onFocus={() => setShowRoleDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowRoleDropdown(false), 200)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                      required
+                    />
+                    {!roleSearchTerm && teamMemberForm.role && (
+                      <div className="absolute inset-y-0 left-0 flex items-center px-3 pointer-events-none">
+                        <span className="text-gray-900">{teamMemberForm.role}</span>
+                      </div>
+                    )}
+                  </div>
                   {showRoleDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {defaultRoles
@@ -2244,7 +2251,8 @@ export default function Settings() {
                         .map(role => (
                           <div
                             key={role}
-                            onClick={() => {
+                            onMouseDown={(e) => {
+                              e.preventDefault();
                               setTeamMemberForm({...teamMemberForm, role});
                               setRoleSearchTerm('');
                               setShowRoleDropdown(false);
@@ -2262,7 +2270,8 @@ export default function Settings() {
                             className="px-3 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between group"
                           >
                             <span
-                              onClick={() => {
+                              onMouseDown={(e) => {
+                                e.preventDefault();
                                 setTeamMemberForm({...teamMemberForm, role});
                                 setRoleSearchTerm('');
                                 setShowRoleDropdown(false);
