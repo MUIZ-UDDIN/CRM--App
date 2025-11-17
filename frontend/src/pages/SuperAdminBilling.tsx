@@ -9,8 +9,11 @@ import {
   BanknotesIcon,
   DocumentTextIcon
 } from '@heroicons/react/24/outline';
+import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
+import { handleApiError } from '../utils/errorHandler';
 
 interface CompanySubscription {
   id: string;
@@ -41,6 +44,8 @@ interface SubscriptionPlan {
 }
 
 export default function SuperAdminBilling() {
+  const { user } = useAuth();
+  const { isSuperAdmin } = usePermissions();
   const [subscriptions, setSubscriptions] = useState<CompanySubscription[]>([]);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
@@ -142,6 +147,19 @@ export default function SuperAdminBilling() {
   const activeCount = subscriptions.filter(s => s.status === 'active').length;
   const trialCount = subscriptions.filter(s => s.status === 'trial').length;
   const suspendedCount = subscriptions.filter(s => s.status === 'suspended').length;
+
+  // Permission check - only Super Admin can access platform billing
+  if (!isSuperAdmin()) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="font-semibold text-red-900 mb-2">Platform Billing Access Denied</div>
+          <p className="text-red-800">Only Super Admins can access platform-wide billing management.</p>
+          <p className="text-red-700 text-sm mt-2">💡 This page is restricted to platform administrators only.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

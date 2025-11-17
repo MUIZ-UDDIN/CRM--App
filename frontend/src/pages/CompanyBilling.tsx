@@ -8,8 +8,10 @@ import {
   ArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
+import { handleApiError } from '../utils/errorHandler';
 
 interface Subscription {
   id: string;
@@ -39,6 +41,7 @@ interface Invoice {
 
 export default function CompanyBilling() {
   const { user } = useAuth();
+  const { isSuperAdmin, isCompanyAdmin } = usePermissions();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -126,6 +129,21 @@ export default function CompanyBilling() {
   const daysRemaining = subscription.trial_ends_at 
     ? Math.max(0, Math.ceil((new Date(subscription.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
     : null;
+
+  // Permission check - only Super Admin and Company Admin can view billing
+  const canViewBilling = isSuperAdmin() || isCompanyAdmin();
+  
+  if (!canViewBilling) {
+    return (
+      <div className="p-6">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="font-semibold text-yellow-900 mb-2">Billing Access Restricted</div>
+          <p className="text-yellow-800">Only Company Admins can view billing information.</p>
+          <p className="text-yellow-700 text-sm mt-2">💡 Contact your Company Admin if you need billing details or have questions about your subscription.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
