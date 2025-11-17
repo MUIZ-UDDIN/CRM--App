@@ -61,15 +61,18 @@ export default function CompanyBilling() {
       setSubscription(subResponse.data);
       setInvoices(invoicesResponse.data);
     } catch (error: any) {
-      // Don't log 404 errors (expected for Super Admin or companies without subscriptions)
-      if (error.response?.status !== 404) {
-        console.error('Failed to load billing data:', error);
-        toast.error('Failed to load billing data');
-      }
-      // Set empty data for 404
+      console.error('Failed to load billing data:', error);
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to load billing data';
+      
       if (error.response?.status === 404) {
         setSubscription(null);
         setInvoices([]);
+        // Show user-friendly message from backend
+        if (error?.response?.data?.detail) {
+          toast.info(error.response.data.detail);
+        }
+      } else {
+        toast.error(errorMessage);
       }
     } finally {
       setLoading(false);

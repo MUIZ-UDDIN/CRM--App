@@ -899,17 +899,32 @@ async def get_current_subscription(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get current user's company subscription (Company Admin)"""
+    """Get current user's company subscription - All roles can view their company subscription"""
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
+    
     if not company_id:
-        raise HTTPException(status_code=404, detail="No company associated with user")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="No company associated with your account. Please contact support."
+        )
+    
+    # Check if user can access this company
+    if not context.is_super_admin() and not context.can_access_company(company_id):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to view this company's subscription."
+        )
     
     subscription = db.query(Subscription).filter(
         Subscription.company_id == uuid.UUID(company_id)
     ).first()
     
     if not subscription:
-        raise HTTPException(status_code=404, detail="No subscription found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="No active subscription found for your company. Please contact your administrator to set up billing."
+        )
     
     # Get user count
     user_count = db.query(User).filter(User.company_id == uuid.UUID(company_id)).count()
