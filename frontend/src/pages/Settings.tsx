@@ -274,7 +274,7 @@ export default function Settings() {
         setInvoices([]);
         // Show user-friendly message from backend
         if (error?.response?.data?.detail) {
-          toast.info(error.response.data.detail);
+          toast(error.response.data.detail, { icon: 'ℹ️' });
         }
       } else {
         toast.error(errorMessage);
