@@ -2,7 +2,7 @@
 Bulk Email Campaigns API - SendGrid integration for mass email
 """
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, EmailStr
@@ -12,6 +12,9 @@ import uuid
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models.email_campaigns import BulkEmailCampaign, BulkEmailAnalytics
+from app.middleware.tenant import get_tenant_context
+from app.middleware.permissions import has_permission
+from app.models.permissions import Permission
 
 router = APIRouter(prefix="/email-campaigns", tags=["Bulk Email Campaigns"])
 
@@ -296,11 +299,22 @@ async def delete_campaign(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a campaign"""
+    """Delete a campaign - Only Managers and Admins"""
+    context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get('team_id')
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
+    
+    # Only Managers and Admins can delete campaigns
+    if not (context.is_super_admin() or 
+            has_permission(current_user, Permission.MANAGE_COMPANY_DATA) or
+            has_permission(current_user, Permission.MANAGE_TEAM_DATA)):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have permission to delete campaigns. Only managers and administrators can delete campaigns."
+        )
     
     campaign = db.query(BulkEmailCampaign).filter(
         BulkEmailCampaign.id == uuid.UUID(campaign_id),
@@ -308,10 +322,10 @@ async def delete_campaign(
     ).first()
     
     if not campaign:
-        raise HTTPException(status_code=404, detail="Campaign not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Campaign not found")
     
     if campaign.status in ['sending', 'sent']:
-        raise HTTPException(status_code=400, detail="Cannot delete sent or sending campaign")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete sent or sending campaign")
     
     campaign.is_deleted = True
     campaign.updated_at = datetime.utcnow()

@@ -356,11 +356,14 @@ async def delete_workflow(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a workflow"""
+    """Delete a workflow - Based on scope and role"""
+    context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_id = current_user.get('id')
+    user_team_id = current_user.get('team_id')
     
     if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
     workflow = db.query(Workflow).filter(
         and_(
@@ -371,7 +374,24 @@ async def delete_workflow(
     ).first()
     
     if not workflow:
-        raise HTTPException(status_code=404, detail="Workflow not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workflow not found")
+    
+    # Permission check based on workflow scope
+    if context.is_super_admin():
+        pass
+    elif has_permission(current_user, Permission.MANAGE_COMPANY_AUTOMATIONS):
+        # Company admin can delete company and team workflows
+        pass
+    elif has_permission(current_user, Permission.MANAGE_TEAM_AUTOMATIONS):
+        # Sales manager can delete team workflows only
+        if workflow.scope not in ['team', 'personal']:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete team-level workflows.")
+        if workflow.scope == 'team' and str(workflow.team_id) != str(user_team_id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete workflows from your team.")
+    else:
+        # Sales reps can only delete their own personal workflows
+        if workflow.scope != 'personal' or str(workflow.created_by) != str(user_id):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only delete your own personal workflows.")
     
     workflow.is_deleted = True
     db.commit()
