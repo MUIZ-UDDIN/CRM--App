@@ -1210,7 +1210,7 @@ export default function Settings() {
                     const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
                     setCompanyForm({...companyForm, phone: value});
                   }}
-                  pattern="[\+]?[0-9\-() ]+"
+                  pattern="[+]?[0-9\-() ]+"
                   maxLength={50}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />

@@ -784,7 +784,7 @@ export default function Contacts() {
                   const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
                   setContactForm({...contactForm, phone: value});
                 }}
-                pattern="[\+]?[0-9\-() ]+"
+                pattern="[+]?[0-9\-() ]+"
                 title="Please enter a valid phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
@@ -919,7 +919,7 @@ export default function Contacts() {
                   const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
                   setContactForm({...contactForm, phone: value});
                 }}
-                pattern="[\+]?[0-9\-() ]+"
+                pattern="[+]?[0-9\-() ]+"
                 title="Please enter a valid phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
