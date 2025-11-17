@@ -416,14 +416,21 @@ async def update_user(
     if user_update.email is not None:
         # Normalize email to lowercase
         email_lower = user_update.email.lower()
-        # Check if email is already taken by another user (case-insensitive)
-        existing = db.query(UserModel).filter(
-            UserModel.email.ilike(email_lower),
-            UserModel.id != user_id,
-            UserModel.is_deleted == False
-        ).first()
-        if existing:
-            raise HTTPException(status_code=400, detail="Email already in use")
+        
+        # Only check for duplicates if email is actually changing
+        if user.email.lower() != email_lower:
+            # Check if email is already taken by another user (case-insensitive)
+            # Convert user_id to UUID for proper comparison
+            user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+            
+            existing = db.query(UserModel).filter(
+                UserModel.email.ilike(email_lower),
+                UserModel.id != user_id_uuid,
+                UserModel.is_deleted == False
+            ).first()
+            if existing:
+                raise HTTPException(status_code=400, detail="Email already in use")
+        
         user.email = email_lower
     if user_update.role is not None:
         # Normalize role from display name to database format
