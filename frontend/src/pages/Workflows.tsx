@@ -4,6 +4,9 @@ import toast from 'react-hot-toast';
 import * as workflowsService from '../services/workflowsService';
 import Pagination from '../components/Pagination';
 import ActionButtons from '../components/common/ActionButtons';
+import { useAuth } from '../contexts/AuthContext';
+import { usePermissions } from '../hooks/usePermissions';
+import { handleApiError } from '../utils/errorHandler';
 import { 
   BoltIcon, 
   PlusIcon, 
@@ -12,6 +15,9 @@ import {
   PlayIcon,
   PauseIcon,
   FunnelIcon,
+  GlobeAltIcon,
+  BuildingOfficeIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline';
 
 interface Workflow {
@@ -25,9 +31,15 @@ interface Workflow {
   executions_count: number;
   last_run?: string;
   created_at: string;
+  scope?: 'global' | 'company' | 'team' | 'user';
+  created_by?: string;
+  company_id?: string;
+  team_id?: string;
 }
 
 export default function Workflows() {
+  const { user } = useAuth();
+  const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
