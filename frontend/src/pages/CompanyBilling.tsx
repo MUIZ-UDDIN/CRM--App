@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   CreditCardIcon,
   BanknotesIcon,
@@ -40,6 +41,7 @@ interface Invoice {
 }
 
 export default function CompanyBilling() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const { isSuperAdmin, isCompanyAdmin } = usePermissions();
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -48,9 +50,18 @@ export default function CompanyBilling() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
+  // Redirect Super Admins to admin billing page
   useEffect(() => {
-    fetchBillingData();
-  }, []);
+    if (isSuperAdmin()) {
+      navigate('/admin/billing');
+    }
+  }, [isSuperAdmin, navigate]);
+
+  useEffect(() => {
+    if (!isSuperAdmin()) {
+      fetchBillingData();
+    }
+  }, [isSuperAdmin]);
 
   const fetchBillingData = async () => {
     try {

@@ -97,8 +97,8 @@ function Sidebar() {
             </Link>
           </li>
           
-          {/* Billing - Different access levels based on permissions */}
-          {hasPermission('manage_billing') && (
+          {/* Billing - Different access levels based on permissions (hide for Super Admins) */}
+          {hasPermission('manage_billing') && !isSuperAdmin() && (
             <li>
               <Link to="/billing" className={`flex items-center px-4 py-3 ${isActive('/billing') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
                 <FaCreditCard className="mr-3 text-lg" />
@@ -107,7 +107,7 @@ function Sidebar() {
             </li>
           )}
           
-          {hasPermission('view_billing') && !hasPermission('manage_billing') && (
+          {hasPermission('view_billing') && !hasPermission('manage_billing') && !isSuperAdmin() && (
             <li>
               <Link to="/billing" className={`flex items-center px-4 py-3 ${isActive('/billing') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
                 <FaCreditCard className="mr-3 text-lg" />
