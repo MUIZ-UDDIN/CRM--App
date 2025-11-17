@@ -617,7 +617,7 @@ export default function Settings() {
     { id: 'team_members' as TabType, name: 'Team Members', icon: UserIcon },
     { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
     // Hide billing tab for Super Admins - they use /admin/billing
-    ...(!isSuperAdmin() ? [{ id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon }] : []),
+    ...(!isSuperAdmin ? [{ id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon }] : []),
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
     { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
     { id: 'phone_numbers' as TabType, name: 'Phone Numbers', icon: PhoneIcon },
