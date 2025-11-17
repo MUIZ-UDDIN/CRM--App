@@ -193,9 +193,12 @@ export default function Settings() {
         const data = await response.json();
         setTeamMembers(data.map((user: any) => ({
           id: user.id,
+          first_name: user.first_name || '',
+          last_name: user.last_name || '',
           name: `${user.first_name} ${user.last_name}`,
           email: user.email,
           role: user.user_role || user.role || 'User',
+          user_role: user.user_role || user.role || 'User',
           status: user.status || (user.is_active ? 'active' : 'inactive'),
           joined_at: user.created_at?.split('T')[0] || 'N/A',
         })));
