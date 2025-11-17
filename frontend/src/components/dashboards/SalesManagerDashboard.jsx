@@ -66,6 +66,20 @@ function SalesManagerDashboard() {
     );
   }
   
+  // Check if there's a message from backend (e.g., no team assigned)
+  if (stats.message) {
+    return (
+      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6 text-center">
+        <FaExclamationTriangle className="text-yellow-500 text-4xl mb-4 mx-auto" />
+        <h3 className="text-lg font-semibold text-yellow-900 mb-2">Team Assignment Required</h3>
+        <p className="text-yellow-800 mb-4">{stats.message}</p>
+        <p className="text-yellow-700 text-sm">
+          💡 Contact your administrator to assign you to a team so you can view team metrics and manage team members.
+        </p>
+      </div>
+    );
+  }
+  
   return (
     <div className="space-y-6">
       {/* Key Metrics */}
