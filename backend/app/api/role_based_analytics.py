@@ -37,6 +37,7 @@ async def get_role_based_dashboard(
     import logging
     logger = logging.getLogger(__name__)
     logger.info(f"Dashboard request - User ID: {user_id}, Type: {type(user_id)}, Company: {company_id}, Team: {user_team_id}")
+    logger.info(f"User role: {context.get_role_name()}, Has VIEW_TEAM_ANALYTICS: {has_permission(current_user, Permission.VIEW_TEAM_ANALYTICS)}")
     
     # Base response structure
     response = {
@@ -154,8 +155,11 @@ async def get_role_based_dashboard(
     
     # Sales Manager - Team-wide analytics ONLY
     elif has_permission(current_user, Permission.VIEW_TEAM_ANALYTICS):
+        logger.info(f"Sales Manager branch - Team ID: {user_team_id}")
+        
         # Sales Manager must have a team assigned - they should NOT see company-wide data
         if not user_team_id:
+            logger.warning(f"Sales Manager has no team_id assigned")
             response["metrics"] = {
                 "team_members": 0,
                 "team_deals": 0,
@@ -165,28 +169,39 @@ async def get_role_based_dashboard(
             response["message"] = "You are not assigned to a team yet. Please contact your administrator to assign you to a team."
             return response
         
+        # Get team members count
+        team_members_count = db.query(func.count(User.id)).filter(
+            User.team_id == user_team_id,
+            User.is_deleted == False
+        ).scalar() or 0
+        
+        # Get team user IDs
+        team_user_ids = db.query(User.id).filter(User.team_id == user_team_id).all()
+        team_user_ids_list = [uid[0] for uid in team_user_ids]
+        
+        logger.info(f"Team {user_team_id} has {team_members_count} members: {team_user_ids_list}")
+        
+        # Get team deals count
+        team_deals_count = db.query(func.count(Deal.id)).filter(
+            Deal.owner_id.in_(team_user_ids_list) if team_user_ids_list else [None],
+            Deal.is_deleted == False
+        ).scalar() or 0
+        
+        # Get team deal value
+        team_deal_value = float(db.query(func.sum(Deal.value)).filter(
+            Deal.owner_id.in_(team_user_ids_list) if team_user_ids_list else [None],
+            Deal.is_deleted == False
+        ).scalar() or 0)
+        
+        logger.info(f"Team deals: {team_deals_count}, Team value: ${team_deal_value}")
+        
         # Get team-wide metrics (ONLY their team, not company-wide)
         response["metrics"] = {
-            "team_members": db.query(func.count(User.id)).filter(
-                User.team_id == user_team_id,
-                User.is_deleted == False
-            ).scalar() or 0,
-            "team_deals": db.query(func.count(Deal.id)).filter(
-                Deal.owner_id.in_(
-                    db.query(User.id).filter(User.team_id == user_team_id)
-                ),
-                Deal.is_deleted == False
-            ).scalar() or 0,
-            "team_deal_value": float(db.query(func.sum(Deal.value)).filter(
-                Deal.owner_id.in_(
-                    db.query(User.id).filter(User.team_id == user_team_id)
-                ),
-                Deal.is_deleted == False
-            ).scalar() or 0),
+            "team_members": team_members_count,
+            "team_deals": team_deals_count,
+            "team_deal_value": team_deal_value,
             "team_activities": db.query(func.count(Activity.id)).filter(
-                Activity.owner_id.in_(
-                    db.query(User.id).filter(User.team_id == user_team_id)
-                ),
+                Activity.owner_id.in_(team_user_ids_list) if team_user_ids_list else [None],
                 Activity.is_deleted == False
             ).scalar() or 0
         }
