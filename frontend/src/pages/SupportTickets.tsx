@@ -44,6 +44,7 @@ export default function SupportTickets() {
   const [assigneeId, setAssigneeId] = useState('');
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
 
   const [newTicket, setNewTicket] = useState({
     subject: '',
@@ -84,7 +85,10 @@ export default function SupportTickets() {
 
   const createTicket = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isCreating) return; // Prevent multiple clicks
+    
     try {
+      setIsCreating(true);
       await apiClient.post('/support-tickets/', newTicket);
       toast.success('Ticket created successfully');
       setShowCreateModal(false);
@@ -92,6 +96,8 @@ export default function SupportTickets() {
       fetchTickets();
     } catch (error) {
       toast.error('Failed to create ticket');
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -256,7 +262,7 @@ export default function SupportTickets() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {tickets.map((ticket) => (
+              {tickets.map((ticket, index) => (
                 <tr key={ticket.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-900">{ticket.subject}</div>
@@ -299,7 +305,9 @@ export default function SupportTickets() {
                             className="fixed inset-0 z-10" 
                             onClick={() => setOpenDropdown(null)}
                           />
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-20">
+                          <div className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border z-20 ${
+                            index >= tickets.length - 2 ? 'bottom-full mb-2' : 'mt-2'
+                          }`}>
                             <div className="py-1">
                               <button
                                 onClick={() => {
@@ -471,9 +479,10 @@ export default function SupportTickets() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  disabled={isCreating}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Ticket
+                  {isCreating ? 'Creating...' : 'Create Ticket'}
                 </button>
               </div>
             </form>
