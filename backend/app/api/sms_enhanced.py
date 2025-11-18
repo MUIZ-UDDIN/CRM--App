@@ -193,20 +193,45 @@ async def get_sms_messages(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all SMS messages for current company"""
+    """Get SMS messages based on user role"""
+    from app.middleware.tenant import get_tenant_context
+    from app.middleware.permissions import has_permission
+    from app.models.permissions import Permission
+    from app.models.users import User
+    
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    # Include records with matching company_id OR NULL company_id for this user (backward compatibility)
-    query = db.query(SMSModel).filter(
-        or_(
+    # Get tenant context for role-based filtering
+    context = get_tenant_context(current_user)
+    
+    # Role-based filtering
+    if context.is_super_admin():
+        # Super Admin sees all SMS
+        query = db.query(SMSModel)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company SMS
+        query = db.query(SMSModel).filter(SMSModel.company_id == company_id)
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team SMS
+        team_user_ids = [u.id for u in db.query(User).filter(
+            User.team_id == uuid.UUID(user_team_id),
+            User.is_deleted == False
+        ).all()]
+        query = db.query(SMSModel).filter(
             SMSModel.company_id == company_id,
-            and_(SMSModel.company_id.is_(None), SMSModel.user_id == user_id)
+            SMSModel.user_id.in_(team_user_ids)
         )
-    )
+    else:
+        # Sales Reps see ONLY their own SMS
+        query = db.query(SMSModel).filter(
+            SMSModel.company_id == company_id,
+            SMSModel.user_id == user_id
+        )
     
     # Filter by type if provided
     if type:
