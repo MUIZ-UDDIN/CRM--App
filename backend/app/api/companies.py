@@ -119,12 +119,12 @@ def create_company(
     import secrets
     from app.core.security import get_password_hash
     
-    # Check if admin email already exists
+    # Check if admin email already exists (emails must be globally unique)
     existing_user = db.query(User).filter(User.email == company.admin_email).first()
     if existing_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already exists"
+            detail=f"Email '{company.admin_email}' is already registered in the system. Please use a different email."
         )
     
     db_company = Company(
