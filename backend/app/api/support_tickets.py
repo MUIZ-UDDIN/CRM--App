@@ -380,21 +380,34 @@ async def delete_ticket(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Delete a ticket - Super Admin and Company Admin only"""
+    """
+    Delete a ticket - Role-based permissions:
+    - Super Admin: Can delete any ticket
+    - Company Admin: Can delete tickets in their company
+    - Sales Manager: Cannot delete tickets
+    - Sales Rep: Cannot delete tickets
+    """
     context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
     
+    # Only Super Admin and Company Admin can delete tickets
     if not context.is_super_admin() and not has_permission(current_user, Permission.MANAGE_COMPANY_SUPPORT):
-        raise HTTPException(status_code=403, detail="Only admins can delete tickets")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Only Super Admin and Company Admin can delete tickets"
+        )
     
     ticket = db.query(SupportTicket).filter(SupportTicket.id == uuid.UUID(ticket_id)).first()
     
     if not ticket:
-        raise HTTPException(status_code=404, detail="Ticket not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
     
     # Company admin can only delete tickets in their company
     if not context.is_super_admin() and str(ticket.company_id) != company_id:
-        raise HTTPException(status_code=403, detail="Access denied")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="You can only delete tickets from your company"
+        )
     
     db.delete(ticket)
     db.commit()
@@ -409,28 +422,80 @@ async def assign_ticket(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Assign a ticket to a user"""
+    """
+    Assign a ticket to a user - Role-based permissions:
+    - Super Admin: Can assign any ticket to any user
+    - Company Admin: Can assign company tickets to company users
+    - Sales Manager: Can assign team tickets to team members
+    - Sales Rep: Cannot assign tickets
+    """
     try:
         context = get_tenant_context(current_user)
         company_id = current_user.get('company_id')
+        team_id = current_user.get('team_id')
+        
+        # Check if user has permission to assign tickets
+        can_assign = (
+            context.is_super_admin() or 
+            has_permission(current_user, Permission.MANAGE_COMPANY_SUPPORT) or
+            has_permission(current_user, Permission.MANAGE_TEAM_SUPPORT)
+        )
+        
+        if not can_assign:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="You don't have permission to assign tickets"
+            )
         
         # Get ticket
         ticket = db.query(SupportTicket).filter(SupportTicket.id == uuid.UUID(ticket_id)).first()
         
         if not ticket:
-            raise HTTPException(status_code=404, detail="Ticket not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
         
-        # Check permissions
+        # Check access to this ticket
         if not context.is_super_admin() and str(ticket.company_id) != company_id:
-            raise HTTPException(status_code=403, detail="Access denied")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="You can only assign tickets from your company"
+            )
+        
+        # Sales Manager can only assign tickets within their team
+        if has_permission(current_user, Permission.MANAGE_TEAM_SUPPORT) and not has_permission(current_user, Permission.MANAGE_COMPANY_SUPPORT):
+            if not team_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You are not assigned to a team"
+                )
+            # Check if ticket belongs to team (created by or assigned to team member)
+            team_user_ids = [u.id for u in db.query(User).filter(
+                User.team_id == uuid.UUID(team_id),
+                User.is_deleted == False
+            ).all()]
+            if ticket.created_by_id not in team_user_ids and (ticket.assigned_to_id and ticket.assigned_to_id not in team_user_ids):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only assign tickets from your team"
+                )
         
         # Verify assignee exists and belongs to same company
         assignee = db.query(User).filter(User.id == uuid.UUID(assigned_to_id)).first()
         if not assignee:
-            raise HTTPException(status_code=404, detail="User not found")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
         
         if not context.is_super_admin() and str(assignee.company_id) != company_id:
-            raise HTTPException(status_code=403, detail="Can only assign to users in your company")
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Can only assign to users in your company"
+            )
+        
+        # Sales Manager can only assign to team members
+        if has_permission(current_user, Permission.MANAGE_TEAM_SUPPORT) and not has_permission(current_user, Permission.MANAGE_COMPANY_SUPPORT):
+            if assignee.id not in team_user_ids:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only assign tickets to your team members"
+                )
         
         # Assign ticket
         ticket.assigned_to_id = uuid.UUID(assigned_to_id)

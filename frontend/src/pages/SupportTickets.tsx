@@ -5,7 +5,11 @@ import {
   CheckCircleIcon, 
   XCircleIcon,
   ClockIcon,
-  ExclamationCircleIcon
+  ExclamationCircleIcon,
+  EllipsisVerticalIcon,
+  EyeIcon,
+  UserPlusIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import apiClient from '../services/apiClient';
@@ -34,9 +38,12 @@ export default function SupportTickets() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterPriority, setFilterPriority] = useState<string>('all');
   const [assigneeId, setAssigneeId] = useState('');
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const [newTicket, setNewTicket] = useState({
     subject: '',
@@ -47,7 +54,17 @@ export default function SupportTickets() {
 
   useEffect(() => {
     fetchTickets();
+    fetchAvailableUsers();
   }, [filterStatus, filterPriority]);
+
+  const fetchAvailableUsers = async () => {
+    try {
+      const response = await apiClient.get('/users/');
+      setAvailableUsers(response.data);
+    } catch (error) {
+      console.error('Failed to load users');
+    }
+  };
 
   const fetchTickets = async () => {
     try {
@@ -95,10 +112,30 @@ export default function SupportTickets() {
       toast.success('Ticket assigned successfully');
       setShowAssignModal(false);
       setAssigneeId('');
+      setSelectedTicket(null);
       fetchTickets();
     } catch (error) {
       toast.error('Failed to assign ticket');
     }
+  };
+
+  const deleteTicket = async (ticketId: string) => {
+    if (!confirm('Are you sure you want to delete this ticket? This action cannot be undone.')) return;
+    try {
+      await apiClient.delete(`/support-tickets/${ticketId}`);
+      toast.success('Ticket deleted successfully');
+      fetchTickets();
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to delete ticket');
+    }
+  };
+
+  const canDeleteTicket = () => {
+    return user?.role === 'super_admin' || user?.role === 'company_admin';
+  };
+
+  const canAssignTicket = () => {
+    return user?.role === 'super_admin' || user?.role === 'company_admin' || user?.role === 'sales_manager';
   };
 
   const getPriorityColor = (priority: string) => {
@@ -248,41 +285,105 @@ export default function SupportTickets() {
                     {new Date(ticket.created_at).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      {!ticket.assigned_to_id && (
-                        <button
-                          onClick={() => {
-                            setSelectedTicket(ticket);
-                            setShowAssignModal(true);
-                          }}
-                          className="text-purple-600 hover:text-purple-800 text-sm font-medium"
-                        >
-                          Assign
-                        </button>
-                      )}
-                      {ticket.status === 'open' && (
-                        <button
-                          onClick={() => updateTicketStatus(ticket.id, 'in_progress')}
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Start
-                        </button>
-                      )}
-                      {ticket.status === 'in_progress' && (
-                        <button
-                          onClick={() => updateTicketStatus(ticket.id, 'resolved')}
-                          className="text-green-600 hover:text-green-800 text-sm"
-                        >
-                          Resolve
-                        </button>
-                      )}
-                      {ticket.status === 'resolved' && (
-                        <button
-                          onClick={() => updateTicketStatus(ticket.id, 'closed')}
-                          className="text-gray-600 hover:text-gray-800 text-sm"
-                        >
-                          Close
-                        </button>
+                    <div className="relative">
+                      <button
+                        onClick={() => setOpenDropdown(openDropdown === ticket.id ? null : ticket.id)}
+                        className="p-1 hover:bg-gray-100 rounded-full"
+                      >
+                        <EllipsisVerticalIcon className="h-5 w-5 text-gray-600" />
+                      </button>
+                      
+                      {openDropdown === ticket.id && (
+                        <>
+                          <div 
+                            className="fixed inset-0 z-10" 
+                            onClick={() => setOpenDropdown(null)}
+                          />
+                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border z-20">
+                            <div className="py-1">
+                              <button
+                                onClick={() => {
+                                  setSelectedTicket(ticket);
+                                  setShowViewModal(true);
+                                  setOpenDropdown(null);
+                                }}
+                                className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                              >
+                                <EyeIcon className="h-4 w-4" />
+                                View Details
+                              </button>
+                              
+                              {canAssignTicket() && (
+                                <button
+                                  onClick={() => {
+                                    setSelectedTicket(ticket);
+                                    setShowAssignModal(true);
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <UserPlusIcon className="h-4 w-4" />
+                                  {ticket.assigned_to_id ? 'Reassign' : 'Assign'}
+                                </button>
+                              )}
+                              
+                              {ticket.status === 'open' && (
+                                <button
+                                  onClick={() => {
+                                    updateTicketStatus(ticket.id, 'in_progress');
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
+                                >
+                                  <ClockIcon className="h-4 w-4" />
+                                  Start Progress
+                                </button>
+                              )}
+                              
+                              {ticket.status === 'in_progress' && (
+                                <button
+                                  onClick={() => {
+                                    updateTicketStatus(ticket.id, 'resolved');
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-gray-100"
+                                >
+                                  <CheckCircleIcon className="h-4 w-4" />
+                                  Mark Resolved
+                                </button>
+                              )}
+                              
+                              {ticket.status === 'resolved' && (
+                                <button
+                                  onClick={() => {
+                                    updateTicketStatus(ticket.id, 'closed');
+                                    setOpenDropdown(null);
+                                  }}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
+                                >
+                                  <XCircleIcon className="h-4 w-4" />
+                                  Close Ticket
+                                </button>
+                              )}
+                              
+                              {canDeleteTicket() && (
+                                <>
+                                  <div className="border-t my-1"></div>
+                                  <button
+                                    onClick={() => {
+                                      deleteTicket(ticket.id);
+                                      setOpenDropdown(null);
+                                    }}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                  >
+                                    <TrashIcon className="h-4 w-4" />
+                                    Delete Ticket
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        </>
                       )}
                     </div>
                   </td>
@@ -380,6 +481,72 @@ export default function SupportTickets() {
         </div>
       )}
 
+      {/* View Ticket Modal */}
+      {showViewModal && selectedTicket && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">{selectedTicket.subject}</h2>
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircleIcon className="h-6 w-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex gap-2">
+                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(selectedTicket.status)}`}>
+                  {getStatusIcon(selectedTicket.status)}
+                  {selectedTicket.status.replace('_', ' ').toUpperCase()}
+                </span>
+                <span className={`px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(selectedTicket.priority)}`}>
+                  {selectedTicket.priority.toUpperCase()}
+                </span>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-semibold text-gray-700 mb-2">Description</h3>
+                <p className="text-gray-900 whitespace-pre-wrap">{selectedTicket.description}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-t pt-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Created By</h3>
+                  <p className="text-gray-900">{selectedTicket.created_by_name}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Assigned To</h3>
+                  <p className="text-gray-900">{selectedTicket.assigned_to_name || 'Unassigned'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Category</h3>
+                  <p className="text-gray-900">{selectedTicket.category || 'N/A'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Created At</h3>
+                  <p className="text-gray-900">{new Date(selectedTicket.created_at).toLocaleString()}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-700 mb-1">Last Updated</h3>
+                  <p className="text-gray-900">{new Date(selectedTicket.updated_at).toLocaleString()}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t">
+              <button
+                onClick={() => setShowViewModal(false)}
+                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Assign Ticket Modal */}
       {showAssignModal && selectedTicket && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -391,19 +558,21 @@ export default function SupportTickets() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Assign To (User ID) *
+                  Assign To *
                 </label>
-                <input
-                  type="text"
+                <select
                   required
                   value={assigneeId}
                   onChange={(e) => setAssigneeId(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Enter user ID"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Note: You need the user's ID. A user selector will be added soon.
-                </p>
+                >
+                  <option value="">Select a user...</option>
+                  {availableUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.first_name} {u.last_name} ({u.email})
+                    </option>
+                  ))}
+                </select>
               </div>
             </div>
 
@@ -412,6 +581,7 @@ export default function SupportTickets() {
                 onClick={() => {
                   setShowAssignModal(false);
                   setAssigneeId('');
+                  setSelectedTicket(null);
                 }}
                 className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
               >
