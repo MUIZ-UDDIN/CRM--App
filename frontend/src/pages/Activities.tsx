@@ -509,10 +509,14 @@ export default function Activities() {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {activity.owner_name || 'N/A'}
+                        <div className="truncate max-w-[150px]" title={activity.owner_name}>
+                          {activity.owner_name || 'N/A'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {activity.company_name || 'N/A'}
+                        <div className="truncate max-w-[150px]" title={activity.company_name}>
+                          {activity.company_name || 'N/A'}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {formatDate(activity.due_date)}
@@ -591,19 +595,19 @@ export default function Activities() {
                           )}
                           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
                             {activity.owner_name && (
-                              <div className="flex items-center">
-                                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="flex items-center max-w-[140px]" title={activity.owner_name}>
+                                <svg className="h-3 w-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
-                                {activity.owner_name}
+                                <span className="truncate">{activity.owner_name}</span>
                               </div>
                             )}
                             {activity.company_name && (
-                              <div className="flex items-center">
-                                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <div className="flex items-center max-w-[140px]" title={activity.company_name}>
+                                <svg className="h-3 w-3 mr-1 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                                 </svg>
-                                {activity.company_name}
+                                <span className="truncate">{activity.company_name}</span>
                               </div>
                             )}
                             <div className="flex items-center">
