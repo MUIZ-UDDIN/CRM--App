@@ -55,17 +55,51 @@ async def list_conversations(
     db: Session = Depends(get_db)
 ):
     """
-    List all conversations for the company
+    List conversations based on user role
     """
+    from app.middleware.tenant import get_tenant_context
+    from app.middleware.permissions import has_permission
+    from app.models.permissions import Permission
+    from app.models.users import User
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    query = db.query(UserConversation).filter(
-        UserConversation.company_id == company_id,
-        UserConversation.is_deleted == False
-    )
+    # Get tenant context for role-based filtering
+    context = get_tenant_context(current_user)
+    
+    # Role-based filtering
+    if context.is_super_admin():
+        # Super Admin sees all conversations
+        query = db.query(UserConversation).filter(UserConversation.is_deleted == False)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company conversations
+        query = db.query(UserConversation).filter(
+            UserConversation.company_id == company_id,
+            UserConversation.is_deleted == False
+        )
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team conversations
+        team_user_ids = [u.id for u in db.query(User).filter(
+            User.team_id == uuid.UUID(user_team_id),
+            User.is_deleted == False
+        ).all()]
+        query = db.query(UserConversation).filter(
+            UserConversation.company_id == company_id,
+            UserConversation.user_id.in_(team_user_ids),
+            UserConversation.is_deleted == False
+        )
+    else:
+        # Sales Reps see ONLY their own conversations
+        query = db.query(UserConversation).filter(
+            UserConversation.company_id == company_id,
+            UserConversation.user_id == user_id,
+            UserConversation.is_deleted == False
+        )
     
     if status:
         query = query.filter(UserConversation.conversation_status == status)
@@ -105,21 +139,52 @@ async def get_conversation(
     db: Session = Depends(get_db)
 ):
     """
-    Get conversation details with recent messages
+    Get conversation details with recent messages (role-based access)
     """
+    from app.middleware.tenant import get_tenant_context
+    from app.middleware.permissions import has_permission
+    from app.models.permissions import Permission
+    from app.models.users import User
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
+    # Get tenant context for role-based filtering
+    context = get_tenant_context(current_user)
+    
+    # Fetch conversation
     conversation = db.query(UserConversation).filter(
         UserConversation.id == uuid.UUID(conversation_id),
-        UserConversation.company_id == company_id,
         UserConversation.is_deleted == False
     ).first()
     
     if not conversation:
         raise HTTPException(status_code=404, detail="Conversation not found")
+    
+    # Role-based access control
+    if context.is_super_admin():
+        # Super Admin can access any conversation
+        pass
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin can access company conversations
+        if conversation.company_id != company_id:
+            raise HTTPException(status_code=403, detail="Access denied to this conversation")
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager can access team conversations
+        team_user_ids = [u.id for u in db.query(User).filter(
+            User.team_id == uuid.UUID(user_team_id),
+            User.is_deleted == False
+        ).all()]
+        if conversation.company_id != company_id or conversation.user_id not in team_user_ids:
+            raise HTTPException(status_code=403, detail="Access denied to this conversation")
+    else:
+        # Sales Reps can ONLY access their own conversations
+        if conversation.company_id != company_id or conversation.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Access denied to this conversation")
     
     # Get message count
     message_count = db.query(SMSMessage).filter(
