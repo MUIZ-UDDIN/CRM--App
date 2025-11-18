@@ -64,12 +64,7 @@ export default function Analytics() {
   // company_user: See only their own data
   const canFilterByUser = currentUser && ['super_admin', 'company_admin', 'admin', 'sales_manager'].includes(currentUser.role);
   
-  // Debug logging
-  useEffect(() => {
-    console.log('Analytics - Current User:', currentUser);
-    console.log('Analytics - User Role:', currentUser?.role);
-    console.log('Analytics - Can Filter By User:', canFilterByUser);
-  }, [currentUser, canFilterByUser]);
+  // Debug logging removed for production
   
   // Auto-set user filter for regular users only (company_user)
   useEffect(() => {
@@ -274,13 +269,7 @@ export default function Analytics() {
         { month: 'Jun', revenue: 0, deals: 0, target: 0 },
       ];
   
-  // Debug logging for revenue
-  useEffect(() => {
-    if (revenueAnalytics) {
-      console.log('Revenue Analytics Data:', revenueAnalytics);
-      console.log('Processed Revenue Data:', revenueData);
-    }
-  }, [revenueAnalytics]);
+  // Debug logging removed for production
 
   // Pipeline data from API - show empty state if no data
   const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0

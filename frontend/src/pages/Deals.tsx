@@ -325,9 +325,7 @@ export default function Deals() {
         if (grouped[deal.stage_id]) {
           grouped[deal.stage_id].push(deal);
         } else {
-          console.warn('Unknown stage_id:', deal.stage_id, 'for deal:', deal.title);
-          console.warn('Available stages:', Object.keys(grouped));
-          // Add to first stage as fallback
+          // Silently add to first stage as fallback if stage not found
           const firstStageId = Object.keys(grouped)[0];
           if (firstStageId) {
             grouped[firstStageId].push(deal);
