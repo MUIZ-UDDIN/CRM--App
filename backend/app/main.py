@@ -134,6 +134,13 @@ except Exception as e:
     logger.error(f"❌ Failed to import Workflow Templates router: {e}")
     workflow_templates_router = None
 
+try:
+    from app.api.global_defaults import router as global_defaults_router
+    logger.info("✅ Global Defaults router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import Global Defaults router: {e}")
+    global_defaults_router = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -560,6 +567,17 @@ if workflow_templates_router:
     logger.info("✅ Workflow Templates routes registered")
 else:
     logger.warning("⚠️ Workflow Templates router not loaded - skipping registration")
+
+# Global Defaults System (Super Admin only)
+if global_defaults_router:
+    app.include_router(
+        global_defaults_router,
+        prefix="/api",
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Global Defaults routes registered at /api/global-defaults")
+else:
+    logger.warning("⚠️ Global Defaults router not loaded - skipping registration")
 
 # Register custom error handlers to prevent database query exposure
 register_error_handlers(app)

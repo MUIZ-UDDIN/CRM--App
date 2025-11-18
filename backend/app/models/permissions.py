@@ -92,6 +92,14 @@ ROLE_PERMISSIONS = {
         Permission.SUSPEND_COMPANY,
         Permission.MANAGE_BILLING,  # Platform-level billing management
         
+        # Global Platform Defaults (Super Admin exclusive)
+        Permission.MANAGE_GLOBAL_INTEGRATIONS,
+        Permission.MANAGE_GLOBAL_AUTOMATIONS,
+        Permission.CUSTOMIZE_GLOBAL_CRM,
+        Permission.EXPORT_ANY_DATA,
+        Permission.VIEW_ALL_ANALYTICS,
+        Permission.ASSIGN_ANY_LEADS,
+        
         # Own Company Management (same as Company Admin for their company)
         Permission.EDIT_COMPANY,
         Permission.VIEW_BILLING,
