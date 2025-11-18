@@ -234,9 +234,10 @@ export default function SupportTickets() {
           <p className="text-gray-600">No tickets found</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="bg-white rounded-lg border">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                   Subject
@@ -399,6 +400,7 @@ export default function SupportTickets() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       )}
 
