@@ -49,10 +49,45 @@ async def get_sms_messages(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all SMS messages for current user"""
-    messages = db.query(SMSModel).filter(
-        SMSModel.user_id == current_user["id"]
-    ).order_by(SMSModel.created_at.desc()).offset(skip).limit(limit).all()
+    """Get SMS messages based on user role"""
+    import uuid
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
+    
+    if not company_id:
+        raise HTTPException(status_code=403, detail="No company associated with user")
+    
+    # Get tenant context for role-based filtering
+    context = get_tenant_context(current_user)
+    
+    # Role-based filtering
+    if context.is_super_admin():
+        # Super Admin sees all SMS
+        query = db.query(SMSModel)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company SMS
+        query = db.query(SMSModel).filter(SMSModel.company_id == company_id)
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team SMS
+        from ..models.users import User
+        team_user_ids = [u.id for u in db.query(User).filter(
+            User.team_id == uuid.UUID(user_team_id),
+            User.is_deleted == False
+        ).all()]
+        query = db.query(SMSModel).filter(
+            SMSModel.company_id == company_id,
+            SMSModel.user_id.in_(team_user_ids)
+        )
+    else:
+        # Sales Reps see ONLY their own SMS
+        query = db.query(SMSModel).filter(
+            SMSModel.company_id == company_id,
+            SMSModel.user_id == user_id
+        )
+    
+    messages = query.order_by(SMSModel.created_at.desc()).offset(skip).limit(limit).all()
     
     return [
         SMSMessageResponse(
