@@ -82,6 +82,26 @@ class CompanyResponse(BaseModel):
         from_attributes = True
 
 
+class CompanyCreateResponse(BaseModel):
+    id: str
+    name: str
+    plan: str
+    status: str
+    admin_email: str
+    admin_password: str
+    trial_ends_at: Optional[datetime] = None
+    
+    @field_validator('id', mode='before')
+    @classmethod
+    def convert_uuid_to_str(cls, v):
+        if isinstance(v, UUID):
+            return str(v)
+        return v
+    
+    class Config:
+        from_attributes = True
+
+
 class CompanyUserCreate(BaseModel):
     email: EmailStr
     first_name: str
@@ -91,7 +111,7 @@ class CompanyUserCreate(BaseModel):
 
 
 # Super Admin endpoints
-@router.post("/", response_model=CompanyResponse)
+@router.post("/", response_model=CompanyCreateResponse)
 def create_company(
     company: CompanyCreate,
     db: Session = Depends(get_db),
@@ -160,13 +180,21 @@ def create_company(
     db.commit()
     db.refresh(admin_user)
     
-    # TODO: Send email with credentials (for now just log it)
+    # Log credentials (for now, until email sending is implemented)
     print(f"Company created: {db_company.name}")
     print(f"Admin email: {company.admin_email}")
     print(f"Temporary password: {temp_password}")
-    print(f"Please send these credentials to the admin.")
     
-    return db_company
+    # Return company with admin credentials
+    return CompanyCreateResponse(
+        id=str(db_company.id),
+        name=db_company.name,
+        plan=db_company.plan.value,
+        status=db_company.status.value,
+        admin_email=company.admin_email,
+        admin_password=temp_password,
+        trial_ends_at=db_company.trial_ends_at
+    )
 
 
 @router.get("/", response_model=List[CompanyResponse])

@@ -124,7 +124,7 @@ export default function SuperAdminDashboard() {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.post(
+      const response = await axios.post(
         `${API_URL}/api/companies/`,
         {
           name: newCompany.name,
@@ -137,7 +137,23 @@ export default function SuperAdminDashboard() {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Company created successfully with 14-day trial. Admin credentials sent to email.');
+      
+      // Show success message with credentials
+      const { admin_email, admin_password } = response.data;
+      toast.success(
+        `Company created successfully!\n\nAdmin Login:\nEmail: ${admin_email}\nPassword: ${admin_password}`,
+        { duration: 10000 }
+      );
+      
+      // Also show an alert with the credentials
+      alert(
+        `✅ Company Created Successfully!\n\n` +
+        `📧 Admin Email: ${admin_email}\n` +
+        `🔑 Password: ${admin_password}\n\n` +
+        `⚠️ IMPORTANT: Save these credentials!\n` +
+        `The admin can use these to login.`
+      );
+      
       setShowCreateModal(false);
       setNewCompany({ name: '', admin_first_name: '', admin_last_name: '', admin_email: '' });
       fetchCompanies();
