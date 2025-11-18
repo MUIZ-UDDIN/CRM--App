@@ -47,6 +47,10 @@ class Activity(BaseModel):
     location: Optional[str] = None
     outcome: Optional[str] = None
     priority: int = 0
+    owner_id: Optional[str] = None
+    owner_name: Optional[str] = None
+    company_id: Optional[str] = None
+    company_name: Optional[str] = None
     created_at: datetime
     updated_at: datetime
 
@@ -125,7 +129,48 @@ def get_activities(
         query = query.filter(ActivityModel.deal_id == deal_id)
     
     activities = query.all()
-    return activities
+    
+    # Enrich activities with owner and company names
+    from ..models.users import User
+    from ..models.companies import Company
+    
+    enriched_activities = []
+    for activity in activities:
+        activity_dict = {
+            "id": activity.id,
+            "subject": activity.subject,
+            "description": activity.description,
+            "type": activity.type,
+            "status": activity.status,
+            "contact_id": str(activity.contact_id) if activity.contact_id else None,
+            "deal_id": str(activity.deal_id) if activity.deal_id else None,
+            "due_date": activity.due_date,
+            "completed_at": activity.completed_at,
+            "duration_minutes": activity.duration_minutes,
+            "location": activity.location,
+            "outcome": activity.outcome,
+            "priority": activity.priority,
+            "owner_id": str(activity.owner_id) if activity.owner_id else None,
+            "company_id": str(activity.company_id) if activity.company_id else None,
+            "created_at": activity.created_at,
+            "updated_at": activity.updated_at
+        }
+        
+        # Get owner name
+        if activity.owner_id:
+            owner = db.query(User).filter(User.id == activity.owner_id).first()
+            if owner:
+                activity_dict["owner_name"] = f"{owner.first_name} {owner.last_name}"
+        
+        # Get company name
+        if activity.company_id:
+            company = db.query(Company).filter(Company.id == activity.company_id).first()
+            if company:
+                activity_dict["company_name"] = company.name
+        
+        enriched_activities.append(activity_dict)
+    
+    return enriched_activities
 
 
 @router.post("/")

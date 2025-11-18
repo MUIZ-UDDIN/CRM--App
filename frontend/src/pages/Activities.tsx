@@ -23,8 +23,11 @@ interface Activity {
   completed_at?: string;
   duration_minutes?: number;
   owner_id?: string;
+  owner_name?: string;
   contact_id?: string;
   deal_id?: string;
+  company_id?: string;
+  company_name?: string;
   priority?: number;
 }
 
@@ -477,10 +480,10 @@ export default function Activities() {
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subject</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -505,11 +508,14 @@ export default function Activities() {
                           {activity.description}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {formatDate(activity.due_date)}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {activity.owner_name || 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {activity.duration_minutes ? `${activity.duration_minutes} min` : 'N/A'}
+                        {activity.company_name || 'N/A'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {formatDate(activity.due_date)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
@@ -519,9 +525,6 @@ export default function Activities() {
                         }`}>
                           {activity.status}
                         </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        {activity.priority === 2 ? 'High' : activity.priority === 1 ? 'Medium' : 'Low'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <div className="flex items-center justify-end space-x-2">
@@ -587,23 +590,25 @@ export default function Activities() {
                             </p>
                           )}
                           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-600">
-                            <div className="flex items-center">
-                              <CalendarIcon className="h-3 w-3 mr-1" />
-                              {formatDate(activity.due_date)}
-                            </div>
-                            {activity.duration_minutes && (
+                            {activity.owner_name && (
                               <div className="flex items-center">
                                 <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                 </svg>
-                                {activity.duration_minutes} min
+                                {activity.owner_name}
+                              </div>
+                            )}
+                            {activity.company_name && (
+                              <div className="flex items-center">
+                                <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                                {activity.company_name}
                               </div>
                             )}
                             <div className="flex items-center">
-                              <svg className="h-3 w-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11.5V14m0-2.5v-6a1.5 1.5 0 113 0m-3 6a1.5 1.5 0 00-3 0v2a7.5 7.5 0 0015 0v-5a1.5 1.5 0 00-3 0m-6-3V11m0-5.5v-1a1.5 1.5 0 013 0v1m0 0V11m0-5.5a1.5 1.5 0 013 0v3m0 0V11" />
-                              </svg>
-                              {activity.priority === 2 ? 'High' : activity.priority === 1 ? 'Medium' : 'Low'}
+                              <CalendarIcon className="h-3 w-3 mr-1" />
+                              {formatDate(activity.due_date)}
                             </div>
                           </div>
                         </div>
