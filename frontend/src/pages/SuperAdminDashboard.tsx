@@ -50,11 +50,7 @@ export default function SuperAdminDashboard() {
   const [apiError, setApiError] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newCompany, setNewCompany] = useState({
-    name: '',
-    plan: 'free',
-    domain: '',
-    timezone: 'UTC',
-    currency: 'USD'
+    name: ''
   });
 
   useEffect(() => {
@@ -115,18 +111,17 @@ export default function SuperAdminDashboard() {
       const token = localStorage.getItem('token');
       await axios.post(
         `${API_URL}/api/companies/`,
-        newCompany,
+        {
+          name: newCompany.name,
+          plan: 'free',
+          timezone: 'UTC',
+          currency: 'USD'
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Company created successfully');
+      toast.success('Company created successfully with 14-day trial');
       setShowCreateModal(false);
-      setNewCompany({
-        name: '',
-        plan: 'free',
-        domain: '',
-        timezone: 'UTC',
-        currency: 'USD'
-      });
+      setNewCompany({ name: '' });
       fetchCompanies();
     } catch (error: any) {
       console.error('Failed to create company:', error);
@@ -136,7 +131,7 @@ export default function SuperAdminDashboard() {
   };
 
   const handleDeleteCompany = async (companyId: string, companyName: string) => {
-    if (!confirm(`Are you sure you want to DELETE "${companyName}"? This action cannot be undone. All company data will be permanently removed.`)) {
+    if (!confirm(`⚠️ WARNING: Delete "${companyName}"?\n\nThis will permanently delete:\n• The company\n• All users in the company\n• All company data\n\nThis action CANNOT be undone!`)) {
       return;
     }
 
@@ -146,7 +141,7 @@ export default function SuperAdminDashboard() {
         `${API_URL}/api/companies/${companyId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Company deleted successfully');
+      toast.success('Company and all users deleted successfully');
       setOpenDropdownId(null);
       fetchCompanies();
     } catch (error: any) {
@@ -524,7 +519,7 @@ export default function SuperAdminDashboard() {
                             />
                             
                             {/* Dropdown Menu */}
-                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                            <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[60]">
                               <button
                                 onClick={() => {
                                   setOpenDropdownId(null);
@@ -727,74 +722,23 @@ export default function SuperAdminDashboard() {
                 <input
                   type="text"
                   value={newCompany.name}
-                  onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                  onChange={(e) => setNewCompany({ name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter company name"
+                  autoFocus
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Plan
-                </label>
-                <select
-                  value={newCompany.plan}
-                  onChange={(e) => setNewCompany({ ...newCompany, plan: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="free">Free</option>
-                  <option value="starter">Starter</option>
-                  <option value="professional">Professional</option>
-                  <option value="enterprise">Enterprise</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Domain (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={newCompany.domain}
-                  onChange={(e) => setNewCompany({ ...newCompany, domain: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="company.com"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Timezone
-                  </label>
-                  <select
-                    value={newCompany.timezone}
-                    onChange={(e) => setNewCompany({ ...newCompany, timezone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="UTC">UTC</option>
-                    <option value="America/New_York">EST</option>
-                    <option value="America/Chicago">CST</option>
-                    <option value="America/Denver">MST</option>
-                    <option value="America/Los_Angeles">PST</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Currency
-                  </label>
-                  <select
-                    value={newCompany.currency}
-                    onChange={(e) => setNewCompany({ ...newCompany, currency: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                    <option value="CAD">CAD</option>
-                  </select>
-                </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">Default Settings</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• <strong>Plan:</strong> Free (14-day trial)</li>
+                  <li>• <strong>Timezone:</strong> UTC</li>
+                  <li>• <strong>Currency:</strong> USD</li>
+                </ul>
+                <p className="text-xs text-blue-600 mt-2">
+                  These settings can be changed later in company settings.
+                </p>
               </div>
             </div>
 

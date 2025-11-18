@@ -92,7 +92,7 @@ class CompanyUserCreate(BaseModel):
 def create_company(
     company: CompanyCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Create a new company (Super Admin only)"""
     # Check if user has permission to create companies
@@ -111,15 +111,17 @@ def create_company(
                 detail="Domain already exists"
             )
     
-    # Create company
+    # Create company with 14-day trial
+    from datetime import datetime, timedelta
     db_company = Company(
         name=company.name,
-        plan=company.plan,
+        plan=PlanType.FREE,  # Always start with free plan
         domain=company.domain,
-        timezone=company.timezone,
-        currency=company.currency,
-        created_by=current_user.id,
-        status=CompanyStatus.ACTIVE
+        timezone=company.timezone or "UTC",
+        currency=company.currency or "USD",
+        created_by=current_user.get('id'),
+        status=CompanyStatus.ACTIVE,
+        trial_ends_at=datetime.utcnow() + timedelta(days=14)  # 14-day trial
     )
     
     db.add(db_company)
@@ -266,9 +268,9 @@ def update_company(
 def delete_company(
     company_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
-    """Delete company (Super Admin only)"""
+    """Delete company (Super Admin only) - Cascades to delete all users"""
     # Check if user has permission to delete companies
     if not has_permission(current_user, Permission.DELETE_COMPANY):
         raise HTTPException(
@@ -283,18 +285,14 @@ def delete_company(
             detail="Company not found"
         )
     
-    # Check if company has users
-    user_count = db.query(User).filter(User.company_id == company.id).count()
-    if user_count > 0:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot delete company with {user_count} users. Please remove users first."
-        )
+    # Delete all users in the company first (cascade delete)
+    db.query(User).filter(User.company_id == company.id).delete()
     
+    # Delete the company
     db.delete(company)
     db.commit()
     
-    return {"message": "Company deleted successfully"}
+    return {"message": "Company and all associated users deleted successfully"}
 
 
 @router.post("/{company_id}/suspend")
