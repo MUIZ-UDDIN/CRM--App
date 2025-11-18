@@ -71,12 +71,13 @@ def get_activities(
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
     
-    if not company_id:
-        return []
-    
     # Role-based filtering
     if context.is_super_admin():
+        # Super Admin sees ALL activities across all companies
         query = db.query(ActivityModel).filter(ActivityModel.is_deleted == False)
+    elif not company_id:
+        # Non-super admin users must have a company_id
+        return []
     elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
         # Company Admin sees all company activities
         query = db.query(ActivityModel).filter(
