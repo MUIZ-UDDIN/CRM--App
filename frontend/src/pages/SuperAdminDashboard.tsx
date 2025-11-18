@@ -50,7 +50,10 @@ export default function SuperAdminDashboard() {
   const [apiError, setApiError] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newCompany, setNewCompany] = useState({
-    name: ''
+    name: '',
+    admin_first_name: '',
+    admin_last_name: '',
+    admin_email: ''
   });
 
   useEffect(() => {
@@ -106,6 +109,18 @@ export default function SuperAdminDashboard() {
       toast.error('Company name is required');
       return;
     }
+    if (!newCompany.admin_first_name.trim()) {
+      toast.error('Admin first name is required');
+      return;
+    }
+    if (!newCompany.admin_last_name.trim()) {
+      toast.error('Admin last name is required');
+      return;
+    }
+    if (!newCompany.admin_email.trim()) {
+      toast.error('Admin email is required');
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -113,15 +128,18 @@ export default function SuperAdminDashboard() {
         `${API_URL}/api/companies/`,
         {
           name: newCompany.name,
+          admin_first_name: newCompany.admin_first_name,
+          admin_last_name: newCompany.admin_last_name,
+          admin_email: newCompany.admin_email,
           plan: 'free',
           timezone: 'UTC',
           currency: 'USD'
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      toast.success('Company created successfully with 14-day trial');
+      toast.success('Company created successfully with 14-day trial. Admin credentials sent to email.');
       setShowCreateModal(false);
-      setNewCompany({ name: '' });
+      setNewCompany({ name: '', admin_first_name: '', admin_last_name: '', admin_email: '' });
       fetchCompanies();
     } catch (error: any) {
       console.error('Failed to create company:', error);
@@ -424,8 +442,8 @@ export default function SuperAdminDashboard() {
       </div>
 
       {/* Companies Table */}
-      <div className="bg-white rounded-lg shadow overflow-visible">
-        <div className="overflow-x-auto">
+      <div className="bg-white rounded-lg shadow">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -722,23 +740,68 @@ export default function SuperAdminDashboard() {
                 <input
                   type="text"
                   value={newCompany.name}
-                  onChange={(e) => setNewCompany({ name: e.target.value })}
+                  onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter company name"
                   autoFocus
                 />
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-sm font-semibold text-blue-900 mb-2">Default Settings</h3>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• <strong>Plan:</strong> Free (14-day trial)</li>
-                  <li>• <strong>Timezone:</strong> UTC</li>
-                  <li>• <strong>Currency:</strong> USD</li>
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">Company Admin Details</h3>
+                
+                <div className="grid grid-cols-2 gap-3 mb-3">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      First Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCompany.admin_first_name}
+                      onChange={(e) => setNewCompany({ ...newCompany, admin_first_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="First name"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Last Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={newCompany.admin_last_name}
+                      onChange={(e) => setNewCompany({ ...newCompany, admin_last_name: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Last name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={newCompany.admin_email}
+                    onChange={(e) => setNewCompany({ ...newCompany, admin_email: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="admin@company.com"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Login credentials will be sent to this email
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <h3 className="text-xs font-semibold text-blue-900 mb-1">Default Settings</h3>
+                <ul className="text-xs text-blue-800 space-y-0.5">
+                  <li>• Plan: Free (14-day trial)</li>
+                  <li>• Timezone: UTC</li>
+                  <li>• Currency: USD</li>
                 </ul>
-                <p className="text-xs text-blue-600 mt-2">
-                  These settings can be changed later in company settings.
-                </p>
               </div>
             </div>
 

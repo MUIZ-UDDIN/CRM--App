@@ -22,6 +22,9 @@ router = APIRouter(prefix="/api/companies", tags=["companies"])
 # Pydantic models
 class CompanyCreate(BaseModel):
     name: str
+    admin_first_name: str
+    admin_last_name: str
+    admin_email: EmailStr
     plan: PlanType = PlanType.FREE
     domain: Optional[str] = None
     timezone: str = "UTC"
@@ -113,6 +116,17 @@ def create_company(
     
     # Create company with 14-day trial
     from datetime import datetime, timedelta
+    import secrets
+    from app.core.security import get_password_hash
+    
+    # Check if admin email already exists
+    existing_user = db.query(User).filter(User.email == company.admin_email).first()
+    if existing_user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already exists"
+        )
+    
     db_company = Company(
         name=company.name,
         plan=PlanType.FREE,  # Always start with free plan
@@ -127,6 +141,30 @@ def create_company(
     db.add(db_company)
     db.commit()
     db.refresh(db_company)
+    
+    # Generate random password for admin
+    temp_password = secrets.token_urlsafe(12)
+    
+    # Create company admin user
+    admin_user = User(
+        email=company.admin_email,
+        first_name=company.admin_first_name,
+        last_name=company.admin_last_name,
+        hashed_password=get_password_hash(temp_password),
+        company_id=db_company.id,
+        user_role=UserRole.COMPANY_ADMIN,
+        status=UserStatus.ACTIVE
+    )
+    
+    db.add(admin_user)
+    db.commit()
+    db.refresh(admin_user)
+    
+    # TODO: Send email with credentials (for now just log it)
+    print(f"Company created: {db_company.name}")
+    print(f"Admin email: {company.admin_email}")
+    print(f"Temporary password: {temp_password}")
+    print(f"Please send these credentials to the admin.")
     
     return db_company
 
@@ -285,14 +323,39 @@ def delete_company(
             detail="Company not found"
         )
     
-    # Delete all users in the company first (cascade delete)
-    db.query(User).filter(User.company_id == company.id).delete()
+    # Delete all related data in correct order to avoid foreign key violations
+    from app.models import Contact, Deal, Activity, Task, Note, SupportTicket
     
-    # Delete the company
+    # Get all user IDs in the company
+    user_ids = [u.id for u in db.query(User).filter(User.company_id == company.id).all()]
+    
+    if user_ids:
+        # Delete contacts owned by users
+        db.query(Contact).filter(Contact.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        
+        # Delete deals owned by users
+        db.query(Deal).filter(Deal.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        
+        # Delete activities
+        db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        
+        # Delete tasks
+        db.query(Task).filter(Task.assigned_to.in_(user_ids)).delete(synchronize_session=False)
+        
+        # Delete notes
+        db.query(Note).filter(Note.created_by.in_(user_ids)).delete(synchronize_session=False)
+        
+        # Delete support tickets
+        db.query(SupportTicket).filter(SupportTicket.created_by.in_(user_ids)).delete(synchronize_session=False)
+    
+    # Now delete all users
+    db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
+    
+    # Finally delete the company
     db.delete(company)
     db.commit()
     
-    return {"message": "Company and all associated users deleted successfully"}
+    return {"message": "Company and all associated data deleted successfully"}
 
 
 @router.post("/{company_id}/suspend")
