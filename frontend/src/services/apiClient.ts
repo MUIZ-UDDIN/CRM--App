@@ -80,66 +80,37 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Handle 401 errors with token refresh
+// Track if we've already logged out to prevent multiple redirects
+let hasLoggedOut = false;
+
+// Handle 401 errors with silent logout
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     
-    // Silently handle API errors
-    
-    // If error is 401 and we haven't tried to refresh the token yet
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    // If error is 401 (Unauthorized)
+    if (error.response?.status === 401) {
       
-      // Handle authentication error
-      
-      // If we're already refreshing, queue this request
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject, config: originalRequest });
-        });
+      // Prevent multiple logout attempts
+      if (!hasLoggedOut) {
+        hasLoggedOut = true;
+        
+        // Clear authentication
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Dispatch logout event to stop all background intervals
+        window.dispatchEvent(new Event('auth:logout'));
+        
+        // Silently redirect to login after a short delay
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
       }
       
-      // Mark that we're now refreshing
-      originalRequest._retry = true;
-      isRefreshing = true;
-      
-      try {
-        // Try to refresh the token
-        const token = localStorage.getItem('token');
-        
-        if (token) {
-          // Try to refresh token
-          try {
-            const response = await axios.post(`${API_BASE_URL}/auth/refresh`, {}, {
-              headers: { Authorization: `Bearer ${token}` }
-            });
-            
-            if (response.data && response.data.access_token) {
-              // Update the token
-              const newToken = response.data.access_token;
-              localStorage.setItem('token', newToken);
-              
-              // Update headers for the original request
-              originalRequest.headers['Authorization'] = `Bearer ${newToken}`;
-              
-              // Process the queue with the new token
-              processQueue(null, newToken);
-              
-              // Retry the original request
-              return axios(originalRequest);
-            }
-          } catch (refreshError) {
-            // Token refresh failed
-            processQueue(refreshError, null);
-            return Promise.reject(refreshError);
-          }
-        }
-        
-        return Promise.reject(error);
-      } finally {
-        isRefreshing = false;
-      }
+      // Return a rejected promise without logging to console
+      return Promise.reject({ ...error, silent: true });
     }
     
     // For other errors, just reject as normal

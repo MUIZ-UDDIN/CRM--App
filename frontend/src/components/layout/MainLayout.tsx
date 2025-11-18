@@ -122,16 +122,22 @@ export default function MainLayout() {
   const cleanupOldCallNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) return; // Don't fetch if no token
+      
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      await fetch(`${API_BASE_URL}/api/notifications/cleanup-old-calls`, {
+      const response = await fetch(`${API_BASE_URL}/api/notifications/cleanup-old-calls`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      // Silently ignore 401 errors (user logged out)
+      if (response.status === 401) return;
+      
       // Old call notifications cleaned up
     } catch (error) {
-      console.error('Error cleaning up old calls:', error);
+      // Silently ignore errors (likely 401)
     }
   };
 
@@ -153,11 +159,18 @@ export default function MainLayout() {
       setUserAvatar(event.detail.avatar);
     };
     
+    // Listen for logout event to stop polling
+    const handleLogout = () => {
+      clearInterval(notificationInterval);
+    };
+    
     window.addEventListener('avatarUpdated', handleAvatarUpdate);
+    window.addEventListener('auth:logout', handleLogout);
     
     return () => {
       clearInterval(notificationInterval);
       window.removeEventListener('avatarUpdated', handleAvatarUpdate);
+      window.removeEventListener('auth:logout', handleLogout);
     };
   }, []);
 
@@ -227,20 +240,34 @@ export default function MainLayout() {
       fetchUnreadCount();
     }, 30000);
     
+    // Listen for logout event to stop polling
+    const handleLogout = () => {
+      clearInterval(pollInterval);
+    };
+    
+    window.addEventListener('auth:logout', handleLogout);
+    
     return () => {
       clearInterval(pollInterval);
+      window.removeEventListener('auth:logout', handleLogout);
     };
   }, []);
 
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) return; // Don't fetch if no token
+      
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_BASE_URL}/api/notifications/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      // Silently ignore 401 errors (user logged out)
+      if (response.status === 401) return;
+      
       if (response.ok) {
         const data = await response.json();
         // Clean up old call notifications on load
@@ -260,43 +287,55 @@ export default function MainLayout() {
         setNotifications(notificationsWithFlags);
       }
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      // Silently ignore errors (likely 401)
     }
   };
 
   const fetchUnreadCount = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) return; // Don't fetch if no token
+      
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_BASE_URL}/api/notifications/unread-count`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      // Silently ignore 401 errors (user logged out)
+      if (response.status === 401) return;
+      
       if (response.ok) {
         const data = await response.json();
         setUnreadCount(data.count);
       }
     } catch (error) {
-      console.error('Error fetching unread count:', error);
+      // Silently ignore errors (likely 401)
     }
   };
 
   const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem('token');
+      if (!token) return; // Don't fetch if no token
+      
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const response = await fetch(`${API_BASE_URL}/api/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
+      
+      // Silently ignore 401 errors (user logged out)
+      if (response.status === 401) return;
+      
       if (response.ok) {
         const data = await response.json();
         setUserAvatar(data.avatar || '');
       }
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      // Silently ignore errors (likely 401)
     }
   };
   
