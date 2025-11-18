@@ -10,7 +10,9 @@ import {
   CreditCardIcon,
   ShieldExclamationIcon,
   PlayIcon,
-  EllipsisVerticalIcon
+  EllipsisVerticalIcon,
+  PlusIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -44,8 +46,16 @@ export default function SuperAdminDashboard() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [apiError, setApiError] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [newCompany, setNewCompany] = useState({
+    name: '',
+    plan: 'free',
+    domain: '',
+    timezone: 'UTC',
+    currency: 'USD'
+  });
 
   useEffect(() => {
     fetchCompanies();
@@ -91,6 +101,57 @@ export default function SuperAdminDashboard() {
         console.error('Failed to activate company:', error);
       }
       const errorMsg = error.response?.data?.detail || 'Failed to activate company';
+      toast.error(errorMsg);
+    }
+  };
+
+  const handleCreateCompany = async () => {
+    if (!newCompany.name.trim()) {
+      toast.error('Company name is required');
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(
+        `${API_URL}/api/companies/`,
+        newCompany,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Company created successfully');
+      setShowCreateModal(false);
+      setNewCompany({
+        name: '',
+        plan: 'free',
+        domain: '',
+        timezone: 'UTC',
+        currency: 'USD'
+      });
+      fetchCompanies();
+    } catch (error: any) {
+      console.error('Failed to create company:', error);
+      const errorMsg = error.response?.data?.detail || 'Failed to create company';
+      toast.error(errorMsg);
+    }
+  };
+
+  const handleDeleteCompany = async (companyId: string, companyName: string) => {
+    if (!confirm(`Are you sure you want to DELETE "${companyName}"? This action cannot be undone. All company data will be permanently removed.`)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(
+        `${API_URL}/api/companies/${companyId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Company deleted successfully');
+      setOpenDropdownId(null);
+      fetchCompanies();
+    } catch (error: any) {
+      console.error('Failed to delete company:', error);
+      const errorMsg = error.response?.data?.detail || 'Failed to delete company';
       toast.error(errorMsg);
     }
   };
@@ -266,13 +327,22 @@ export default function SuperAdminDashboard() {
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">Super Admin Dashboard</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">Manage all companies and subscriptions</p>
         </div>
-        <button
-          onClick={() => navigate('/admin/billing')}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <CreditCardIcon className="w-5 h-5" />
-          Billing Management
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            <PlusIcon className="w-5 h-5" />
+            Create Company
+          </button>
+          <button
+            onClick={() => navigate('/admin/billing')}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <CreditCardIcon className="w-5 h-5" />
+            Billing Management
+          </button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -472,7 +542,7 @@ export default function SuperAdminDashboard() {
                                     setOpenDropdownId(null);
                                     handleSuspendCompany(company.id);
                                   }}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                  className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2"
                                 >
                                   <ShieldExclamationIcon className="w-4 h-4" />
                                   Suspend Company
@@ -489,6 +559,19 @@ export default function SuperAdminDashboard() {
                                   Activate Company
                                 </button>
                               )}
+                              
+                              <div className="border-t border-gray-200 my-1"></div>
+                              
+                              <button
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  handleDeleteCompany(company.id, company.name);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                                Delete Company
+                              </button>
                             </div>
                           </>
                         )}
@@ -616,6 +699,117 @@ export default function SuperAdminDashboard() {
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 text-sm sm:text-base hover:bg-gray-50"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Company Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">Create New Company</h2>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircleIcon className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Company Name *
+                </label>
+                <input
+                  type="text"
+                  value={newCompany.name}
+                  onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter company name"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Plan
+                </label>
+                <select
+                  value={newCompany.plan}
+                  onChange={(e) => setNewCompany({ ...newCompany, plan: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="free">Free</option>
+                  <option value="starter">Starter</option>
+                  <option value="professional">Professional</option>
+                  <option value="enterprise">Enterprise</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Domain (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={newCompany.domain}
+                  onChange={(e) => setNewCompany({ ...newCompany, domain: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="company.com"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Timezone
+                  </label>
+                  <select
+                    value={newCompany.timezone}
+                    onChange={(e) => setNewCompany({ ...newCompany, timezone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">EST</option>
+                    <option value="America/Chicago">CST</option>
+                    <option value="America/Denver">MST</option>
+                    <option value="America/Los_Angeles">PST</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Currency
+                  </label>
+                  <select
+                    value={newCompany.currency}
+                    onChange={(e) => setNewCompany({ ...newCompany, currency: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  >
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="CAD">CAD</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={handleCreateCompany}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+              >
+                Create Company
+              </button>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
               </button>
             </div>
           </div>
