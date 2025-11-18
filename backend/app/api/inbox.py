@@ -60,13 +60,45 @@ async def get_inbox(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get inbox messages with filters"""
+    """Get inbox messages with role-based filtering"""
+    from ..middleware.tenant import get_tenant_context
+    from ..middleware.permissions import has_permission
+    from ..models.permissions import Permission
+    from ..models.users import User
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    query = db.query(InboxModel).filter(InboxModel.company_id == company_id)
+    # Get tenant context for role-based filtering
+    context = get_tenant_context(current_user)
+    
+    # Role-based filtering
+    if context.is_super_admin():
+        # Super Admin sees all messages
+        query = db.query(InboxModel)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company messages
+        query = db.query(InboxModel).filter(InboxModel.company_id == company_id)
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team messages
+        team_user_ids = [u.id for u in db.query(User).filter(
+            User.team_id == uuid.UUID(user_team_id),
+            User.is_deleted == False
+        ).all()]
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.user_id.in_(team_user_ids)
+        )
+    else:
+        # Sales Reps see ONLY their own messages
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.user_id == user_id
+        )
     
     if message_type:
         query = query.filter(InboxModel.message_type == message_type)
@@ -87,16 +119,50 @@ async def get_sms_inbox(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get SMS messages only"""
+    """Get SMS messages with role-based filtering"""
+    from ..middleware.tenant import get_tenant_context
+    from ..middleware.permissions import has_permission
+    from ..models.permissions import Permission
+    from ..models.users import User
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    query = db.query(InboxModel).filter(
-        InboxModel.company_id == company_id,
-        InboxModel.message_type == MessageType.SMS
-    )
+    # Get tenant context for role-based filtering
+    context = get_tenant_context(current_user)
+    
+    # Role-based filtering
+    if context.is_super_admin():
+        # Super Admin sees all SMS
+        query = db.query(InboxModel).filter(InboxModel.message_type == MessageType.SMS)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company SMS
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.message_type == MessageType.SMS
+        )
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team SMS
+        team_user_ids = [u.id for u in db.query(User).filter(
+            User.team_id == uuid.UUID(user_team_id),
+            User.is_deleted == False
+        ).all()]
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.message_type == MessageType.SMS,
+            InboxModel.user_id.in_(team_user_ids)
+        )
+    else:
+        # Sales Reps see ONLY their own SMS
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.message_type == MessageType.SMS,
+            InboxModel.user_id == user_id
+        )
     
     if direction:
         query = query.filter(InboxModel.direction == direction)
@@ -113,16 +179,50 @@ async def get_email_inbox(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get Email messages only"""
+    """Get Email messages with role-based filtering"""
+    from ..middleware.tenant import get_tenant_context
+    from ..middleware.permissions import has_permission
+    from ..models.permissions import Permission
+    from ..models.users import User
+    
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_team_id = current_user.get("team_id")
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    query = db.query(InboxModel).filter(
-        InboxModel.company_id == company_id,
-        InboxModel.message_type == MessageType.EMAIL
-    )
+    # Get tenant context for role-based filtering
+    context = get_tenant_context(current_user)
+    
+    # Role-based filtering
+    if context.is_super_admin():
+        # Super Admin sees all emails
+        query = db.query(InboxModel).filter(InboxModel.message_type == MessageType.EMAIL)
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
+        # Company Admin sees all company emails
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.message_type == MessageType.EMAIL
+        )
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA) and user_team_id:
+        # Sales Manager sees team emails
+        team_user_ids = [u.id for u in db.query(User).filter(
+            User.team_id == uuid.UUID(user_team_id),
+            User.is_deleted == False
+        ).all()]
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.message_type == MessageType.EMAIL,
+            InboxModel.user_id.in_(team_user_ids)
+        )
+    else:
+        # Sales Reps see ONLY their own emails
+        query = db.query(InboxModel).filter(
+            InboxModel.company_id == company_id,
+            InboxModel.message_type == MessageType.EMAIL,
+            InboxModel.user_id == user_id
+        )
     
     if direction:
         query = query.filter(InboxModel.direction == direction)
