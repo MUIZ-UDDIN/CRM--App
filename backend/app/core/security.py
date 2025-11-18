@@ -73,14 +73,18 @@ def verify_token(token: str) -> Optional[dict]:
         if 'exp' in payload:
             expiration = datetime.fromtimestamp(payload['exp'])
             if expiration < datetime.utcnow():
-                print(f"Token expired at {expiration}, current time: {datetime.utcnow()}")
+                # Token expired - silently return None (normal behavior)
                 return None
         
         return payload
     except JWTError as e:
-        print(f"JWT verification error: {str(e)}")
+        # JWT errors are expected for invalid/expired tokens - don't log to reduce noise
+        # Only log if it's not the common "Not enough segments" error
+        if "Not enough segments" not in str(e):
+            print(f"JWT verification error: {str(e)}")
         return None
     except Exception as e:
+        # Log unexpected errors only
         print(f"Unexpected error during token verification: {str(e)}")
         return None
 

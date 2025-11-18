@@ -111,13 +111,7 @@ async def get_pipeline_analytics(
     if pipeline_id:
         filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
     
-    # Debug logging with print statements (more visible in logs)
-    print(f"=== PIPELINE ANALYTICS DEBUG ===")
-    print(f"Access Level: {access_level}")
-    print(f"User ID: {owner_id}, Company ID: {company_id}")
-    print(f"Filters count: {len(filters)}")
-    print(f"Date from: {date_from}, Date to: {date_to}")
-    print(f"User filter: {user_id}, Pipeline filter: {pipeline_id}")
+    # Debug logging removed for production
     
     # Get stage analytics
     stage_stats = db.query(
@@ -132,8 +126,6 @@ async def get_pipeline_analytics(
      .filter(and_(*filters))\
      .group_by(PipelineStage.id, PipelineStage.name)\
      .all()
-    
-    print(f"Stage stats found: {len(stage_stats)}")
     
     pipeline_analytics = []
     for stage in stage_stats:
