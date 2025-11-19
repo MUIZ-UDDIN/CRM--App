@@ -471,9 +471,7 @@ const CompanyManagement: React.FC = () => {
                               className="fixed inset-0 z-10" 
                               onClick={() => setOpenDropdownId(null)}
                             />
-                            <div className={`absolute right-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 ${
-                              index >= users.length - 2 && users.length > 2 ? 'bottom-full mb-2' : 'mt-2'
-                            }`}>
+                            <div className="absolute right-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 mt-2">
                               {/* Change Role */}
                               <button
                                 onClick={() => {

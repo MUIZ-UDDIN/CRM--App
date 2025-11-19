@@ -484,18 +484,35 @@ def delete_company(
     
     try:
         db.query(Payment).filter(Payment.company_id == company.id).delete(synchronize_session=False)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error deleting payments: {e}")
+        db.rollback()
     
     # Delete all users in the company
-    db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
+    try:
+        db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting users: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete users: {str(e)}"
+        )
     
     # Expunge the company to avoid lazy loading relationships
     db.expunge(company)
     
     # Finally delete the company using raw delete
-    db.query(Company).filter(Company.id == company.id).delete(synchronize_session=False)
-    db.commit()
+    try:
+        db.query(Company).filter(Company.id == company.id).delete(synchronize_session=False)
+        db.commit()
+    except Exception as e:
+        print(f"Error deleting company: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete company: {str(e)}"
+        )
     
     return {"message": "Company and all associated data deleted successfully"}
 
