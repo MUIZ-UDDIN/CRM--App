@@ -48,6 +48,9 @@ const CompanyManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
+  const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<User | null>(null);
+  const [roleSearchTerm, setRoleSearchTerm] = useState('');
   
   // Add user form state
   const [newUser, setNewUser] = useState({
@@ -228,8 +231,15 @@ const CompanyManagement: React.FC = () => {
     }
   };
 
+  // Normalize role to lowercase with underscores
+  const normalizeRole = (role: string): string => {
+    if (!role) return 'sales_rep';
+    return role.toLowerCase().replace(/\s+/g, '_');
+  };
+
   const getRoleDisplayName = (role: string) => {
-    switch (role.toLowerCase()) {
+    const normalized = normalizeRole(role);
+    switch (normalized) {
       case 'company_admin':
         return 'Company Admin';
       case 'sales_manager':
@@ -238,20 +248,23 @@ const CompanyManagement: React.FC = () => {
         return 'Sales Rep';
       case 'super_admin':
         return 'Super Admin';
+      case 'company_user':
+        return 'Company User';
       default:
         return role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
     }
   };
 
   const getRoleIcon = (role: string) => {
-    const roleLower = role.toLowerCase();
-    switch (roleLower) {
+    const normalized = normalizeRole(role);
+    switch (normalized) {
       case 'company_admin':
       case 'super_admin':
         return <ShieldCheckIcon className="w-5 h-5 text-purple-600" />;
       case 'sales_manager':
         return <UserGroupIcon className="w-5 h-5 text-blue-600" />;
       case 'sales_rep':
+      case 'company_user':
         return <UserIcon className="w-5 h-5 text-green-600" />;
       default:
         return <UserIcon className="w-5 h-5 text-gray-600" />;
@@ -259,14 +272,15 @@ const CompanyManagement: React.FC = () => {
   };
 
   const getRoleBadgeColor = (role: string) => {
-    const roleLower = role.toLowerCase();
-    switch (roleLower) {
+    const normalized = normalizeRole(role);
+    switch (normalized) {
       case 'company_admin':
       case 'super_admin':
         return 'bg-purple-100 text-purple-800';
       case 'sales_manager':
         return 'bg-blue-100 text-blue-800';
       case 'sales_rep':
+      case 'company_user':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -433,49 +447,18 @@ const CompanyManagement: React.FC = () => {
                             <div className={`absolute right-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 ${
                               index >= users.length - 2 ? 'bottom-full mb-2' : 'mt-2'
                             }`}>
-                              {/* Change Role Options */}
-                              <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">
+                              {/* Change Role */}
+                              <button
+                                onClick={() => {
+                                  setSelectedUserForRoleChange(user);
+                                  setShowRoleChangeModal(true);
+                                  setOpenDropdownId(null);
+                                }}
+                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              >
+                                <ShieldCheckIcon className="w-4 h-4 text-blue-600" />
                                 Change Role
-                              </div>
-                              
-                              {user.role.toLowerCase() !== 'company_admin' && (
-                                <button
-                                  onClick={() => {
-                                    handleChangeRole(user.id, 'company_admin');
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <ShieldCheckIcon className="w-4 h-4 text-purple-600" />
-                                  Company Admin
-                                </button>
-                              )}
-                              
-                              {user.role.toLowerCase() !== 'sales_manager' && (
-                                <button
-                                  onClick={() => {
-                                    handleChangeRole(user.id, 'sales_manager');
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <UserGroupIcon className="w-4 h-4 text-blue-600" />
-                                  Sales Manager
-                                </button>
-                              )}
-                              
-                              {user.role.toLowerCase() !== 'sales_rep' && (
-                                <button
-                                  onClick={() => {
-                                    handleChangeRole(user.id, 'sales_rep');
-                                    setOpenDropdownId(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <UserIcon className="w-4 h-4 text-green-600" />
-                                  Sales Rep
-                                </button>
-                              )}
+                              </button>
                               
                               <div className="border-t border-gray-200 my-1"></div>
                               
@@ -610,6 +593,115 @@ const CompanyManagement: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Role Change Modal */}
+      {showRoleChangeModal && selectedUserForRoleChange && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <h3 className="text-xl font-semibold text-gray-900">Change User Role</h3>
+              <button
+                onClick={() => {
+                  setShowRoleChangeModal(false);
+                  setSelectedUserForRoleChange(null);
+                  setRoleSearchTerm('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="mb-4">
+                <p className="text-sm text-gray-600">
+                  Change role for: <span className="font-semibold">{selectedUserForRoleChange.first_name} {selectedUserForRoleChange.last_name}</span>
+                </p>
+                <p className="text-sm text-gray-500">
+                  Current role: <span className="font-medium">{getRoleDisplayName(selectedUserForRoleChange.role)}</span>
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select New Role
+                </label>
+                
+                {/* Search Input */}
+                <input
+                  type="text"
+                  placeholder="Search roles..."
+                  value={roleSearchTerm}
+                  onChange={(e) => setRoleSearchTerm(e.target.value)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
+                />
+
+                {/* Role Options */}
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {[
+                    { value: 'company_admin', label: 'Company Admin', icon: ShieldCheckIcon, color: 'purple' },
+                    { value: 'sales_manager', label: 'Sales Manager', icon: UserGroupIcon, color: 'blue' },
+                    { value: 'sales_rep', label: 'Sales Rep', icon: UserIcon, color: 'green' },
+                  ]
+                    .filter(role => 
+                      role.label.toLowerCase().includes(roleSearchTerm.toLowerCase()) &&
+                      normalizeRole(selectedUserForRoleChange.role) !== role.value
+                    )
+                    .map((role) => {
+                      const Icon = role.icon;
+                      return (
+                        <button
+                          key={role.value}
+                          onClick={() => {
+                            handleChangeRole(selectedUserForRoleChange.id, role.value);
+                            setShowRoleChangeModal(false);
+                            setSelectedUserForRoleChange(null);
+                            setRoleSearchTerm('');
+                          }}
+                          className={`w-full px-4 py-3 text-left border-2 border-gray-200 rounded-lg hover:border-${role.color}-500 hover:bg-${role.color}-50 transition-all flex items-center gap-3 group`}
+                        >
+                          <Icon className={`w-5 h-5 text-${role.color}-600`} />
+                          <div>
+                            <div className="font-medium text-gray-900">{role.label}</div>
+                            <div className="text-xs text-gray-500">
+                              {role.value === 'company_admin' && 'Full access to company data'}
+                              {role.value === 'sales_manager' && 'Manage team members and deals'}
+                              {role.value === 'sales_rep' && 'Access to own deals and contacts'}
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                </div>
+
+                {roleSearchTerm && [
+                  { value: 'company_admin', label: 'Company Admin' },
+                  { value: 'sales_manager', label: 'Sales Manager' },
+                  { value: 'sales_rep', label: 'Sales Rep' },
+                ].filter(role => 
+                  role.label.toLowerCase().includes(roleSearchTerm.toLowerCase()) &&
+                  normalizeRole(selectedUserForRoleChange.role) !== role.value
+                ).length === 0 && (
+                  <p className="text-sm text-gray-500 text-center py-4">No roles found matching "{roleSearchTerm}"</p>
+                )}
+              </div>
+
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    setShowRoleChangeModal(false);
+                    setSelectedUserForRoleChange(null);
+                    setRoleSearchTerm('');
+                  }}
+                  className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
