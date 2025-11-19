@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import {
   ArrowLeftIcon,
@@ -473,14 +474,14 @@ const CompanyManagement: React.FC = () => {
                           const buttonElement = document.getElementById(`dropdown-button-${user.id}`);
                           const rect = buttonElement?.getBoundingClientRect();
                           
-                          return (
+                          return createPortal(
                             <>
                               <div 
-                                className="fixed inset-0 z-10" 
+                                className="fixed inset-0 z-[9998]" 
                                 onClick={() => setOpenDropdownId(null)}
                               />
                               <div 
-                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20"
+                                className="fixed w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999]"
                                 style={{
                                   top: `${(rect?.bottom || 0) + 8}px`,
                                   right: `${window.innerWidth - (rect?.right || 0)}px`
@@ -513,7 +514,8 @@ const CompanyManagement: React.FC = () => {
                                   Delete User
                                 </button>
                               </div>
-                            </>
+                            </>,
+                            document.body
                           );
                         })()}
                       </div>
