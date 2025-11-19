@@ -105,7 +105,7 @@ apiClient.interceptors.response.use(
         
         // Silently redirect to login after a short delay
         setTimeout(() => {
-          window.location.href = '/login';
+          window.location.href = '/auth/login';
         }, 100);
       }
       

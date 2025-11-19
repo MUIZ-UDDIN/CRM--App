@@ -110,7 +110,7 @@ function App() {
 
               {/* Public Routes */}
               <Route path="/register" element={<Register />} />
-              <Route path="/login" element={<Login />} />
+              <Route path="/login" element={<Navigate to="/auth/login" replace />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
 

@@ -131,7 +131,7 @@ export const handleApiError = (
   if (error.response?.status === 401) {
     setTimeout(() => {
       localStorage.removeItem('token');
-      window.location.href = '/login';
+      window.location.href = '/auth/login';
     }, 2000);
   }
 

@@ -8,7 +8,7 @@ export async function fetchWithAuth(url: string, options: RequestInit = {}): Pro
   if (response.status === 401) {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    window.location.href = '/login';
+    window.location.href = '/auth/login';
     throw new Error('Session expired. Please log in again.');
   }
   
