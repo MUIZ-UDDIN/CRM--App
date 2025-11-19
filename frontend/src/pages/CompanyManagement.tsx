@@ -12,6 +12,8 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
+const API_URL = 'https://sunstonecrm.com/api';
+
 interface User {
   id: string;
   first_name: string;
@@ -65,7 +67,7 @@ const CompanyManagement: React.FC = () => {
   const fetchCompanyData = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/companies/${companyId}`, {
+      const response = await fetch(`${API_URL}/companies/${companyId}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -86,7 +88,7 @@ const CompanyManagement: React.FC = () => {
   const fetchUsers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/companies/${companyId}/users`, {
+      const response = await fetch(`${API_URL}/admin/companies/${companyId}/users`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -109,7 +111,7 @@ const CompanyManagement: React.FC = () => {
   const fetchTeams = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/companies/${companyId}/teams`, {
+      const response = await fetch(`${API_URL}/admin/companies/${companyId}/teams`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -140,7 +142,7 @@ const CompanyManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/companies/${companyId}/users`, {
+      const response = await fetch(`${API_URL}/admin/companies/${companyId}/users`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -181,7 +183,7 @@ const CompanyManagement: React.FC = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/users/${userId}`, {
+      const response = await fetch(`${API_URL}/admin/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -204,7 +206,7 @@ const CompanyManagement: React.FC = () => {
   const handleChangeRole = async (userId: string, newRole: string) => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admin/users/${userId}/role`, {
+      const response = await fetch(`${API_URL}/admin/users/${userId}/role`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
