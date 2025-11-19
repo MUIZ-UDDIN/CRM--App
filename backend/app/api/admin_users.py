@@ -121,7 +121,24 @@ def get_company_users(
     # Get all users for this company
     users = db.query(User).filter(User.company_id == company_id).all()
     
-    return [UserResponse.from_orm(user) for user in users]
+    # Debug logging
+    for user in users:
+        print(f"DEBUG - User: {user.email}")
+        print(f"  Role object: {user.role}")
+        print(f"  Role type: {type(user.role)}")
+        print(f"  Has value attr: {hasattr(user.role, 'value')}")
+        if hasattr(user.role, 'value'):
+            print(f"  Role.value: {user.role.value}")
+        else:
+            print(f"  str(role): {str(user.role)}")
+    
+    result = [UserResponse.from_orm(user) for user in users]
+    
+    # Debug the serialized result
+    for r in result:
+        print(f"DEBUG - Serialized user: {r.email}, role: '{r.role}'")
+    
+    return result
 
 
 @router.get("/companies/{company_id}/teams", response_model=List[TeamResponse])
