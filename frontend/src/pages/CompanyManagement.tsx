@@ -234,25 +234,33 @@ const CompanyManagement: React.FC = () => {
   // Normalize role to lowercase with underscores
   const normalizeRole = (role: string): string => {
     if (!role) return 'sales_rep';
-    return role.toLowerCase().replace(/\s+/g, '_');
+    // Handle both enum values and display names
+    const cleaned = role.toLowerCase().trim().replace(/\s+/g, '_');
+    return cleaned;
   };
 
   const getRoleDisplayName = (role: string) => {
+    if (!role) return 'Sales Rep';
     const normalized = normalizeRole(role);
-    switch (normalized) {
-      case 'company_admin':
-        return 'Company Admin';
-      case 'sales_manager':
-        return 'Sales Manager';
-      case 'sales_rep':
-        return 'Sales Rep';
-      case 'super_admin':
-        return 'Super Admin';
-      case 'company_user':
-        return 'Company User';
-      default:
-        return role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    }
+    
+    // Map all possible role variations
+    const roleMap: { [key: string]: string } = {
+      'company_admin': 'Company Admin',
+      'companyadmin': 'Company Admin',
+      'sales_manager': 'Sales Manager',
+      'salesmanager': 'Sales Manager',
+      'sales_rep': 'Sales Rep',
+      'salesrep': 'Sales Rep',
+      'super_admin': 'Super Admin',
+      'superadmin': 'Super Admin',
+      'company_user': 'Company User',
+      'companyuser': 'Company User',
+      'user': 'Sales Rep',
+      'regular_user': 'Sales Rep',
+      'regularuser': 'Sales Rep',
+    };
+    
+    return roleMap[normalized] || role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const getRoleIcon = (role: string) => {
@@ -323,8 +331,8 @@ const CompanyManagement: React.FC = () => {
           </button>
           
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">{company?.name}</h1>
+            <div className="flex-1 min-w-0 mr-4">
+              <h1 className="text-3xl font-bold text-gray-900 truncate" title={company?.name}>{company?.name}</h1>
               <p className="text-gray-600 mt-1">Manage users and permissions</p>
             </div>
             <button
@@ -342,12 +350,20 @@ const CompanyManagement: React.FC = () => {
           <div className="grid grid-cols-4 gap-6">
             <div>
               <p className="text-sm text-gray-600">Plan</p>
-              <p className="text-lg font-semibold text-gray-900">{company?.plan_type}</p>
+              <p className="text-lg font-semibold text-gray-900">
+                {(() => {
+                  const plan = (company?.plan_type || 'free').toLowerCase();
+                  if (plan === 'free') return 'Free Trial';
+                  if (plan === 'pro') return 'Pro';
+                  if (plan === 'enterprise') return 'Enterprise';
+                  return 'Free Trial';
+                })()}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-600">Status</p>
               <span className={`inline-flex px-3 py-1 rounded-full text-sm font-medium ${getStatusBadgeColor(company?.status || '')}`}>
-                {company?.status}
+                {company?.status ? company.status.charAt(0).toUpperCase() + company.status.slice(1).toLowerCase() : 'Active'}
               </span>
             </div>
             <div>
@@ -403,15 +419,15 @@ const CompanyManagement: React.FC = () => {
                             {user.first_name[0]}{user.last_name[0]}
                           </span>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">
+                        <div className="ml-4 min-w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={`${user.first_name} ${user.last_name}`}>
                             {user.first_name} {user.last_name}
                           </div>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.email}</div>
+                      <div className="text-sm text-gray-900 truncate max-w-xs" title={user.email}>{user.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2">
@@ -445,7 +461,7 @@ const CompanyManagement: React.FC = () => {
                               onClick={() => setOpenDropdownId(null)}
                             />
                             <div className={`absolute right-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 ${
-                              index >= users.length - 2 ? 'bottom-full mb-2' : 'mt-2'
+                              index >= users.length - 2 && users.length > 2 ? 'bottom-full mb-2' : 'mt-2'
                             }`}>
                               {/* Change Role */}
                               <button
