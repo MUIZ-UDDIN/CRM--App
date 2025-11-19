@@ -483,25 +483,41 @@ def delete_company(
         db.rollback()
     
     # Import models needed for cascade delete
-    from app.models.deals import Deal
+    from app.models.deals import Deal, Pipeline, PipelineStage
     from app.models.contacts import Contact
     
     # Get all user IDs in this company first
     company_user_ids = [user.id for user in db.query(User.id).filter(User.company_id == company.id).all()]
     
-    # Delete all deals owned by users in this company (to avoid owner_id NOT NULL constraint)
-    try:
-        if company_user_ids:
-            db.query(Deal).filter(Deal.owner_id.in_(company_user_ids)).delete(synchronize_session=False)
-    except Exception as e:
-        print(f"Error deleting deals by owner: {e}")
-        db.rollback()
+    # Get all pipeline IDs for this company
+    company_pipeline_ids = [p.id for p in db.query(Pipeline.id).filter(Pipeline.company_id == company.id).all()]
     
-    # Also delete deals by company_id (if any)
+    # Delete all deals (by owner_id, company_id, and pipeline_id to catch all)
     try:
-        db.query(Deal).filter(Deal.company_id == company.id).delete(synchronize_session=False)
+        # Count deals first for debugging
+        deals_count = db.query(Deal).filter(
+            (Deal.owner_id.in_(company_user_ids) if company_user_ids else False) |
+            (Deal.pipeline_id.in_(company_pipeline_ids) if company_pipeline_ids else False) |
+            (Deal.company_id == company.id)
+        ).count()
+        print(f"Found {deals_count} deals to delete for company {company.id}")
+        
+        # Delete by owner_id
+        if company_user_ids:
+            deleted = db.query(Deal).filter(Deal.owner_id.in_(company_user_ids)).delete(synchronize_session=False)
+            print(f"Deleted {deleted} deals by owner_id")
+        
+        # Delete by pipeline_id
+        if company_pipeline_ids:
+            deleted = db.query(Deal).filter(Deal.pipeline_id.in_(company_pipeline_ids)).delete(synchronize_session=False)
+            print(f"Deleted {deleted} deals by pipeline_id")
+        
+        # Delete by company_id
+        deleted = db.query(Deal).filter(Deal.company_id == company.id).delete(synchronize_session=False)
+        print(f"Deleted {deleted} deals by company_id")
+        
     except Exception as e:
-        print(f"Error deleting deals by company: {e}")
+        print(f"Error deleting deals: {e}")
         db.rollback()
     
     # Delete all contacts in the company (to avoid user foreign key constraint)
@@ -511,15 +527,16 @@ def delete_company(
         print(f"Error deleting contacts: {e}")
         db.rollback()
     
-    # Now delete pipelines and stages (after deals are deleted)
-    from app.models.deals import PipelineStage, Pipeline
-    
+    # Now delete pipeline stages and pipelines (after deals are deleted)
+    # Delete stages first (they reference pipelines)
     try:
-        db.query(PipelineStage).filter(PipelineStage.company_id == company.id).delete(synchronize_session=False)
+        if company_pipeline_ids:
+            db.query(PipelineStage).filter(PipelineStage.pipeline_id.in_(company_pipeline_ids)).delete(synchronize_session=False)
     except Exception as e:
         print(f"Error deleting pipeline stages: {e}")
         db.rollback()
     
+    # Then delete pipelines
     try:
         db.query(Pipeline).filter(Pipeline.company_id == company.id).delete(synchronize_session=False)
     except Exception as e:
