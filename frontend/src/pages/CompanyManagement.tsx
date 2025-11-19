@@ -457,10 +457,14 @@ const CompanyManagement: React.FC = () => {
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="relative">
+                      <div className="relative inline-block">
                         <button
-                          onClick={() => setOpenDropdownId(openDropdownId === user.id ? null : user.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setOpenDropdownId(openDropdownId === user.id ? null : user.id);
+                          }}
                           className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+                          id={`dropdown-button-${user.id}`}
                         >
                           <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
                         </button>
@@ -471,7 +475,13 @@ const CompanyManagement: React.FC = () => {
                               className="fixed inset-0 z-10" 
                               onClick={() => setOpenDropdownId(null)}
                             />
-                            <div className="absolute right-0 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 mt-2">
+                            <div 
+                              className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20"
+                              style={{
+                                top: `${document.getElementById(`dropdown-button-${user.id}`)?.getBoundingClientRect().bottom + 8}px`,
+                                right: `${window.innerWidth - (document.getElementById(`dropdown-button-${user.id}`)?.getBoundingClientRect().right || 0)}px`
+                              }}
+                            >
                               {/* Change Role */}
                               <button
                                 onClick={() => {
