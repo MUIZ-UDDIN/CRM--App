@@ -99,6 +99,11 @@ const CompanyManagement: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log('Fetched users data:', data);
+        // Log each user's role for debugging
+        data.forEach((user: any) => {
+          console.log(`User: ${user.email}, Role from API: "${user.role}"`);
+        });
         setUsers(data);
       } else {
         toast.error('Failed to load users');
@@ -240,8 +245,12 @@ const CompanyManagement: React.FC = () => {
   };
 
   const getRoleDisplayName = (role: string) => {
-    if (!role) return 'Sales Rep';
+    if (!role) {
+      console.log('getRoleDisplayName: No role provided, defaulting to Sales Rep');
+      return 'Sales Rep';
+    }
     const normalized = normalizeRole(role);
+    console.log(`getRoleDisplayName: Original="${role}", Normalized="${normalized}"`);
     
     // Map all possible role variations
     const roleMap: { [key: string]: string } = {
@@ -260,7 +269,9 @@ const CompanyManagement: React.FC = () => {
       'regularuser': 'Sales Rep',
     };
     
-    return roleMap[normalized] || role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    const displayName = roleMap[normalized] || role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    console.log(`getRoleDisplayName: Result="${displayName}"`);
+    return displayName;
   };
 
   const getRoleIcon = (role: string) => {
@@ -385,7 +396,7 @@ const CompanyManagement: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Users</h2>
           </div>
           
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
