@@ -54,7 +54,7 @@ const CompanyManagement: React.FC = () => {
     first_name: '',
     last_name: '',
     email: '',
-    role: 'SALES_REP',
+    role: 'sales_rep',
     team_id: '',
   });
 
@@ -135,7 +135,7 @@ const CompanyManagement: React.FC = () => {
     }
 
     // Validate team requirement for Sales Manager
-    if (newUser.role === 'SALES_MANAGER' && !newUser.team_id) {
+    if (newUser.role === 'sales_manager' && !newUser.team_id) {
       toast.error('Sales Manager must be assigned to a team');
       return;
     }
@@ -162,7 +162,7 @@ const CompanyManagement: React.FC = () => {
           first_name: '',
           last_name: '',
           email: '',
-          role: 'SALES_REP',
+          role: 'sales_rep',
           team_id: '',
         });
         fetchUsers();
@@ -228,13 +228,30 @@ const CompanyManagement: React.FC = () => {
     }
   };
 
+  const getRoleDisplayName = (role: string) => {
+    switch (role.toLowerCase()) {
+      case 'company_admin':
+        return 'Company Admin';
+      case 'sales_manager':
+        return 'Sales Manager';
+      case 'sales_rep':
+        return 'Sales Rep';
+      case 'super_admin':
+        return 'Super Admin';
+      default:
+        return role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    }
+  };
+
   const getRoleIcon = (role: string) => {
-    switch (role) {
-      case 'COMPANY_ADMIN':
+    const roleLower = role.toLowerCase();
+    switch (roleLower) {
+      case 'company_admin':
+      case 'super_admin':
         return <ShieldCheckIcon className="w-5 h-5 text-purple-600" />;
-      case 'SALES_MANAGER':
+      case 'sales_manager':
         return <UserGroupIcon className="w-5 h-5 text-blue-600" />;
-      case 'SALES_REP':
+      case 'sales_rep':
         return <UserIcon className="w-5 h-5 text-green-600" />;
       default:
         return <UserIcon className="w-5 h-5 text-gray-600" />;
@@ -242,12 +259,14 @@ const CompanyManagement: React.FC = () => {
   };
 
   const getRoleBadgeColor = (role: string) => {
-    switch (role) {
-      case 'COMPANY_ADMIN':
+    const roleLower = role.toLowerCase();
+    switch (roleLower) {
+      case 'company_admin':
+      case 'super_admin':
         return 'bg-purple-100 text-purple-800';
-      case 'SALES_MANAGER':
+      case 'sales_manager':
         return 'bg-blue-100 text-blue-800';
-      case 'SALES_REP':
+      case 'sales_rep':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -255,12 +274,13 @@ const CompanyManagement: React.FC = () => {
   };
 
   const getStatusBadgeColor = (status: string) => {
-    switch (status) {
-      case 'ACTIVE':
+    const statusLower = status.toLowerCase();
+    switch (statusLower) {
+      case 'active':
         return 'bg-green-100 text-green-800';
-      case 'INACTIVE':
+      case 'inactive':
         return 'bg-red-100 text-red-800';
-      case 'SUSPENDED':
+      case 'suspended':
         return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -383,13 +403,13 @@ const CompanyManagement: React.FC = () => {
                       <div className="flex items-center gap-2">
                         {getRoleIcon(user.role)}
                         <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
-                          {user.role.replace('_', ' ')}
+                          {getRoleDisplayName(user.role)}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusBadgeColor(user.status)}`}>
-                        {user.status}
+                        {user.status.charAt(0).toUpperCase() + user.status.slice(1).toLowerCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -418,10 +438,10 @@ const CompanyManagement: React.FC = () => {
                                 Change Role
                               </div>
                               
-                              {user.role !== 'COMPANY_ADMIN' && (
+                              {user.role.toLowerCase() !== 'company_admin' && (
                                 <button
                                   onClick={() => {
-                                    handleChangeRole(user.id, 'COMPANY_ADMIN');
+                                    handleChangeRole(user.id, 'company_admin');
                                     setOpenDropdownId(null);
                                   }}
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
@@ -431,10 +451,10 @@ const CompanyManagement: React.FC = () => {
                                 </button>
                               )}
                               
-                              {user.role !== 'SALES_MANAGER' && (
+                              {user.role.toLowerCase() !== 'sales_manager' && (
                                 <button
                                   onClick={() => {
-                                    handleChangeRole(user.id, 'SALES_MANAGER');
+                                    handleChangeRole(user.id, 'sales_manager');
                                     setOpenDropdownId(null);
                                   }}
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
@@ -444,10 +464,10 @@ const CompanyManagement: React.FC = () => {
                                 </button>
                               )}
                               
-                              {user.role !== 'SALES_REP' && (
+                              {user.role.toLowerCase() !== 'sales_rep' && (
                                 <button
                                   onClick={() => {
-                                    handleChangeRole(user.id, 'SALES_REP');
+                                    handleChangeRole(user.id, 'sales_rep');
                                     setOpenDropdownId(null);
                                   }}
                                   className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
@@ -547,13 +567,13 @@ const CompanyManagement: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="SALES_REP">Sales Rep</option>
-                  <option value="SALES_MANAGER">Sales Manager</option>
-                  <option value="COMPANY_ADMIN">Company Admin</option>
+                  <option value="sales_rep">Sales Rep</option>
+                  <option value="sales_manager">Sales Manager</option>
+                  <option value="company_admin">Company Admin</option>
                 </select>
               </div>
               
-              {newUser.role === 'SALES_MANAGER' && (
+              {newUser.role === 'sales_manager' && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Team * (Required for Sales Manager)
