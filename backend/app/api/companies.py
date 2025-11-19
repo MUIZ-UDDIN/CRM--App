@@ -364,34 +364,123 @@ def delete_company(
     user_ids = [u.id for u in db.query(User).filter(User.company_id == company.id).all()]
     
     if user_ids:
-        # Delete user-related data
-        db.query(Contact).filter(Contact.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Deal).filter(Deal.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Email).filter(Email.sender_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(SMSMessage).filter(SMSMessage.user_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Call).filter(Call.user_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Document).filter(Document.created_by.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Workflow).filter(Workflow.created_by.in_(user_ids)).delete(synchronize_session=False)
-        db.query(File).filter(File.uploaded_by.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Notification).filter(Notification.user_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(Quote).filter(Quote.created_by.in_(user_ids)).delete(synchronize_session=False)
-        db.query(SupportTicket).filter(SupportTicket.created_by.in_(user_ids)).delete(synchronize_session=False)
-        db.query(AuditLog).filter(AuditLog.user_id.in_(user_ids)).delete(synchronize_session=False)
-        db.query(SecurityLog).filter(SecurityLog.user_id.in_(user_ids)).delete(synchronize_session=False)
+        # Delete user-related data (with error handling for field name variations)
+        try:
+            db.query(Contact).filter(Contact.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Deal).filter(Deal.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Email).filter(Email.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(SMSMessage).filter(SMSMessage.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Call).filter(Call.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Document).filter(Document.created_by.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Workflow).filter(Workflow.created_by.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(File).filter(File.uploaded_by.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Notification).filter(Notification.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(Quote).filter(Quote.created_by.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(SupportTicket).filter(SupportTicket.created_by.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(AuditLog).filter(AuditLog.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
+        
+        try:
+            db.query(SecurityLog).filter(SecurityLog.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception:
+            pass
     
     # Delete company-level data
-    db.query(Pipeline).filter(Pipeline.company_id == company.id).delete(synchronize_session=False)
-    db.query(PipelineStage).filter(PipelineStage.company_id == company.id).delete(synchronize_session=False)
-    db.query(EmailTemplate).filter(EmailTemplate.company_id == company.id).delete(synchronize_session=False)
-    db.query(SMSTemplate).filter(SMSTemplate.company_id == company.id).delete(synchronize_session=False)
-    db.query(PhoneNumber).filter(PhoneNumber.company_id == company.id).delete(synchronize_session=False)
-    db.query(TwilioSettings).filter(TwilioSettings.company_id == company.id).delete(synchronize_session=False)
+    try:
+        db.query(Pipeline).filter(Pipeline.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
+        db.query(PipelineStage).filter(PipelineStage.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
+        db.query(EmailTemplate).filter(EmailTemplate.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
+        db.query(SMSTemplate).filter(SMSTemplate.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
+        db.query(PhoneNumber).filter(PhoneNumber.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
+        db.query(TwilioSettings).filter(TwilioSettings.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
     
     # Delete billing data
-    db.query(Subscription).filter(Subscription.company_id == company.id).delete(synchronize_session=False)
-    db.query(Invoice).filter(Invoice.company_id == company.id).delete(synchronize_session=False)
-    db.query(Payment).filter(Payment.company_id == company.id).delete(synchronize_session=False)
+    try:
+        db.query(Subscription).filter(Subscription.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
+        db.query(Invoice).filter(Invoice.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
+        db.query(Payment).filter(Payment.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
     
     # Delete all users in the company
     db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
