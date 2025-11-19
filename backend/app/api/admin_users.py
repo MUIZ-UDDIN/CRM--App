@@ -38,6 +38,23 @@ class UserResponse(BaseModel):
 
     class Config:
         from_attributes = True
+        json_encoders = {
+            'UUID': str,
+            'datetime': lambda v: v.isoformat() if v else None
+        }
+    
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            id=str(obj.id),
+            first_name=obj.first_name,
+            last_name=obj.last_name,
+            email=obj.email,
+            role=obj.role.value if hasattr(obj.role, 'value') else str(obj.role),
+            status=obj.status.value if hasattr(obj.status, 'value') else str(obj.status),
+            created_at=obj.created_at.isoformat() if obj.created_at else "",
+            team_id=str(obj.team_id) if obj.team_id else None
+        )
 
 
 class UserCreateResponse(BaseModel):
@@ -58,6 +75,13 @@ class TeamResponse(BaseModel):
 
     class Config:
         from_attributes = True
+    
+    @classmethod
+    def from_orm(cls, obj):
+        return cls(
+            id=str(obj.id),
+            name=obj.name
+        )
 
 
 class RoleUpdate(BaseModel):
@@ -97,7 +121,7 @@ def get_company_users(
     # Get all users for this company
     users = db.query(User).filter(User.company_id == company_id).all()
     
-    return users
+    return [UserResponse.from_orm(user) for user in users]
 
 
 @router.get("/companies/{company_id}/teams", response_model=List[TeamResponse])
@@ -126,7 +150,7 @@ def get_company_teams(
     # Get all teams for this company
     teams = db.query(Team).filter(Team.company_id == company_id).all()
     
-    return teams
+    return [TeamResponse.from_orm(team) for team in teams]
 
 
 @router.post("/companies/{company_id}/users", response_model=UserCreateResponse)
