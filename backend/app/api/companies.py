@@ -435,16 +435,7 @@ def delete_company(
         except Exception:
             pass
     
-    # Delete company-level data
-    try:
-        db.query(Pipeline).filter(Pipeline.company_id == company.id).delete(synchronize_session=False)
-    except Exception:
-        pass
-    
-    try:
-        db.query(PipelineStage).filter(PipelineStage.company_id == company.id).delete(synchronize_session=False)
-    except Exception:
-        pass
+    # Delete company-level data (skip pipelines for now - delete after deals)
     
     try:
         db.query(EmailTemplate).filter(EmailTemplate.company_id == company.id).delete(synchronize_session=False)
@@ -469,18 +460,21 @@ def delete_company(
     # Delete billing data
     try:
         db.query(PaymentHistory).filter(PaymentHistory.company_id == company.id).delete(synchronize_session=False)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error deleting payment history: {e}")
+        db.rollback()
     
     try:
         db.query(Subscription).filter(Subscription.company_id == company.id).delete(synchronize_session=False)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error deleting subscriptions: {e}")
+        db.rollback()
     
     try:
         db.query(Invoice).filter(Invoice.company_id == company.id).delete(synchronize_session=False)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Error deleting invoices: {e}")
+        db.rollback()
     
     try:
         db.query(Payment).filter(Payment.company_id == company.id).delete(synchronize_session=False)
@@ -515,6 +509,21 @@ def delete_company(
         db.query(Contact).filter(Contact.company_id == company.id).delete(synchronize_session=False)
     except Exception as e:
         print(f"Error deleting contacts: {e}")
+        db.rollback()
+    
+    # Now delete pipelines and stages (after deals are deleted)
+    from app.models.deals import PipelineStage, Pipeline
+    
+    try:
+        db.query(PipelineStage).filter(PipelineStage.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting pipeline stages: {e}")
+        db.rollback()
+    
+    try:
+        db.query(Pipeline).filter(Pipeline.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting pipelines: {e}")
         db.rollback()
     
     # Delete all users in the company
