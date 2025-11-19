@@ -469,48 +469,53 @@ const CompanyManagement: React.FC = () => {
                           <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
                         </button>
                         
-                        {openDropdownId === user.id && (
-                          <>
-                            <div 
-                              className="fixed inset-0 z-10" 
-                              onClick={() => setOpenDropdownId(null)}
-                            />
-                            <div 
-                              className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20"
-                              style={{
-                                top: `${document.getElementById(`dropdown-button-${user.id}`)?.getBoundingClientRect().bottom + 8}px`,
-                                right: `${window.innerWidth - (document.getElementById(`dropdown-button-${user.id}`)?.getBoundingClientRect().right || 0)}px`
-                              }}
-                            >
-                              {/* Change Role */}
-                              <button
-                                onClick={() => {
-                                  setSelectedUserForRoleChange(user);
-                                  setShowRoleChangeModal(true);
-                                  setOpenDropdownId(null);
+                        {openDropdownId === user.id && (() => {
+                          const buttonElement = document.getElementById(`dropdown-button-${user.id}`);
+                          const rect = buttonElement?.getBoundingClientRect();
+                          
+                          return (
+                            <>
+                              <div 
+                                className="fixed inset-0 z-10" 
+                                onClick={() => setOpenDropdownId(null)}
+                              />
+                              <div 
+                                className="fixed w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20"
+                                style={{
+                                  top: `${(rect?.bottom || 0) + 8}px`,
+                                  right: `${window.innerWidth - (rect?.right || 0)}px`
                                 }}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
                               >
-                                <ShieldCheckIcon className="w-4 h-4 text-blue-600" />
-                                Change Role
-                              </button>
-                              
-                              <div className="border-t border-gray-200 my-1"></div>
-                              
-                              {/* Delete User */}
-                              <button
-                                onClick={() => {
-                                  handleDeleteUser(user.id, `${user.first_name} ${user.last_name}`);
-                                  setOpenDropdownId(null);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                              >
-                                <TrashIcon className="w-4 h-4" />
-                                Delete User
-                              </button>
-                            </div>
-                          </>
-                        )}
+                                {/* Change Role */}
+                                <button
+                                  onClick={() => {
+                                    setSelectedUserForRoleChange(user);
+                                    setShowRoleChangeModal(true);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <ShieldCheckIcon className="w-4 h-4 text-blue-600" />
+                                  Change Role
+                                </button>
+                                
+                                <div className="border-t border-gray-200 my-1"></div>
+                                
+                                {/* Delete User */}
+                                <button
+                                  onClick={() => {
+                                    handleDeleteUser(user.id, `${user.first_name} ${user.last_name}`);
+                                    setOpenDropdownId(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <TrashIcon className="w-4 h-4" />
+                                  Delete User
+                                </button>
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </td>
                   </tr>
