@@ -357,7 +357,7 @@ def delete_company(
         Contact, Deal, Activity, Email, SMSMessage, Call, Document, 
         Workflow, File, Notification, Quote, AuditLog, SecurityLog,
         Pipeline, PipelineStage, EmailTemplate, SMSTemplate, PhoneNumber,
-        Subscription, Invoice, Payment, TwilioSettings
+        Subscription, Invoice, Payment, TwilioSettings, PaymentHistory
     )
     
     # Get all user IDs in the company
@@ -468,6 +468,11 @@ def delete_company(
     
     # Delete billing data
     try:
+        db.query(PaymentHistory).filter(PaymentHistory.company_id == company.id).delete(synchronize_session=False)
+    except Exception:
+        pass
+    
+    try:
         db.query(Subscription).filter(Subscription.company_id == company.id).delete(synchronize_session=False)
     except Exception:
         pass
@@ -485,8 +490,11 @@ def delete_company(
     # Delete all users in the company
     db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
     
-    # Finally delete the company
-    db.delete(company)
+    # Expunge the company to avoid lazy loading relationships
+    db.expunge(company)
+    
+    # Finally delete the company using raw delete
+    db.query(Company).filter(Company.id == company.id).delete(synchronize_session=False)
     db.commit()
     
     return {"message": "Company and all associated data deleted successfully"}
