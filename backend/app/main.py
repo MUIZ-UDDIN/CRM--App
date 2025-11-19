@@ -53,6 +53,7 @@ from app.api.team import router as team_router
 from app.api.teams import router as teams_router
 from app.api.billing import router as billing_router
 from app.api.platform import router as platform_router
+from app.api.admin_users import router as admin_users_router
 
 # Import with error handling for debugging
 try:
@@ -518,6 +519,13 @@ app.include_router(
     dependencies=[Depends(get_current_user)]
 )
 logger.info("✅ Platform Management routes registered at /api/platform")
+
+# Admin User Management (Super Admin only)
+app.include_router(
+    admin_users_router,
+    dependencies=[Depends(get_current_user)]
+)
+logger.info("✅ Admin User Management routes registered at /api/admin")
 
 # Global Search
 app.include_router(

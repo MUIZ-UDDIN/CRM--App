@@ -500,9 +500,13 @@ export default function SuperAdminDashboard() {
                         <BuildingOfficeIcon className="w-6 h-6 text-blue-600" />
                       </div>
                       <div className="ml-4 min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={company.name}>
+                        <button
+                          onClick={() => navigate(`/admin/companies/${company.id}/manage`)}
+                          className="text-sm font-medium text-blue-600 hover:text-blue-800 truncate max-w-xs block text-left"
+                          title={company.name}
+                        >
                           {company.name}
-                        </div>
+                        </button>
                         <div className="text-sm text-gray-500">{company.id.slice(0, 8)}...</div>
                       </div>
                     </div>
