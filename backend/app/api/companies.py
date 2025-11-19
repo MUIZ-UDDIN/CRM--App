@@ -492,11 +492,22 @@ def delete_company(
     from app.models.deals import Deal
     from app.models.contacts import Contact
     
-    # Delete all deals in the company first (to avoid owner_id NOT NULL constraint)
+    # Get all user IDs in this company first
+    company_user_ids = [user.id for user in db.query(User.id).filter(User.company_id == company.id).all()]
+    
+    # Delete all deals owned by users in this company (to avoid owner_id NOT NULL constraint)
+    try:
+        if company_user_ids:
+            db.query(Deal).filter(Deal.owner_id.in_(company_user_ids)).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting deals by owner: {e}")
+        db.rollback()
+    
+    # Also delete deals by company_id (if any)
     try:
         db.query(Deal).filter(Deal.company_id == company.id).delete(synchronize_session=False)
     except Exception as e:
-        print(f"Error deleting deals: {e}")
+        print(f"Error deleting deals by company: {e}")
         db.rollback()
     
     # Delete all contacts in the company (to avoid user foreign key constraint)
