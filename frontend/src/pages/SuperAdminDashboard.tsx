@@ -492,7 +492,7 @@ export default function SuperAdminDashboard() {
                 </td>
               </tr>
             ) : (
-              filteredCompanies.map((company) => (
+              filteredCompanies.map((company, index) => (
                 <tr key={company.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
@@ -535,9 +535,8 @@ export default function SuperAdminDashboard() {
                       </button>
                       
                       {/* Dropdown Menu */}
-                      <div className="relative" style={{ position: 'static' }}>
+                      <div className="relative">
                         <button
-                          id={`dropdown-btn-${company.id}`}
                           onClick={() => setOpenDropdownId(openDropdownId === company.id ? null : company.id)}
                           className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                           title="More actions"
@@ -554,11 +553,9 @@ export default function SuperAdminDashboard() {
                             />
                             
                             {/* Dropdown Menu */}
-                            <div className="fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-[60]" 
-                              style={{
-                                top: `${document.getElementById(`dropdown-btn-${company.id}`)?.getBoundingClientRect().bottom || 0}px`,
-                                right: `${window.innerWidth - (document.getElementById(`dropdown-btn-${company.id}`)?.getBoundingClientRect().right || 0)}px`
-                              }}>
+                            <div className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 ${
+                              index >= filteredCompanies.length - 2 ? 'bottom-full mb-2' : 'mt-2'
+                            }`}>
                               <button
                                 onClick={() => {
                                   setOpenDropdownId(null);
