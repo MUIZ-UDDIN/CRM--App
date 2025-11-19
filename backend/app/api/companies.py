@@ -352,31 +352,48 @@ def delete_company(
         )
     
     # Delete all related data in correct order to avoid foreign key violations
-    from app.models import Contact, Deal, Activity, Task, Note, SupportTicket
+    from app.models.support_tickets import SupportTicket
+    from app.models import (
+        Contact, Deal, Activity, Email, SMSMessage, Call, Document, 
+        Workflow, File, Notification, Quote, AuditLog, SecurityLog,
+        Pipeline, PipelineStage, EmailTemplate, SMSTemplate, PhoneNumber,
+        Subscription, Invoice, Payment, TwilioSettings
+    )
     
     # Get all user IDs in the company
     user_ids = [u.id for u in db.query(User).filter(User.company_id == company.id).all()]
     
     if user_ids:
-        # Delete contacts owned by users
+        # Delete user-related data
         db.query(Contact).filter(Contact.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        
-        # Delete deals owned by users
         db.query(Deal).filter(Deal.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        
-        # Delete activities
         db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        
-        # Delete tasks
-        db.query(Task).filter(Task.assigned_to.in_(user_ids)).delete(synchronize_session=False)
-        
-        # Delete notes
-        db.query(Note).filter(Note.created_by.in_(user_ids)).delete(synchronize_session=False)
-        
-        # Delete support tickets
+        db.query(Email).filter(Email.sender_id.in_(user_ids)).delete(synchronize_session=False)
+        db.query(SMSMessage).filter(SMSMessage.user_id.in_(user_ids)).delete(synchronize_session=False)
+        db.query(Call).filter(Call.user_id.in_(user_ids)).delete(synchronize_session=False)
+        db.query(Document).filter(Document.created_by.in_(user_ids)).delete(synchronize_session=False)
+        db.query(Workflow).filter(Workflow.created_by.in_(user_ids)).delete(synchronize_session=False)
+        db.query(File).filter(File.uploaded_by.in_(user_ids)).delete(synchronize_session=False)
+        db.query(Notification).filter(Notification.user_id.in_(user_ids)).delete(synchronize_session=False)
+        db.query(Quote).filter(Quote.created_by.in_(user_ids)).delete(synchronize_session=False)
         db.query(SupportTicket).filter(SupportTicket.created_by.in_(user_ids)).delete(synchronize_session=False)
+        db.query(AuditLog).filter(AuditLog.user_id.in_(user_ids)).delete(synchronize_session=False)
+        db.query(SecurityLog).filter(SecurityLog.user_id.in_(user_ids)).delete(synchronize_session=False)
     
-    # Now delete all users
+    # Delete company-level data
+    db.query(Pipeline).filter(Pipeline.company_id == company.id).delete(synchronize_session=False)
+    db.query(PipelineStage).filter(PipelineStage.company_id == company.id).delete(synchronize_session=False)
+    db.query(EmailTemplate).filter(EmailTemplate.company_id == company.id).delete(synchronize_session=False)
+    db.query(SMSTemplate).filter(SMSTemplate.company_id == company.id).delete(synchronize_session=False)
+    db.query(PhoneNumber).filter(PhoneNumber.company_id == company.id).delete(synchronize_session=False)
+    db.query(TwilioSettings).filter(TwilioSettings.company_id == company.id).delete(synchronize_session=False)
+    
+    # Delete billing data
+    db.query(Subscription).filter(Subscription.company_id == company.id).delete(synchronize_session=False)
+    db.query(Invoice).filter(Invoice.company_id == company.id).delete(synchronize_session=False)
+    db.query(Payment).filter(Payment.company_id == company.id).delete(synchronize_session=False)
+    
+    # Delete all users in the company
     db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
     
     # Finally delete the company
