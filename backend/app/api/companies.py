@@ -488,6 +488,24 @@ def delete_company(
         print(f"Error deleting payments: {e}")
         db.rollback()
     
+    # Import models needed for cascade delete
+    from app.models.deals import Deal
+    from app.models.contacts import Contact
+    
+    # Delete all deals in the company first (to avoid owner_id NOT NULL constraint)
+    try:
+        db.query(Deal).filter(Deal.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting deals: {e}")
+        db.rollback()
+    
+    # Delete all contacts in the company (to avoid user foreign key constraint)
+    try:
+        db.query(Contact).filter(Contact.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting contacts: {e}")
+        db.rollback()
+    
     # Delete all users in the company
     try:
         db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)

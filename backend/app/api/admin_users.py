@@ -270,7 +270,7 @@ def delete_user(
     """Delete a user permanently (Super Admin only)"""
     # Check if user is super admin
     admin_user = db.query(User).filter(User.id == current_user.get("id")).first()
-    if not admin_user or admin_user.role != UserRole.SUPER_ADMIN:
+    if not admin_user or admin_user.user_role != UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Super Admins can delete users"
@@ -285,15 +285,37 @@ def delete_user(
         )
     
     # Prevent deleting super admin
-    if user_to_delete.role == UserRole.SUPER_ADMIN:
+    if user_to_delete.user_role == UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot delete Super Admin users"
         )
     
-    # Delete user (cascade delete will handle related data)
-    db.delete(user_to_delete)
-    db.commit()
+    # Import Deal model
+    from app.models.deals import Deal
+    
+    # Delete all deals owned by this user first (to avoid NOT NULL constraint violation)
+    try:
+        db.query(Deal).filter(Deal.owner_id == user_id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting user's deals: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user's deals: {str(e)}"
+        )
+    
+    # Delete user (cascade delete will handle other related data)
+    try:
+        db.delete(user_to_delete)
+        db.commit()
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user: {str(e)}"
+        )
     
     return {"message": "User deleted successfully"}
 
