@@ -45,13 +45,16 @@ class UserResponse(BaseModel):
     
     @classmethod
     def from_orm(cls, obj):
+        # Use user_role (the correct enum field) instead of role (legacy string field)
+        role_value = obj.user_role if obj.user_role else 'sales_rep'
+        
         return cls(
             id=str(obj.id),
             first_name=obj.first_name,
             last_name=obj.last_name,
             email=obj.email,
-            role=obj.role.value if hasattr(obj.role, 'value') else str(obj.role),
-            status=obj.status.value if hasattr(obj.status, 'value') else str(obj.status),
+            role=role_value,
+            status=obj.status if isinstance(obj.status, str) else (obj.status.value if hasattr(obj.status, 'value') else str(obj.status)),
             created_at=obj.created_at.isoformat() if obj.created_at else "",
             team_id=str(obj.team_id) if obj.team_id else None
         )
@@ -124,13 +127,9 @@ def get_company_users(
     # Debug logging
     for user in users:
         print(f"DEBUG - User: {user.email}")
-        print(f"  Role object: {user.role}")
-        print(f"  Role type: {type(user.role)}")
-        print(f"  Has value attr: {hasattr(user.role, 'value')}")
-        if hasattr(user.role, 'value'):
-            print(f"  Role.value: {user.role.value}")
-        else:
-            print(f"  str(role): {str(user.role)}")
+        print(f"  Legacy role field: {user.role}")
+        print(f"  Correct user_role field: {user.user_role}")
+        print(f"  user_role type: {type(user.user_role)}")
     
     result = [UserResponse.from_orm(user) for user in users]
     
@@ -240,7 +239,8 @@ def create_company_user(
         last_name=user_data.last_name,
         email=user_data.email,
         hashed_password=hashed_password,
-        role=role,
+        user_role=role,  # Use user_role (correct field) instead of role (legacy field)
+        role=role,  # Also set legacy field for backward compatibility
         company_id=company_id,
         team_id=user_data.team_id if user_data.team_id else None,
         status=UserStatus.ACTIVE
@@ -256,7 +256,7 @@ def create_company_user(
         first_name=new_user.first_name,
         last_name=new_user.last_name,
         email=new_user.email,
-        role=new_user.role.value,
+        role=new_user.user_role,  # Use user_role field
         password=password
     )
 
@@ -308,7 +308,7 @@ def update_user_role(
     """Update a user's role (Super Admin only)"""
     # Check if user is super admin
     admin_user = db.query(User).filter(User.id == current_user.get("id")).first()
-    if not admin_user or admin_user.role != UserRole.SUPER_ADMIN:
+    if not admin_user or admin_user.user_role != UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Super Admins can change user roles"
@@ -323,7 +323,7 @@ def update_user_role(
         )
     
     # Prevent changing super admin role
-    if user_to_update.role == UserRole.SUPER_ADMIN:
+    if user_to_update.user_role == UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot change Super Admin role"
@@ -346,7 +346,8 @@ def update_user_role(
         )
     
     # Update role
-    user_to_update.role = new_role
+    user_to_update.user_role = new_role
+    user_to_update.role = new_role.value  # Also update legacy field
     
     # If changing to Sales Manager, ensure they have a team
     if new_role == UserRole.SALES_MANAGER and not user_to_update.team_id:
