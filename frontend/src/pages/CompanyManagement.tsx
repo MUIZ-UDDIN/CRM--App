@@ -473,6 +473,7 @@ const CompanyManagement: React.FC = () => {
                         {openDropdownId === user.id && (() => {
                           const buttonElement = document.getElementById(`dropdown-button-${user.id}`);
                           const rect = buttonElement?.getBoundingClientRect();
+                          const dropdownWidth = 224; // w-56 = 14rem = 224px
                           
                           return createPortal(
                             <>
@@ -484,7 +485,7 @@ const CompanyManagement: React.FC = () => {
                                 className="fixed w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999]"
                                 style={{
                                   top: `${(rect?.bottom || 0) + 8}px`,
-                                  right: `${window.innerWidth - (rect?.right || 0)}px`
+                                  left: `${(rect?.right || 0) - dropdownWidth}px`
                                 }}
                               >
                                 {/* Change Role */}
