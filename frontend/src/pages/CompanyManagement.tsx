@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import {
   ArrowLeftIcon,
@@ -396,10 +395,7 @@ const CompanyManagement: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Users</h2>
           </div>
           
-          <div 
-            className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg"
-            onScroll={() => setOpenDropdownId(null)}
-          >
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg">
             <table className="min-w-full divide-y divide-gray-200 relative z-0">
               <thead className="bg-gray-50">
                 <tr>
@@ -472,24 +468,15 @@ const CompanyManagement: React.FC = () => {
                           <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
                         </button>
                         
-                        {openDropdownId === user.id && (() => {
-                          const buttonElement = document.getElementById(`dropdown-button-${user.id}`);
-                          const rect = buttonElement?.getBoundingClientRect();
-                          const dropdownWidth = 224; // w-56 = 14rem = 224px
-                          
-                          return createPortal(
-                            <>
-                              <div 
-                                className="fixed inset-0 z-[9998]" 
-                                onClick={() => setOpenDropdownId(null)}
-                              />
-                              <div 
-                                className="fixed w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999]"
-                                style={{
-                                  top: `${(rect?.bottom || 0) + 8}px`,
-                                  left: `${(rect?.right || 0) - dropdownWidth}px`
-                                }}
-                              >
+                        {openDropdownId === user.id && (
+                          <>
+                            <div 
+                              className="fixed inset-0 z-[9998]" 
+                              onClick={() => setOpenDropdownId(null)}
+                            />
+                            <div 
+                              className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999]"
+                            >
                                 {/* Change Role */}
                                 <button
                                   onClick={() => {
@@ -517,10 +504,8 @@ const CompanyManagement: React.FC = () => {
                                   Delete User
                                 </button>
                               </div>
-                            </>,
-                            document.body
-                          );
-                        })()}
+                            </>
+                          )}
                       </div>
                     </td>
                   </tr>
@@ -708,16 +693,6 @@ const CompanyManagement: React.FC = () => {
                     })}
                 </div>
 
-                {roleSearchTerm && [
-                  { value: 'company_admin', label: 'Company Admin' },
-                  { value: 'sales_manager', label: 'Sales Manager' },
-                  { value: 'sales_rep', label: 'Sales Rep' },
-                ].filter(role => 
-                  role.label.toLowerCase().includes(roleSearchTerm.toLowerCase()) &&
-                  normalizeRole(selectedUserForRoleChange.role) !== role.value
-                ).length === 0 && (
-                  <p className="text-sm text-gray-500 text-center py-4">No roles found matching "{roleSearchTerm}"</p>
-                )}
               </div>
 
               <div className="mt-6">
@@ -725,7 +700,6 @@ const CompanyManagement: React.FC = () => {
                   onClick={() => {
                     setShowRoleChangeModal(false);
                     setSelectedUserForRoleChange(null);
-                    setRoleSearchTerm('');
                   }}
                   className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
