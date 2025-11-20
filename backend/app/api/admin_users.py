@@ -295,10 +295,25 @@ def delete_user(
     from app.models.deals import Deal
     from app.models.contacts import Contact
     from app.models.sms import SMSMessage
+    from sqlalchemy import or_
     
-    # Delete all deals owned by this user first (to avoid NOT NULL constraint violation)
+    # Get all contacts owned by this user first (we need their IDs)
+    user_contacts = db.query(Contact).filter(Contact.owner_id == user_id).all()
+    contact_ids = [contact.id for contact in user_contacts]
+    
+    # Delete all deals related to this user (owned by user OR linked to user's contacts)
     try:
-        db.query(Deal).filter(Deal.owner_id == user_id).delete(synchronize_session=False)
+        if contact_ids:
+            # Delete deals owned by user OR deals linked to user's contacts
+            db.query(Deal).filter(
+                or_(
+                    Deal.owner_id == user_id,
+                    Deal.contact_id.in_(contact_ids)
+                )
+            ).delete(synchronize_session=False)
+        else:
+            # Just delete deals owned by user
+            db.query(Deal).filter(Deal.owner_id == user_id).delete(synchronize_session=False)
     except Exception as e:
         print(f"Error deleting user's deals: {e}")
         db.rollback()
@@ -307,11 +322,7 @@ def delete_user(
             detail=f"Failed to delete user's deals: {str(e)}"
         )
     
-    # Get all contacts owned by this user
-    user_contacts = db.query(Contact).filter(Contact.owner_id == user_id).all()
-    contact_ids = [contact.id for contact in user_contacts]
-    
-    # Delete SMS messages for these contacts first
+    # Delete SMS messages for these contacts
     if contact_ids:
         try:
             db.query(SMSMessage).filter(SMSMessage.contact_id.in_(contact_ids)).delete(synchronize_session=False)
