@@ -49,6 +49,7 @@ const CompanyManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [showAddUserModal, setShowAddUserModal] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
   const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<User | null>(null);
   
@@ -396,7 +397,22 @@ const CompanyManagement: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Users</h2>
           </div>
           
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg">
+          <div 
+            className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg"
+            onScroll={() => {
+              // Update dropdown position on scroll
+              if (openDropdownId) {
+                const buttonElement = document.getElementById(`dropdown-button-${openDropdownId}`);
+                const rect = buttonElement?.getBoundingClientRect();
+                if (rect) {
+                  setDropdownPosition({
+                    top: rect.bottom + 8,
+                    left: rect.right - 224 // 224px = w-56
+                  });
+                }
+              }
+            }}
+          >
             <table className="min-w-full divide-y divide-gray-200 relative z-0">
               <thead className="bg-gray-50">
                 <tr>
@@ -461,7 +477,17 @@ const CompanyManagement: React.FC = () => {
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            setOpenDropdownId(openDropdownId === user.id ? null : user.id);
+                            if (openDropdownId === user.id) {
+                              setOpenDropdownId(null);
+                              setDropdownPosition(null);
+                            } else {
+                              setOpenDropdownId(user.id);
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              setDropdownPosition({
+                                top: rect.bottom + 8,
+                                left: rect.right - 224 // 224px = w-56
+                              });
+                            }
                           }}
                           className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                           id={`dropdown-button-${user.id}`}
@@ -469,17 +495,21 @@ const CompanyManagement: React.FC = () => {
                           <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
                         </button>
                         
-                        {openDropdownId === user.id && (
+                        {openDropdownId === user.id && dropdownPosition && createPortal(
                           <>
-                            {createPortal(
-                              <div 
-                                className="fixed inset-0 z-[9998]" 
-                                onClick={() => setOpenDropdownId(null)}
-                              />,
-                              document.body
-                            )}
                             <div 
-                              className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50"
+                              className="fixed inset-0 z-[9998]" 
+                              onClick={() => {
+                                setOpenDropdownId(null);
+                                setDropdownPosition(null);
+                              }}
+                            />
+                            <div 
+                              className="fixed w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999]"
+                              style={{
+                                top: `${dropdownPosition.top}px`,
+                                left: `${dropdownPosition.left}px`
+                              }}
                             >
                                 {/* Change Role */}
                                 <button
@@ -509,7 +539,9 @@ const CompanyManagement: React.FC = () => {
                                 </button>
                               </div>
                             </>
-                          )}
+                          ,
+                          document.body
+                        )}
                       </div>
                     </td>
                   </tr>
