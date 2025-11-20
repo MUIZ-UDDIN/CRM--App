@@ -68,6 +68,19 @@ const CompanyManagement: React.FC = () => {
     fetchTeams();
   }, [companyId]);
 
+  // Close dropdown on any scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (openDropdownId) {
+        setOpenDropdownId(null);
+        setDropdownPosition(null);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, true);
+    return () => window.removeEventListener('scroll', handleScroll, true);
+  }, [openDropdownId]);
+
   const fetchCompanyData = async () => {
     try {
       const token = localStorage.getItem('token');
