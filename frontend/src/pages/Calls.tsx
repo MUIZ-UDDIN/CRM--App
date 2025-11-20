@@ -55,9 +55,9 @@ export default function CallsNew() {
     fetchContacts();
     fetchTwilioNumbers();
     
-    // Initialize Twilio Device
-    twilioVoiceService.initialize().catch(err => {
-      console.error('Failed to initialize Twilio Device:', err);
+    // Initialize Twilio Device (silently fails if not configured)
+    twilioVoiceService.initialize().catch(() => {
+      // Silently ignore - Twilio not configured for this company
     });
     
     // Listen for incoming calls

@@ -1656,11 +1656,10 @@ export default function Settings() {
                         <div className="flex items-center justify-center gap-2 mb-2">
                           <span className="text-5xl font-bold text-blue-600">$50</span>
                           <div className="text-left">
-                            <div className="text-lg text-gray-600 font-medium">/user</div>
-                            <div className="text-sm text-gray-500">/month</div>
+                            <div className="text-lg text-gray-600 font-medium">/month</div>
                           </div>
                         </div>
-                        <p className="text-gray-600 mt-2">Billed monthly • Cancel anytime</p>
+                        <p className="text-gray-600 mt-2">Unlimited users • Billed monthly • Cancel anytime</p>
                       </div>
 
                       <div className="mb-8">
@@ -1727,7 +1726,7 @@ export default function Settings() {
                           <div>
                             <p className="font-semibold text-blue-900">Monthly Subscription</p>
                             <p className="text-sm text-blue-700">
-                              Your subscription starts immediately upon payment. You'll be billed $50 per user every 30 days. Cancel anytime.
+                              Your subscription starts immediately upon payment. You'll be billed $50 every 30 days for unlimited access. Cancel anytime.
                             </p>
                           </div>
                         </div>
@@ -1754,7 +1753,7 @@ export default function Settings() {
                         <p className="text-sm text-gray-500 mb-4">Secure payment powered by Square</p>
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
                           <p className="text-sm text-blue-800">
-                            <strong>Your subscription starts immediately.</strong> You'll be charged $50 per user per month. Your first billing cycle starts today.
+                            <strong>Your subscription starts immediately.</strong> You'll be charged $50 per month for unlimited users and full access. Your first billing cycle starts today.
                           </p>
                         </div>
                         

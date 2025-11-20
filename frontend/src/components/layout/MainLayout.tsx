@@ -178,6 +178,7 @@ export default function MainLayout() {
   useEffect(() => {
     const initTwilioVoice = async () => {
       try {
+        // Initialize Twilio - will silently fail if not configured
         await twilioVoiceService.initialize();
         
         // Set up incoming call handler from Twilio Device

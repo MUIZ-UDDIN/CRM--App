@@ -104,9 +104,9 @@ export default function SMSEnhanced() {
     fetchTemplates();
     fetchPhoneNumbers();
     
-    // Initialize Twilio Device for calls
-    twilioVoiceService.initialize().catch(err => {
-      console.error('Failed to initialize Twilio Device:', err);
+    // Initialize Twilio Device for calls (silently fails if not configured)
+    twilioVoiceService.initialize().catch(() => {
+      // Silently ignore - Twilio not configured for this company
     });
     
     // Listen for incoming calls

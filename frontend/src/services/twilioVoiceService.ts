@@ -27,7 +27,7 @@ class TwilioVoiceService {
       });
       
       if (!response) {
-        console.warn('Twilio voice service not available');
+        // Silently return - Twilio not configured for this company
         return;
       }
 
