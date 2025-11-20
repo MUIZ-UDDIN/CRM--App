@@ -113,7 +113,7 @@ export default function TrialBanner() {
           {canViewPlans && (
             <div className="flex items-center gap-3">
               <Link
-                to="/billing"
+                to="/settings?tab=billing"
                 className="bg-white text-red-600 px-6 py-2 rounded-lg font-semibold hover:bg-red-50 transition-colors flex items-center gap-2"
               >
                 <CreditCardIcon className="w-5 h-5" />
@@ -145,7 +145,7 @@ export default function TrialBanner() {
           <div className="flex items-center gap-3">
             {canViewPlans && (
               <Link
-                to="/billing"
+                to="/settings?tab=billing"
                 className="bg-white text-orange-600 px-6 py-2 rounded-lg font-semibold hover:bg-orange-50 transition-colors flex items-center gap-2"
               >
                 <CreditCardIcon className="w-5 h-5" />
@@ -182,7 +182,7 @@ export default function TrialBanner() {
         <div className="flex items-center gap-3">
           {canViewPlans && (
             <Link
-              to="/billing"
+              to="/settings?tab=billing"
               className="bg-white text-blue-600 px-6 py-2 rounded-lg font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
             >
               <CreditCardIcon className="w-5 h-5" />
