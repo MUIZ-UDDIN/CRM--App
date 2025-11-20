@@ -291,8 +291,9 @@ def delete_user(
             detail="Cannot delete Super Admin users"
         )
     
-    # Import Deal model
+    # Import Deal and Contact models
     from app.models.deals import Deal
+    from app.models.contacts import Contact
     
     # Delete all deals owned by this user first (to avoid NOT NULL constraint violation)
     try:
@@ -303,6 +304,17 @@ def delete_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete user's deals: {str(e)}"
+        )
+    
+    # Delete all contacts owned by this user (to avoid NOT NULL constraint violation)
+    try:
+        db.query(Contact).filter(Contact.owner_id == user_id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting user's contacts: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user's contacts: {str(e)}"
         )
     
     # Delete user (cascade delete will handle other related data)
