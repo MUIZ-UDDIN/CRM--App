@@ -51,7 +51,6 @@ const CompanyManagement: React.FC = () => {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
   const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<User | null>(null);
-  const [roleSearchTerm, setRoleSearchTerm] = useState('');
   
   // Add user form state
   const [newUser, setNewUser] = useState({
@@ -397,7 +396,10 @@ const CompanyManagement: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900">Users</h2>
           </div>
           
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg">
+          <div 
+            className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg"
+            onScroll={() => setOpenDropdownId(null)}
+          >
             <table className="min-w-full divide-y divide-gray-200 relative z-0">
               <thead className="bg-gray-50">
                 <tr>
@@ -650,7 +652,6 @@ const CompanyManagement: React.FC = () => {
                 onClick={() => {
                   setShowRoleChangeModal(false);
                   setSelectedUserForRoleChange(null);
-                  setRoleSearchTerm('');
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -672,27 +673,15 @@ const CompanyManagement: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select New Role
                 </label>
-                
-                {/* Search Input */}
-                <input
-                  type="text"
-                  placeholder="Search roles..."
-                  value={roleSearchTerm}
-                  onChange={(e) => setRoleSearchTerm(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"
-                />
 
                 {/* Role Options */}
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2">
                   {[
                     { value: 'company_admin', label: 'Company Admin', icon: ShieldCheckIcon, color: 'purple' },
                     { value: 'sales_manager', label: 'Sales Manager', icon: UserGroupIcon, color: 'blue' },
                     { value: 'sales_rep', label: 'Sales Rep', icon: UserIcon, color: 'green' },
                   ]
-                    .filter(role => 
-                      role.label.toLowerCase().includes(roleSearchTerm.toLowerCase()) &&
-                      normalizeRole(selectedUserForRoleChange.role) !== role.value
-                    )
+                    .filter(role => normalizeRole(selectedUserForRoleChange.role) !== role.value)
                     .map((role) => {
                       const Icon = role.icon;
                       return (
@@ -702,7 +691,6 @@ const CompanyManagement: React.FC = () => {
                             handleChangeRole(selectedUserForRoleChange.id, role.value);
                             setShowRoleChangeModal(false);
                             setSelectedUserForRoleChange(null);
-                            setRoleSearchTerm('');
                           }}
                           className={`w-full px-4 py-3 text-left border-2 border-gray-200 rounded-lg hover:border-${role.color}-500 hover:bg-${role.color}-50 transition-all flex items-center gap-3 group`}
                         >
