@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { toast } from 'react-hot-toast';
 import {
   ArrowLeftIcon,
@@ -456,7 +457,7 @@ const CompanyManagement: React.FC = () => {
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="relative inline-block">
+                      <div className="relative inline-block z-50">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -470,12 +471,15 @@ const CompanyManagement: React.FC = () => {
                         
                         {openDropdownId === user.id && (
                           <>
+                            {createPortal(
+                              <div 
+                                className="fixed inset-0 z-[9998]" 
+                                onClick={() => setOpenDropdownId(null)}
+                              />,
+                              document.body
+                            )}
                             <div 
-                              className="fixed inset-0 z-[9998]" 
-                              onClick={() => setOpenDropdownId(null)}
-                            />
-                            <div 
-                              className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-[9999]"
+                              className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-50"
                             >
                                 {/* Change Role */}
                                 <button
