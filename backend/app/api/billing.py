@@ -3,7 +3,7 @@ Billing and subscription management API endpoints
 Updated: 2025-11-16
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Body
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, UUID4, validator, Field
@@ -62,6 +62,10 @@ class SubscriptionPlanUpdate(BaseModel):
     trial_days: Optional[int] = None
     max_users: Optional[int] = None
     is_active: Optional[bool] = None
+
+
+class PlanPriceUpdate(BaseModel):
+    monthly_price: float = Field(..., ge=0, description="New monthly price for the plan")
 
 
 class SubscriptionPlanResponse(BaseModel):
@@ -285,7 +289,7 @@ async def get_current_plan_price(
 
 @router.patch("/plans/update-price")
 async def update_plan_price(
-    request: dict,
+    price_update: PlanPriceUpdate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
@@ -296,17 +300,12 @@ async def update_plan_price(
             detail="Permission denied"
         )
     
-    # Get monthly_price from request body
-    monthly_price = request.get('monthly_price')
-    if monthly_price is None:
-        raise HTTPException(status_code=400, detail="monthly_price is required")
-    
     # Get the first active plan (assuming single plan model)
     plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
     if not plan:
         raise HTTPException(status_code=404, detail="No active plan found")
     
-    plan.monthly_price = Decimal(str(monthly_price))
+    plan.monthly_price = Decimal(str(price_update.monthly_price))
     plan.updated_at = datetime.utcnow()
     
     db.commit()
