@@ -291,9 +291,10 @@ def delete_user(
             detail="Cannot delete Super Admin users"
         )
     
-    # Import Deal and Contact models
+    # Import Deal, Contact, and SMSMessage models
     from app.models.deals import Deal
     from app.models.contacts import Contact
+    from app.models.sms import SMSMessage
     
     # Delete all deals owned by this user first (to avoid NOT NULL constraint violation)
     try:
@@ -305,6 +306,22 @@ def delete_user(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete user's deals: {str(e)}"
         )
+    
+    # Get all contacts owned by this user
+    user_contacts = db.query(Contact).filter(Contact.owner_id == user_id).all()
+    contact_ids = [contact.id for contact in user_contacts]
+    
+    # Delete SMS messages for these contacts first
+    if contact_ids:
+        try:
+            db.query(SMSMessage).filter(SMSMessage.contact_id.in_(contact_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting SMS messages: {e}")
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete SMS messages: {str(e)}"
+            )
     
     # Delete all contacts owned by this user (to avoid NOT NULL constraint violation)
     try:
