@@ -307,8 +307,8 @@ def delete_user(
     from app.models.conversations import UserConversation
     from app.models.email_campaigns import BulkEmailCampaign
     from app.models.analytics import (
-        ActivityMetric, EmailMetric, CallMetric, ContactMetric, 
-        DocumentMetric, PipelineMetric, PhoneNumberMetric
+        ActivityMetrics, EmailMetrics, CallMetrics, ContactMetrics, 
+        DocumentMetrics
     )
     from sqlalchemy import or_
     
@@ -318,13 +318,11 @@ def delete_user(
         contact_ids = [contact.id for contact in user_contacts]
         
         # 1. Delete analytics metrics (no foreign key constraints on them)
-        db.query(ActivityMetric).filter(ActivityMetric.user_id == user_id).delete(synchronize_session=False)
-        db.query(EmailMetric).filter(EmailMetric.user_id == user_id).delete(synchronize_session=False)
-        db.query(CallMetric).filter(CallMetric.user_id == user_id).delete(synchronize_session=False)
-        db.query(ContactMetric).filter(ContactMetric.owner_id == user_id).delete(synchronize_session=False)
-        db.query(DocumentMetric).filter(DocumentMetric.owner_id == user_id).delete(synchronize_session=False)
-        db.query(PipelineMetric).filter(PipelineMetric.owner_id == user_id).delete(synchronize_session=False)
-        db.query(PhoneNumberMetric).filter(PhoneNumberMetric.user_id == user_id).delete(synchronize_session=False)
+        db.query(ActivityMetrics).filter(ActivityMetrics.user_id == user_id).delete(synchronize_session=False)
+        db.query(EmailMetrics).filter(EmailMetrics.user_id == user_id).delete(synchronize_session=False)
+        db.query(CallMetrics).filter(CallMetrics.user_id == user_id).delete(synchronize_session=False)
+        db.query(ContactMetrics).filter(ContactMetrics.owner_id == user_id).delete(synchronize_session=False)
+        db.query(DocumentMetrics).filter(DocumentMetrics.owner_id == user_id).delete(synchronize_session=False)
         
         # 2. Delete quotes owned by user
         db.query(Quote).filter(Quote.owner_id == user_id).delete(synchronize_session=False)
