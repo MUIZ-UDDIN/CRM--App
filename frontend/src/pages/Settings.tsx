@@ -1638,12 +1638,8 @@ export default function Settings() {
                 <div>
                   {/* Header */}
                   <div className="mb-8 text-center">
-                    <h2 className="text-3xl font-bold text-gray-900 mb-2">Sunstone CRM</h2>
-                    <p className="text-gray-600">Everything you need to manage your business</p>
-                    <div className="mt-4 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-2">
-                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
-                      <span className="text-green-800 font-semibold">14-Day Free Trial Included</span>
-                    </div>
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">Upgrade to Sunstone CRM</h2>
+                    <p className="text-gray-600">Continue using all features without interruption</p>
                   </div>
 
                   {/* Single Pricing Plan */}
@@ -1729,9 +1725,9 @@ export default function Settings() {
                         <div className="flex items-start gap-3">
                           <ClockIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                           <div>
-                            <p className="font-semibold text-blue-900">14-Day Free Trial</p>
+                            <p className="font-semibold text-blue-900">Monthly Subscription</p>
                             <p className="text-sm text-blue-700">
-                              Start your free trial today. No credit card required. After your trial ends, your account will be paused until you add a payment method.
+                              Your subscription starts immediately upon payment. You'll be billed $50 per user every 30 days. Cancel anytime.
                             </p>
                           </div>
                         </div>
@@ -1741,7 +1737,7 @@ export default function Settings() {
                         onClick={() => setShowPaymentModal(true)}
                         className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg text-lg"
                       >
-                        Start Free Trial & Add Payment Method
+                        Subscribe Now & Add Payment Method
                       </button>
                       
                       <p className="text-center text-sm text-gray-500 mt-4">
@@ -1756,9 +1752,9 @@ export default function Settings() {
                       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
                         <h3 className="text-xl font-bold text-gray-900 mb-2">Add Payment Method</h3>
                         <p className="text-sm text-gray-500 mb-4">Secure payment powered by Square</p>
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
-                          <p className="text-sm text-green-800">
-                            <strong>Your 14-day free trial starts now!</strong> You won't be charged until after your trial ends.
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                          <p className="text-sm text-blue-800">
+                            <strong>Your subscription starts immediately.</strong> You'll be charged $50 per user per month. Your first billing cycle starts today.
                           </p>
                         </div>
                         
