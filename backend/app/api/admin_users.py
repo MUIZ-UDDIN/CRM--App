@@ -291,21 +291,74 @@ def delete_user(
             detail="Cannot delete Super Admin users"
         )
     
-    # Import Deal, Contact, SMSMessage, and Notification models
+    # Import all models that reference users
     from app.models.deals import Deal
     from app.models.contacts import Contact
     from app.models.sms import SMSMessage
     from app.models.notifications import Notification
+    from app.models.quotes import Quote
+    from app.models.activities import Activity
+    from app.models.calls import Call
+    from app.models.emails import Email
+    from app.models.documents import Document
+    from app.models.files import File, Folder
+    from app.models.workflows import Workflow
+    from app.models.call_transcripts import CallTranscript
+    from app.models.conversations import UserConversation
+    from app.models.email_campaigns import BulkEmailCampaign
+    from app.models.analytics import (
+        ActivityMetric, EmailMetric, CallMetric, ContactMetric, 
+        DocumentMetric, PipelineMetric, PhoneNumberMetric
+    )
     from sqlalchemy import or_
     
-    # Get all contacts owned by this user first (we need their IDs)
-    user_contacts = db.query(Contact).filter(Contact.owner_id == user_id).all()
-    contact_ids = [contact.id for contact in user_contacts]
-    
-    # Delete all deals related to this user (owned by user OR linked to user's contacts)
     try:
+        # Get all contacts owned by this user first (we need their IDs for cascade)
+        user_contacts = db.query(Contact).filter(Contact.owner_id == user_id).all()
+        contact_ids = [contact.id for contact in user_contacts]
+        
+        # 1. Delete analytics metrics (no foreign key constraints on them)
+        db.query(ActivityMetric).filter(ActivityMetric.user_id == user_id).delete(synchronize_session=False)
+        db.query(EmailMetric).filter(EmailMetric.user_id == user_id).delete(synchronize_session=False)
+        db.query(CallMetric).filter(CallMetric.user_id == user_id).delete(synchronize_session=False)
+        db.query(ContactMetric).filter(ContactMetric.owner_id == user_id).delete(synchronize_session=False)
+        db.query(DocumentMetric).filter(DocumentMetric.owner_id == user_id).delete(synchronize_session=False)
+        db.query(PipelineMetric).filter(PipelineMetric.owner_id == user_id).delete(synchronize_session=False)
+        db.query(PhoneNumberMetric).filter(PhoneNumberMetric.user_id == user_id).delete(synchronize_session=False)
+        
+        # 2. Delete quotes owned by user
+        db.query(Quote).filter(Quote.owner_id == user_id).delete(synchronize_session=False)
+        
+        # 3. Delete workflows owned by user
+        db.query(Workflow).filter(Workflow.owner_id == user_id).delete(synchronize_session=False)
+        
+        # 4. Delete email campaigns
+        db.query(BulkEmailCampaign).filter(BulkEmailCampaign.user_id == user_id).delete(synchronize_session=False)
+        
+        # 5. Delete call transcripts
+        db.query(CallTranscript).filter(CallTranscript.user_id == user_id).delete(synchronize_session=False)
+        
+        # 6. Delete user conversations
+        db.query(UserConversation).filter(UserConversation.user_id == user_id).delete(synchronize_session=False)
+        
+        # 7. Delete activities owned by user
+        db.query(Activity).filter(Activity.owner_id == user_id).delete(synchronize_session=False)
+        
+        # 8. Delete calls made by user
+        db.query(Call).filter(Call.user_id == user_id).delete(synchronize_session=False)
+        
+        # 9. Delete emails owned by user
+        db.query(Email).filter(Email.owner_id == user_id).delete(synchronize_session=False)
+        
+        # 10. Delete documents owned by user
+        db.query(Document).filter(Document.owner_id == user_id).delete(synchronize_session=False)
+        
+        # 11. Delete files and folders owned by user
+        db.query(File).filter(File.owner_id == user_id).delete(synchronize_session=False)
+        db.query(Folder).filter(Folder.owner_id == user_id).delete(synchronize_session=False)
+        
+        # 12. Delete all deals related to this user (owned by user OR linked to user's contacts)
         if contact_ids:
-            # Delete deals owned by user OR deals linked to user's contacts
             db.query(Deal).filter(
                 or_(
                     Deal.owner_id == user_id,
@@ -313,48 +366,24 @@ def delete_user(
                 )
             ).delete(synchronize_session=False)
         else:
-            # Just delete deals owned by user
             db.query(Deal).filter(Deal.owner_id == user_id).delete(synchronize_session=False)
-    except Exception as e:
-        print(f"Error deleting user's deals: {e}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete user's deals: {str(e)}"
-        )
-    
-    # Delete SMS messages for these contacts
-    if contact_ids:
-        try:
+        
+        # 13. Delete SMS messages for user's contacts
+        if contact_ids:
             db.query(SMSMessage).filter(SMSMessage.contact_id.in_(contact_ids)).delete(synchronize_session=False)
-        except Exception as e:
-            print(f"Error deleting SMS messages: {e}")
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to delete SMS messages: {str(e)}"
-            )
-    
-    # Delete all contacts owned by this user (to avoid NOT NULL constraint violation)
-    try:
+        
+        # 14. Delete all contacts owned by this user
         db.query(Contact).filter(Contact.owner_id == user_id).delete(synchronize_session=False)
-    except Exception as e:
-        print(f"Error deleting user's contacts: {e}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete user's contacts: {str(e)}"
-        )
-    
-    # Delete all notifications for this user
-    try:
+        
+        # 15. Delete all notifications for this user
         db.query(Notification).filter(Notification.user_id == user_id).delete(synchronize_session=False)
+        
     except Exception as e:
-        print(f"Error deleting user's notifications: {e}")
+        print(f"Error during cascade delete: {e}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete user's notifications: {str(e)}"
+            detail=f"Failed to delete user's related data: {str(e)}"
         )
     
     # Delete user (cascade delete will handle other related data)
