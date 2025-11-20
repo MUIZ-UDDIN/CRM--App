@@ -268,6 +268,53 @@ async def list_subscription_plans(
     return plans
 
 
+@router.get("/plans/current-price")
+async def get_current_plan_price(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get the current monthly price for the active plan"""
+    # Get the first active plan (assuming single plan model)
+    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
+    if not plan:
+        # Return default price if no plan exists yet
+        return {"monthly_price": 50.00}
+    
+    return {"monthly_price": float(plan.monthly_price)}
+
+
+@router.patch("/plans/update-price")
+async def update_plan_price(
+    request: dict,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Update the monthly price for the plan (Super Admin only)"""
+    if not has_permission(current_user, Permission.MANAGE_BILLING):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied"
+        )
+    
+    # Get monthly_price from request body
+    monthly_price = request.get('monthly_price')
+    if monthly_price is None:
+        raise HTTPException(status_code=400, detail="monthly_price is required")
+    
+    # Get the first active plan (assuming single plan model)
+    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
+    if not plan:
+        raise HTTPException(status_code=404, detail="No active plan found")
+    
+    plan.monthly_price = Decimal(str(monthly_price))
+    plan.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(plan)
+    
+    return {"message": "Plan price updated successfully", "new_price": float(plan.monthly_price)}
+
+
 @router.get("/plans/{plan_id}", response_model=SubscriptionPlanResponse)
 async def get_subscription_plan(
     plan_id: UUID4,
@@ -774,53 +821,6 @@ async def get_all_subscriptions(
         })
     
     return result
-
-
-@router.get("/plans/current-price")
-async def get_current_plan_price(
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_active_user)
-):
-    """Get the current monthly price for the active plan"""
-    # Get the first active plan (assuming single plan model)
-    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
-    if not plan:
-        # Return default price if no plan exists yet
-        return {"monthly_price": 50.00}
-    
-    return {"monthly_price": float(plan.monthly_price)}
-
-
-@router.patch("/plans/update-price")
-async def update_plan_price(
-    request: dict,
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_active_user)
-):
-    """Update the monthly price for the plan (Super Admin only)"""
-    if not has_permission(current_user, Permission.MANAGE_BILLING):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Permission denied"
-        )
-    
-    # Get monthly_price from request body
-    monthly_price = request.get('monthly_price')
-    if monthly_price is None:
-        raise HTTPException(status_code=400, detail="monthly_price is required")
-    
-    # Get the first active plan (assuming single plan model)
-    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
-    if not plan:
-        raise HTTPException(status_code=404, detail="No active plan found")
-    
-    plan.monthly_price = Decimal(str(monthly_price))
-    plan.updated_at = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(plan)
-    
-    return {"message": "Plan price updated successfully", "new_price": float(plan.monthly_price)}
 
 
 @router.post("/subscriptions/{subscription_id}/suspend")
