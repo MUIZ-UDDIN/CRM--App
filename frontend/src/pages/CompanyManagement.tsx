@@ -392,12 +392,12 @@ const CompanyManagement: React.FC = () => {
         </div>
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden relative z-0">
+        <div className="bg-white rounded-lg shadow-sm relative z-0">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">Users</h2>
           </div>
           
-          <div className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0">
+          <div className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg">
             <table className="min-w-full divide-y divide-gray-200 relative z-0">
               <thead className="bg-gray-50">
                 <tr>
