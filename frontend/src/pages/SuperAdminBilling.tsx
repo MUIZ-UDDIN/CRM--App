@@ -61,12 +61,17 @@ export default function SuperAdminBilling() {
 
   const fetchData = async () => {
     try {
-      const [subsResponse, plansResponse] = await Promise.all([
+      const [subsResponse, plansResponse, priceResponse] = await Promise.all([
         apiClient.get('/billing/subscriptions/all'),
-        apiClient.get('/billing/plans')
+        apiClient.get('/billing/plans'),
+        apiClient.get('/billing/plans/current-price')
       ]);
       setSubscriptions(subsResponse.data);
       setPlans(plansResponse.data);
+      // Set current price from backend
+      if (priceResponse.data?.monthly_price) {
+        setNewPrice(priceResponse.data.monthly_price.toString());
+      }
     } catch (error: any) {
       console.error('Failed to load billing data:', error);
       toast.error('Failed to load billing data');
@@ -224,22 +229,23 @@ export default function SuperAdminBilling() {
             Update Price
           </button>
         </div>
-        {currentPlan && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="border rounded-lg p-4">
-              <p className="text-sm text-gray-600">Monthly Price (Per User)</p>
-              <p className="text-3xl font-bold text-gray-900">${currentPlan.monthly_price}</p>
-            </div>
-            <div className="border rounded-lg p-4">
-              <p className="text-sm text-gray-600">Trial Period</p>
-              <p className="text-3xl font-bold text-gray-900">{currentPlan.trial_days} days</p>
-            </div>
-            <div className="border rounded-lg p-4">
-              <p className="text-sm text-gray-600">Max Users</p>
-              <p className="text-3xl font-bold text-gray-900">{currentPlan.max_users || 'Unlimited'}</p>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="border rounded-lg p-4">
+            <p className="text-sm text-gray-600">Monthly Price (Flat Rate)</p>
+            <p className="text-3xl font-bold text-gray-900">${currentPlan?.monthly_price || newPrice}</p>
+            <p className="text-xs text-gray-500 mt-1">Unlimited users included</p>
           </div>
-        )}
+          <div className="border rounded-lg p-4">
+            <p className="text-sm text-gray-600">Trial Period</p>
+            <p className="text-3xl font-bold text-gray-900">{currentPlan?.trial_days || 14} days</p>
+            <p className="text-xs text-gray-500 mt-1">For new accounts</p>
+          </div>
+          <div className="border rounded-lg p-4">
+            <p className="text-sm text-gray-600">Max Users</p>
+            <p className="text-3xl font-bold text-gray-900">Unlimited</p>
+            <p className="text-xs text-gray-500 mt-1">No user limits</p>
+          </div>
+        </div>
       </div>
 
       {/* Subscriptions Table */}
@@ -331,7 +337,7 @@ export default function SuperAdminBilling() {
             <h3 className="text-lg font-semibold mb-4">Update Monthly Price</h3>
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Price Per User (USD)
+                Monthly Price - Flat Rate (USD)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-2 text-gray-500">$</span>
@@ -345,7 +351,7 @@ export default function SuperAdminBilling() {
                 />
               </div>
               <p className="text-sm text-gray-500 mt-2">
-                This will apply to all new subscriptions and renewals
+                This flat rate includes unlimited users. Changes apply to all companies immediately.
               </p>
             </div>
             <div className="flex gap-3">

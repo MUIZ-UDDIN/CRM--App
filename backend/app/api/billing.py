@@ -776,6 +776,21 @@ async def get_all_subscriptions(
     return result
 
 
+@router.get("/plans/current-price")
+async def get_current_plan_price(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get the current monthly price for the active plan"""
+    # Get the first active plan (assuming single plan model)
+    plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
+    if not plan:
+        # Return default price if no plan exists yet
+        return {"monthly_price": 50.00}
+    
+    return {"monthly_price": float(plan.monthly_price)}
+
+
 @router.patch("/plans/update-price")
 async def update_plan_price(
     monthly_price: float,

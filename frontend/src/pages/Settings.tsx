@@ -132,10 +132,11 @@ export default function Settings() {
   const [availableUsers, setAvailableUsers] = useState<TeamMember[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [teamForm, setTeamForm] = useState({ name: '', description: '' });
-  const [subscription, setSubscription] = useState<Subscription | null>(null);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [invoices, setInvoices] = useState<any[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [monthlyPrice, setMonthlyPrice] = useState<number>(50); // Dynamic price from backend
   
   const { token, user } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -281,7 +282,14 @@ export default function Settings() {
   const fetchBillingData = async () => {
     setBillingLoading(true);
     try {
-      // Try to fetch subscription first
+      // Fetch current plan price
+      const priceResponse = await apiClient.get('/billing/plans/current-price').catch(err => {
+        console.error('Failed to fetch plan price:', err);
+        return { data: { monthly_price: 50 } }; // Default fallback
+      });
+      setMonthlyPrice(priceResponse?.data?.monthly_price || 50);
+      
+      // Try to fetch subscription
       const subResponse = await apiClient.get('/billing/subscription').catch(err => {
         if (err.response?.status === 404) {
           // No subscription found - this is expected for new companies
@@ -1654,7 +1662,7 @@ export default function Settings() {
                       <div className="text-center mb-8 mt-4">
                         <h3 className="text-2xl font-bold text-gray-900 mb-4">All-Inclusive Plan</h3>
                         <div className="flex items-center justify-center gap-2 mb-2">
-                          <span className="text-5xl font-bold text-blue-600">$50</span>
+                          <span className="text-5xl font-bold text-blue-600">${monthlyPrice}</span>
                           <div className="text-left">
                             <div className="text-lg text-gray-600 font-medium">/month</div>
                           </div>
@@ -1726,7 +1734,7 @@ export default function Settings() {
                           <div>
                             <p className="font-semibold text-blue-900">Monthly Subscription</p>
                             <p className="text-sm text-blue-700">
-                              Your subscription starts immediately upon payment. You'll be billed $50 every 30 days for unlimited access. Cancel anytime.
+                              Your subscription starts immediately upon payment. You'll be billed ${monthlyPrice} every 30 days for unlimited access. Cancel anytime.
                             </p>
                           </div>
                         </div>
@@ -1753,7 +1761,7 @@ export default function Settings() {
                         <p className="text-sm text-gray-500 mb-4">Secure payment powered by Square</p>
                         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
                           <p className="text-sm text-blue-800">
-                            <strong>Your subscription starts immediately.</strong> You'll be charged $50 per month for unlimited users and full access. Your first billing cycle starts today.
+                            <strong>Your subscription starts immediately.</strong> You'll be charged ${monthlyPrice} per month for unlimited users and full access. Your first billing cycle starts today.
                           </p>
                         </div>
                         
