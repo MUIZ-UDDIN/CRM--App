@@ -270,28 +270,37 @@ export default function Settings() {
   const fetchBillingData = async () => {
     setBillingLoading(true);
     try {
-      const [subResponse, invoicesResponse] = await Promise.all([
-        apiClient.get('/billing/subscription'),
-        apiClient.get('/billing/invoices')
-      ]);
-      setSubscription(subResponse.data);
-      setInvoices(invoicesResponse.data);
+      // Try to fetch subscription first
+      const subResponse = await apiClient.get('/billing/subscription').catch(err => {
+        if (err.response?.status === 404) {
+          // No subscription found - this is expected for new companies
+          return null;
+        }
+        throw err;
+      });
+      
+      // Try to fetch invoices
+      const invoicesResponse = await apiClient.get('/billing/invoices').catch(err => {
+        if (err.response?.status === 404) {
+          // No invoices found - this is expected
+          return { data: [] };
+        }
+        throw err;
+      });
+      
+      setSubscription(subResponse?.data || null);
+      setInvoices(invoicesResponse?.data || []);
     } catch (error: any) {
       console.error('Failed to load billing data:', error);
-      // Display backend error message or generic message
       const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to load billing data';
       
-      // Only show toast for non-404 errors or show specific 404 message
-      if (error.response?.status === 404) {
-        setSubscription(null);
-        setInvoices([]);
-        // Show user-friendly message from backend
-        if (error?.response?.data?.detail) {
-          toast(error.response.data.detail, { icon: 'ℹ️' });
-        }
-      } else {
+      // Only show error toast for non-404 errors
+      if (error.response?.status !== 404) {
         toast.error(errorMessage);
       }
+      
+      setSubscription(null);
+      setInvoices([]);
     } finally {
       setBillingLoading(false);
     }
@@ -1619,7 +1628,9 @@ export default function Settings() {
                 <p className="text-blue-800 mb-4">
                   {isSuperAdmin
                     ? 'As a Super Admin, please use the Admin Billing page to manage all subscriptions.'
-                    : 'No active subscription found. Please contact support.'}
+                    : isCompanyAdmin
+                    ? 'No active subscription found. Click below to view plans and set up billing.'
+                    : 'No active subscription found. Please contact your administrator to set up billing.'}
                 </p>
                 {isSuperAdmin && (
                   <button
@@ -1627,6 +1638,14 @@ export default function Settings() {
                     className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                   >
                     Go to Admin Billing
+                  </button>
+                )}
+                {isCompanyAdmin && !isSuperAdmin && (
+                  <button
+                    onClick={() => window.location.href = '/billing'}
+                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    View Plans & Set Up Billing
                   </button>
                 )}
               </div>
