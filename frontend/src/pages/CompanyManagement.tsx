@@ -113,11 +113,6 @@ const CompanyManagement: React.FC = () => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Fetched users data:', data);
-        // Log each user's role for debugging
-        data.forEach((user: any) => {
-          console.log(`User: ${user.email}, Role from API: "${user.role}"`);
-        });
         setUsers(data);
       } else {
         toast.error('Failed to load users');
@@ -260,11 +255,9 @@ const CompanyManagement: React.FC = () => {
 
   const getRoleDisplayName = (role: string) => {
     if (!role) {
-      console.log('getRoleDisplayName: No role provided, defaulting to Sales Rep');
       return 'Sales Rep';
     }
     const normalized = normalizeRole(role);
-    console.log(`getRoleDisplayName: Original="${role}", Normalized="${normalized}"`);
     
     // Map all possible role variations
     const roleMap: { [key: string]: string } = {
@@ -284,7 +277,6 @@ const CompanyManagement: React.FC = () => {
     };
     
     const displayName = roleMap[normalized] || role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-    console.log(`getRoleDisplayName: Result="${displayName}"`);
     return displayName;
   };
 
