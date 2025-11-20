@@ -118,23 +118,227 @@ export default function CompanyBilling() {
   }
 
   if (!subscription) {
+    // Show plan selection for company admins without subscription
+    if (isCompanyAdmin()) {
+      return (
+        <div className="p-6 max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-8 text-center">
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Choose Your Plan</h1>
+            <p className="text-gray-600">Select a plan to continue using Sunstone CRM</p>
+          </div>
+
+          {/* Pricing Plans */}
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {/* Starter Plan */}
+            <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
+                <div className="text-4xl font-bold text-gray-900 mb-2">
+                  $29
+                  <span className="text-lg text-gray-600 font-normal">/user/month</span>
+                </div>
+                <p className="text-sm text-gray-600">Perfect for small teams</p>
+              </div>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Up to 10 users</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Basic CRM features</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Email support</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>1GB storage</span>
+                </li>
+              </ul>
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Select Plan
+              </button>
+            </div>
+
+            {/* Professional Plan - Highlighted */}
+            <div className="bg-white rounded-lg shadow-xl border-2 border-blue-600 p-6 relative">
+              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  Most Popular
+                </span>
+              </div>
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Professional</h3>
+                <div className="text-4xl font-bold text-blue-600 mb-2">
+                  $49
+                  <span className="text-lg text-gray-600 font-normal">/user/month</span>
+                </div>
+                <p className="text-sm text-gray-600">For growing businesses</p>
+              </div>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Unlimited users</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>All CRM features</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Priority support</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>10GB storage</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Advanced analytics</span>
+                </li>
+              </ul>
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Select Plan
+              </button>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-6">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
+                <div className="text-4xl font-bold text-gray-900 mb-2">
+                  $99
+                  <span className="text-lg text-gray-600 font-normal">/user/month</span>
+                </div>
+                <p className="text-sm text-gray-600">For large organizations</p>
+              </div>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Unlimited users</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>All features + Custom</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>24/7 phone support</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Unlimited storage</span>
+                </li>
+                <li className="flex items-center gap-2 text-sm">
+                  <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Dedicated account manager</span>
+                </li>
+              </ul>
+              <button
+                onClick={() => setShowPaymentModal(true)}
+                className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                Select Plan
+              </button>
+            </div>
+          </div>
+
+          {/* Payment Modal */}
+          {showPaymentModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-4">Add Payment Method</h3>
+                <p className="text-gray-600 mb-6">
+                  Enter your payment details to activate your subscription.
+                </p>
+                
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Card Number
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="1234 5678 9012 3456"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Expiry Date
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="MM/YY"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        CVV
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="123"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Cardholder Name
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="John Doe"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      toast.success('Payment method added successfully!');
+                      setShowPaymentModal(false);
+                      fetchBillingData();
+                    }}
+                    className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                  >
+                    Add Payment Method
+                  </button>
+                  <button
+                    onClick={() => setShowPaymentModal(false)}
+                    className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // For non-admins, show contact admin message
     return (
       <div className="p-6 max-w-7xl mx-auto">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 text-center">
           <h3 className="text-lg font-semibold text-blue-900 mb-2">Billing Management</h3>
           <p className="text-blue-800 mb-4">
-            {user?.role === 'super_admin' || user?.role === 'Super Admin' 
-              ? 'As a Super Admin, please use the Admin Billing page to manage all subscriptions.'
-              : 'No active subscription found. Please contact support.'}
+            No active subscription found for your company. Please contact your administrator to set up billing.
           </p>
-          {(user?.role === 'super_admin' || user?.role === 'Super Admin') && (
-            <button
-              onClick={() => window.location.href = '/admin/billing'}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Go to Admin Billing
-            </button>
-          )}
         </div>
       </div>
     );
