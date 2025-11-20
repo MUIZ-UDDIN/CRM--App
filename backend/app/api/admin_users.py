@@ -291,10 +291,11 @@ def delete_user(
             detail="Cannot delete Super Admin users"
         )
     
-    # Import Deal, Contact, and SMSMessage models
+    # Import Deal, Contact, SMSMessage, and Notification models
     from app.models.deals import Deal
     from app.models.contacts import Contact
     from app.models.sms import SMSMessage
+    from app.models.notifications import Notification
     from sqlalchemy import or_
     
     # Get all contacts owned by this user first (we need their IDs)
@@ -343,6 +344,17 @@ def delete_user(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete user's contacts: {str(e)}"
+        )
+    
+    # Delete all notifications for this user
+    try:
+        db.query(Notification).filter(Notification.user_id == user_id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting user's notifications: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user's notifications: {str(e)}"
         )
     
     # Delete user (cascade delete will handle other related data)
