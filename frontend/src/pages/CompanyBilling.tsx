@@ -54,14 +54,11 @@ export default function CompanyBilling() {
   useEffect(() => {
     if (isSuperAdmin()) {
       navigate('/admin/billing');
+    } else {
+      // Redirect to Settings billing tab for unified experience
+      navigate('/settings?tab=billing');
     }
   }, [isSuperAdmin, navigate]);
-
-  useEffect(() => {
-    if (!isSuperAdmin()) {
-      fetchBillingData();
-    }
-  }, [isSuperAdmin]);
 
   const fetchBillingData = async () => {
     try {

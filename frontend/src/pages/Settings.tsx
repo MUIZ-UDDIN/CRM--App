@@ -92,6 +92,16 @@ export default function Settings() {
   const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'company');
   const [integrationsSubPage, setIntegrationsSubPage] = useState<string | null>(subPageFromUrl);
   
+  // Update active tab when URL changes
+  useEffect(() => {
+    if (tabFromUrl) {
+      setActiveTab(tabFromUrl);
+    }
+    if (subPageFromUrl) {
+      setIntegrationsSubPage(subPageFromUrl);
+    }
+  }, [tabFromUrl, subPageFromUrl]);
+  
   // Helper function to change tab and update URL
   const changeTab = (tab: TabType) => {
     setActiveTab(tab);
@@ -1627,132 +1637,116 @@ export default function Settings() {
               isCompanyAdmin && !isSuperAdmin ? (
                 <div>
                   {/* Header */}
-                  <div className="mb-6 text-center">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose Your Plan</h2>
-                    <p className="text-gray-600">Select a plan to continue using Sunstone CRM</p>
+                  <div className="mb-8 text-center">
+                    <h2 className="text-3xl font-bold text-gray-900 mb-2">Sunstone CRM</h2>
+                    <p className="text-gray-600">Everything you need to manage your business</p>
+                    <div className="mt-4 inline-flex items-center gap-2 bg-green-50 border border-green-200 rounded-full px-4 py-2">
+                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                      <span className="text-green-800 font-semibold">14-Day Free Trial Included</span>
+                    </div>
                   </div>
 
-                  {/* Pricing Plans */}
-                  <div className="grid md:grid-cols-3 gap-6 mb-6">
-                    {/* Starter Plan */}
-                    <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-6">
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Starter</h3>
-                        <div className="text-4xl font-bold text-gray-900 mb-2">
-                          $29
-                          <span className="text-lg text-gray-600 font-normal">/user/month</span>
-                        </div>
-                        <p className="text-sm text-gray-600">Perfect for small teams</p>
-                      </div>
-                      <ul className="space-y-3 mb-6">
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Up to 10 users</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Basic CRM features</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Email support</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>1GB storage</span>
-                        </li>
-                      </ul>
-                      <button
-                        onClick={() => setShowPaymentModal(true)}
-                        className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                      >
-                        Select Plan
-                      </button>
-                    </div>
-
-                    {/* Professional Plan - Highlighted */}
-                    <div className="bg-white rounded-lg shadow-xl border-2 border-blue-600 p-6 relative">
+                  {/* Single Pricing Plan */}
+                  <div className="max-w-2xl mx-auto mb-8">
+                    <div className="bg-white rounded-xl shadow-2xl border-2 border-blue-600 p-8 relative">
                       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                        <span className="bg-blue-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                          Most Popular
+                        <span className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+                          Complete CRM Solution
                         </span>
                       </div>
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Professional</h3>
-                        <div className="text-4xl font-bold text-blue-600 mb-2">
-                          $49
-                          <span className="text-lg text-gray-600 font-normal">/user/month</span>
+                      
+                      <div className="text-center mb-8 mt-4">
+                        <h3 className="text-2xl font-bold text-gray-900 mb-4">All-Inclusive Plan</h3>
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <span className="text-5xl font-bold text-blue-600">$50</span>
+                          <div className="text-left">
+                            <div className="text-lg text-gray-600 font-medium">/user</div>
+                            <div className="text-sm text-gray-500">/month</div>
+                          </div>
                         </div>
-                        <p className="text-sm text-gray-600">For growing businesses</p>
+                        <p className="text-gray-600 mt-2">Billed monthly • Cancel anytime</p>
                       </div>
-                      <ul className="space-y-3 mb-6">
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Unlimited users</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>All CRM features</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Priority support</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>10GB storage</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Advanced analytics</span>
-                        </li>
-                      </ul>
-                      <button
-                        onClick={() => setShowPaymentModal(true)}
-                        className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                      >
-                        Select Plan
-                      </button>
-                    </div>
 
-                    {/* Enterprise Plan */}
-                    <div className="bg-white rounded-lg shadow-lg border-2 border-gray-200 p-6">
-                      <div className="text-center mb-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">Enterprise</h3>
-                        <div className="text-4xl font-bold text-gray-900 mb-2">
-                          $99
-                          <span className="text-lg text-gray-600 font-normal">/user/month</span>
+                      <div className="mb-8">
+                        <h4 className="font-semibold text-gray-900 mb-4 text-center">Everything Included:</h4>
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <ul className="space-y-3">
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Unlimited users</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Complete CRM features</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Sales pipeline management</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Contact & lead management</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Email integration</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Phone system integration</span>
+                            </li>
+                          </ul>
+                          <ul className="space-y-3">
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">SMS messaging</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Document management</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Advanced analytics</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Workflow automation</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Priority support</span>
+                            </li>
+                            <li className="flex items-center gap-3">
+                              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
+                              <span className="text-gray-700">Unlimited storage</span>
+                            </li>
+                          </ul>
                         </div>
-                        <p className="text-sm text-gray-600">For large organizations</p>
                       </div>
-                      <ul className="space-y-3 mb-6">
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Unlimited users</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>All features + Custom</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>24/7 phone support</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Unlimited storage</span>
-                        </li>
-                        <li className="flex items-center gap-2 text-sm">
-                          <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0" />
-                          <span>Dedicated account manager</span>
-                        </li>
-                      </ul>
+
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div className="flex items-start gap-3">
+                          <ClockIcon className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-semibold text-blue-900">14-Day Free Trial</p>
+                            <p className="text-sm text-blue-700">
+                              Start your free trial today. No credit card required. After your trial ends, your account will be paused until you add a payment method.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
                       <button
                         onClick={() => setShowPaymentModal(true)}
-                        className="w-full py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                        className="w-full py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg text-lg"
                       >
-                        Select Plan
+                        Start Free Trial & Add Payment Method
                       </button>
+                      
+                      <p className="text-center text-sm text-gray-500 mt-4">
+                        Secure payment powered by Square
+                      </p>
                     </div>
                   </div>
 
@@ -1760,10 +1754,13 @@ export default function Settings() {
                   {showPaymentModal && (
                     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                       <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-                        <h3 className="text-xl font-bold text-gray-900 mb-4">Add Payment Method</h3>
-                        <p className="text-gray-600 mb-6">
-                          Enter your payment details to activate your subscription.
-                        </p>
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Add Payment Method</h3>
+                        <p className="text-sm text-gray-500 mb-4">Secure payment powered by Square</p>
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6">
+                          <p className="text-sm text-green-800">
+                            <strong>Your 14-day free trial starts now!</strong> You won't be charged until after your trial ends.
+                          </p>
+                        </div>
                         
                         <div className="space-y-4 mb-6">
                           <div>
