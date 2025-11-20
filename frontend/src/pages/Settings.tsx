@@ -1804,10 +1804,15 @@ export default function Settings() {
 
                         <div className="flex gap-3">
                           <button
-                            onClick={() => {
-                              toast.success('Payment method added successfully!');
-                              setShowPaymentModal(false);
-                              fetchBillingData();
+                            onClick={async () => {
+                              try {
+                                // TODO: Integrate with Square payment gateway
+                                // For now, show message that Square needs to be configured
+                                toast.error('Payment processing is not yet configured. Please contact support to set up Square payment gateway.');
+                                setShowPaymentModal(false);
+                              } catch (error: any) {
+                                toast.error(error?.response?.data?.detail || 'Failed to process payment');
+                              }
                             }}
                             className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
                           >

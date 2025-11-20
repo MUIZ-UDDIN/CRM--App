@@ -89,6 +89,17 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Suppress console logging for 404 errors on specific endpoints
+    const suppress404Endpoints = ['/billing/subscription', '/twilio/client/token'];
+    const is404 = error.response?.status === 404;
+    const shouldSuppress = is404 && suppress404Endpoints.some(endpoint => 
+      originalRequest?.url?.includes(endpoint)
+    );
+    
+    if (shouldSuppress) {
+      error.suppressConsole = true;
+    }
+    
     // If error is 401 (Unauthorized)
     if (error.response?.status === 401) {
       
