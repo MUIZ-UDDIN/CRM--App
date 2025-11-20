@@ -400,16 +400,10 @@ const CompanyManagement: React.FC = () => {
           <div 
             className="overflow-x-auto overflow-y-auto max-h-[600px] relative z-0 rounded-b-lg"
             onScroll={() => {
-              // Update dropdown position on scroll
+              // Close dropdown when scrolling
               if (openDropdownId) {
-                const buttonElement = document.getElementById(`dropdown-button-${openDropdownId}`);
-                const rect = buttonElement?.getBoundingClientRect();
-                if (rect) {
-                  setDropdownPosition({
-                    top: rect.bottom + 8,
-                    left: rect.right - 224 // 224px = w-56
-                  });
-                }
+                setOpenDropdownId(null);
+                setDropdownPosition(null);
               }
             }}
           >
