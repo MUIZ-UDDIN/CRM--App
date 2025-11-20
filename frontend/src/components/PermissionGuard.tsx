@@ -95,7 +95,7 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
   'company_admin': [
     // Company Management
     Permission.EDIT_COMPANY, 
-    Permission.VIEW_BILLING,
+    Permission.MANAGE_BILLING,  // Company Admin can manage their own company billing
     
     // User Management
     Permission.MANAGE_COMPANY_USERS, 
