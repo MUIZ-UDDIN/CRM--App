@@ -793,7 +793,7 @@ async def get_current_plan_price(
 
 @router.patch("/plans/update-price")
 async def update_plan_price(
-    monthly_price: float,
+    request: dict,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
@@ -803,6 +803,11 @@ async def update_plan_price(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied"
         )
+    
+    # Get monthly_price from request body
+    monthly_price = request.get('monthly_price')
+    if monthly_price is None:
+        raise HTTPException(status_code=400, detail="monthly_price is required")
     
     # Get the first active plan (assuming single plan model)
     plan = db.query(SubscriptionPlan).filter(SubscriptionPlan.is_active == True).first()
