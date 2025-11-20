@@ -65,26 +65,37 @@ export default function CompanyBilling() {
 
   const fetchBillingData = async () => {
     try {
-      const [subResponse, invoicesResponse] = await Promise.all([
-        apiClient.get('/billing/subscription'),
-        apiClient.get('/billing/invoices')
-      ]);
-      setSubscription(subResponse.data);
-      setInvoices(invoicesResponse.data);
+      // Try to fetch subscription first
+      const subResponse = await apiClient.get('/billing/subscription').catch(err => {
+        if (err.response?.status === 404) {
+          // No subscription found - this is expected for new companies
+          return null;
+        }
+        throw err;
+      });
+      
+      // Try to fetch invoices
+      const invoicesResponse = await apiClient.get('/billing/invoices').catch(err => {
+        if (err.response?.status === 404) {
+          // No invoices found - this is expected
+          return { data: [] };
+        }
+        throw err;
+      });
+      
+      setSubscription(subResponse?.data || null);
+      setInvoices(invoicesResponse?.data || []);
     } catch (error: any) {
       console.error('Failed to load billing data:', error);
       const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to load billing data';
       
-      if (error.response?.status === 404) {
-        setSubscription(null);
-        setInvoices([]);
-        // Show user-friendly message from backend
-        if (error?.response?.data?.detail) {
-          toast(error.response.data.detail, { icon: 'ℹ️' });
-        }
-      } else {
+      // Only show error toast for non-404 errors
+      if (error.response?.status !== 404) {
         toast.error(errorMessage);
       }
+      
+      setSubscription(null);
+      setInvoices([]);
     } finally {
       setLoading(false);
     }
