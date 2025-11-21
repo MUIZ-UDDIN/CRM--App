@@ -112,13 +112,14 @@ async def get_admin_dashboard_analytics(
                 logger.error(f"Error processing upcoming activity: {str(e)}")
                 continue
         
-        # Get pipeline stage progress (deal counts per stage)
+        # Get pipeline stage progress (deal value and counts per stage)
         pipeline_stages = []
         stages_query = db.query(
             PipelineStage.id,
             PipelineStage.name,
             PipelineStage.order_index,
-            func.count(Deal.id).label('deal_count')
+            func.count(Deal.id).label('deal_count'),
+            func.coalesce(func.sum(Deal.value), 0).label('total_value')
         ).outerjoin(
             Deal, and_(
                 Deal.stage_id == PipelineStage.id,
@@ -126,11 +127,35 @@ async def get_admin_dashboard_analytics(
             )
         )
         
-        if user_role != 'super_admin' and company_id:
-            # Filter by company's pipelines
+        # Apply role-based filtering
+        if user_role == 'super_admin':
+            # Super Admin sees all stages from all companies
+            pass
+        elif user_role == 'company_admin' and company_id:
+            # Company Admin sees only their company's stages
             stages_query = stages_query.join(
                 Pipeline, PipelineStage.pipeline_id == Pipeline.id
             ).filter(Pipeline.company_id == company_id)
+        elif user_role == 'sales_manager' and user_team_id:
+            # Sales Manager sees only their team's deals
+            team_user_ids = [str(u.id) for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            stages_query = stages_query.join(
+                Pipeline, PipelineStage.pipeline_id == Pipeline.id
+            ).filter(
+                Pipeline.company_id == company_id,
+                Deal.owner_id.in_([uuid.UUID(uid) for uid in team_user_ids])
+            )
+        else:
+            # Sales Rep sees only their own deals
+            stages_query = stages_query.join(
+                Pipeline, PipelineStage.pipeline_id == Pipeline.id
+            ).filter(
+                Pipeline.company_id == company_id,
+                Deal.owner_id == user_id
+            )
         
         stages_query = stages_query.group_by(
             PipelineStage.id,
@@ -138,21 +163,26 @@ async def get_admin_dashboard_analytics(
             PipelineStage.order_index
         ).order_by(PipelineStage.order_index)
         
-        total_deals_in_stages = 0
+        total_value_in_stages = 0
         for stage in stages_query.all():
             deal_count = stage.deal_count or 0
-            total_deals_in_stages += deal_count
-            pipeline_stages.append({
-                "stage_id": str(stage.id),
-                "stage_name": stage.name,
-                "deal_count": deal_count,
-                "order_index": stage.order_index
-            })
+            stage_value = float(stage.total_value or 0)
+            
+            # Only include stages that have deals
+            if deal_count > 0:
+                total_value_in_stages += stage_value
+                pipeline_stages.append({
+                    "stage_id": str(stage.id),
+                    "stage_name": stage.name,
+                    "deal_count": deal_count,
+                    "total_value": stage_value,
+                    "order_index": stage.order_index
+                })
         
-        # Calculate percentages
+        # Calculate percentages based on value
         for stage in pipeline_stages:
-            if total_deals_in_stages > 0:
-                stage["percentage"] = round((stage["deal_count"] / total_deals_in_stages) * 100, 1)
+            if total_value_in_stages > 0:
+                stage["percentage"] = round((stage["total_value"] / total_value_in_stages) * 100, 1)
             else:
                 stage["percentage"] = 0
         
