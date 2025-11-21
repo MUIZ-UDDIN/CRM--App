@@ -5,14 +5,17 @@ Handles adding and managing team members with proper validation
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from pydantic import BaseModel, EmailStr, validator
+from pydantic import BaseModel, EmailStr, validator, UUID4
 from typing import Optional
 import re
 import html
+import uuid
 
 from app.core.database import get_db
 from app.core.security import get_password_hash, get_current_active_user
 from app.models import User, Company
+from app.services.team_reassignment import TeamReassignmentService
+from app.middleware.tenant import get_tenant_context
 
 router = APIRouter(prefix="/api/team", tags=["Team"])
 
@@ -223,4 +226,132 @@ async def add_team_member(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="We encountered an issue adding the team member. Please try again or contact support if the problem persists."
+        )
+
+
+class ReassignUserRequest(BaseModel):
+    """Request to reassign a user to a different team"""
+    user_id: UUID4
+    new_team_id: Optional[UUID4] = None
+    reassign_data: bool = False
+    new_owner_id: Optional[UUID4] = None
+
+
+@router.post("/reassign")
+async def reassign_user_to_team(
+    request: ReassignUserRequest,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Reassign a user to a different team with optional data reassignment
+    
+    - **user_id**: User to reassign
+    - **new_team_id**: Target team (None to remove from team)
+    - **reassign_data**: If True, reassign user's deals/contacts to new_owner_id
+    - **new_owner_id**: New owner for user's data (required if reassign_data=True)
+    """
+    
+    try:
+        context = get_tenant_context(current_user)
+        current_user_role = context.get_role_name()
+        current_user_team_id = current_user.get('team_id')
+        
+        # Get the user being reassigned
+        user = db.query(User).filter(User.id == request.user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        old_team_id = user.team_id
+        
+        # Validate reassignment permissions
+        is_valid, error_msg = TeamReassignmentService.validate_team_reassignment(
+            db=db,
+            user_id=request.user_id,
+            new_team_id=request.new_team_id,
+            current_user_role=current_user_role,
+            current_user_team_id=uuid.UUID(current_user_team_id) if current_user_team_id else None
+        )
+        
+        if not is_valid:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=error_msg
+            )
+        
+        # Get reassignment impact
+        impact = TeamReassignmentService.get_reassignment_impact(db, request.user_id)
+        
+        # Perform reassignment
+        stats = TeamReassignmentService.reassign_user_to_team(
+            db=db,
+            user_id=request.user_id,
+            old_team_id=old_team_id,
+            new_team_id=request.new_team_id,
+            reassign_data=request.reassign_data,
+            new_owner_id=request.new_owner_id
+        )
+        
+        return {
+            "success": True,
+            "message": f"User successfully reassigned from team {old_team_id} to team {request.new_team_id}",
+            "impact": impact,
+            "stats": stats
+        }
+        
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error reassigning user: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reassign user. Please try again."
+        )
+
+
+@router.get("/reassignment-impact/{user_id}")
+async def get_reassignment_impact(
+    user_id: UUID4,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get the impact of reassigning a user (preview before reassignment)
+    
+    Returns counts of deals, contacts, and activities owned by the user
+    """
+    
+    try:
+        # Verify user exists
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="User not found"
+            )
+        
+        # Get impact
+        impact = TeamReassignmentService.get_reassignment_impact(db, user_id)
+        
+        return {
+            "success": True,
+            "impact": impact,
+            "warning": "Reassigning this user will affect their owned data" if impact["total_records"] > 0 else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting reassignment impact: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get reassignment impact"
         )
