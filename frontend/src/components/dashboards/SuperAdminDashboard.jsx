@@ -205,100 +205,100 @@ function SuperAdminDashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-x divide-gray-200">
           {/* Recent Activities */}
-          <div className="p-6 overflow-x-auto">
+          <div className="p-6 overflow-hidden">
             <h6 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <FaClock className="text-blue-500" />
               Recent Activities
             </h6>
             {stats.recent_activities && stats.recent_activities.length > 0 ? (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                    <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                    <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-3 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {stats.recent_activities.slice(0, 5).map((activity) => (
-                    <tr key={activity.id} className="hover:bg-gray-50">
-                      <td className="px-3 py-3 whitespace-nowrap text-xs font-medium text-gray-900 capitalize">{activity.type}</td>
-                      <td className="px-3 py-3 text-xs text-gray-900 max-w-xs">
-                        <div className="truncate" title={activity.title}>
-                          {activity.title && activity.title.length > 40 
-                            ? activity.title.substring(0, 40) + '...' 
-                            : activity.title}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">{activity.user_name}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                          ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
-                          ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                          ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
-                        `}>
-                          {activity.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">
-                        {new Date(activity.created_at).toLocaleDateString()}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-20">Type</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-24">User</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-20">Status</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-24">Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {stats.recent_activities.slice(0, 5).map((activity) => (
+                      <tr key={activity.id} className="hover:bg-gray-50">
+                        <td className="px-2 py-2 text-xs font-medium text-gray-900 capitalize truncate">{activity.type}</td>
+                        <td className="px-2 py-2 text-xs text-gray-900">
+                          <div className="truncate max-w-[200px]" title={activity.title}>
+                            {activity.title}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 text-xs text-gray-500 truncate">{activity.user_name}</td>
+                        <td className="px-2 py-2 text-xs">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                            ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                          `}>
+                            {activity.status}
+                          </span>
+                        </td>
+                        <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
+                          {new Date(activity.created_at).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-gray-500 text-center py-4 text-sm">No recent activities</p>
             )}
           </div>
 
           {/* Upcoming Activities */}
-          <div className="p-6 overflow-x-auto">
+          <div className="p-6 overflow-hidden">
             <h6 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-              <FaClock className="text-green-500" />
+              <FaClock className="text-blue-500" />
               Upcoming Activities
             </h6>
             {upcomingActivities && upcomingActivities.length > 0 ? (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th className="px-3 py-2 bg-green-50 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                    <th className="px-3 py-2 bg-green-50 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
-                    <th className="px-3 py-2 bg-green-50 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                    <th className="px-3 py-2 bg-green-50 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-3 py-2 bg-green-50 text-left text-xs font-medium text-gray-500 uppercase">Due Date</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {upcomingActivities.slice(0, 5).map((activity) => (
-                    <tr key={activity.id} className="hover:bg-green-50">
-                      <td className="px-3 py-3 whitespace-nowrap text-xs font-medium text-gray-900 capitalize">{activity.type}</td>
-                      <td className="px-3 py-3 text-xs text-gray-900 max-w-xs">
-                        <div className="truncate" title={activity.title}>
-                          {activity.title && activity.title.length > 40 
-                            ? activity.title.substring(0, 40) + '...' 
-                            : activity.title}
-                        </div>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-gray-500">{activity.user_name}</td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                          ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
-                          ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                          ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
-                        `}>
-                          {activity.status}
-                        </span>
-                      </td>
-                      <td className="px-3 py-3 whitespace-nowrap text-xs text-green-600 font-semibold">
-                        {new Date(activity.due_date).toLocaleDateString()}
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-20">Type</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase">Title</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-24">User</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-20">Status</th>
+                      <th className="px-2 py-2 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase w-24">Due Date</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {upcomingActivities.slice(0, 5).map((activity) => (
+                      <tr key={activity.id} className="hover:bg-gray-50">
+                        <td className="px-2 py-2 text-xs font-medium text-gray-900 capitalize truncate">{activity.type}</td>
+                        <td className="px-2 py-2 text-xs text-gray-900">
+                          <div className="truncate max-w-[200px]" title={activity.title}>
+                            {activity.title}
+                          </div>
+                        </td>
+                        <td className="px-2 py-2 text-xs text-gray-500 truncate">{activity.user_name}</td>
+                        <td className="px-2 py-2 text-xs">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
+                            ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                          `}>
+                            {activity.status}
+                          </span>
+                        </td>
+                        <td className="px-2 py-2 whitespace-nowrap text-xs text-green-600 font-semibold">
+                          {new Date(activity.due_date).toLocaleDateString()}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-gray-500 text-center py-4 text-sm">No upcoming activities</p>
             )}
@@ -321,7 +321,7 @@ function SuperAdminDashboard() {
                 {pipelineStages.slice(0, showAllStages ? pipelineStages.length : 4).map((stage) => (
                   <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-gray-700">{stage.stage_name}</span>
+                      <span className="text-sm font-semibold text-gray-700 truncate max-w-[200px]" title={stage.stage_name}>{stage.stage_name}</span>
                       <span className="text-sm text-gray-600 font-medium">
                         ${(() => {
                           const value = stage.total_value || 0;

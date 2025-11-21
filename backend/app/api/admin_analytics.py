@@ -68,9 +68,10 @@ async def get_admin_dashboard_analytics(
             ).scalar() or 0
         
         # Get recent activities (fix: use 'type' and 'subject' not 'activity_type' and 'title')
-        activities_query = db.query(Activity).order_by(Activity.created_at.desc()).limit(5)
+        activities_query = db.query(Activity)
         if user_role != 'super_admin' and company_id:
             activities_query = activities_query.filter(Activity.company_id == company_id)
+        activities_query = activities_query.order_by(Activity.created_at.desc()).limit(5)
         
         for activity in activities_query.all():
             try:
@@ -88,14 +89,13 @@ async def get_admin_dashboard_analytics(
                 continue
         
         # Get upcoming activities (activities with due_date in the future)
-        upcoming_activities = []
         upcoming_query = db.query(Activity).filter(
-            Activity.due_date >= datetime.utcnow(),
+            Activity.due_date >= datetime.now(),
             Activity.status != 'completed'
-        ).order_by(Activity.due_date.asc()).limit(5)
-        
+        )
         if user_role != 'super_admin' and company_id:
             upcoming_query = upcoming_query.filter(Activity.company_id == company_id)
+        upcoming_query = upcoming_query.order_by(Activity.due_date.asc()).limit(5)
         
         for activity in upcoming_query.all():
             try:
