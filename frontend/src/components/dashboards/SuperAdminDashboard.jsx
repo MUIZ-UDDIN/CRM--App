@@ -225,7 +225,7 @@ function SuperAdminDashboard() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {stats.recent_activities.slice(0, 5).map((activity) => (
                       <tr key={activity.id} className="hover:bg-gray-50">
-                        <td className="px-2 py-2 text-xs font-medium text-gray-900 capitalize truncate">{activity.type}</td>
+                        <td className="px-2 py-2 text-xs text-gray-900 capitalize truncate">{activity.type}</td>
                         <td className="px-2 py-2 text-xs text-gray-900">
                           <div className="truncate max-w-[120px]" title={activity.title}>
                             {activity.title}
@@ -275,7 +275,7 @@ function SuperAdminDashboard() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {upcomingActivities.slice(0, 5).map((activity) => (
                       <tr key={activity.id} className="hover:bg-gray-50">
-                        <td className="px-2 py-2 text-xs font-medium text-gray-900 capitalize truncate">{activity.type}</td>
+                        <td className="px-2 py-2 text-xs text-gray-900 capitalize truncate">{activity.type}</td>
                         <td className="px-2 py-2 text-xs text-gray-900">
                           <div className="truncate max-w-[120px]" title={activity.title}>
                             {activity.title}
@@ -291,7 +291,7 @@ function SuperAdminDashboard() {
                             {activity.status}
                           </span>
                         </td>
-                        <td className="px-2 py-2 whitespace-nowrap text-xs text-green-600 font-semibold">
+                        <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
                           {new Date(activity.due_date).toLocaleDateString()}
                         </td>
                       </tr>
@@ -337,19 +337,16 @@ function SuperAdminDashboard() {
                             })()} ({stage.deal_count} deals)
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <div className="flex-1 bg-gray-200 rounded-full h-3">
-                            <div
-                              className={`h-3 rounded-full transition-all duration-300 ${
-                                isHighest 
-                                  ? 'bg-gradient-to-r from-green-500 to-green-600' 
-                                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
-                              }`}
-                              style={{ width: `${stage.percentage}%` }}
-                            >
-                            </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div
+                            className={`h-3 rounded-full transition-all duration-300 ${
+                              isHighest 
+                                ? 'bg-gradient-to-r from-green-500 to-green-600' 
+                                : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                            }`}
+                            style={{ width: `${stage.percentage}%` }}
+                          >
                           </div>
-                          <span className="text-xs text-gray-600 font-semibold min-w-[35px] text-right">{stage.percentage}%</span>
                         </div>
                       </div>
                     );
