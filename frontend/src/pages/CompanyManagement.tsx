@@ -52,6 +52,11 @@ const CompanyManagement: React.FC = () => {
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
   const [selectedUserForRoleChange, setSelectedUserForRoleChange] = useState<User | null>(null);
+  const [showTeamReassignModal, setShowTeamReassignModal] = useState(false);
+  const [selectedUserForTeamReassign, setSelectedUserForTeamReassign] = useState<User | null>(null);
+  const [reassignmentImpact, setReassignmentImpact] = useState<any>(null);
+  const [reassignData, setReassignData] = useState(false);
+  const [newOwnerId, setNewOwnerId] = useState('');
   
   // Add user form state
   const [newUser, setNewUser] = useState({
@@ -523,6 +528,32 @@ const CompanyManagement: React.FC = () => {
                                   Change Role
                                 </button>
                                 
+                                {/* Reassign Team */}
+                                <button
+                                  onClick={async () => {
+                                    setSelectedUserForTeamReassign(user);
+                                    setOpenDropdownId(null);
+                                    // Fetch impact
+                                    try {
+                                      const token = localStorage.getItem('token');
+                                      const response = await fetch(`${API_URL}/team/reassignment-impact/${user.id}`, {
+                                        headers: { 'Authorization': `Bearer ${token}` }
+                                      });
+                                      if (response.ok) {
+                                        const data = await response.json();
+                                        setReassignmentImpact(data.impact);
+                                      }
+                                    } catch (error) {
+                                      console.error('Error fetching impact:', error);
+                                    }
+                                    setShowTeamReassignModal(true);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <UserGroupIcon className="w-4 h-4 text-purple-600" />
+                                  Reassign Team
+                                </button>
+                                
                                 <div className="border-t border-gray-200 my-1"></div>
                                 
                                 {/* Delete User */}
@@ -739,6 +770,184 @@ const CompanyManagement: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Team Reassignment Modal */}
+      {showTeamReassignModal && selectedUserForTeamReassign && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Reassign Team</h2>
+                <button
+                  onClick={() => {
+                    setShowTeamReassignModal(false);
+                    setSelectedUserForTeamReassign(null);
+                    setReassignmentImpact(null);
+                    setReassignData(false);
+                    setNewOwnerId('');
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="w-6 h-6" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600">
+                  Reassigning <span className="font-semibold">{selectedUserForTeamReassign.first_name} {selectedUserForTeamReassign.last_name}</span> to a different team.
+                </p>
+              </div>
+
+              {/* Impact Preview */}
+              {reassignmentImpact && reassignmentImpact.total_records > 0 && (
+                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <h3 className="font-semibold text-yellow-900 mb-2">⚠️ Data Ownership Impact</h3>
+                  <p className="text-sm text-yellow-800 mb-3">
+                    This user currently owns:
+                  </p>
+                  <div className="grid grid-cols-3 gap-4 text-center">
+                    <div className="bg-white p-3 rounded">
+                      <div className="text-2xl font-bold text-blue-600">{reassignmentImpact.deals_count}</div>
+                      <div className="text-xs text-gray-600">Deals</div>
+                    </div>
+                    <div className="bg-white p-3 rounded">
+                      <div className="text-2xl font-bold text-green-600">{reassignmentImpact.contacts_count}</div>
+                      <div className="text-xs text-gray-600">Contacts</div>
+                    </div>
+                    <div className="bg-white p-3 rounded">
+                      <div className="text-2xl font-bold text-purple-600">{reassignmentImpact.activities_count}</div>
+                      <div className="text-xs text-gray-600">Activities</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Team Selection */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  New Team
+                </label>
+                <select
+                  value={newUser.team_id}
+                  onChange={(e) => setNewUser({ ...newUser, team_id: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">No Team (Remove from team)</option>
+                  {teams.map((team) => (
+                    <option key={team.id} value={team.id}>
+                      {team.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Data Reassignment Option */}
+              {reassignmentImpact && reassignmentImpact.total_records > 0 && (
+                <div className="mb-6">
+                  <label className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-500 transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={reassignData}
+                      onChange={(e) => setReassignData(e.target.checked)}
+                      className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                    />
+                    <div>
+                      <div className="font-medium text-gray-900">Transfer data ownership</div>
+                      <div className="text-sm text-gray-600">
+                        Reassign all deals, contacts, and activities to another user
+                      </div>
+                    </div>
+                  </label>
+
+                  {reassignData && (
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        New Owner *
+                      </label>
+                      <select
+                        value={newOwnerId}
+                        onChange={(e) => setNewOwnerId(e.target.value)}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        required
+                      >
+                        <option value="">Select new owner...</option>
+                        {users
+                          .filter(u => u.id !== selectedUserForTeamReassign.id && u.status === 'active')
+                          .map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {user.first_name} {user.last_name} ({user.role})
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowTeamReassignModal(false);
+                    setSelectedUserForTeamReassign(null);
+                    setReassignmentImpact(null);
+                    setReassignData(false);
+                    setNewOwnerId('');
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    if (reassignData && !newOwnerId) {
+                      toast.error('Please select a new owner for the data');
+                      return;
+                    }
+
+                    try {
+                      const token = localStorage.getItem('token');
+                      const response = await fetch(`${API_URL}/team/reassign`, {
+                        method: 'POST',
+                        headers: {
+                          'Authorization': `Bearer ${token}`,
+                          'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                          user_id: selectedUserForTeamReassign.id,
+                          new_team_id: newUser.team_id || null,
+                          reassign_data: reassignData,
+                          new_owner_id: reassignData ? newOwnerId : null,
+                        }),
+                      });
+
+                      if (response.ok) {
+                        const data = await response.json();
+                        toast.success(data.message || 'User reassigned successfully');
+                        fetchUsers(); // Refresh user list
+                        setShowTeamReassignModal(false);
+                        setSelectedUserForTeamReassign(null);
+                        setReassignmentImpact(null);
+                        setReassignData(false);
+                        setNewOwnerId('');
+                      } else {
+                        const error = await response.json();
+                        toast.error(error.detail || 'Failed to reassign user');
+                      }
+                    } catch (error) {
+                      console.error('Error reassigning user:', error);
+                      toast.error('Failed to reassign user');
+                    }
+                  }}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  Reassign Team
                 </button>
               </div>
             </div>
