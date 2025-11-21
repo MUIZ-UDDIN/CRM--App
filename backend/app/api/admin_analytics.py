@@ -47,6 +47,7 @@ async def get_admin_dashboard_analytics(
         total_deals = 0
         total_value = 0.0
         recent_activities = []
+        upcoming_activities = []
         
         # Super admin sees all data, others see only their company
         if user_role == 'super_admin':
