@@ -87,6 +87,75 @@ async def get_admin_dashboard_analytics(
                 logger.error(f"Error processing activity: {str(e)}")
                 continue
         
+        # Get upcoming activities (activities with due_date in the future)
+        upcoming_activities = []
+        upcoming_query = db.query(Activity).filter(
+            Activity.due_date >= datetime.utcnow(),
+            Activity.status != 'completed'
+        ).order_by(Activity.due_date.asc()).limit(5)
+        
+        if user_role != 'super_admin' and company_id:
+            upcoming_query = upcoming_query.filter(Activity.company_id == company_id)
+        
+        for activity in upcoming_query.all():
+            try:
+                user = db.query(User).filter(User.id == activity.owner_id).first()
+                upcoming_activities.append({
+                    "id": str(activity.id),
+                    "type": str(activity.type.value) if hasattr(activity.type, 'value') else str(activity.type),
+                    "title": activity.subject or f"{activity.type} activity",
+                    "user_name": f"{user.first_name} {user.last_name}" if user else "Unknown",
+                    "due_date": activity.due_date.isoformat() if activity.due_date else None,
+                    "status": str(activity.status.value) if hasattr(activity.status, 'value') else str(activity.status)
+                })
+            except Exception as e:
+                logger.error(f"Error processing upcoming activity: {str(e)}")
+                continue
+        
+        # Get pipeline stage progress (deal counts per stage)
+        pipeline_stages = []
+        stages_query = db.query(
+            PipelineStage.id,
+            PipelineStage.name,
+            PipelineStage.order_index,
+            func.count(Deal.id).label('deal_count')
+        ).outerjoin(
+            Deal, and_(
+                Deal.stage_id == PipelineStage.id,
+                Deal.is_deleted == False
+            )
+        )
+        
+        if user_role != 'super_admin' and company_id:
+            # Filter by company's pipelines
+            stages_query = stages_query.join(
+                Pipeline, PipelineStage.pipeline_id == Pipeline.id
+            ).filter(Pipeline.company_id == company_id)
+        
+        stages_query = stages_query.group_by(
+            PipelineStage.id,
+            PipelineStage.name,
+            PipelineStage.order_index
+        ).order_by(PipelineStage.order_index)
+        
+        total_deals_in_stages = 0
+        for stage in stages_query.all():
+            deal_count = stage.deal_count or 0
+            total_deals_in_stages += deal_count
+            pipeline_stages.append({
+                "stage_id": str(stage.id),
+                "stage_name": stage.name,
+                "deal_count": deal_count,
+                "order_index": stage.order_index
+            })
+        
+        # Calculate percentages
+        for stage in pipeline_stages:
+            if total_deals_in_stages > 0:
+                stage["percentage"] = round((stage["deal_count"] / total_deals_in_stages) * 100, 1)
+            else:
+                stage["percentage"] = 0
+        
         return {
             "companies_count": companies_count,
             "active_users_count": active_users,
@@ -94,6 +163,8 @@ async def get_admin_dashboard_analytics(
             "total_deals_count": total_deals,
             "total_pipeline_value": float(total_value),
             "recent_activities": recent_activities,
+            "upcoming_activities": upcoming_activities,
+            "pipeline_stages": pipeline_stages,
             "companies_by_size": [],
             "deals_by_stage": [],
             "user_activity": []
