@@ -49,7 +49,6 @@ export default function SuperAdminDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [apiError, setApiError] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [dashboardData, setDashboardData] = useState<any>(null);
   const [newCompany, setNewCompany] = useState({
     name: '',
     admin_first_name: '',
@@ -59,22 +58,7 @@ export default function SuperAdminDashboard() {
 
   useEffect(() => {
     fetchCompanies();
-    fetchDashboardData();
   }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/api/admin-analytics/dashboard`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setDashboardData(response.data);
-    } catch (error: any) {
-      if (error.response?.status !== 404) {
-        console.error('Failed to fetch dashboard data:', error);
-      }
-    }
-  };
 
   const handleSuspendCompany = async (companyId: string) => {
     if (!confirm('Are you sure you want to suspend this company? All users will be unable to access the system.')) {
@@ -439,83 +423,6 @@ export default function SuperAdminDashboard() {
               <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
             </div>
             <UsersIcon className="w-8 h-8 text-blue-600" />
-          </div>
-        </div>
-      </div>
-
-      {/* Recent & Upcoming Activities + Pipeline Stages */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        {/* Recent Activities */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activities</h3>
-          <div className="space-y-3">
-            {dashboardData?.recent_activities && dashboardData.recent_activities.length > 0 ? (
-              dashboardData.recent_activities.map((activity: any) => (
-                <div key={activity.id} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                  <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <ClockIcon className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{activity.title}</p>
-                    <p className="text-xs text-gray-500">{activity.user_name}</p>
-                    <p className="text-xs text-gray-400">{new Date(activity.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500 text-center py-4">No recent activities</p>
-            )}
-          </div>
-        </div>
-
-        {/* Upcoming Activities */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Upcoming Activities</h3>
-          <div className="space-y-3">
-            {dashboardData?.upcoming_activities && dashboardData.upcoming_activities.length > 0 ? (
-              dashboardData.upcoming_activities.map((activity: any) => (
-                <div key={activity.id} className="flex items-start gap-3 p-3 bg-green-50 rounded-lg">
-                  <div className="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
-                    <ClockIcon className="w-4 h-4 text-green-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">{activity.title}</p>
-                    <p className="text-xs text-gray-500">{activity.user_name}</p>
-                    <p className="text-xs text-green-600 font-medium">
-                      Due: {new Date(activity.due_date).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500 text-center py-4">No upcoming activities</p>
-            )}
-          </div>
-        </div>
-
-        {/* Pipeline Stages Progress */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Pipeline Stages</h3>
-          <div className="space-y-4">
-            {dashboardData?.pipeline_stages && dashboardData.pipeline_stages.length > 0 ? (
-              dashboardData.pipeline_stages.map((stage: any) => (
-                <div key={stage.stage_id}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-700">{stage.stage_name}</span>
-                    <span className="text-sm text-gray-600">{stage.deal_count} deals</span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${stage.percentage}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-xs text-gray-500 mt-1">{stage.percentage}% of total</p>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-gray-500 text-center py-4">No pipeline data</p>
-            )}
           </div>
         </div>
       </div>
