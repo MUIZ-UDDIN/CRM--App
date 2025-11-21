@@ -109,13 +109,13 @@ function SalesRepDashboard() {
         
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-0 divide-x divide-gray-200">
           {/* Recent Activities */}
-          <div className="p-6 overflow-hidden">
+          <div className="p-6">
             <h6 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <FaClock className="text-blue-500" />
               Recent Activities
             </h6>
             {dashboardData?.recent_activities && dashboardData.recent_activities.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-y-auto max-h-80">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr>
@@ -130,7 +130,7 @@ function SalesRepDashboard() {
                       <tr key={activity.id} className="hover:bg-gray-50">
                         <td className="px-2 py-2 text-xs font-medium text-gray-900 capitalize truncate">{activity.type}</td>
                         <td className="px-2 py-2 text-xs text-gray-900">
-                          <div className="truncate max-w-[200px]" title={activity.title}>
+                          <div className="truncate max-w-[120px]" title={activity.title}>
                             {activity.title}
                           </div>
                         </td>
@@ -157,13 +157,13 @@ function SalesRepDashboard() {
           </div>
 
           {/* Upcoming Activities */}
-          <div className="p-6 overflow-hidden">
+          <div className="p-6">
             <h6 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
               <FaClock className="text-blue-500" />
               Upcoming Activities
             </h6>
             {dashboardData?.upcoming_activities && dashboardData.upcoming_activities.length > 0 ? (
-              <div className="overflow-x-auto">
+              <div className="overflow-y-auto max-h-80">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr>
@@ -178,7 +178,7 @@ function SalesRepDashboard() {
                       <tr key={activity.id} className="hover:bg-gray-50">
                         <td className="px-2 py-2 text-xs font-medium text-gray-900 capitalize truncate">{activity.type}</td>
                         <td className="px-2 py-2 text-xs text-gray-900">
-                          <div className="truncate max-w-[200px]" title={activity.title}>
+                          <div className="truncate max-w-[120px]" title={activity.title}>
                             {activity.title}
                           </div>
                         </td>
@@ -218,31 +218,43 @@ function SalesRepDashboard() {
           <div className="space-y-4">
             {dashboardData?.pipeline_stages && dashboardData.pipeline_stages.length > 0 ? (
               <>
-                {dashboardData.pipeline_stages.slice(0, showAllStages ? dashboardData.pipeline_stages.length : 4).map((stage) => (
-                  <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-semibold text-gray-700 truncate max-w-[200px]" title={stage.stage_name}>{stage.stage_name}</span>
-                      <span className="text-sm text-gray-600 font-medium">
-                        ${(() => {
-                          const value = stage.total_value || 0;
-                          const absValue = Math.abs(value);
-                          if (absValue >= 1e9) return (value / 1e9).toFixed(1) + 'B';
-                          if (absValue >= 1e6) return (value / 1e6).toFixed(1) + 'M';
-                          if (absValue >= 1e3) return (value / 1e3).toFixed(1) + 'K';
-                          return Math.round(value).toLocaleString();
-                        })()} ({stage.deal_count} deals)
-                      </span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div
-                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300 flex items-center justify-end pr-2"
-                        style={{ width: `${stage.percentage}%` }}
-                      >
-                        <span className="text-xs text-white font-semibold">{stage.percentage}%</span>
+                {(() => {
+                  const maxValue = Math.max(...dashboardData.pipeline_stages.map(s => s.total_value || 0));
+                  return dashboardData.pipeline_stages.slice(0, showAllStages ? dashboardData.pipeline_stages.length : 4).map((stage) => {
+                    const isHighest = stage.total_value === maxValue;
+                    return (
+                      <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-semibold text-gray-700 truncate max-w-[200px]" title={stage.stage_name}>{stage.stage_name}</span>
+                          <span className="text-sm text-gray-600 font-medium">
+                            ${(() => {
+                              const value = stage.total_value || 0;
+                              const absValue = Math.abs(value);
+                              if (absValue >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                              if (absValue >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                              if (absValue >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+                              return Math.round(value).toLocaleString();
+                            })()} ({stage.deal_count} deals)
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-gray-200 rounded-full h-3">
+                            <div
+                              className={`h-3 rounded-full transition-all duration-300 ${
+                                isHighest 
+                                  ? 'bg-gradient-to-r from-green-500 to-green-600' 
+                                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                              }`}
+                              style={{ width: `${stage.percentage}%` }}
+                            >
+                            </div>
+                          </div>
+                          <span className="text-xs text-gray-600 font-semibold min-w-[35px] text-right">{stage.percentage}%</span>
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                ))}
+                    );
+                  });
+                })()}
                 
                 {dashboardData.pipeline_stages.length > 4 && (
                   <button
