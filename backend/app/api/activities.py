@@ -309,38 +309,16 @@ def create_activity(
         creator = db.query(User).filter(User.id == user_id).first()
         creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
         
-        # Notify based on activity type
-        if activity_type_enum == ActivityType.EMAIL:
-            # For email activities, use email notification
-            NotificationService.notify_email_sent(
-                db=db,
-                creator_id=user_id,
-                creator_name=creator_name,
-                company_id=db_activity.company_id,
-                recipient_email=activity.description or "Unknown",  # Assuming description contains recipient
-                subject=activity.subject
-            )
-        elif activity_type_enum == ActivityType.CALL:
-            # For call activities, use call notification
-            NotificationService.notify_call_made(
-                db=db,
-                creator_id=user_id,
-                creator_name=creator_name,
-                company_id=db_activity.company_id,
-                recipient_phone="Unknown",  # Could be extracted from contact if needed
-                duration=activity.duration_minutes
-            )
-        else:
-            # For other activities (meeting, task), use general activity notification
-            NotificationService.notify_activity_created(
-                db=db,
-                activity_id=db_activity.id,
-                activity_type=str(activity_type_enum.value),
-                activity_subject=activity.subject,
-                creator_id=user_id,
-                creator_name=creator_name,
-                company_id=db_activity.company_id
-            )
+        # Use general activity notification for ALL activity types
+        NotificationService.notify_activity_created(
+            db=db,
+            activity_id=db_activity.id,
+            activity_type=str(activity_type_enum.value),
+            activity_subject=activity.subject,
+            creator_id=user_id,
+            creator_name=creator_name,
+            company_id=db_activity.company_id
+        )
     except Exception as notification_error:
         # Don't fail the activity creation if notifications fail
         print(f"Notification error: {notification_error}")

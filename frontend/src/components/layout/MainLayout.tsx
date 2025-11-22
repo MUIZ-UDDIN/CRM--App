@@ -552,6 +552,11 @@ export default function MainLayout() {
       
       // Update unread count
       fetchUnreadCount();
+      
+      // Broadcast deletion event to other components (like Notifications page)
+      window.dispatchEvent(new CustomEvent('notificationDeleted', { 
+        detail: { notificationId } 
+      }));
     } catch (error) {
       console.error('Error deleting notification:', error);
     }

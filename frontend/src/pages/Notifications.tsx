@@ -33,6 +33,20 @@ export default function Notifications() {
     fetchNotifications();
   }, [filter]);
 
+  // Listen for notification deletion events from other components
+  useEffect(() => {
+    const handleNotificationDeleted = (event: CustomEvent) => {
+      const { notificationId } = event.detail;
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
+    };
+
+    window.addEventListener('notificationDeleted', handleNotificationDeleted as EventListener);
+    
+    return () => {
+      window.removeEventListener('notificationDeleted', handleNotificationDeleted as EventListener);
+    };
+  }, []);
+
   const fetchNotifications = async () => {
     setLoading(true);
     try {

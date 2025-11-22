@@ -113,13 +113,19 @@ class NotificationService:
                     "user_id": str(notification.user_id)
                 }
                 
-                # Run broadcast in background
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.ensure_future(broadcast_notification(
-                        company_id=str(company_id),
-                        notification_data=notification_data
-                    ))
+                # Run broadcast in background - use create_task with new_event_loop if needed
+                try:
+                    loop = asyncio.get_running_loop()
+                except RuntimeError:
+                    # No running loop, create a new one for this task
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                
+                # Create task to broadcast
+                asyncio.create_task(broadcast_notification(
+                    company_id=str(company_id),
+                    notification_data=notification_data
+                ))
             except Exception as broadcast_error:
                 logger.warning(f"Failed to broadcast notification: {broadcast_error}")
             
