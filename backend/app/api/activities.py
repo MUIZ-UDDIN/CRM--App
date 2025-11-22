@@ -445,7 +445,7 @@ def delete_activity(
         
         NotificationService.notify_activity_deleted(
             db=db,
-            activity_type=activity.activity_type.value if activity.activity_type else "activity",
+            activity_type=activity.type.value if activity.type else "activity",  # Fixed: use 'type' not 'activity_type'
             deleter_id=user_id,
             deleter_name=deleter_name,
             company_id=company_id

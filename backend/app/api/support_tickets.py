@@ -124,10 +124,11 @@ async def create_ticket(
             NotificationService.notify_support_ticket_created(
                 db=db,
                 ticket_id=new_ticket.id,
-                ticket_subject=new_ticket.subject,
+                ticket_title=new_ticket.subject,  # Fixed: use ticket_title parameter
                 creator_id=new_ticket.created_by_id,
                 creator_name=creator_name,
-                company_id=new_ticket.company_id
+                company_id=new_ticket.company_id,
+                priority=new_ticket.priority.value  # Pass priority
             )
         except Exception as e:
             print(f"⚠️ Failed to send support ticket creation notification: {e}")
