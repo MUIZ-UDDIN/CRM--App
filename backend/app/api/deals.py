@@ -303,10 +303,16 @@ def create_deal(
         
         # Send notifications
         try:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.info(f"🔔 Attempting to send deal creation notification for deal: {new_deal.id}")
+            
             from ..services.notification_service import NotificationService
             from ..models.users import User
             creator = db.query(User).filter(User.id == user_id).first()
             creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+            
+            logger.info(f"🔔 Creator: {creator_name}, Company: {new_deal.company_id}")
             
             NotificationService.notify_deal_created(
                 db=db,
@@ -317,8 +323,12 @@ def create_deal(
                 company_id=new_deal.company_id,
                 deal_value=new_deal.value
             )
+            logger.info(f"🔔 Notification sent successfully for deal: {new_deal.title}")
         except Exception as notification_error:
             # Don't fail the deal creation if notifications fail
+            import traceback
+            logger.error(f"❌ Notification error: {notification_error}")
+            logger.error(f"❌ Traceback: {traceback.format_exc()}")
             print(f"Notification error: {notification_error}")
         
         # Return minimal response - no internal timestamps or sensitive data
