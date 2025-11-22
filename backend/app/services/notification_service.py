@@ -83,7 +83,7 @@ class NotificationService:
         link: Optional[str] = None,
         extra_data: Optional[Dict[str, Any]] = None
     ):
-        """Create a single notification"""
+        """Create a single notification and broadcast it via WebSocket"""
         try:
             notification = Notification(
                 title=title,
@@ -95,6 +95,34 @@ class NotificationService:
                 company_id=company_id
             )
             db.add(notification)
+            db.flush()  # Flush to get the ID
+            
+            # Broadcast notification via WebSocket for real-time updates
+            try:
+                import asyncio
+                from ..services.websocket_manager import broadcast_notification
+                
+                notification_data = {
+                    "id": str(notification.id),
+                    "title": notification.title,
+                    "message": notification.message,
+                    "type": notification.type.value if hasattr(notification.type, 'value') else str(notification.type),
+                    "link": notification.link,
+                    "read": notification.read,
+                    "created_at": notification.created_at.isoformat() if notification.created_at else None,
+                    "user_id": str(notification.user_id)
+                }
+                
+                # Run broadcast in background
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.ensure_future(broadcast_notification(
+                        company_id=str(company_id),
+                        notification_data=notification_data
+                    ))
+            except Exception as broadcast_error:
+                logger.warning(f"Failed to broadcast notification: {broadcast_error}")
+            
             return notification
         except Exception as e:
             logger.error(f"Error creating notification: {str(e)}")

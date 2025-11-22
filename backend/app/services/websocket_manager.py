@@ -126,3 +126,24 @@ async def broadcast_entity_change(
     }
     
     await manager.broadcast_to_company(company_id, message)
+
+
+# Helper function to broadcast new notifications
+async def broadcast_notification(
+    company_id: str,
+    notification_data: dict
+):
+    """
+    Broadcast a new notification to all clients in a company
+    
+    Args:
+        company_id: Company ID to broadcast to
+        notification_data: Notification data to send
+    """
+    message = {
+        "type": "new_notification",
+        "notification": notification_data,
+        "timestamp": None  # Will be set by client
+    }
+    
+    await manager.broadcast_to_company(company_id, message)

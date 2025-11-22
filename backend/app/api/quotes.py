@@ -230,12 +230,37 @@ async def create_quote(
             detail=f"A quote with title '{quote_data.title}' already exists. Please use a different title."
         )
     
-    # Generate quote number
+    # Generate quote number with proper uniqueness check
     year = datetime.now().year
-    count = db.query(QuoteModel).filter(
-        QuoteModel.quote_number.like(f"QT-{year}-%")
-    ).count()
-    quote_number = f"QT-{year}-{str(count + 1).zfill(3)}"
+    max_attempts = 10
+    quote_number = None
+    
+    for attempt in range(max_attempts):
+        # Get count of non-deleted quotes for this year
+        count = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.quote_number.like(f"QT-{year}-%"),
+                QuoteModel.is_deleted == False
+            )
+        ).count()
+        
+        # Generate quote number
+        quote_number = f"QT-{year}-{str(count + 1).zfill(3)}"
+        
+        # Check if this number already exists (including deleted ones)
+        existing = db.query(QuoteModel).filter(
+            QuoteModel.quote_number == quote_number
+        ).first()
+        
+        if not existing:
+            break
+        
+        # If exists, try next number
+        if attempt == max_attempts - 1:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Unable to generate unique quote number. Please try again."
+            )
     
     # Handle empty strings for UUIDs
     client_uuid = None

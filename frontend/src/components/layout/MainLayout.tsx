@@ -494,11 +494,9 @@ export default function MainLayout() {
       await markAsRead(notification.id);
     }
     
-    // Navigate if there's a link
-    if (notification.link) {
-      navigate(notification.link);
-      setShowNotifications(false);
-    }
+    // Always navigate to notifications page when clicking from dropdown
+    setShowNotifications(false);
+    navigate('/notifications');
   };
 
   const markAsRead = async (notificationId: string) => {
