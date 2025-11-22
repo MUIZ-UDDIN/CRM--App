@@ -432,6 +432,23 @@ async def delete_quote(
     quote.is_deleted = True
     db.commit()
     
+    # Send deletion notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        deleter = db.query(User).filter(User.id == uuid.UUID(current_user['id'])).first()
+        deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+        
+        NotificationService.notify_quote_deleted(
+            db=db,
+            quote_title=quote.title,
+            deleter_id=uuid.UUID(current_user['id']),
+            deleter_name=deleter_name,
+            company_id=quote.company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send quote deletion notification: {e}")
+    
     return {"message": "Quote deleted successfully"}
 
 

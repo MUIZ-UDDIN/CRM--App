@@ -204,6 +204,23 @@ async def delete_pipeline(
     pipeline.updated_at = datetime.utcnow()
     db.commit()
     
+    # Send deletion notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        deleter = db.query(User).filter(User.id == uuid.UUID(current_user['id'])).first()
+        deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+        
+        NotificationService.notify_pipeline_deleted(
+            db=db,
+            pipeline_name=pipeline.name,
+            deleter_id=uuid.UUID(current_user['id']),
+            deleter_name=deleter_name,
+            company_id=pipeline.company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send pipeline deletion notification: {e}")
+    
     return {"message": "Pipeline deleted successfully"}
 
 

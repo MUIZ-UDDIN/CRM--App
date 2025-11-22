@@ -514,9 +514,28 @@ async def delete_contact(
         )
     
     try:
+        contact_name = f"{contact.first_name} {contact.last_name}"
         contact.is_deleted = True
         contact.updated_at = datetime.utcnow()
         db.commit()
+        
+        # Send deletion notification
+        try:
+            from app.services.notification_service import NotificationService
+            from app.models.users import User
+            deleter = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
+            deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+            
+            NotificationService.notify_contact_deleted(
+                db=db,
+                contact_name=contact_name,
+                deleter_id=uuid.UUID(user_id),
+                deleter_name=deleter_name,
+                company_id=contact.company_id
+            )
+        except Exception as e:
+            print(f"⚠️ Failed to send contact deletion notification: {e}")
+        
         return {"message": "Contact deleted successfully"}
     except Exception as e:
         db.rollback()

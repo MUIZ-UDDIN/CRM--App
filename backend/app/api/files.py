@@ -676,6 +676,23 @@ async def delete_file(
     file.is_deleted = True
     db.commit()
     
+    # Send deletion notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        deleter = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
+        deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+        
+        NotificationService.notify_file_deleted(
+            db=db,
+            file_name=file.name,
+            deleter_id=uuid.UUID(user_id),
+            deleter_name=deleter_name,
+            company_id=company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send file deletion notification: {e}")
+    
     return {"message": "File deleted successfully"}
 
 

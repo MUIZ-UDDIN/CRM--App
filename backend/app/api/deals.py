@@ -731,6 +731,22 @@ def delete_deal(
     
     db.commit()
     
+    # Send deletion notification
+    try:
+        from app.services.notification_service import NotificationService
+        deleter = db.query(User).filter(User.id == user_id).first()
+        deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+        
+        NotificationService.notify_deal_deleted(
+            db=db,
+            deal_title=deal.title,
+            deleter_id=user_id,
+            deleter_name=deleter_name,
+            company_id=company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send deal deletion notification: {e}")
+    
     # Broadcast deletion to all connected clients in the company
     try:
         from app.services.websocket_manager import broadcast_entity_change

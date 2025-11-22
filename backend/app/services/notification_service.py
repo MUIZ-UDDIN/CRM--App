@@ -652,3 +652,266 @@ class NotificationService:
             )
         
         db.commit()
+    
+    # ==================== DELETION NOTIFICATIONS ====================
+    
+    @staticmethod
+    def notify_deal_deleted(
+        db: Session,
+        deal_title: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a deal is deleted"""
+        from ..models.users import User
+        deleter = db.query(User).filter(User.id == deleter_id).first()
+        deleter_role = deleter.user_role if deleter else None
+        
+        recipients = []
+        if deleter_role == 'super_admin':
+            recipients = NotificationService._get_all_company_users(db, company_id)
+        elif deleter_role == 'company_admin':
+            recipients = NotificationService._get_all_company_users(db, company_id)
+            super_admin = db.query(User).filter(
+                User.user_role == 'super_admin',
+                User.is_deleted == False,
+                User.status == 'active'
+            ).first()
+            if super_admin and super_admin.id not in [r.id for r in recipients]:
+                recipients.append(super_admin)
+        else:
+            company_admin = db.query(User).filter(
+                User.company_id == company_id,
+                User.user_role == 'company_admin',
+                User.is_deleted == False,
+                User.status == 'active'
+            ).first()
+            if company_admin:
+                recipients.append(company_admin)
+            super_admin = db.query(User).filter(
+                User.user_role == 'super_admin',
+                User.is_deleted == False,
+                User.status == 'active'
+            ).first()
+            if super_admin:
+                recipients.append(super_admin)
+            if deleter:
+                recipients.append(deleter)
+        
+        # Remove duplicates
+        unique_recipients = []
+        seen_ids = set()
+        for r in recipients:
+            if r.id not in seen_ids:
+                unique_recipients.append(r)
+                seen_ids.add(r.id)
+        
+        for recipient in unique_recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Deal Deleted",
+                message=f"{deleter_name} deleted deal: {deal_title}",
+                notification_type=NotificationType.WARNING,
+                link="/deals"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_contact_deleted(
+        db: Session,
+        contact_name: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a contact is deleted"""
+        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Contact Deleted",
+                message=f"{deleter_name} deleted contact: {contact_name}",
+                notification_type=NotificationType.WARNING,
+                link="/contacts"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_pipeline_deleted(
+        db: Session,
+        pipeline_name: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a pipeline is deleted"""
+        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Pipeline Deleted",
+                message=f"{deleter_name} deleted pipeline: {pipeline_name}",
+                notification_type=NotificationType.WARNING,
+                link="/pipeline-settings"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_quote_deleted(
+        db: Session,
+        quote_title: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a quote is deleted"""
+        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Quote Deleted",
+                message=f"{deleter_name} deleted quote: {quote_title}",
+                notification_type=NotificationType.WARNING,
+                link="/quotes"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_workflow_deleted(
+        db: Session,
+        workflow_name: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a workflow is deleted"""
+        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Workflow Deleted",
+                message=f"{deleter_name} deleted workflow: {workflow_name}",
+                notification_type=NotificationType.WARNING,
+                link="/workflows"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_file_deleted(
+        db: Session,
+        file_name: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a file is deleted"""
+        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="File Deleted",
+                message=f"{deleter_name} deleted file: {file_name}",
+                notification_type=NotificationType.WARNING,
+                link="/files"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_activity_deleted(
+        db: Session,
+        activity_type: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when an activity is deleted"""
+        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Activity Deleted",
+                message=f"{deleter_name} deleted a {activity_type} activity",
+                notification_type=NotificationType.WARNING,
+                link="/activities"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_user_deleted(
+        db: Session,
+        deleted_user_name: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a user is deleted"""
+        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="User Deleted",
+                message=f"{deleter_name} deleted user: {deleted_user_name}",
+                notification_type=NotificationType.WARNING,
+                link="/users"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_support_ticket_deleted(
+        db: Session,
+        ticket_title: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a support ticket is deleted"""
+        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Support Ticket Deleted",
+                message=f"{deleter_name} deleted support ticket: {ticket_title}",
+                notification_type=NotificationType.WARNING,
+                link="/support-tickets"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_company_deleted(
+        db: Session,
+        company_name: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str
+    ):
+        """Notify super admins when a company is deleted"""
+        recipients = NotificationService._get_super_admins(db, exclude_user_id=deleter_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=recipient.company_id,
+                title="Company Deleted",
+                message=f"{deleter_name} deleted company: {company_name}",
+                notification_type=NotificationType.ERROR,
+                link="/companies"
+            )
+        db.commit()
