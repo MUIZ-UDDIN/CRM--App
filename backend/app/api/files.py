@@ -431,6 +431,23 @@ async def create_folder(
     db.commit()
     db.refresh(new_folder)
     
+    # Send folder creation notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        creator = db.query(User).filter(User.id == user_id).first()
+        creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+        
+        NotificationService.notify_folder_created(
+            db=db,
+            folder_name=new_folder.name,
+            creator_id=user_id,
+            creator_name=creator_name,
+            company_id=company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send folder creation notification: {e}")
+    
     return FolderResponse(
         id=str(new_folder.id),
         name=new_folder.name,
@@ -525,8 +542,27 @@ async def delete_folder(
     if not folder:
         raise HTTPException(status_code=404, detail="Folder not found")
     
+    folder_name = folder.name
     folder.is_deleted = True
     db.commit()
+    
+    # Send folder deletion notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+        deleter = db.query(User).filter(User.id == user_id).first()
+        deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+        
+        NotificationService.notify_folder_deleted(
+            db=db,
+            folder_name=folder_name,
+            deleter_id=user_id,
+            deleter_name=deleter_name,
+            company_id=company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send folder deletion notification: {e}")
     
     return {"message": "Folder deleted successfully"}
 

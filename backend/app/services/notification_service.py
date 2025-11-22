@@ -379,7 +379,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify admins when an activity is created"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -404,7 +405,8 @@ class NotificationService:
         subject: str
     ):
         """Notify admins when an email is sent"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -427,7 +429,8 @@ class NotificationService:
         recipient_phone: str
     ):
         """Notify admins when an SMS is sent"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -451,7 +454,8 @@ class NotificationService:
         duration: Optional[int] = None
     ):
         """Notify admins when a call is made"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         duration_text = f" ({duration}s)" if duration else ""
         for recipient in recipients:
@@ -473,11 +477,12 @@ class NotificationService:
         uploader_id: uuid.UUID,
         uploader_name: str,
         company_id: uuid.UUID,
-        entity_type: str,
-        entity_id: uuid.UUID
+        entity_type: str = "general",
+        entity_id: Optional[uuid.UUID] = None
     ):
         """Notify admins when a file is uploaded"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=uploader_id)
+        # Get all admins INCLUDING the uploader (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -501,7 +506,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify admins when a workflow is created"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -527,7 +533,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify admins when a template is created"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -549,10 +556,11 @@ class NotificationService:
         creator_id: uuid.UUID,
         creator_name: str,
         company_id: uuid.UUID,
-        priority: str
+        priority: str = "medium"
     ):
         """Notify admins when a support ticket is created"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         notification_type = NotificationType.WARNING if priority in ['high', 'urgent'] else NotificationType.INFO
         
@@ -858,6 +866,52 @@ class NotificationService:
                 company_id=company_id,
                 title="File Deleted",
                 message=f"{deleter_name} deleted file: {file_name}",
+                notification_type=NotificationType.WARNING,
+                link="/files"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_folder_created(
+        db: Session,
+        folder_name: str,
+        creator_id: uuid.UUID,
+        creator_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a folder is created"""
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Folder Created",
+                message=f"{creator_name} created a new folder: {folder_name}",
+                notification_type=NotificationType.SUCCESS,
+                link="/files"
+            )
+        db.commit()
+    
+    @staticmethod
+    def notify_folder_deleted(
+        db: Session,
+        folder_name: str,
+        deleter_id: uuid.UUID,
+        deleter_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a folder is deleted"""
+        # Get all admins and managers INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_admins_and_managers(db, company_id)
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Folder Deleted",
+                message=f"{deleter_name} deleted folder: {folder_name}",
                 notification_type=NotificationType.WARNING,
                 link="/files"
             )
