@@ -19,8 +19,18 @@ class NotificationService:
     """Service for creating and managing notifications across the CRM"""
     
     @staticmethod
+    def _get_all_company_users(db: Session, company_id: uuid.UUID) -> List[User]:
+        """Get ALL active users in a company (including creator for confirmation)"""
+        query = db.query(User).filter(
+            User.company_id == company_id,
+            User.is_deleted == False,
+            User.status == 'active'
+        )
+        return query.all()
+    
+    @staticmethod
     def _get_admins_and_managers(db: Session, company_id: uuid.UUID, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
-        """Get all admins and managers in a company, excluding the action performer"""
+        """Get all admins and managers in a company"""
         query = db.query(User).filter(
             User.company_id == company_id,
             User.is_deleted == False,
@@ -111,27 +121,68 @@ class NotificationService:
             from ..models.users import User
             creator = db.query(User).filter(User.id == creator_id).first()
             creator_role = creator.user_role if creator else None
-            print(f"🔍 Creator role: {creator_role}")
+            print(f"🔍 Creator role: {creator_role}, Company: {company_id}")
             
             recipients = []
+            recipient_ids = set()
             
-            # Notify based on creator's role:
-            # - If Sales Rep/Sales Manager creates: notify admins and managers (excluding self)
-            # - If Company Admin creates: notify super admins and other company admins
-            # - If Super Admin creates: notify other super admins
+            # NOTIFICATION RULES:
+            # 1. Super Admin creates: Notify ALL users in super admin's company (including super admin for confirmation)
+            # 2. Company Admin creates: Notify super admin + ALL users in that company (including company admin)
+            # 3. Sales Manager/Rep creates: Notify super admin + company admin + creator (for confirmation)
             
-            if creator_role in ['sales_rep', 'sales_manager']:
-                # Notify all admins and managers in the company (excluding creator)
-                recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=creator_id)
+            if creator_role == 'super_admin':
+                # Notify ALL users in the super admin's company (including the super admin themselves)
+                print(f"🔍 Super admin action - notifying all users in company {company_id}")
+                recipients = NotificationService._get_all_company_users(db, company_id)
+                
             elif creator_role == 'company_admin':
-                # Notify super admins and other company admins
-                recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
-                # Also notify super admins from other companies
-                super_admins = NotificationService._get_super_admins(db, exclude_user_id=creator_id)
-                recipients.extend(super_admins)
-            elif creator_role == 'super_admin':
-                # Notify other super admins
-                recipients = NotificationService._get_super_admins(db, exclude_user_id=creator_id)
+                # Notify ALL users in the company (including company admin themselves)
+                print(f"🔍 Company admin action - notifying all company users + super admin")
+                recipients = NotificationService._get_all_company_users(db, company_id)
+                # Also notify super admin
+                super_admin = db.query(User).filter(
+                    User.user_role == 'super_admin',
+                    User.is_deleted == False,
+                    User.status == 'active'
+                ).first()
+                if super_admin and super_admin.id not in [r.id for r in recipients]:
+                    recipients.append(super_admin)
+                    
+            else:  # sales_manager, sales_rep, or any other role
+                # Notify company admin + super admin + creator themselves
+                print(f"🔍 Sales rep/manager action - notifying company admin + super admin + self")
+                # Get company admin
+                company_admin = db.query(User).filter(
+                    User.company_id == company_id,
+                    User.user_role == 'company_admin',
+                    User.is_deleted == False,
+                    User.status == 'active'
+                ).first()
+                if company_admin:
+                    recipients.append(company_admin)
+                
+                # Get super admin
+                super_admin = db.query(User).filter(
+                    User.user_role == 'super_admin',
+                    User.is_deleted == False,
+                    User.status == 'active'
+                ).first()
+                if super_admin:
+                    recipients.append(super_admin)
+                
+                # Add creator themselves for confirmation
+                if creator:
+                    recipients.append(creator)
+            
+            # Remove duplicates
+            unique_recipients = []
+            seen_ids = set()
+            for r in recipients:
+                if r.id not in seen_ids:
+                    unique_recipients.append(r)
+                    seen_ids.add(r.id)
+            recipients = unique_recipients
             
             print(f"🔔 Found {len(recipients)} recipients for deal notification")
             logger.info(f"Found {len(recipients)} recipients for deal notification")
