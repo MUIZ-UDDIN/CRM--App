@@ -245,6 +245,27 @@ async def create_contact(
             # Don't fail the contact creation if workflows fail
             print(f"Workflow trigger error: {workflow_error}")
         
+        # Send notifications
+        try:
+            from app.services.notification_service import NotificationService
+            from app.models.users import User
+            
+            creator = db.query(User).filter(User.id == owner_id).first()
+            creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+            contact_name = f"{db_contact.first_name} {db_contact.last_name}"
+            
+            NotificationService.notify_contact_created(
+                db=db,
+                contact_id=db_contact.id,
+                contact_name=contact_name,
+                creator_id=owner_id,
+                creator_name=creator_name,
+                company_id=db_contact.company_id
+            )
+        except Exception as notification_error:
+            # Don't fail the contact creation if notifications fail
+            print(f"Notification error: {notification_error}")
+        
         return db_contact
     except Exception as e:
         db.rollback()

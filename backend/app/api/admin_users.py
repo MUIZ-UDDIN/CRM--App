@@ -250,6 +250,27 @@ def create_company_user(
     db.commit()
     db.refresh(new_user)
     
+    # Send notifications
+    try:
+        from app.services.notification_service import NotificationService
+        
+        creator = db.query(User).filter(User.id == current_user.get("id")).first()
+        creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Super Admin"
+        new_user_name = f"{new_user.first_name} {new_user.last_name}"
+        
+        NotificationService.notify_user_created(
+            db=db,
+            new_user_id=new_user.id,
+            new_user_name=new_user_name,
+            new_user_role=role.value,
+            creator_id=admin_user.id,
+            creator_name=creator_name,
+            company_id=uuid.UUID(company_id)
+        )
+    except Exception as notification_error:
+        # Don't fail the user creation if notifications fail
+        print(f"Notification error: {notification_error}")
+    
     # Return user with generated password
     return UserCreateResponse(
         id=str(new_user.id),
@@ -446,6 +467,9 @@ def update_user_role(
             detail="Cannot promote users to Super Admin"
         )
     
+    # Store old role for notification
+    old_role = user_to_update.user_role.value if user_to_update.user_role else "unknown"
+    
     # Update role
     user_to_update.user_role = new_role
     user_to_update.role = new_role.value  # Also update legacy field
@@ -457,5 +481,27 @@ def update_user_role(
     
     db.commit()
     db.refresh(user_to_update)
+    
+    # Send notifications
+    try:
+        from app.services.notification_service import NotificationService
+        import uuid
+        
+        changer_name = f"{admin_user.first_name} {admin_user.last_name}" if admin_user else "Super Admin"
+        target_user_name = f"{user_to_update.first_name} {user_to_update.last_name}"
+        
+        NotificationService.notify_user_role_changed(
+            db=db,
+            target_user_id=user_to_update.id,
+            target_user_name=target_user_name,
+            old_role=old_role,
+            new_role=new_role.value,
+            changer_id=admin_user.id,
+            changer_name=changer_name,
+            company_id=user_to_update.company_id
+        )
+    except Exception as notification_error:
+        # Don't fail the role update if notifications fail
+        print(f"Notification error: {notification_error}")
     
     return {"message": "User role updated successfully", "new_role": new_role.value}
