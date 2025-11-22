@@ -24,8 +24,8 @@ class NotificationService:
         query = db.query(User).filter(
             User.company_id == company_id,
             User.is_deleted == False,
-            User.is_active == True,
-            User.role.in_(['super_admin', 'company_admin', 'sales_manager'])
+            User.status == 'active',
+            User.user_role.in_(['super_admin', 'company_admin', 'sales_manager'])
         )
         
         if exclude_user_id:
@@ -39,8 +39,8 @@ class NotificationService:
         query = db.query(User).filter(
             User.company_id == company_id,
             User.is_deleted == False,
-            User.is_active == True,
-            User.role.in_(['super_admin', 'company_admin'])
+            User.status == 'active',
+            User.user_role.in_(['super_admin', 'company_admin'])
         )
         
         if exclude_user_id:
@@ -53,8 +53,8 @@ class NotificationService:
         """Get all super admins"""
         query = db.query(User).filter(
             User.is_deleted == False,
-            User.is_active == True,
-            User.role == 'super_admin'
+            User.status == 'active',
+            User.user_role == 'super_admin'
         )
         
         if exclude_user_id:
