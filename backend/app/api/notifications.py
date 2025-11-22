@@ -157,7 +157,7 @@ async def mark_as_read(
     
     notification = db.query(NotificationModel).filter(
         and_(
-            NotificationModel.id == uuid.UUID(notification_id),
+            NotificationModel.id == notification_id,
             NotificationModel.user_id == user_id,
             NotificationModel.company_id == company_id,
             NotificationModel.is_deleted == False
@@ -212,7 +212,7 @@ async def delete_notification(
     
     notification = db.query(NotificationModel).filter(
         and_(
-            NotificationModel.id == uuid.UUID(notification_id),
+            NotificationModel.id == notification_id,
             NotificationModel.user_id == user_id,
             NotificationModel.company_id == company_id,
             NotificationModel.is_deleted == False

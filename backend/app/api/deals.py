@@ -515,18 +515,21 @@ def update_deal(
     try:
         from app.services.websocket_manager import broadcast_entity_change
         import asyncio
-        asyncio.create_task(broadcast_entity_change(
-            company_id=company_id,
-            entity_type="deal",
-            action="updated",
-            entity_id=str(deal.id),
-            data={
-                "id": str(deal.id),
-                "title": deal.title,
-                "value": deal.value,
-                "status": deal.status.value if deal.status else None
-            }
-        ))
+        # Run in background without blocking
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=company_id,
+                entity_type="deal",
+                action="updated",
+                entity_id=str(deal.id),
+                data={
+                    "id": str(deal.id),
+                    "title": deal.title,
+                    "value": deal.value,
+                    "status": deal.status.value if deal.status else None
+                }
+            ))
     except Exception as e:
         print(f"⚠️ Failed to broadcast deal update: {e}")
     
@@ -732,12 +735,15 @@ def delete_deal(
     try:
         from app.services.websocket_manager import broadcast_entity_change
         import asyncio
-        asyncio.create_task(broadcast_entity_change(
-            company_id=company_id,
-            entity_type="deal",
-            action="deleted",
-            entity_id=deal_id
-        ))
+        # Run in background without blocking
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=company_id,
+                entity_type="deal",
+                action="deleted",
+                entity_id=deal_id
+            ))
     except Exception as e:
         print(f"⚠️ Failed to broadcast deal deletion: {e}")
     
