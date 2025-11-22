@@ -301,6 +301,26 @@ def create_deal(
             # Don't fail the deal creation if workflows fail
             print(f"Workflow trigger error: {workflow_error}")
         
+        # Send notifications
+        try:
+            from ..services.notification_service import NotificationService
+            from ..models.users import User
+            creator = db.query(User).filter(User.id == user_id).first()
+            creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+            
+            NotificationService.notify_deal_created(
+                db=db,
+                deal_id=new_deal.id,
+                deal_title=new_deal.title,
+                creator_id=user_id,
+                creator_name=creator_name,
+                company_id=new_deal.company_id,
+                deal_value=new_deal.value
+            )
+        except Exception as notification_error:
+            # Don't fail the deal creation if notifications fail
+            print(f"Notification error: {notification_error}")
+        
         # Return minimal response - no internal timestamps or sensitive data
         return DealCreateResponse(
             id=str(new_deal.id),
@@ -548,6 +568,47 @@ def update_deal(
     except Exception as workflow_error:
         # Don't fail the deal update if workflows fail
         print(f"Workflow trigger error: {workflow_error}")
+    
+    # Send notifications
+    try:
+        from ..services.notification_service import NotificationService
+        from ..models.users import User
+        from ..models.deals import PipelineStage
+        
+        updater = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
+        updater_name = f"{updater.first_name} {updater.last_name}" if updater else "Unknown User"
+        
+        # Notify about stage change
+        if old_stage_id != deal.stage_id:
+            old_stage = db.query(PipelineStage).filter(PipelineStage.id == old_stage_id).first()
+            new_stage = db.query(PipelineStage).filter(PipelineStage.id == deal.stage_id).first()
+            
+            NotificationService.notify_deal_stage_changed(
+                db=db,
+                deal_id=deal.id,
+                deal_title=deal.title,
+                updater_id=uuid.UUID(user_id),
+                updater_name=updater_name,
+                company_id=deal.company_id,
+                old_stage=old_stage.name if old_stage else "Unknown",
+                new_stage=new_stage.name if new_stage else "Unknown"
+            )
+        else:
+            # Notify about general update
+            changes = ", ".join([f"{k}: {v}" for k, v in deal_data.items() if k not in ['stage_id']])
+            if changes:
+                NotificationService.notify_deal_updated(
+                    db=db,
+                    deal_id=deal.id,
+                    deal_title=deal.title,
+                    updater_id=uuid.UUID(user_id),
+                    updater_name=updater_name,
+                    company_id=deal.company_id,
+                    changes=changes
+                )
+    except Exception as notification_error:
+        # Don't fail the deal update if notifications fail
+        print(f"Notification error: {notification_error}")
     
     return {
         "id": str(deal.id),
