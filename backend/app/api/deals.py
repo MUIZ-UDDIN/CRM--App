@@ -156,6 +156,10 @@ def create_deal(
     db: Session = Depends(get_db)
 ):
     """Create a new deal"""
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"🚀 CREATE_DEAL ENDPOINT CALLED - User: {current_user.get('id')}, Deal: {deal.title}")
+    
     from ..models.deals import Pipeline, PipelineStage
     import traceback
     
@@ -301,10 +305,10 @@ def create_deal(
             # Don't fail the deal creation if workflows fail
             print(f"Workflow trigger error: {workflow_error}")
         
+        logger.info(f"✅ Deal created successfully: {new_deal.id}, now sending notifications...")
+        
         # Send notifications
         try:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.info(f"🔔 Attempting to send deal creation notification for deal: {new_deal.id}")
             
             from ..services.notification_service import NotificationService
