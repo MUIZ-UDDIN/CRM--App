@@ -230,37 +230,27 @@ async def create_quote(
             detail=f"A quote with title '{quote_data.title}' already exists. Please use a different title."
         )
     
-    # Generate quote number with proper uniqueness check
+    # Generate quote number by finding the highest existing number
     year = datetime.now().year
-    max_attempts = 10
-    quote_number = None
     
-    for attempt in range(max_attempts):
-        # Get count of non-deleted quotes for this year
-        count = db.query(QuoteModel).filter(
-            and_(
-                QuoteModel.quote_number.like(f"QT-{year}-%"),
-                QuoteModel.is_deleted == False
-            )
-        ).count()
-        
-        # Generate quote number
-        quote_number = f"QT-{year}-{str(count + 1).zfill(3)}"
-        
-        # Check if this number already exists (including deleted ones)
-        existing = db.query(QuoteModel).filter(
-            QuoteModel.quote_number == quote_number
-        ).first()
-        
-        if not existing:
-            break
-        
-        # If exists, try next number
-        if attempt == max_attempts - 1:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Unable to generate unique quote number. Please try again."
-            )
+    # Get all quote numbers for this year (including deleted ones)
+    existing_quotes = db.query(QuoteModel.quote_number).filter(
+        QuoteModel.quote_number.like(f"QT-{year}-%")
+    ).all()
+    
+    # Extract numbers and find the maximum
+    max_number = 0
+    for (quote_num,) in existing_quotes:
+        try:
+            # Extract the number part (e.g., "QT-2025-028" -> 28)
+            num_part = int(quote_num.split('-')[-1])
+            if num_part > max_number:
+                max_number = num_part
+        except (ValueError, IndexError):
+            continue
+    
+    # Generate next quote number
+    quote_number = f"QT-{year}-{str(max_number + 1).zfill(3)}"
     
     # Handle empty strings for UUIDs
     client_uuid = None

@@ -56,7 +56,6 @@ function SalesRepDashboard() {
         setLoading(false);
       }
     };
-    
     fetchDashboardData();
   }, []);
   
