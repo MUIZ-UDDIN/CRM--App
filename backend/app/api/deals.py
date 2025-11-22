@@ -158,6 +158,7 @@ def create_deal(
     """Create a new deal"""
     import logging
     logger = logging.getLogger(__name__)
+    print(f"🚀🚀🚀 CREATE_DEAL FUNCTION CALLED - User: {current_user.get('id')}, Deal: {deal.title}")
     logger.info(f"🚀 CREATE_DEAL ENDPOINT CALLED - User: {current_user.get('id')}, Deal: {deal.title}")
     
     from ..models.deals import Pipeline, PipelineStage
