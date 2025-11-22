@@ -101,9 +101,12 @@ class NotificationService:
         deal_value: float
     ):
         """Notify admins and managers when a deal is created"""
+        logger.info(f"notify_deal_created called: deal_id={deal_id}, company_id={company_id}, creator_id={creator_id}")
         recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=creator_id)
+        logger.info(f"Found {len(recipients)} recipients for deal notification")
         
         for recipient in recipients:
+            logger.info(f"Creating notification for user: {recipient.email} (role: {recipient.user_role})")
             NotificationService._create_notification(
                 db=db,
                 user_id=recipient.id,
