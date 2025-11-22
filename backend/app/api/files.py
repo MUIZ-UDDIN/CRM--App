@@ -225,6 +225,23 @@ async def upload_file(
     
     print(f"Uploaded file - folder_id: {new_file.folder_id}")
     
+    # Send file upload notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        uploader = db.query(User).filter(User.id == user_id).first()
+        uploader_name = f"{uploader.first_name} {uploader.last_name}" if uploader else "Unknown User"
+        
+        NotificationService.notify_file_uploaded(
+            db=db,
+            file_name=new_file.name,
+            uploader_id=user_id,
+            uploader_name=uploader_name,
+            company_id=company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send file upload notification: {e}")
+    
     return FileResponse(
         id=str(new_file.id),
         name=new_file.name,

@@ -118,6 +118,20 @@ async def create_ticket(
         except Exception:
             creator_name = "Unknown"
         
+        # Send creation notification
+        try:
+            from app.services.notification_service import NotificationService
+            NotificationService.notify_support_ticket_created(
+                db=db,
+                ticket_id=new_ticket.id,
+                ticket_subject=new_ticket.subject,
+                creator_id=new_ticket.created_by_id,
+                creator_name=creator_name,
+                company_id=new_ticket.company_id
+            )
+        except Exception as e:
+            print(f"⚠️ Failed to send support ticket creation notification: {e}")
+        
         return TicketResponse(
             id=str(new_ticket.id),
             subject=new_ticket.subject,
@@ -409,7 +423,7 @@ async def delete_ticket(
             detail="You can only delete tickets from your company"
         )
     
-    ticket_title = ticket.title
+    ticket_subject = ticket.subject  # Fixed: use 'subject' not 'title'
     ticket_company_id = ticket.company_id
     
     db.delete(ticket)
@@ -424,7 +438,7 @@ async def delete_ticket(
         
         NotificationService.notify_support_ticket_deleted(
             db=db,
-            ticket_title=ticket_title,
+            ticket_title=ticket_subject,  # Pass subject as ticket_title
             deleter_id=uuid.UUID(current_user['id']),
             deleter_name=deleter_name,
             company_id=ticket_company_id
