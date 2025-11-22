@@ -242,41 +242,56 @@ export default function Notifications() {
                 return (
                   <div
                     key={notification.id}
-                    className={`px-6 py-4 hover:bg-gray-50 transition-colors duration-200 ${
-                      !notification.read ? 'bg-blue-50' : ''
-                    }`}
+                    onClick={() => {
+                      if (notification.link) {
+                        window.location.href = notification.link;
+                      }
+                    }}
+                    className={`px-6 py-4 transition-all duration-200 ${
+                      !notification.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
+                    } ${notification.link ? 'hover:bg-gray-50 cursor-pointer hover:shadow-md' : ''}`}
                   >
                     <div className="flex items-start space-x-4">
-                      <div className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center ${iconColor}`}>
-                        <Icon className="h-5 w-5" />
+                      <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${iconColor} shadow-sm`}>
+                        <Icon className="h-6 w-6" />
                       </div>
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <p className={`text-sm font-medium ${
-                              !notification.read ? 'text-gray-900' : 'text-gray-700'
-                            }`}>
-                              {notification.title}
-                            </p>
-                            <p className="text-sm text-gray-600 mt-1">
+                            <div className="flex items-center gap-2">
+                              <p className={`text-sm font-semibold ${
+                                !notification.read ? 'text-gray-900' : 'text-gray-700'
+                              }`}>
+                                {notification.title}
+                              </p>
+                              {!notification.read && (
+                                <span className="flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-blue-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                               {notification.message}
                             </p>
+                            {notification.link && (
+                              <p className="text-xs text-primary-600 mt-2 font-medium hover:underline">
+                                Click to view details →
+                              </p>
+                            )}
                           </div>
                           
-                          <div className="flex items-center space-x-2 ml-4">
-                            <span className="text-xs text-gray-400 whitespace-nowrap">
+                          <div className="flex flex-col items-end space-y-2 ml-4">
+                            <span className="text-xs text-gray-500 whitespace-nowrap font-medium">
                               {formatTime(notification.created_at)}
                             </span>
-                            {!notification.read && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            )}
                           </div>
                         </div>
                         
                         <div className="flex items-center justify-between mt-3">
                           <div className="flex items-center space-x-3">
-                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold shadow-sm ${
                               notification.type === 'error' ? 'bg-red-100 text-red-800' :
                               notification.type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
                               notification.type === 'success' ? 'bg-green-100 text-green-800' :
@@ -289,15 +304,23 @@ export default function Notifications() {
                           <div className="flex items-center space-x-2">
                             {!notification.read && (
                               <button
-                                onClick={() => handleMarkAsRead(notification.id)}
-                                className="text-xs text-primary-600 hover:text-primary-800 font-medium"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleMarkAsRead(notification.id);
+                                }}
+                                className="text-xs text-primary-600 hover:text-primary-800 font-medium px-3 py-1 rounded-md hover:bg-primary-50 transition-colors"
                               >
-                                Mark as read
+                                <CheckIcon className="h-3 w-3 inline mr-1" />
+                                Mark read
                               </button>
                             )}
                             <button
-                              onClick={() => handleDeleteNotification(notification.id)}
-                              className="text-gray-400 hover:text-red-500 transition-colors duration-200"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteNotification(notification.id);
+                              }}
+                              className="text-gray-400 hover:text-red-500 transition-colors duration-200 p-2 rounded-md hover:bg-red-50"
+                              title="Delete notification"
                             >
                               <TrashIcon className="h-4 w-4" />
                             </button>
