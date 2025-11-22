@@ -433,6 +433,23 @@ def delete_activity(
     
     db.commit()
     
+    # Send deletion notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        deleter = db.query(User).filter(User.id == user_id).first()
+        deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+        
+        NotificationService.notify_activity_deleted(
+            db=db,
+            activity_type=activity.activity_type.value if activity.activity_type else "activity",
+            deleter_id=user_id,
+            deleter_name=deleter_name,
+            company_id=company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send activity deletion notification: {e}")
+    
     return {
         "message": "Activity deleted successfully",
         "id": str(activity_id)

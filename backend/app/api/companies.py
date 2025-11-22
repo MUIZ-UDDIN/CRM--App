@@ -573,13 +573,33 @@ def delete_company(
             detail=f"Failed to delete users: {str(e)}"
         )
     
+    # Store company info for notification
+    company_name = company.name
+    company_id_for_notif = company.id
+    
     # Expunge the company to avoid lazy loading relationships
     db.expunge(company)
     
     # Finally delete the company using raw delete
     try:
-        db.query(Company).filter(Company.id == company.id).delete(synchronize_session=False)
+        db.query(Company).filter(Company.id == company_id_for_notif).delete(synchronize_session=False)
         db.commit()
+        
+        # Send deletion notification to super admins
+        try:
+            from app.services.notification_service import NotificationService
+            deleter = db.query(User).filter(User.id == current_user.get("id")).first()
+            deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Super Admin"
+            
+            NotificationService.notify_company_deleted(
+                db=db,
+                company_name=company_name,
+                deleter_id=deleter.id,
+                deleter_name=deleter_name
+            )
+        except Exception as e:
+            print(f"⚠️ Failed to send company deletion notification: {e}")
+            
     except Exception as e:
         print(f"Error deleting company: {e}")
         db.rollback()

@@ -409,8 +409,28 @@ async def delete_ticket(
             detail="You can only delete tickets from your company"
         )
     
+    ticket_title = ticket.title
+    ticket_company_id = ticket.company_id
+    
     db.delete(ticket)
     db.commit()
+    
+    # Send deletion notification
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        deleter = db.query(User).filter(User.id == uuid.UUID(current_user['id'])).first()
+        deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
+        
+        NotificationService.notify_support_ticket_deleted(
+            db=db,
+            ticket_title=ticket_title,
+            deleter_id=uuid.UUID(current_user['id']),
+            deleter_name=deleter_name,
+            company_id=ticket_company_id
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send support ticket deletion notification: {e}")
     
     return {"message": "Ticket deleted successfully"}
 

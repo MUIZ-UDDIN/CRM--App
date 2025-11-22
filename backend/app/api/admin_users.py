@@ -407,8 +407,27 @@ def delete_user(
     
     # Delete user (cascade delete will handle other related data)
     try:
+        deleted_user_name = f"{user_to_delete.first_name} {user_to_delete.last_name}"
+        company_id = user_to_delete.company_id
+        
         db.delete(user_to_delete)
         db.commit()
+        
+        # Send deletion notification
+        try:
+            from app.services.notification_service import NotificationService
+            deleter_name = f"{admin_user.first_name} {admin_user.last_name}" if admin_user else "Super Admin"
+            
+            NotificationService.notify_user_deleted(
+                db=db,
+                deleted_user_name=deleted_user_name,
+                deleter_id=admin_user.id,
+                deleter_name=deleter_name,
+                company_id=company_id
+            )
+        except Exception as e:
+            print(f"⚠️ Failed to send user deletion notification: {e}")
+            
     except Exception as e:
         print(f"Error deleting user: {e}")
         db.rollback()
