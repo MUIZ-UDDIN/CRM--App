@@ -20,7 +20,7 @@ class NotificationService:
     
     @staticmethod
     def _get_admins_and_managers(db: Session, company_id: uuid.UUID, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
-        """Get all admins and managers in a company"""
+        """Get all admins and managers in a company, excluding the action performer"""
         query = db.query(User).filter(
             User.company_id == company_id,
             User.is_deleted == False,
@@ -35,7 +35,7 @@ class NotificationService:
     
     @staticmethod
     def _get_company_admins(db: Session, company_id: uuid.UUID, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
-        """Get all company admins"""
+        """Get all company admins and super admins in a company, excluding the action performer"""
         query = db.query(User).filter(
             User.company_id == company_id,
             User.is_deleted == False,
@@ -105,16 +105,34 @@ class NotificationService:
             print(f"🔔 notify_deal_created called: deal_id={deal_id}, company_id={company_id}, creator_id={creator_id}")
             logger.info(f"notify_deal_created called: deal_id={deal_id}, company_id={company_id}, creator_id={creator_id}")
             
-            print(f"🔔 Calling _get_admins_and_managers...")
+            print(f"🔔 Getting recipients for deal notification...")
             
-            # Debug: Check all users in company
+            # Get creator's role to determine who to notify
             from ..models.users import User
-            all_company_users = db.query(User).filter(User.company_id == company_id, User.is_deleted == False).all()
-            print(f"🔍 DEBUG: Total users in company {company_id}: {len(all_company_users)}")
-            for u in all_company_users:
-                print(f"🔍 User: {u.email}, Role: {u.user_role}, Status: {u.status}, ID: {u.id}")
+            creator = db.query(User).filter(User.id == creator_id).first()
+            creator_role = creator.user_role if creator else None
+            print(f"🔍 Creator role: {creator_role}")
             
-            recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=creator_id)
+            recipients = []
+            
+            # Notify based on creator's role:
+            # - If Sales Rep/Sales Manager creates: notify admins and managers (excluding self)
+            # - If Company Admin creates: notify super admins and other company admins
+            # - If Super Admin creates: notify other super admins
+            
+            if creator_role in ['sales_rep', 'sales_manager']:
+                # Notify all admins and managers in the company (excluding creator)
+                recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=creator_id)
+            elif creator_role == 'company_admin':
+                # Notify super admins and other company admins
+                recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+                # Also notify super admins from other companies
+                super_admins = NotificationService._get_super_admins(db, exclude_user_id=creator_id)
+                recipients.extend(super_admins)
+            elif creator_role == 'super_admin':
+                # Notify other super admins
+                recipients = NotificationService._get_super_admins(db, exclude_user_id=creator_id)
+            
             print(f"🔔 Found {len(recipients)} recipients for deal notification")
             logger.info(f"Found {len(recipients)} recipients for deal notification")
             
