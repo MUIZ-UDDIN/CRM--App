@@ -128,6 +128,9 @@ def get_activities(
     if deal_id:
         query = query.filter(ActivityModel.deal_id == deal_id)
     
+    # Sort by newest first (most recent at top)
+    query = query.order_by(ActivityModel.created_at.desc())
+    
     activities = query.all()
     
     # Enrich activities with owner and company names
