@@ -157,6 +157,7 @@ def create_deal(
 ):
     """Create a new deal"""
     import logging
+    import traceback as tb
     logger = logging.getLogger(__name__)
     print(f"🚀🚀🚀 CREATE_DEAL FUNCTION CALLED - User: {current_user.get('id')}, Deal: {deal.title}")
     logger.info(f"🚀 CREATE_DEAL ENDPOINT CALLED - User: {current_user.get('id')}, Deal: {deal.title}")
@@ -165,9 +166,12 @@ def create_deal(
     import traceback
     
     try:
+        print("Step 1: Parsing user_id...")
         user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+        print(f"Step 1 complete: user_id={user_id}")
     except Exception as e:
         print(f"Error parsing user_id: {e}")
+        print(f"Traceback: {tb.format_exc()}")
         raise HTTPException(status_code=400, detail=f"Invalid user ID: {str(e)}")
     
     # Get default pipeline if pipeline_id not provided or invalid
@@ -262,9 +266,11 @@ def create_deal(
             updated_at=datetime.utcnow()
         )
         
+        print("Step 2: Adding deal to database...")
         db.add(new_deal)
         db.commit()
         db.refresh(new_deal)
+        print(f"Step 2 complete: Deal created with ID={new_deal.id}")
         
         # Trigger workflows for deal_created
         try:
@@ -306,10 +312,12 @@ def create_deal(
             # Don't fail the deal creation if workflows fail
             print(f"Workflow trigger error: {workflow_error}")
         
+        print(f"Step 3: Workflows triggered, now sending notifications...")
         logger.info(f"✅ Deal created successfully: {new_deal.id}, now sending notifications...")
         
         # Send notifications
         try:
+            print(f"Step 4: Calling NotificationService...")
             logger.info(f"🔔 Attempting to send deal creation notification for deal: {new_deal.id}")
             
             from ..services.notification_service import NotificationService
