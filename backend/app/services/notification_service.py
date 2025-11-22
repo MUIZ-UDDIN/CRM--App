@@ -301,7 +301,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify admins when a contact is created"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        # Get all admins INCLUDING the creator (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -756,7 +757,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when a contact is deleted"""
-        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins and managers INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_admins_and_managers(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -778,7 +780,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when a pipeline is deleted"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -800,7 +803,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when a quote is deleted"""
-        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins and managers INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_admins_and_managers(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -822,7 +826,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when a workflow is deleted"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -844,7 +849,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when a file is deleted"""
-        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins and managers INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_admins_and_managers(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -866,7 +872,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when an activity is deleted"""
-        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins and managers INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_admins_and_managers(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -888,7 +895,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when a user is deleted"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -910,7 +918,8 @@ class NotificationService:
         company_id: uuid.UUID
     ):
         """Notify when a support ticket is deleted"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=deleter_id)
+        # Get all admins INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_company_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -931,7 +940,8 @@ class NotificationService:
         deleter_name: str
     ):
         """Notify super admins when a company is deleted"""
-        recipients = NotificationService._get_super_admins(db, exclude_user_id=deleter_id)
+        # Get all super admins INCLUDING the deleter (no exclusion)
+        recipients = NotificationService._get_super_admins(db)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
