@@ -101,12 +101,18 @@ class NotificationService:
         deal_value: float
     ):
         """Notify admins and managers when a deal is created"""
-        logger.info(f"notify_deal_created called: deal_id={deal_id}, company_id={company_id}, creator_id={creator_id}")
-        recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=creator_id)
-        logger.info(f"Found {len(recipients)} recipients for deal notification")
-        
-        for recipient in recipients:
-            logger.info(f"Creating notification for user: {recipient.email} (role: {recipient.user_role})")
+        try:
+            print(f"🔔 notify_deal_created called: deal_id={deal_id}, company_id={company_id}, creator_id={creator_id}")
+            logger.info(f"notify_deal_created called: deal_id={deal_id}, company_id={company_id}, creator_id={creator_id}")
+            
+            print(f"🔔 Calling _get_admins_and_managers...")
+            recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=creator_id)
+            print(f"🔔 Found {len(recipients)} recipients for deal notification")
+            logger.info(f"Found {len(recipients)} recipients for deal notification")
+            
+            for recipient in recipients:
+                print(f"🔔 Creating notification for user: {recipient.email} (role: {recipient.user_role})")
+                logger.info(f"Creating notification for user: {recipient.email} (role: {recipient.user_role})")
             NotificationService._create_notification(
                 db=db,
                 user_id=recipient.id,
@@ -116,9 +122,16 @@ class NotificationService:
                 notification_type=NotificationType.SUCCESS,
                 link=f"/deals/{deal_id}"
             )
-        
-        db.commit()
-        logger.info(f"Notified {len(recipients)} users about new deal: {deal_title}")
+            
+            print(f"🔔 Committing notifications to database...")
+            db.commit()
+            print(f"🔔 SUCCESS: Notified {len(recipients)} users about new deal: {deal_title}")
+            logger.info(f"Notified {len(recipients)} users about new deal: {deal_title}")
+        except Exception as e:
+            print(f"❌ ERROR in notify_deal_created: {e}")
+            import traceback
+            print(f"❌ Traceback: {traceback.format_exc()}")
+            logger.error(f"Error in notify_deal_created: {e}")
     
     @staticmethod
     def notify_deal_updated(
