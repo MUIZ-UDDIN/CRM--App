@@ -234,6 +234,25 @@ async def create_workflow(
     db.commit()
     db.refresh(new_workflow)
     
+    # Send notifications
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        
+        creator = db.query(User).filter(User.id == user_id).first()
+        creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+        
+        NotificationService.notify_workflow_created(
+            db=db,
+            workflow_id=new_workflow.id,
+            workflow_name=new_workflow.name,
+            creator_id=user_id,
+            creator_name=creator_name,
+            company_id=company_id
+        )
+    except Exception as notification_error:
+        print(f"Notification error: {notification_error}")
+    
     return WorkflowResponse(
         id=str(new_workflow.id),
         name=new_workflow.name,

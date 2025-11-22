@@ -99,6 +99,28 @@ async def create_pipeline(
     db.add(new_pipeline)
     db.commit()
     db.refresh(new_pipeline)
+    
+    # Send notifications
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        import uuid
+        
+        user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+        creator = db.query(User).filter(User.id == user_id).first()
+        creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+        
+        NotificationService.notify_pipeline_created(
+            db=db,
+            pipeline_id=new_pipeline.id,
+            pipeline_name=new_pipeline.name,
+            creator_id=user_id,
+            creator_name=creator_name,
+            company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+        )
+    except Exception as notification_error:
+        print(f"Notification error: {notification_error}")
+    
     return new_pipeline
 
 

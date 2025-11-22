@@ -155,6 +155,25 @@ async def create_custom_field(
         db.commit()
         db.refresh(new_field)
         
+        # Send notifications
+        try:
+            from app.services.notification_service import NotificationService
+            from app.models.users import User
+            
+            creator = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
+            creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+            
+            NotificationService.notify_custom_field_added(
+                db=db,
+                field_name=new_field.name,
+                entity_type=new_field.entity_type.value,
+                creator_id=uuid.UUID(user_id),
+                creator_name=creator_name,
+                company_id=uuid.UUID(company_id)
+            )
+        except Exception as notification_error:
+            print(f"Notification error: {notification_error}")
+        
         return CustomFieldResponse(
             id=str(new_field.id),
             name=new_field.name,

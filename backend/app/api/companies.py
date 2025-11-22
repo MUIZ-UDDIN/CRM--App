@@ -185,6 +185,25 @@ def create_company(
     print(f"Admin email: {company.admin_email}")
     print(f"Temporary password: {temp_password}")
     
+    # Send notifications to all super admins
+    try:
+        from app.services.notification_service import NotificationService
+        import uuid
+        
+        creator_id = uuid.UUID(current_user.get('id')) if current_user.get('id') else None
+        creator = db.query(User).filter(User.id == creator_id).first() if creator_id else None
+        creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Super Admin"
+        
+        NotificationService.notify_company_created(
+            db=db,
+            company_id=db_company.id,
+            company_name=db_company.name,
+            creator_id=creator_id,
+            creator_name=creator_name
+        )
+    except Exception as notification_error:
+        print(f"Notification error: {notification_error}")
+    
     # Return company with admin credentials
     return CompanyCreateResponse(
         id=str(db_company.id),

@@ -271,6 +271,26 @@ async def create_quote(
     db.commit()
     db.refresh(quote)
     
+    # Send notifications
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        
+        creator = db.query(User).filter(User.id == user_id).first()
+        creator_name = f"{creator.first_name} {creator.last_name}" if creator else "Unknown User"
+        
+        NotificationService.notify_quote_created(
+            db=db,
+            quote_id=quote.id,
+            quote_title=quote.title,
+            creator_id=user_id,
+            creator_name=creator_name,
+            company_id=company_id,
+            quote_amount=float(quote.amount)
+        )
+    except Exception as notification_error:
+        print(f"Notification error: {notification_error}")
+    
     return QuoteResponse(
         id=str(quote.id),
         quote_number=quote.quote_number,
