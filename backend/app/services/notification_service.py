@@ -106,6 +106,14 @@ class NotificationService:
             logger.info(f"notify_deal_created called: deal_id={deal_id}, company_id={company_id}, creator_id={creator_id}")
             
             print(f"🔔 Calling _get_admins_and_managers...")
+            
+            # Debug: Check all users in company
+            from ..models.users import User
+            all_company_users = db.query(User).filter(User.company_id == company_id, User.is_deleted == False).all()
+            print(f"🔍 DEBUG: Total users in company {company_id}: {len(all_company_users)}")
+            for u in all_company_users:
+                print(f"🔍 User: {u.email}, Role: {u.user_role}, Status: {u.status}, ID: {u.id}")
+            
             recipients = NotificationService._get_admins_and_managers(db, company_id, exclude_user_id=creator_id)
             print(f"🔔 Found {len(recipients)} recipients for deal notification")
             logger.info(f"Found {len(recipients)} recipients for deal notification")
@@ -113,15 +121,15 @@ class NotificationService:
             for recipient in recipients:
                 print(f"🔔 Creating notification for user: {recipient.email} (role: {recipient.user_role})")
                 logger.info(f"Creating notification for user: {recipient.email} (role: {recipient.user_role})")
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="New Deal Created",
-                message=f"{creator_name} created a new deal: {deal_title} (${deal_value:,.2f})",
-                notification_type=NotificationType.SUCCESS,
-                link=f"/deals/{deal_id}"
-            )
+                NotificationService._create_notification(
+                    db=db,
+                    user_id=recipient.id,
+                    company_id=company_id,
+                    title="New Deal Created",
+                    message=f"{creator_name} created a new deal: {deal_title} (${deal_value:,.2f})",
+                    notification_type=NotificationType.SUCCESS,
+                    link=f"/deals/{deal_id}"
+                )
             
             print(f"🔔 Committing notifications to database...")
             db.commit()
