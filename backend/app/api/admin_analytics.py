@@ -130,8 +130,11 @@ async def get_admin_dashboard_analytics(
         
         # Apply role-based filtering
         if user_role == 'super_admin':
-            # Super Admin sees all stages from all companies
-            pass
+            # Super Admin sees all stages from all companies (or their own company if they have one)
+            if company_id:
+                stages_query = stages_query.join(
+                    Pipeline, PipelineStage.pipeline_id == Pipeline.id
+                ).filter(Pipeline.company_id == company_id)
         elif user_role == 'company_admin' and company_id:
             # Company Admin sees only their company's stages
             stages_query = stages_query.join(
