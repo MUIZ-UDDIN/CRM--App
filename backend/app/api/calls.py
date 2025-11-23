@@ -207,6 +207,26 @@ async def make_call(
         db.commit()
         db.refresh(call_record)
         
+        # Broadcast WebSocket event for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(company_id),
+                    entity_type="call",
+                    action="created",
+                    entity_id=str(call_record.id),
+                    data={
+                        "id": str(call_record.id),
+                        "to_address": call_record.to_address,
+                        "status": call_record.status.value
+                    }
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+        
         return {
             "success": True,
             "call_id": str(call_record.id),
