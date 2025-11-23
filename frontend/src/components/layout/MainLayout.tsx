@@ -148,11 +148,11 @@ export default function MainLayout() {
     fetchUnreadCount();
     fetchUserProfile();
     
-    // Poll for new notifications every 30 seconds
+    // Poll for new notifications every 5 seconds for immediate updates
     const notificationInterval = setInterval(() => {
       fetchNotifications();
       fetchUnreadCount();
-    }, 30000);
+    }, 5000);
     
     // Listen for avatar updates
     const handleAvatarUpdate = (event: any) => {
@@ -232,14 +232,13 @@ export default function MainLayout() {
     };
   }, []);
 
-  // WebSocket for real-time notifications - DISABLED (backend doesn't support WebSocket yet)
-  // TODO: Re-enable when backend WebSocket support is added
+  // WebSocket for real-time notifications with polling fallback
   useEffect(() => {
-    // Polling fallback for notifications - check every 30 seconds
+    // Polling fallback for notifications - check every 5 seconds for immediate updates
     const pollInterval = setInterval(() => {
       fetchNotifications();
       fetchUnreadCount();
-    }, 30000);
+    }, 5000);
     
     // Listen for logout event to stop polling
     const handleLogout = () => {

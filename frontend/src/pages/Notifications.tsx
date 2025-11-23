@@ -10,7 +10,9 @@ import {
   PhoneIcon,
   CalendarIcon,
   CurrencyDollarIcon,
-  UserGroupIcon
+  UserGroupIcon,
+  MagnifyingGlassIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 
 interface Notification {
@@ -28,6 +30,7 @@ export default function Notifications() {
   const [showFilters, setShowFilters] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     fetchNotifications();
@@ -83,10 +86,33 @@ export default function Notifications() {
     }
   };
 
+  // Helper function to categorize notifications based on title/message
+  const getNotificationCategory = (notification: Notification): string => {
+    const text = `${notification.title} ${notification.message}`.toLowerCase();
+    if (text.includes('deal')) return 'deal';
+    if (text.includes('meeting') || text.includes('activity')) return 'activity';
+    if (text.includes('contact')) return 'contact';
+    if (text.includes('workflow')) return 'workflow';
+    if (text.includes('file') || text.includes('folder')) return 'file';
+    if (text.includes('ticket') || text.includes('support')) return 'support';
+    if (text.includes('quote')) return 'quote';
+    return 'other';
+  };
+
   const filteredNotifications = notifications.filter(notification => {
+    // Apply search filter
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSearch = 
+        notification.title.toLowerCase().includes(searchLower) ||
+        notification.message.toLowerCase().includes(searchLower);
+      if (!matchesSearch) return false;
+    }
+    
+    // Apply category filter
     if (filter === 'all') return true;
     if (filter === 'unread') return !notification.read;
-    return notification.type === filter;
+    return getNotificationCategory(notification) === filter;
   });
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -149,9 +175,13 @@ export default function Notifications() {
   const filterOptions = [
     { value: 'all', label: 'All', count: notifications.length },
     { value: 'unread', label: 'Unread', count: unreadCount },
-    { value: 'deal', label: 'Deals', count: notifications.filter(n => n.type === 'deal').length },
-    { value: 'meeting', label: 'Meetings', count: notifications.filter(n => n.type === 'meeting').length },
-    { value: 'email', label: 'Emails', count: notifications.filter(n => n.type === 'email').length }
+    { value: 'deal', label: 'Deals', count: notifications.filter(n => getNotificationCategory(n) === 'deal').length },
+    { value: 'activity', label: 'Activities', count: notifications.filter(n => getNotificationCategory(n) === 'activity').length },
+    { value: 'contact', label: 'Contacts', count: notifications.filter(n => getNotificationCategory(n) === 'contact').length },
+    { value: 'workflow', label: 'Workflows', count: notifications.filter(n => getNotificationCategory(n) === 'workflow').length },
+    { value: 'file', label: 'Files', count: notifications.filter(n => getNotificationCategory(n) === 'file').length },
+    { value: 'support', label: 'Support', count: notifications.filter(n => getNotificationCategory(n) === 'support').length },
+    { value: 'quote', label: 'Quotes', count: notifications.filter(n => getNotificationCategory(n) === 'quote').length }
   ];
 
   return (
@@ -189,6 +219,30 @@ export default function Notifications() {
 
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
         <div className="bg-white shadow rounded-lg">
+          {/* Search Bar */}
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search notifications..."
+                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Filter Tabs */}
           <div className="border-b border-gray-200">
             <div className="px-4 sm:px-6 py-3 sm:py-4">

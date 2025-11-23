@@ -418,15 +418,18 @@ def delete_activity(
     try:
         from app.services.notification_service import NotificationService
         from app.models.users import User
-        deleter = db.query(User).filter(User.id == user_id).first()
+        
+        # Get user_id from current_user
+        deleter_id = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+        deleter = db.query(User).filter(User.id == deleter_id).first()
         deleter_name = f"{deleter.first_name} {deleter.last_name}" if deleter else "Unknown User"
         
         NotificationService.notify_activity_deleted(
             db=db,
-            activity_type=activity.type.value if activity.type else "activity",  # Fixed: use 'type' not 'activity_type'
-            deleter_id=user_id,
+            activity_type=activity.type.value if activity.type else "activity",
+            deleter_id=deleter_id,
             deleter_name=deleter_name,
-            company_id=company_id
+            company_id=activity.company_id  # Use activity's company_id
         )
     except Exception as e:
         print(f"⚠️ Failed to send activity deletion notification: {e}")
