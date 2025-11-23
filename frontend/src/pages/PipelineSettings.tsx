@@ -91,6 +91,30 @@ export default function PipelineSettings() {
     }
   }, [selectedPipeline]);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh pipeline stages when any stage is created, updated, or deleted
+      if (entity_type === 'pipeline_stage') {
+        console.log(`🔄 Pipeline stage ${action} detected, refreshing stages...`);
+        if (selectedPipeline) {
+          fetchPipelineStages(selectedPipeline);
+        }
+      }
+      
+      // Refresh pipelines list when pipeline is created, updated, or deleted
+      if (entity_type === 'pipeline') {
+        console.log(`🔄 Pipeline ${action} detected, refreshing pipelines...`);
+        fetchPipelines();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, [selectedPipeline]);
+
   const fetchPipelines = async () => {
     setLoading(true);
     try {

@@ -320,6 +320,26 @@ async def create_stage(
         db.commit()
         db.refresh(new_stage)
         
+        # Broadcast WebSocket event for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(pipeline.company_id),
+                    entity_type="pipeline_stage",
+                    action="created",
+                    entity_id=str(new_stage.id),
+                    data={
+                        "id": str(new_stage.id),
+                        "pipeline_id": str(pipeline_id),
+                        "name": new_stage.name
+                    }
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+        
         return new_stage
     except Exception as e:
         db.rollback()
@@ -354,6 +374,29 @@ async def update_stage(
     stage.updated_at = datetime.utcnow()
     db.commit()
     db.refresh(stage)
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        # Get pipeline to access company_id
+        pipeline = db.query(Pipeline).filter(Pipeline.id == stage.pipeline_id).first()
+        if pipeline:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(pipeline.company_id),
+                    entity_type="pipeline_stage",
+                    action="updated",
+                    entity_id=str(stage.id),
+                    data={
+                        "id": str(stage.id),
+                        "pipeline_id": str(stage.pipeline_id),
+                        "name": stage.name
+                    }
+                ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return stage
 
@@ -391,9 +434,29 @@ async def delete_stage(
             detail=f"Cannot delete stage with {deal_count} active deals. Please move them first."
         )
     
+    # Get pipeline before deleting to access company_id
+    pipeline = db.query(Pipeline).filter(Pipeline.id == stage.pipeline_id).first()
+    
     stage.is_deleted = True
     stage.updated_at = datetime.utcnow()
     db.commit()
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        if pipeline:
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(pipeline.company_id),
+                    entity_type="pipeline_stage",
+                    action="deleted",
+                    entity_id=str(stage_id),
+                    data=None
+                ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "Stage deleted successfully"}
 
