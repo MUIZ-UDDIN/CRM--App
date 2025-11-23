@@ -133,6 +133,27 @@ async def create_ticket(
         except Exception as e:
             print(f"⚠️ Failed to send support ticket creation notification: {e}")
         
+        # Broadcast WebSocket event for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(new_ticket.company_id),
+                    entity_type="support_ticket",
+                    action="created",
+                    entity_id=str(new_ticket.id),
+                    data={
+                        "id": str(new_ticket.id),
+                        "subject": new_ticket.subject,
+                        "status": new_ticket.status.value,
+                        "priority": new_ticket.priority.value
+                    }
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+        
         return TicketResponse(
             id=str(new_ticket.id),
             subject=new_ticket.subject,
@@ -369,6 +390,27 @@ async def update_ticket(
     db.commit()
     db.refresh(ticket)
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(ticket.company_id),
+                entity_type="support_ticket",
+                action="updated",
+                entity_id=str(ticket.id),
+                data={
+                    "id": str(ticket.id),
+                    "subject": ticket.subject,
+                    "status": ticket.status.value,
+                    "priority": ticket.priority.value
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     creator = db.query(User).filter(User.id == ticket.created_by_id).first()
     assigned_to = db.query(User).filter(User.id == ticket.assigned_to_id).first() if ticket.assigned_to_id else None
     
@@ -426,6 +468,7 @@ async def delete_ticket(
     
     ticket_subject = ticket.subject  # Fixed: use 'subject' not 'title'
     ticket_company_id = ticket.company_id
+    ticket_id_str = str(ticket.id)
     
     db.delete(ticket)
     db.commit()
@@ -446,6 +489,22 @@ async def delete_ticket(
         )
     except Exception as e:
         print(f"⚠️ Failed to send support ticket deletion notification: {e}")
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(ticket_company_id),
+                entity_type="support_ticket",
+                action="deleted",
+                entity_id=ticket_id_str,
+                data=None
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "Ticket deleted successfully"}
 

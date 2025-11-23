@@ -58,6 +58,22 @@ export default function SupportTickets() {
     fetchAvailableUsers();
   }, [filterStatus, filterPriority]);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh support tickets when any ticket is created, updated, or deleted
+      if (entity_type === 'support_ticket') {
+        console.log(`🔄 Support ticket ${action} detected, refreshing tickets...`);
+        fetchTickets();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, []);
+
   const fetchAvailableUsers = async () => {
     try {
       const response = await apiClient.get('/users/');

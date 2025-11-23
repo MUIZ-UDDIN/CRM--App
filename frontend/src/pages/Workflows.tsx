@@ -78,6 +78,22 @@ export default function Workflows() {
     fetchWorkflows();
   }, []);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh workflows when any workflow is created, updated, or deleted
+      if (entity_type === 'workflow') {
+        console.log(`🔄 Workflow ${action} detected, refreshing workflows...`);
+        fetchWorkflows();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, []);
+
   const fetchWorkflows = async () => {
     setLoading(true);
     try {

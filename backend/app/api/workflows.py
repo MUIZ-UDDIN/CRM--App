@@ -253,6 +253,26 @@ async def create_workflow(
     except Exception as notification_error:
         print(f"Notification error: {notification_error}")
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="workflow",
+                action="created",
+                entity_id=str(new_workflow.id),
+                data={
+                    "id": str(new_workflow.id),
+                    "name": new_workflow.name,
+                    "status": new_workflow.status.value
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return WorkflowResponse(
         id=str(new_workflow.id),
         name=new_workflow.name,
@@ -362,6 +382,26 @@ async def update_workflow(
     db.commit()
     db.refresh(workflow)
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="workflow",
+                action="updated",
+                entity_id=str(workflow.id),
+                data={
+                    "id": str(workflow.id),
+                    "name": workflow.name,
+                    "status": workflow.status.value
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return WorkflowResponse(
         id=str(workflow.id),
         name=workflow.name,
@@ -449,6 +489,22 @@ async def delete_workflow(
         )
     except Exception as e:
         print(f"⚠️ Failed to send workflow deletion notification: {e}")
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="workflow",
+                action="deleted",
+                entity_id=str(workflow.id),
+                data=None
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "Workflow deleted successfully"}
 

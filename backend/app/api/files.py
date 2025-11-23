@@ -332,6 +332,27 @@ async def update_file(
     
     print(f"File after update - folder_id: {file.folder_id}")
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="file",
+                action="updated",
+                entity_id=str(file.id),
+                data={
+                    "id": str(file.id),
+                    "name": file.name,
+                    "file_type": file.file_type,
+                    "size": file.size
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return FileResponse(
         id=str(file.id),
         name=file.name,
