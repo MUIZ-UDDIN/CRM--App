@@ -30,33 +30,67 @@ class NotificationService:
     
     @staticmethod
     def _get_admins_and_managers(db: Session, company_id: uuid.UUID, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
-        """Get all admins and managers in a company"""
-        query = db.query(User).filter(
+        """Get all company admins and managers from the specific company + ALL super admins (cross-company)"""
+        # Get company admins and managers from this specific company
+        company_users_query = db.query(User).filter(
             User.company_id == company_id,
             User.is_deleted == False,
             User.status == 'active',
-            User.user_role.in_(['super_admin', 'company_admin', 'sales_manager'])
+            User.user_role.in_(['company_admin', 'sales_manager'])
         )
         
         if exclude_user_id:
-            query = query.filter(User.id != exclude_user_id)
+            company_users_query = company_users_query.filter(User.id != exclude_user_id)
         
-        return query.all()
+        company_users = company_users_query.all()
+        
+        # Get ALL super admins (regardless of company)
+        super_admin_query = db.query(User).filter(
+            User.is_deleted == False,
+            User.status == 'active',
+            User.user_role == 'super_admin'
+        )
+        
+        if exclude_user_id:
+            super_admin_query = super_admin_query.filter(User.id != exclude_user_id)
+        
+        super_admins = super_admin_query.all()
+        
+        # Combine both lists and remove duplicates
+        all_recipients = {user.id: user for user in company_users + super_admins}
+        return list(all_recipients.values())
     
     @staticmethod
     def _get_company_admins(db: Session, company_id: uuid.UUID, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
-        """Get all company admins and super admins in a company, excluding the action performer"""
-        query = db.query(User).filter(
+        """Get all company admins from the specific company + ALL super admins (cross-company)"""
+        # Get company admins from this specific company
+        company_admin_query = db.query(User).filter(
             User.company_id == company_id,
             User.is_deleted == False,
             User.status == 'active',
-            User.user_role.in_(['super_admin', 'company_admin'])
+            User.user_role == 'company_admin'
         )
         
         if exclude_user_id:
-            query = query.filter(User.id != exclude_user_id)
+            company_admin_query = company_admin_query.filter(User.id != exclude_user_id)
         
-        return query.all()
+        company_admins = company_admin_query.all()
+        
+        # Get ALL super admins (regardless of company)
+        super_admin_query = db.query(User).filter(
+            User.is_deleted == False,
+            User.status == 'active',
+            User.user_role == 'super_admin'
+        )
+        
+        if exclude_user_id:
+            super_admin_query = super_admin_query.filter(User.id != exclude_user_id)
+        
+        super_admins = super_admin_query.all()
+        
+        # Combine both lists and remove duplicates
+        all_recipients = {user.id: user for user in company_admins + super_admins}
+        return list(all_recipients.values())
     
     @staticmethod
     def _get_super_admins(db: Session, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
