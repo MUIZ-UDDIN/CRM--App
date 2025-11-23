@@ -121,6 +121,22 @@ async def create_pipeline(
     except Exception as notification_error:
         print(f"Notification error: {notification_error}")
     
+    # Broadcast creation to all connected clients
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="pipeline",
+                action="created",
+                entity_id=str(new_pipeline.id),
+                data={"id": str(new_pipeline.id), "name": new_pipeline.name}
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return new_pipeline
 
 
@@ -164,6 +180,23 @@ async def update_pipeline(
     
     db.commit()
     db.refresh(pipeline)
+    
+    # Broadcast update to all connected clients
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(pipeline.company_id),
+                entity_type="pipeline",
+                action="updated",
+                entity_id=str(pipeline.id),
+                data={"id": str(pipeline.id), "name": pipeline.name}
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return pipeline
 
 
@@ -220,6 +253,21 @@ async def delete_pipeline(
         )
     except Exception as e:
         print(f"⚠️ Failed to send pipeline deletion notification: {e}")
+    
+    # Broadcast deletion to all connected clients
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(pipeline.company_id),
+                entity_type="pipeline",
+                action="deleted",
+                entity_id=str(pipeline_id)
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "Pipeline deleted successfully"}
 

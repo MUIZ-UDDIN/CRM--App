@@ -58,8 +58,62 @@ class WebSocketService {
   }
 
   private handleMessage(data: any) {
-    const { type, payload } = data;
+    const { type, payload, entity_type, action, entity_id, data: entityData } = data;
     
+    // Handle new entity_change format from backend
+    if (type === 'entity_change') {
+      // Emit generic entity_change event
+      this.emit('entity_change', {
+        entity_type,
+        action,
+        entity_id,
+        data: entityData
+      });
+      
+      // Emit specific events for backward compatibility and specific handlers
+      this.emit(`${entity_type}_${action}`, {
+        entity_type,
+        action,
+        entity_id,
+        data: entityData
+      });
+      
+      // Trigger analytics updates based on entity type
+      switch (entity_type) {
+        case 'deal':
+          this.emit('analytics_update', { type: 'pipeline' });
+          if (action === 'updated' && entityData?.status) {
+            this.emit('analytics_update', { type: 'revenue' });
+          }
+          break;
+        case 'activity':
+          this.emit('analytics_update', { type: 'activities' });
+          break;
+        case 'contact':
+          this.emit('analytics_update', { type: 'contacts' });
+          break;
+        case 'quote':
+          this.emit('analytics_update', { type: 'quotes' });
+          break;
+        case 'pipeline':
+        case 'pipeline_stage':
+          this.emit('analytics_update', { type: 'pipeline' });
+          break;
+        case 'team':
+        case 'user':
+          this.emit('analytics_update', { type: 'team' });
+          break;
+      }
+      return;
+    }
+    
+    // Handle new_notification format
+    if (type === 'new_notification') {
+      this.emit('new_notification', data.notification);
+      return;
+    }
+    
+    // Legacy event handlers (keep for backward compatibility)
     switch (type) {
       case 'analytics_update':
         this.emit('analytics_update', payload);

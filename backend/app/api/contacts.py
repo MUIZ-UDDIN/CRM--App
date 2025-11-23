@@ -266,6 +266,27 @@ async def create_contact(
             # Don't fail the contact creation if notifications fail
             print(f"Notification error: {notification_error}")
         
+        # Broadcast creation to all connected clients for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(db_contact.company_id),
+                    entity_type="contact",
+                    action="created",
+                    entity_id=str(db_contact.id),
+                    data={
+                        "id": str(db_contact.id),
+                        "first_name": db_contact.first_name,
+                        "last_name": db_contact.last_name,
+                        "email": db_contact.email
+                    }
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+        
         return db_contact
     except Exception as e:
         db.rollback()
@@ -426,6 +447,28 @@ async def update_contact(
         
         db.commit()
         db.refresh(contact)
+        
+        # Broadcast update to all connected clients for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(contact.company_id),
+                    entity_type="contact",
+                    action="updated",
+                    entity_id=str(contact.id),
+                    data={
+                        "id": str(contact.id),
+                        "first_name": contact.first_name,
+                        "last_name": contact.last_name,
+                        "email": contact.email
+                    }
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+        
         return contact
     except Exception as e:
         db.rollback()
@@ -535,6 +578,21 @@ async def delete_contact(
             )
         except Exception as e:
             print(f"⚠️ Failed to send contact deletion notification: {e}")
+        
+        # Broadcast deletion to all connected clients for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(contact.company_id),
+                    entity_type="contact",
+                    action="deleted",
+                    entity_id=str(contact_id)
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
         
         return {"message": "Contact deleted successfully"}
     except Exception as e:
