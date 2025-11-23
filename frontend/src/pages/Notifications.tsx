@@ -50,6 +50,22 @@ export default function Notifications() {
     };
   }, []);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh notifications when any notification is created or deleted
+      if (entity_type === 'notification') {
+        console.log(`🔄 Notification ${action} detected, refreshing notifications...`);
+        fetchNotifications();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, []);
+
   const fetchNotifications = async () => {
     setLoading(true);
     try {

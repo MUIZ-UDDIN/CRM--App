@@ -279,6 +279,23 @@ async def delete_notification(
     
     notification.is_deleted = True
     db.commit()
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="notification",
+                action="deleted",
+                entity_id=str(notification_id),
+                data=None
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return {"message": "Notification deleted"}
 
 
@@ -427,6 +444,26 @@ async def create_notification(
     db.add(new_notification)
     db.commit()
     db.refresh(new_notification)
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="notification",
+                action="created",
+                entity_id=str(new_notification.id),
+                data={
+                    "id": str(new_notification.id),
+                    "title": new_notification.title,
+                    "type": new_notification.type.value
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return new_notification
 
