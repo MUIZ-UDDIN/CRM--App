@@ -309,7 +309,7 @@ export default function Deals() {
 
     window.addEventListener('entity_change', handleEntityChange);
     return () => window.removeEventListener('entity_change', handleEntityChange);
-  }, []);
+  }, [dynamicStages]);
 
   // Prevent background scroll when modals are open
   useEffect(() => {

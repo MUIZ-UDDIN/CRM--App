@@ -80,16 +80,26 @@ export default function CallsNew() {
       }, 2000);
     });
     
-    // WebSocket disabled - using polling instead (backend doesn't support WebSocket yet)
-    // Polling - check for call updates every 15 seconds
-    const pollInterval = setInterval(() => {
-      fetchCalls();
-    }, 15000);
-    
     return () => {
-      clearInterval(pollInterval);
+      // Cleanup
     };
   }, [selectedTab, token]);
+
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh calls when any call is created
+      if (entity_type === 'call') {
+        console.log(`🔄 Call ${action} detected, refreshing calls...`);
+        fetchCalls();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, [selectedTab]);
 
   const fetchTwilioNumbers = async () => {
     try {

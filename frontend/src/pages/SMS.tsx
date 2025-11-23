@@ -46,6 +46,22 @@ export default function SMSNew() {
     loadTwilioConfig();
   }, [selectedTab]);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh SMS messages when any SMS is created
+      if (entity_type === 'sms') {
+        console.log(`🔄 SMS ${action} detected, refreshing messages...`);
+        fetchMessages();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, [selectedTab]);
+
   const loadTwilioConfig = () => {
     const twilioConfig = localStorage.getItem('twilioConfig');
     if (twilioConfig) {
