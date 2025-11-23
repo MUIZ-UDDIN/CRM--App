@@ -306,6 +306,28 @@ async def create_quote(
     except Exception as notification_error:
         print(f"Notification error: {notification_error}")
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="quote",
+                action="created",
+                entity_id=str(quote.id),
+                data={
+                    "id": str(quote.id),
+                    "quote_number": quote.quote_number,
+                    "title": quote.title,
+                    "amount": float(quote.amount),
+                    "status": quote.status.value
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return QuoteResponse(
         id=str(quote.id),
         quote_number=quote.quote_number,
@@ -383,6 +405,28 @@ async def update_quote(
     
     db.commit()
     db.refresh(quote)
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="quote",
+                action="updated",
+                entity_id=str(quote.id),
+                data={
+                    "id": str(quote.id),
+                    "quote_number": quote.quote_number,
+                    "title": quote.title,
+                    "amount": float(quote.amount),
+                    "status": quote.status.value
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return QuoteResponse(
         id=str(quote.id),
@@ -463,6 +507,22 @@ async def delete_quote(
         )
     except Exception as e:
         print(f"⚠️ Failed to send quote deletion notification: {e}")
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="quote",
+                action="deleted",
+                entity_id=str(quote.id),
+                data=None
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "Quote deleted successfully"}
 

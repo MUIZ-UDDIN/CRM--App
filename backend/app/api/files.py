@@ -242,6 +242,27 @@ async def upload_file(
     except Exception as e:
         print(f"⚠️ Failed to send file upload notification: {e}")
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="file",
+                action="created",
+                entity_id=str(new_file.id),
+                data={
+                    "id": str(new_file.id),
+                    "name": new_file.name,
+                    "file_type": new_file.file_type,
+                    "size": new_file.size
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return FileResponse(
         id=str(new_file.id),
         name=new_file.name,
@@ -745,6 +766,22 @@ async def delete_file(
         )
     except Exception as e:
         print(f"⚠️ Failed to send file deletion notification: {e}")
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="file",
+                action="deleted",
+                entity_id=str(file.id),
+                data=None
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "File deleted successfully"}
 
