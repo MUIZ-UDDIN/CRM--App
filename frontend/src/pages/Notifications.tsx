@@ -217,72 +217,49 @@ export default function Notifications() {
         </div>
       </div>
 
+      {/* Search and Filters - Matching Contacts Page Style */}
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
-        <div className="bg-white shadow rounded-lg">
-          {/* Search Bar */}
-          <div className="px-4 sm:px-6 py-4 border-b border-gray-200">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search notifications..."
-                className="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                >
-                  <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
-                </button>
-              )}
-            </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search notifications..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
           </div>
-
-          {/* Filter Tabs */}
-          <div className="border-b border-gray-200">
-            <div className="px-4 sm:px-6 py-3 sm:py-4">
-              <div className="flex items-start sm:items-center gap-2 sm:gap-3">
-                <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`p-1.5 sm:p-2 rounded-lg transition-colors flex-shrink-0 ${
-                    showFilters 
-                      ? 'bg-primary-100 text-primary-600' 
-                      : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                  }`}
-                  title="Toggle Filters"
-                >
-                  <FunnelIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                </button>
-                {showFilters && (
-                  <nav className="flex flex-wrap gap-2">
-                    {filterOptions.map((option) => (
-                      <button
-                        key={option.value}
-                        onClick={() => setFilter(option.value)}
-                        className={`px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 ${
-                          filter === option.value
-                            ? 'bg-primary-100 text-primary-700'
-                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        <span className="whitespace-nowrap">{option.label}</span>
-                        <span className="ml-1 sm:ml-2 text-xs bg-gray-200 text-gray-600 rounded-full px-1.5 sm:px-2 py-0.5">
-                          {option.count}
-                        </span>
-                      </button>
-                    ))}
-                  </nav>
-                )}
-              </div>
-            </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2 rounded-lg transition-colors ${
+                showFilters 
+                  ? 'bg-primary-100 text-primary-600' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Toggle Filters"
+            >
+              <FunnelIcon className="h-5 w-5" />
+            </button>
+            {showFilters && (
+              <select
+                value={filter}
+                onChange={(e) => setFilter(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px]"
+              >
+                {filterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label} ({option.count})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
+        </div>
 
-          {/* Notifications List */}
+        {/* Notifications List */}
+        <div className="mt-6 bg-white shadow rounded-lg">
           <div className="divide-y divide-gray-200">
             {loading ? (
               <div className="px-6 py-12 text-center">
