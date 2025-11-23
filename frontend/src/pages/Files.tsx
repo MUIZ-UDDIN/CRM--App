@@ -92,6 +92,22 @@ export default function Files() {
     fetchFiles();
   }, [filterCategory, filterStatus, currentFolderId]);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh files when any file is created, updated, or deleted
+      if (entity_type === 'file') {
+        console.log(`🔄 File ${action} detected, refreshing files...`);
+        fetchFiles();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, []);
+
   const fetchFiles = async () => {
     setLoading(true);
     try {

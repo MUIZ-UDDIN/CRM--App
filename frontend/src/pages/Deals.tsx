@@ -301,7 +301,7 @@ export default function Deals() {
       const { entity_type, action } = event.detail;
       
       // Refresh deals when any deal is created, updated, or deleted
-      if (entity_type === 'deal' && Object.keys(stageMapping).length > 0) {
+      if (entity_type === 'deal') {
         console.log(`🔄 Deal ${action} detected, refreshing deals...`);
         fetchDeals();
       }
@@ -309,7 +309,7 @@ export default function Deals() {
 
     window.addEventListener('entity_change', handleEntityChange);
     return () => window.removeEventListener('entity_change', handleEntityChange);
-  }, [stageMapping]);
+  }, []);
 
   // Prevent background scroll when modals are open
   useEffect(() => {

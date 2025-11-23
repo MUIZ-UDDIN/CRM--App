@@ -100,6 +100,22 @@ export default function Quotes() {
     fetchContacts();
   }, [filterStatus]);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh quotes when any quote is created, updated, or deleted
+      if (entity_type === 'quote') {
+        console.log(`🔄 Quote ${action} detected, refreshing quotes...`);
+        fetchQuotes();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, []);
+
   const fetchContacts = async () => {
     try {
       const token = localStorage.getItem('token');
