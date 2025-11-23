@@ -482,8 +482,31 @@ def update_user_role(
     # Prevent creating new super admins
     if new_role == UserRole.SUPER_ADMIN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Cannot promote users to Super Admin"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot promote users to Super Admin role"
+        )
+    
+    # Check if changing to Company Admin and there's already one
+    if new_role == UserRole.COMPANY_ADMIN:
+        existing_admin = db.query(User).filter(
+            User.company_id == user_to_update.company_id,
+            User.user_role == UserRole.COMPANY_ADMIN,
+            User.id != user_to_update.id,
+            User.is_deleted == False
+        ).first()
+        
+        if existing_admin:
+            admin_name = f"{existing_admin.first_name} {existing_admin.last_name}"
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"This company already has a Company Admin ({admin_name}). Please change their role first or contact support."
+            )
+    
+    # Check if changing to Sales Manager and ensure they have a team
+    if new_role == UserRole.SALES_MANAGER and not user_to_update.team_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot assign Sales Manager role. User must be assigned to a team first. Please assign them to a team and try again."
         )
     
     # Store old role for notification
@@ -492,11 +515,6 @@ def update_user_role(
     # Update role
     user_to_update.user_role = new_role
     user_to_update.role = new_role.value  # Also update legacy field
-    
-    # If changing to Sales Manager, ensure they have a team
-    if new_role == UserRole.SALES_MANAGER and not user_to_update.team_id:
-        # Optionally, you could assign them to a default team or require team assignment
-        pass
     
     db.commit()
     db.refresh(user_to_update)
