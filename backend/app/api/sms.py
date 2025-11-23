@@ -140,6 +140,28 @@ async def send_sms(
         db.commit()
         db.refresh(sms_message)
         
+        # Broadcast WebSocket event for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            company_id = current_user.get("company_id")
+            if company_id:
+                loop = asyncio.get_event_loop()
+                if loop.is_running():
+                    asyncio.ensure_future(broadcast_entity_change(
+                        company_id=str(company_id),
+                        entity_type="sms",
+                        action="created",
+                        entity_id=str(sms_message.id),
+                        data={
+                            "id": str(sms_message.id),
+                            "to_address": sms_message.to_address,
+                            "status": sms_message.status.value
+                        }
+                    ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+        
         return {
             "success": True,
             "message_id": str(sms_message.id),

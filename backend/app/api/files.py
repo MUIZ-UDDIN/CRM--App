@@ -490,6 +490,26 @@ async def create_folder(
     except Exception as e:
         print(f"⚠️ Failed to send folder creation notification: {e}")
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="folder",
+                action="created",
+                entity_id=str(new_folder.id),
+                data={
+                    "id": str(new_folder.id),
+                    "name": new_folder.name,
+                    "parent_id": str(new_folder.parent_id) if new_folder.parent_id else None
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return FolderResponse(
         id=str(new_folder.id),
         name=new_folder.name,
@@ -550,6 +570,26 @@ async def update_folder(
     db.commit()
     db.refresh(folder)
     
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="folder",
+                action="updated",
+                entity_id=str(folder.id),
+                data={
+                    "id": str(folder.id),
+                    "name": folder.name,
+                    "parent_id": str(folder.parent_id) if folder.parent_id else None
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return FolderResponse(
         id=str(folder.id),
         name=folder.name,
@@ -605,6 +645,22 @@ async def delete_folder(
         )
     except Exception as e:
         print(f"⚠️ Failed to send folder deletion notification: {e}")
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="folder",
+                action="deleted",
+                entity_id=str(folder_id),
+                data=None
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "Folder deleted successfully"}
 

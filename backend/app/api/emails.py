@@ -238,6 +238,27 @@ async def create_email(
         db.commit()
         db.refresh(email)
         
+        # Broadcast WebSocket event for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(company_id),
+                    entity_type="email",
+                    action="created",
+                    entity_id=str(email.id),
+                    data={
+                        "id": str(email.id),
+                        "to_email": email.to_email,
+                        "subject": email.subject,
+                        "status": email.status.value
+                    }
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+        
         return email
         
     except Exception as e:
@@ -441,6 +462,22 @@ async def delete_email(
     email.is_deleted = True
     email.updated_at = datetime.utcnow()
     db.commit()
+    
+    # Broadcast WebSocket event for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(company_id),
+                entity_type="email",
+                action="deleted",
+                entity_id=str(email_id),
+                data=None
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     return {"message": "Email moved to trash"}
 

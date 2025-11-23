@@ -97,9 +97,9 @@ export default function Files() {
     const handleEntityChange = (event: any) => {
       const { entity_type, action } = event.detail;
       
-      // Refresh files when any file is created, updated, or deleted
-      if (entity_type === 'file') {
-        console.log(`🔄 File ${action} detected, refreshing files...`);
+      // Refresh files when any file or folder is created, updated, or deleted
+      if (entity_type === 'file' || entity_type === 'folder') {
+        console.log(`🔄 ${entity_type} ${action} detected, refreshing files...`);
         fetchFiles();
       }
     };
