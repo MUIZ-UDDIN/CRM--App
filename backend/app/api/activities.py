@@ -177,7 +177,7 @@ def get_activities(
 
 
 @router.post("/")
-def create_activity(
+async def create_activity(
     activity: ActivityCreate,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
@@ -360,7 +360,7 @@ def create_activity(
 
 
 @router.delete("/{activity_id}")
-def delete_activity(
+async def delete_activity(
     activity_id: str,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
@@ -477,7 +477,7 @@ def delete_activity(
 
 
 @router.patch("/{activity_id}")
-def update_activity(
+async def update_activity(
     activity_id: str,
     activity_data: dict,
     db: Session = Depends(get_db),

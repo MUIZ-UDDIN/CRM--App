@@ -150,7 +150,7 @@ def get_deals(
 
 
 @router.post("/")
-def create_deal(
+async def create_deal(
     deal: DealCreate,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -425,7 +425,7 @@ def get_deal(
 
 
 @router.patch("/{deal_id}")
-def update_deal(
+async def update_deal(
     deal_id: str,
     deal_data: dict,
     current_user: dict = Depends(get_current_active_user),
@@ -675,7 +675,7 @@ def update_deal(
 
 
 @router.delete("/{deal_id}")
-def delete_deal(
+async def delete_deal(
     deal_id: str,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
