@@ -344,6 +344,30 @@ def create_deal(
             logger.error(f"❌ Traceback: {traceback.format_exc()}")
             print(f"Notification error: {notification_error}")
         
+        # Broadcast creation to all connected clients in the company for real-time sync
+        try:
+            from ..services.websocket_manager import broadcast_entity_change
+            import asyncio
+            # Run in background without blocking
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(new_deal.company_id),
+                    entity_type="deal",
+                    action="created",
+                    entity_id=str(new_deal.id),
+                    data={
+                        "id": str(new_deal.id),
+                        "title": new_deal.title,
+                        "value": new_deal.value,
+                        "stage_id": str(new_deal.stage_id),
+                        "owner_id": str(new_deal.owner_id)
+                    }
+                ))
+                logger.info(f"📡 WebSocket broadcast sent for deal creation: {new_deal.id}")
+        except Exception as ws_error:
+            logger.error(f"WebSocket broadcast error: {ws_error}")
+        
         # Return minimal response - no internal timestamps or sensitive data
         return DealCreateResponse(
             id=str(new_deal.id),

@@ -323,6 +323,27 @@ def create_activity(
         # Don't fail the activity creation if notifications fail
         print(f"Notification error: {notification_error}")
     
+    # Broadcast creation to all connected clients for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(db_activity.company_id),
+                entity_type="activity",
+                action="created",
+                entity_id=str(db_activity.id),
+                data={
+                    "id": str(db_activity.id),
+                    "subject": db_activity.subject,
+                    "type": str(db_activity.type),
+                    "status": str(db_activity.status)
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     # Return simple dict to avoid validation issues
     return {
         "id": str(db_activity.id),
@@ -434,6 +455,21 @@ def delete_activity(
     except Exception as e:
         print(f"⚠️ Failed to send activity deletion notification: {e}")
     
+    # Broadcast deletion to all connected clients for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(activity.company_id),
+                entity_type="activity",
+                action="deleted",
+                entity_id=str(activity_id)
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
+    
     return {
         "message": "Activity deleted successfully",
         "id": str(activity_id)
@@ -495,6 +531,27 @@ def update_activity(
     
     db.commit()
     db.refresh(activity)
+    
+    # Broadcast update to all connected clients for real-time sync
+    try:
+        from app.services.websocket_manager import broadcast_entity_change
+        import asyncio
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            asyncio.ensure_future(broadcast_entity_change(
+                company_id=str(activity.company_id),
+                entity_type="activity",
+                action="updated",
+                entity_id=str(activity.id),
+                data={
+                    "id": str(activity.id),
+                    "subject": activity.subject,
+                    "type": str(activity.type),
+                    "status": str(activity.status)
+                }
+            ))
+    except Exception as ws_error:
+        print(f"WebSocket broadcast error: {ws_error}")
     
     # Return simple dict to avoid validation issues
     return {
