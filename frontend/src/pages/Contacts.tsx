@@ -209,6 +209,22 @@ export default function Contacts() {
   useEffect(() => {
     fetchContacts();
   }, [filterType]); // Removed searchQuery - filtering is done client-side
+
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh contacts when any contact is created, updated, or deleted
+      if (entity_type === 'contact') {
+        console.log(`🔄 Contact ${action} detected, refreshing contacts...`);
+        fetchContacts();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, []);
   
   const fetchContacts = async () => {
     setLoading(true);

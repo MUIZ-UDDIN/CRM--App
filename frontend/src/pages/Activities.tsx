@@ -82,6 +82,22 @@ export default function Activities() {
   useEffect(() => {
     fetchActivities();
   }, [filterType, filterStatus]);
+
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh activities when any activity is created, updated, or deleted
+      if (entity_type === 'activity') {
+        console.log(`🔄 Activity ${action} detected, refreshing activities...`);
+        fetchActivities();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, []);
   
   const fetchActivities = async () => {
     setLoading(true);

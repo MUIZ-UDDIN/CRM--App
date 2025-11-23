@@ -32,6 +32,7 @@ import IncomingCallNotification from '../IncomingCallNotification';
 import OutgoingCallNotification from '../OutgoingCallNotification';
 import { twilioVoiceService } from '../../services/twilioVoiceService';
 import { Call } from '@twilio/voice-sdk';
+import { websocketService } from '../../services/websocketService';
 
 interface NavItem {
   name: string;
@@ -232,9 +233,52 @@ export default function MainLayout() {
     };
   }, []);
 
-  // WebSocket for real-time notifications with polling fallback
+  // WebSocket for real-time updates with polling fallback
   useEffect(() => {
-    // Polling fallback for notifications - check every 5 seconds for immediate updates
+    const token = localStorage.getItem('token');
+    
+    if (token) {
+      // Connect to WebSocket for real-time updates
+      try {
+        websocketService.connect(token);
+        console.log('✅ WebSocket connected for real-time sync');
+        
+        // Listen for entity changes
+        const handleEntityChange = (data: any) => {
+          console.log('📡 Entity change received:', data);
+          
+          // Trigger page refresh based on entity type
+          const event = new CustomEvent('entity_change', { detail: data });
+          window.dispatchEvent(event);
+          
+          // Also refresh notifications if needed
+          if (data.entity_type === 'notification') {
+            fetchNotifications();
+            fetchUnreadCount();
+          }
+        };
+        
+        // Listen for new notifications
+        const handleNewNotification = (notification: any) => {
+          console.log('🔔 New notification received:', notification);
+          fetchNotifications();
+          fetchUnreadCount();
+        };
+        
+        websocketService.on('entity_change', handleEntityChange);
+        websocketService.on('new_notification', handleNewNotification);
+        
+        // Cleanup WebSocket listeners
+        return () => {
+          websocketService.off('entity_change', handleEntityChange);
+          websocketService.off('new_notification', handleNewNotification);
+        };
+      } catch (error) {
+        console.error('❌ WebSocket connection failed, using polling fallback:', error);
+      }
+    }
+    
+    // Polling fallback for notifications - check every 5 seconds
     const pollInterval = setInterval(() => {
       fetchNotifications();
       fetchUnreadCount();
@@ -243,6 +287,7 @@ export default function MainLayout() {
     // Listen for logout event to stop polling
     const handleLogout = () => {
       clearInterval(pollInterval);
+      websocketService.disconnect();
     };
     
     window.addEventListener('auth:logout', handleLogout);
@@ -250,6 +295,7 @@ export default function MainLayout() {
     return () => {
       clearInterval(pollInterval);
       window.removeEventListener('auth:logout', handleLogout);
+      websocketService.disconnect();
     };
   }, []);
 

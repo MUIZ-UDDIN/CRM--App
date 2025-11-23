@@ -295,6 +295,22 @@ export default function Deals() {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [stageMapping]);
 
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh deals when any deal is created, updated, or deleted
+      if (entity_type === 'deal' && Object.keys(stageMapping).length > 0) {
+        console.log(`🔄 Deal ${action} detected, refreshing deals...`);
+        fetchDeals();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, [stageMapping]);
+
   // Prevent background scroll when modals are open
   useEffect(() => {
     if (showAddDealModal || showEditModal || showViewModal || showDeleteModal) {
