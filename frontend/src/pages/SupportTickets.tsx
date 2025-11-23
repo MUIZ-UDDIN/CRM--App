@@ -65,7 +65,6 @@ export default function SupportTickets() {
       
       // Refresh support tickets when any ticket is created, updated, or deleted
       if (entity_type === 'support_ticket') {
-        console.log(`🔄 Support ticket ${action} detected, refreshing tickets...`);
         fetchTickets();
       }
     };

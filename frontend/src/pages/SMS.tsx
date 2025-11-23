@@ -53,7 +53,6 @@ export default function SMSNew() {
       
       // Refresh SMS messages when any SMS is created
       if (entity_type === 'sms') {
-        console.log(`🔄 SMS ${action} detected, refreshing messages...`);
         fetchMessages();
       }
     };

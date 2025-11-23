@@ -302,7 +302,6 @@ export default function Deals() {
       
       // Refresh deals when any deal is created, updated, or deleted
       if (entity_type === 'deal') {
-        console.log(`🔄 Deal ${action} detected, refreshing deals...`);
         fetchDeals();
       }
     };

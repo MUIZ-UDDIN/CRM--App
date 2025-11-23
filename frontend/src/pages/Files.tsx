@@ -133,7 +133,6 @@ export default function Files() {
       
       // Refresh files when any file or folder is created, updated, or deleted
       if (entity_type === 'file' || entity_type === 'folder') {
-        console.log(`🔄 ${entity_type} ${action} detected, refreshing files...`);
         fetchFiles();
       }
     };

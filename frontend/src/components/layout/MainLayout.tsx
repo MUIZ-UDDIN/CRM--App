@@ -241,11 +241,9 @@ export default function MainLayout() {
       // Connect to WebSocket for real-time updates
       try {
         websocketService.connect(token);
-        console.log('✅ WebSocket connected for real-time sync');
         
         // Listen for entity changes
         const handleEntityChange = (data: any) => {
-          console.log('📡 Entity change received:', data);
           
           // Trigger page refresh based on entity type
           const event = new CustomEvent('entity_change', { detail: data });
@@ -260,7 +258,6 @@ export default function MainLayout() {
         
         // Listen for new notifications
         const handleNewNotification = (notification: any) => {
-          console.log('🔔 New notification received:', notification);
           fetchNotifications();
           fetchUnreadCount();
         };

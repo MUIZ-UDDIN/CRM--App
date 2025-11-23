@@ -98,7 +98,6 @@ export default function PipelineSettings() {
       
       // Refresh pipeline stages when any stage is created, updated, or deleted
       if (entity_type === 'pipeline_stage') {
-        console.log(`🔄 Pipeline stage ${action} detected, refreshing stages...`);
         if (selectedPipeline) {
           fetchPipelineStages(selectedPipeline);
         }
@@ -106,7 +105,6 @@ export default function PipelineSettings() {
       
       // Refresh pipelines list when pipeline is created, updated, or deleted
       if (entity_type === 'pipeline') {
-        console.log(`🔄 Pipeline ${action} detected, refreshing pipelines...`);
         fetchPipelines();
       }
     };

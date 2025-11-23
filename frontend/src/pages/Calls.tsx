@@ -92,7 +92,6 @@ export default function CallsNew() {
       
       // Refresh calls when any call is created
       if (entity_type === 'call') {
-        console.log(`🔄 Call ${action} detected, refreshing calls...`);
         fetchCalls();
       }
     };

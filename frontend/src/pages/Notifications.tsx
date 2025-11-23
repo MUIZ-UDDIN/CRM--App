@@ -57,7 +57,6 @@ export default function Notifications() {
       
       // Refresh notifications when any notification is created or deleted
       if (entity_type === 'notification') {
-        console.log(`🔄 Notification ${action} detected, refreshing notifications...`);
         fetchNotifications();
       }
     };

@@ -128,7 +128,6 @@ export default function Activities() {
       
       // Refresh activities when any activity is created, updated, or deleted
       if (entity_type === 'activity') {
-        console.log(`🔄 Activity ${action} detected, refreshing activities...`);
         fetchActivities();
       }
     };

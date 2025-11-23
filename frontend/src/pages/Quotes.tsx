@@ -107,7 +107,6 @@ export default function Quotes() {
       
       // Refresh quotes when any quote is created, updated, or deleted
       if (entity_type === 'quote') {
-        console.log(`🔄 Quote ${action} detected, refreshing quotes...`);
         fetchQuotes();
       }
     };

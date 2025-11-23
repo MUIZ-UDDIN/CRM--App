@@ -217,7 +217,6 @@ export default function Contacts() {
       
       // Refresh contacts when any contact is created, updated, or deleted
       if (entity_type === 'contact') {
-        console.log(`🔄 Contact ${action} detected, refreshing contacts...`);
         fetchContacts();
       }
     };

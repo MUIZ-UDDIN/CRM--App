@@ -104,7 +104,6 @@ export default function Workflows() {
       
       // Refresh workflows when any workflow is created, updated, or deleted
       if (entity_type === 'workflow') {
-        console.log(`🔄 Workflow ${action} detected, refreshing workflows...`);
         fetchWorkflows();
       }
     };
