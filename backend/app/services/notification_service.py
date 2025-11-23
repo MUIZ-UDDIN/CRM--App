@@ -29,6 +29,37 @@ class NotificationService:
         return query.all()
     
     @staticmethod
+    def _get_company_users_and_super_admins(db: Session, company_id: uuid.UUID, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
+        """Get ALL users from the specific company + ALL super admins (cross-company)"""
+        # Get ALL users from this specific company
+        company_users_query = db.query(User).filter(
+            User.company_id == company_id,
+            User.is_deleted == False,
+            User.status == 'active'
+        )
+        
+        if exclude_user_id:
+            company_users_query = company_users_query.filter(User.id != exclude_user_id)
+        
+        company_users = company_users_query.all()
+        
+        # Get ALL super admins (regardless of company)
+        super_admin_query = db.query(User).filter(
+            User.is_deleted == False,
+            User.status == 'active',
+            User.user_role == 'super_admin'
+        )
+        
+        if exclude_user_id:
+            super_admin_query = super_admin_query.filter(User.id != exclude_user_id)
+        
+        super_admins = super_admin_query.all()
+        
+        # Combine both lists and remove duplicates
+        all_recipients = {user.id: user for user in company_users + super_admins}
+        return list(all_recipients.values())
+    
+    @staticmethod
     def _get_admins_and_managers(db: Session, company_id: uuid.UUID, exclude_user_id: Optional[uuid.UUID] = None) -> List[User]:
         """Get all company admins and managers from the specific company + ALL super admins (cross-company)"""
         # Get company admins and managers from this specific company
@@ -340,9 +371,9 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify admins when a contact is created"""
-        # Get all admins INCLUDING the creator (no exclusion)
-        recipients = NotificationService._get_company_admins(db, company_id)
+        """Notify ALL company users + super admins when a contact is created"""
+        # Get all company users + all super admins (no exclusion)
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -366,8 +397,8 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify admins when a pipeline is created"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        """Notify ALL company users + super admins when a pipeline is created"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -392,8 +423,8 @@ class NotificationService:
         company_id: uuid.UUID,
         quote_amount: float
     ):
-        """Notify admins when a quote is created"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        """Notify ALL company users + super admins when a quote is created"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -418,9 +449,9 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify admins when an activity is created"""
-        # Get all admins INCLUDING the creator (no exclusion)
-        recipients = NotificationService._get_company_admins(db, company_id)
+        """Notify ALL company users + super admins when an activity is created"""
+        # Get all company users + all super admins (no exclusion)
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -520,9 +551,9 @@ class NotificationService:
         entity_type: str = "general",
         entity_id: Optional[uuid.UUID] = None
     ):
-        """Notify admins when a file is uploaded"""
-        # Get all admins INCLUDING the uploader (no exclusion)
-        recipients = NotificationService._get_company_admins(db, company_id)
+        """Notify ALL company users + super admins when a file is uploaded"""
+        # Get all company users + all super admins (no exclusion)
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -545,9 +576,9 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify admins when a workflow is created"""
-        # Get all admins INCLUDING the creator (no exclusion)
-        recipients = NotificationService._get_company_admins(db, company_id)
+        """Notify ALL company users + super admins when a workflow is created"""
+        # Get all company users + all super admins (no exclusion)
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -572,9 +603,8 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify admins when a template is created"""
-        # Get all admins INCLUDING the creator (no exclusion)
-        recipients = NotificationService._get_company_admins(db, company_id)
+        """Notify ALL company users + super admins when a template is created"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -598,9 +628,9 @@ class NotificationService:
         company_id: uuid.UUID,
         priority: str = "medium"
     ):
-        """Notify admins when a support ticket is created"""
-        # Get all admins INCLUDING the creator (no exclusion)
-        recipients = NotificationService._get_company_admins(db, company_id)
+        """Notify ALL company users + super admins when a support ticket is created"""
+        # Get all company users + all super admins (no exclusion)
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         
         notification_type = NotificationType.WARNING if priority in ['high', 'urgent'] else NotificationType.INFO
         
@@ -896,9 +926,8 @@ class NotificationService:
         deleter_name: str,
         company_id: uuid.UUID
     ):
-        """Notify when a file is deleted"""
-        # Get all admins and managers INCLUDING the deleter (no exclusion)
-        recipients = NotificationService._get_admins_and_managers(db, company_id)
+        """Notify ALL company users + super admins when a file is deleted"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -919,9 +948,9 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify when a folder is created"""
-        # Get all admins INCLUDING the creator (no exclusion)
-        recipients = NotificationService._get_company_admins(db, company_id)
+        """Notify ALL company users + super admins when a folder is created"""
+        # Get all company users + all super admins (no exclusion)
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -942,9 +971,8 @@ class NotificationService:
         deleter_name: str,
         company_id: uuid.UUID
     ):
-        """Notify when a folder is deleted"""
-        # Get all admins and managers INCLUDING the deleter (no exclusion)
-        recipients = NotificationService._get_admins_and_managers(db, company_id)
+        """Notify ALL company users + super admins when a folder is deleted"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
@@ -965,9 +993,8 @@ class NotificationService:
         deleter_name: str,
         company_id: uuid.UUID
     ):
-        """Notify when an activity is deleted"""
-        # Get all admins and managers INCLUDING the deleter (no exclusion)
-        recipients = NotificationService._get_admins_and_managers(db, company_id)
+        """Notify ALL company users + super admins when an activity is deleted"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
         for recipient in recipients:
             NotificationService._create_notification(
                 db=db,
