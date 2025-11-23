@@ -36,9 +36,11 @@ async def get_admin_dashboard_analytics(
     try:
         logger.info(f"✅ User {current_user.get('email')} accessing admin dashboard")
         
-        # Get user's role
+        # Get user's role and IDs
         user_role = current_user.get('role', 'user')
-        company_id = current_user.get('company_id')
+        user_id = uuid.UUID(current_user.get('id')) if current_user.get('id') else None
+        company_id = uuid.UUID(current_user.get('company_id')) if current_user.get('company_id') else None
+        user_team_id = uuid.UUID(current_user.get('team_id')) if current_user.get('team_id') else None
         
         # Initialize default values
         companies_count = 0
@@ -49,14 +51,16 @@ async def get_admin_dashboard_analytics(
         recent_activities = []
         upcoming_activities = []
         
-        # Super admin sees all data, others see only their company
+        # Role-based data access
         if user_role == 'super_admin':
+            # Super admin sees all data
             companies_count = db.query(Company).count()
             total_users = db.query(User).count()
             active_users = db.query(User).filter(User.is_active == True).count()
             total_deals = db.query(Deal).count()
             total_value = db.query(func.sum(Deal.value)).scalar() or 0
-        else:
+        elif user_role == 'company_admin':
+            # Company admin sees company-wide data
             companies_count = 1
             total_users = db.query(User).filter(User.company_id == company_id).count()
             active_users = db.query(User).filter(
@@ -67,11 +71,61 @@ async def get_admin_dashboard_analytics(
             total_value = db.query(func.sum(Deal.value)).filter(
                 Deal.company_id == company_id
             ).scalar() or 0
+        elif user_role == 'sales_manager' and user_team_id:
+            # Sales manager sees only their team's data
+            companies_count = 1
+            team_user_ids = [u.id for u in db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_deleted == False
+            ).all()]
+            total_users = len(team_user_ids)
+            active_users = db.query(User).filter(
+                User.team_id == user_team_id,
+                User.is_active == True,
+                User.is_deleted == False
+            ).count()
+            total_deals = db.query(Deal).filter(
+                Deal.company_id == company_id,
+                Deal.owner_id.in_(team_user_ids)
+            ).count()
+            total_value = db.query(func.sum(Deal.value)).filter(
+                Deal.company_id == company_id,
+                Deal.owner_id.in_(team_user_ids)
+            ).scalar() or 0
+        else:
+            # Sales rep and other users see only their own data
+            companies_count = 1
+            total_users = 1
+            active_users = 1 if current_user.get('is_active') else 0
+            total_deals = db.query(Deal).filter(
+                Deal.company_id == company_id,
+                Deal.owner_id == user_id
+            ).count()
+            total_value = db.query(func.sum(Deal.value)).filter(
+                Deal.company_id == company_id,
+                Deal.owner_id == user_id
+            ).scalar() or 0
         
-        # Get recent activities (fix: use 'type' and 'subject' not 'activity_type' and 'title')
+        # Get recent activities with role-based filtering
         activities_query = db.query(Activity)
-        if user_role != 'super_admin' and company_id:
+        if user_role == 'super_admin':
+            # Super admin sees all activities
+            pass
+        elif user_role == 'company_admin':
+            # Company admin sees company activities
             activities_query = activities_query.filter(Activity.company_id == company_id)
+        elif user_role == 'sales_manager' and user_team_id:
+            # Sales manager sees only their team's activities
+            activities_query = activities_query.filter(
+                Activity.company_id == company_id,
+                Activity.owner_id.in_(team_user_ids)
+            )
+        else:
+            # Sales rep sees only their own activities
+            activities_query = activities_query.filter(
+                Activity.company_id == company_id,
+                Activity.owner_id == user_id
+            )
         activities_query = activities_query.order_by(Activity.created_at.desc()).limit(5)
         
         for activity in activities_query.all():
@@ -89,13 +143,29 @@ async def get_admin_dashboard_analytics(
                 logger.error(f"Error processing activity: {str(e)}")
                 continue
         
-        # Get upcoming activities (activities with due_date in the future)
+        # Get upcoming activities with role-based filtering
         upcoming_query = db.query(Activity).filter(
             Activity.due_date >= datetime.now(),
             Activity.status != 'completed'
         )
-        if user_role != 'super_admin' and company_id:
+        if user_role == 'super_admin':
+            # Super admin sees all upcoming activities
+            pass
+        elif user_role == 'company_admin':
+            # Company admin sees company upcoming activities
             upcoming_query = upcoming_query.filter(Activity.company_id == company_id)
+        elif user_role == 'sales_manager' and user_team_id:
+            # Sales manager sees only their team's upcoming activities
+            upcoming_query = upcoming_query.filter(
+                Activity.company_id == company_id,
+                Activity.owner_id.in_(team_user_ids)
+            )
+        else:
+            # Sales rep sees only their own upcoming activities
+            upcoming_query = upcoming_query.filter(
+                Activity.company_id == company_id,
+                Activity.owner_id == user_id
+            )
         upcoming_query = upcoming_query.order_by(Activity.due_date.asc()).limit(5)
         
         for activity in upcoming_query.all():
@@ -128,7 +198,7 @@ async def get_admin_dashboard_analytics(
             )
         )
         
-        # Apply role-based filtering
+        # Apply role-based filtering for pipeline stages
         if user_role == 'super_admin':
             # Super Admin sees all stages from all companies (or their own company if they have one)
             if company_id:
@@ -141,19 +211,15 @@ async def get_admin_dashboard_analytics(
                 Pipeline, PipelineStage.pipeline_id == Pipeline.id
             ).filter(Pipeline.company_id == company_id)
         elif user_role == 'sales_manager' and user_team_id:
-            # Sales Manager sees only their team's deals
-            team_user_ids = [str(u.id) for u in db.query(User).filter(
-                User.team_id == user_team_id,
-                User.is_deleted == False
-            ).all()]
+            # Sales Manager sees only their team's deals (team_user_ids already defined above)
             stages_query = stages_query.join(
                 Pipeline, PipelineStage.pipeline_id == Pipeline.id
             ).filter(
                 Pipeline.company_id == company_id,
-                Deal.owner_id.in_([uuid.UUID(uid) for uid in team_user_ids])
+                Deal.owner_id.in_(team_user_ids)
             )
         else:
-            # Sales Rep sees only their own deals
+            # Sales Rep and other users see only their own deals
             stages_query = stages_query.join(
                 Pipeline, PipelineStage.pipeline_id == Pipeline.id
             ).filter(
