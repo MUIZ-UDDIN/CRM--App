@@ -78,27 +78,6 @@ export default function Activities() {
     }
   }, [searchParams]);
 
-  // Fetch activities
-  useEffect(() => {
-    fetchActivities();
-  }, [filterType, filterStatus]);
-
-  // Listen for real-time WebSocket updates
-  useEffect(() => {
-    const handleEntityChange = (event: any) => {
-      const { entity_type, action } = event.detail;
-      
-      // Refresh activities when any activity is created, updated, or deleted
-      if (entity_type === 'activity') {
-        console.log(`🔄 Activity ${action} detected, refreshing activities...`);
-        fetchActivities();
-      }
-    };
-
-    window.addEventListener('entity_change', handleEntityChange);
-    return () => window.removeEventListener('entity_change', handleEntityChange);
-  }, []);
-  
   const fetchActivities = async () => {
     setLoading(true);
     try {
@@ -122,17 +101,42 @@ export default function Activities() {
         return activity;
       });
       
-      setActivities(updatedData);
+      // Filter activities by status
+      const filteredData = updatedData.filter((activity: Activity) => {
+        if (filterStatus === 'all') return true;
+        return activity.status === filterStatus;
+      });
+      
+      setActivities(filteredData);
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error fetching activities:', error);
       toast.error('Failed to load activities');
-      setActivities([]);
     } finally {
       setLoading(false);
     }
   };
-  
-  // Handle view activity
+
+  // Fetch activities
+  useEffect(() => {
+    fetchActivities();
+  }, [filterType, filterStatus]);
+
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh activities when any activity is created, updated, or deleted
+      if (entity_type === 'activity') {
+        console.log(`🔄 Activity ${action} detected, refreshing activities...`);
+        fetchActivities();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, [filterType, filterStatus]);
+
   const handleView = (activity: Activity) => {
     setSelectedActivity(activity);
     setShowViewModal(true);

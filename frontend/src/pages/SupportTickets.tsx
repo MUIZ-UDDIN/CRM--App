@@ -72,7 +72,7 @@ export default function SupportTickets() {
 
     window.addEventListener('entity_change', handleEntityChange);
     return () => window.removeEventListener('entity_change', handleEntityChange);
-  }, []);
+  }, [filterStatus, filterPriority]);
 
   const fetchAvailableUsers = async () => {
     try {

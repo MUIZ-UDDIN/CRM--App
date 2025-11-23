@@ -88,26 +88,6 @@ export default function Files() {
     }
   }, [searchParams]);
 
-  useEffect(() => {
-    fetchFiles();
-  }, [filterCategory, filterStatus, currentFolderId]);
-
-  // Listen for real-time WebSocket updates
-  useEffect(() => {
-    const handleEntityChange = (event: any) => {
-      const { entity_type, action } = event.detail;
-      
-      // Refresh files when any file or folder is created, updated, or deleted
-      if (entity_type === 'file' || entity_type === 'folder') {
-        console.log(`🔄 ${entity_type} ${action} detected, refreshing files...`);
-        fetchFiles();
-      }
-    };
-
-    window.addEventListener('entity_change', handleEntityChange);
-    return () => window.removeEventListener('entity_change', handleEntityChange);
-  }, []);
-
   const fetchFiles = async () => {
     setLoading(true);
     try {
@@ -141,6 +121,26 @@ export default function Files() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchFiles();
+  }, [filterCategory, filterStatus, currentFolderId]);
+
+  // Listen for real-time WebSocket updates
+  useEffect(() => {
+    const handleEntityChange = (event: any) => {
+      const { entity_type, action } = event.detail;
+      
+      // Refresh files when any file or folder is created, updated, or deleted
+      if (entity_type === 'file' || entity_type === 'folder') {
+        console.log(`🔄 ${entity_type} ${action} detected, refreshing files...`);
+        fetchFiles();
+      }
+    };
+
+    window.addEventListener('entity_change', handleEntityChange);
+    return () => window.removeEventListener('entity_change', handleEntityChange);
+  }, [filterCategory, filterStatus, currentFolderId]);
 
   const handleView = (file: FileItem) => {
     setSelectedFile(file);

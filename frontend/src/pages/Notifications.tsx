@@ -64,7 +64,7 @@ export default function Notifications() {
 
     window.addEventListener('entity_change', handleEntityChange);
     return () => window.removeEventListener('entity_change', handleEntityChange);
-  }, []);
+  }, [filter]);
 
   const fetchNotifications = async () => {
     setLoading(true);
