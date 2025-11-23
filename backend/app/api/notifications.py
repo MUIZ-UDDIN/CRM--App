@@ -84,14 +84,25 @@ async def get_notifications(
     date_from = datetime.utcnow() - timedelta(days=days)
     
     # Base query - user's notifications that aren't deleted
-    query = db.query(NotificationModel).filter(
-        and_(
-            NotificationModel.user_id == user_id,
-            NotificationModel.company_id == company_id,
-            NotificationModel.is_deleted == False,
-            NotificationModel.created_at >= date_from
+    # For Super Admins: Get ALL their notifications regardless of company_id (cross-company visibility)
+    # For other users: Filter by company_id (company isolation)
+    if context.is_super_admin():
+        query = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.is_deleted == False,
+                NotificationModel.created_at >= date_from
+            )
         )
-    )
+    else:
+        query = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.company_id == company_id,
+                NotificationModel.is_deleted == False,
+                NotificationModel.created_at >= date_from
+            )
+        )
     
     if unread_only:
         query = query.filter(NotificationModel.read == False)
@@ -123,20 +134,32 @@ async def get_unread_count(
     db: Session = Depends(get_db)
 ):
     """Get count of unread notifications"""
+    context = get_tenant_context(current_user)
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    unread = db.query(NotificationModel).filter(
-        and_(
-            NotificationModel.user_id == user_id,
-            NotificationModel.company_id == company_id,
-            NotificationModel.read == False,
-            NotificationModel.is_deleted == False
-        )
-    ).count()
+    # For Super Admins: Count ALL their notifications regardless of company_id
+    # For other users: Filter by company_id
+    if context.is_super_admin():
+        unread = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.read == False,
+                NotificationModel.is_deleted == False
+            )
+        ).count()
+    else:
+        unread = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.company_id == company_id,
+                NotificationModel.read == False,
+                NotificationModel.is_deleted == False
+            )
+        ).count()
     
     return {"count": unread}
 
@@ -155,14 +178,25 @@ async def mark_as_read(
     if not company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
-    notification = db.query(NotificationModel).filter(
-        and_(
-            NotificationModel.id == notification_id,
-            NotificationModel.user_id == user_id,
-            NotificationModel.company_id == company_id,
-            NotificationModel.is_deleted == False
-        )
-    ).first()
+    # For Super Admins: Don't filter by company_id (cross-company access)
+    # For other users: Filter by company_id (company isolation)
+    if context.is_super_admin():
+        notification = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.id == notification_id,
+                NotificationModel.user_id == user_id,
+                NotificationModel.is_deleted == False
+            )
+        ).first()
+    else:
+        notification = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.id == notification_id,
+                NotificationModel.user_id == user_id,
+                NotificationModel.company_id == company_id,
+                NotificationModel.is_deleted == False
+            )
+        ).first()
     
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
@@ -185,13 +219,23 @@ async def mark_all_read(
     if not company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
-    db.query(NotificationModel).filter(
-        and_(
-            NotificationModel.user_id == user_id,
-            NotificationModel.company_id == company_id,
-            NotificationModel.is_deleted == False
-        )
-    ).update({"read": True})
+    # For Super Admins: Mark ALL their notifications as read (cross-company)
+    # For other users: Filter by company_id
+    if context.is_super_admin():
+        db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.is_deleted == False
+            )
+        ).update({"read": True})
+    else:
+        db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.company_id == company_id,
+                NotificationModel.is_deleted == False
+            )
+        ).update({"read": True})
     db.commit()
     return {"message": "All notifications marked as read"}
 
@@ -210,14 +254,25 @@ async def delete_notification(
     if not company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
-    notification = db.query(NotificationModel).filter(
-        and_(
-            NotificationModel.id == notification_id,
-            NotificationModel.user_id == user_id,
-            NotificationModel.company_id == company_id,
-            NotificationModel.is_deleted == False
-        )
-    ).first()
+    # For Super Admins: Don't filter by company_id (cross-company access)
+    # For other users: Filter by company_id (company isolation)
+    if context.is_super_admin():
+        notification = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.id == notification_id,
+                NotificationModel.user_id == user_id,
+                NotificationModel.is_deleted == False
+            )
+        ).first()
+    else:
+        notification = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.id == notification_id,
+                NotificationModel.user_id == user_id,
+                NotificationModel.company_id == company_id,
+                NotificationModel.is_deleted == False
+            )
+        ).first()
     
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
@@ -240,13 +295,23 @@ async def delete_all_notifications(
     if not company_id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
-    db.query(NotificationModel).filter(
-        and_(
-            NotificationModel.user_id == user_id,
-            NotificationModel.company_id == company_id,
-            NotificationModel.is_deleted == False
-        )
-    ).update({"is_deleted": True})
+    # For Super Admins: Delete ALL their notifications (cross-company)
+    # For other users: Filter by company_id
+    if context.is_super_admin():
+        db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.is_deleted == False
+            )
+        ).update({"is_deleted": True})
+    else:
+        db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.company_id == company_id,
+                NotificationModel.is_deleted == False
+            )
+        ).update({"is_deleted": True})
     db.commit()
     
     return {"message": "All notifications deleted"}
@@ -268,14 +333,25 @@ async def cleanup_old_call_notifications(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
     
     # Find all call notifications for this user
-    call_notifications = db.query(NotificationModel).filter(
-        and_(
-            NotificationModel.user_id == user_id,
-            NotificationModel.company_id == company_id,
-            NotificationModel.is_deleted == False,
-            NotificationModel.extra_data.isnot(None)
-        )
-    ).all()
+    # For Super Admins: Get ALL their call notifications (cross-company)
+    # For other users: Filter by company_id
+    if context.is_super_admin():
+        call_notifications = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.is_deleted == False,
+                NotificationModel.extra_data.isnot(None)
+            )
+        ).all()
+    else:
+        call_notifications = db.query(NotificationModel).filter(
+            and_(
+                NotificationModel.user_id == user_id,
+                NotificationModel.company_id == company_id,
+                NotificationModel.is_deleted == False,
+                NotificationModel.extra_data.isnot(None)
+            )
+        ).all()
     
     updated_count = 0
     for notification in call_notifications:
