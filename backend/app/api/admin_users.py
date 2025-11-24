@@ -486,6 +486,22 @@ def update_user_role(
             detail="Cannot promote users to Super Admin role"
         )
     
+    # Prevent demoting the only Company Admin in a company
+    if user_to_update.user_role == UserRole.COMPANY_ADMIN and new_role != UserRole.COMPANY_ADMIN:
+        # Check if this is the only Company Admin in the company
+        other_admins = db.query(User).filter(
+            User.company_id == user_to_update.company_id,
+            User.user_role == UserRole.COMPANY_ADMIN,
+            User.id != user_to_update.id,
+            User.is_deleted == False
+        ).count()
+        
+        if other_admins == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot change role. This is the only Company Admin for this company. Please assign another Company Admin first before changing this user's role."
+            )
+    
     # Check if changing to Company Admin and there's already one
     if new_role == UserRole.COMPANY_ADMIN:
         existing_admin = db.query(User).filter(
