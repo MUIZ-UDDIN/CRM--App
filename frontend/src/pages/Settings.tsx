@@ -2846,11 +2846,11 @@ export default function Settings() {
       )}
 
       {activeTab === 'custom_fields' && (
-        <div className="bg-white shadow rounded-lg p-4 sm:p-6">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-medium text-gray-900">Custom Fields</h2>
-              <p className="text-sm text-gray-600 mt-1">Manage custom fields for contacts, deals, and companies</p>
+              <h2 className="text-2xl font-bold text-gray-900">Custom Fields</h2>
+              <p className="text-gray-600 mt-1">Manage custom fields for contacts, deals, and companies</p>
             </div>
             <button
               onClick={() => navigate('/settings/custom-fields')}
@@ -2860,11 +2860,13 @@ export default function Settings() {
               Manage Custom Fields
             </button>
           </div>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-sm text-blue-900">
-              Custom fields allow you to add additional data fields to your contacts, deals, and companies. 
-              Click "Manage Custom Fields" to create and configure custom fields for your organization.
-            </p>
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="text-sm text-blue-900">
+                Custom fields allow you to add additional data fields to your contacts, deals, and companies. 
+                Click "Manage Custom Fields" to create and configure custom fields for your organization.
+              </p>
+            </div>
           </div>
         </div>
       )}
