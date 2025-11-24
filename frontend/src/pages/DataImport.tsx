@@ -90,7 +90,7 @@ export default function DataImport() {
 
   const downloadTemplate = (type: EntityType) => {
     const templates: Record<EntityType, string> = {
-      contacts: 'first_name,last_name,email,phone,company,title,source\nJohn,Doe,john@example.com,555-0100,Acme Corp,Manager,Website\n',
+      contacts: 'first_name,last_name,phone,title,company,email,type\nTest,Test,Test,Test,Test,Test,Test\nfdfsdsada,sadasdasdadad,343,NEW,Import,abcd12@gmail.com,Marketing Qualified Lead\nTest rahuk,rahul,9876543210,NEW,Import Company,abcd123@gmail.com,Lead\n',
       deals: 'name,value,stage,contact_email,expected_close_date,description\nNew Deal,5000,Prospecting,john@example.com,2024-12-31,Sample deal\n',
       companies: 'name,domain,industry,size,phone,address,city,state,country\nAcme Corp,acme.com,Technology,50,555-0100,123 Main St,New York,NY,USA\n',
       leads: 'first_name,last_name,email,phone,company,title,source,status\nJane,Smith,jane@example.com,555-0200,Tech Inc,Director,Referral,New\n'

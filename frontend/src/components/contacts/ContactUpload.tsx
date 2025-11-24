@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
-import { ArrowUpTrayIcon, DocumentTextIcon, CheckCircleIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
+import { ArrowUpTrayIcon, DocumentTextIcon, CheckCircleIcon, ExclamationTriangleIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../../contexts/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -93,6 +93,20 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
     disabled: !canUpload || uploading
   });
 
+  const downloadTemplate = () => {
+    const template = 'first_name,last_name,phone,title,company,email,type\nTest,Test,Test,Test,Test,Test,Test\nfdfsdsada,sadasdasdadad,343,NEW,Import,abcd12@gmail.com,Marketing Qualified Lead\nTest rahuk,rahul,9876543210,NEW,Import Company,abcd123@gmail.com,Lead\n';
+    const blob = new Blob([template], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'contacts_template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+    toast.success('Template downloaded successfully');
+  };
+
   if (!canUpload) {
     return (
       <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
@@ -108,6 +122,17 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
 
   return (
     <div className="space-y-6">
+      {/* Download Template Button */}
+      <div className="flex justify-end">
+        <button
+          onClick={downloadTemplate}
+          className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+        >
+          <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
+          Download Template
+        </button>
+      </div>
+
       {/* Upload Area */}
       <div
         {...getRootProps()}
