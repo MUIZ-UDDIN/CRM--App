@@ -91,7 +91,10 @@ export default function DataImport() {
   const downloadTemplate = (type: EntityType) => {
     // Contact templates are now available in the Contacts page import modal
     if (type === 'contacts') {
-      toast.info('Contact templates are available in the Contacts page when you click Import');
+      toast('Contact templates are available in the Contacts page when you click Import', {
+        icon: 'ℹ️',
+        duration: 4000,
+      });
       return;
     }
 
