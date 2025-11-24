@@ -455,9 +455,19 @@ async def update_user(
                 detail="Super Admin role cannot be assigned. Only the system super admin (admin@sunstonecrm.com) has this role."
             )
         
-        # Prevent demoting the only Company Admin in a company
+        # Only Super Admin or Company Admin themselves can change Company Admin roles
         current_role = user.user_role if hasattr(user, 'user_role') else user.role
         if current_role in ['company_admin', 'Company Admin', 'Admin'] and normalized_role not in ['company_admin']:
+            # Check if the person making the change is Super Admin or the Company Admin themselves
+            is_super_admin = context.is_super_admin()
+            is_self = str(user.id) == str(current_user.get('id'))
+            
+            if not is_super_admin and not is_self:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only Super Admin or the Company Admin themselves can change this role."
+                )
+            
             # Check if this is the only Company Admin in the company
             other_admins = db.query(UserModel).filter(
                 UserModel.company_id == user.company_id,
@@ -469,7 +479,7 @@ async def update_user(
             if other_admins == 0:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Default Company Admin role cannot be changed. This user is the only Company Admin for their company. Please promote another user to Company Admin first, then you can change this user's role."
+                    detail="Cannot change the only Company Admin. Please assign another admin first."
                 )
         
         user.role = normalized_role

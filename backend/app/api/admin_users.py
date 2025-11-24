@@ -499,7 +499,7 @@ def update_user_role(
         if other_admins == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Default Company Admin role cannot be changed. This user is the only Company Admin for their company. Please promote another user to Company Admin first, then you can change this user's role."
+                detail="Cannot change the only Company Admin. Please assign another admin first."
             )
     
     # Check if changing to Company Admin and there's already one
