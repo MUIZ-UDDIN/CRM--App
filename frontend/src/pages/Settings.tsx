@@ -2078,7 +2078,7 @@ export default function Settings() {
             </div>
           </div>
         )}
-      </div>
+
 
       {/* Create Team Modal */}
       {showCreateTeamModal && (
@@ -2944,6 +2944,7 @@ export default function Settings() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }
