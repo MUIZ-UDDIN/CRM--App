@@ -102,26 +102,31 @@ export default function WorkflowTemplates() {
   }
 
   return (
-    <div className="p-6">
+    <div className="min-h-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Workflow Templates</h1>
-          <p className="text-gray-600">Pre-built automation templates to get started quickly</p>
+      <div className="bg-white shadow">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
+          <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Workflow Templates</h1>
+              <p className="text-gray-600">Pre-built automation templates to get started quickly</p>
+            </div>
+            {user?.role === 'super_admin' && (
+              <button
+                onClick={() => navigate('/workflows')}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <PlusIcon className="h-5 w-5" />
+                Create Template
+              </button>
+            )}
+          </div>
         </div>
-        {user?.role === 'super_admin' && (
-          <button
-            onClick={() => navigate('/workflows')}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
-            <PlusIcon className="h-5 w-5" />
-            Create Template
-          </button>
-        )}
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
+        <div className="flex gap-4 mb-6">
         <input
           type="text"
           placeholder="Search templates..."
@@ -148,9 +153,11 @@ export default function WorkflowTemplates() {
         >
           Search
         </button>
+        </div>
       </div>
 
       {/* Templates Grid */}
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 pb-6">
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -227,6 +234,7 @@ export default function WorkflowTemplates() {
           Click "Use Template" to create a new workflow based on the template configuration. 
           You can then customize it to fit your specific needs.
         </p>
+      </div>
       </div>
     </div>
   );

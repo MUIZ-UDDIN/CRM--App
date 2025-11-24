@@ -340,8 +340,8 @@ const CompanyManagement: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-full bg-gray-50">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
           <button

@@ -123,12 +123,18 @@ export default function DataImport() {
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <div className="min-h-full">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Data Import</h1>
-        <p className="text-gray-600">Import contacts, deals, and companies from CSV or Excel files</p>
+      <div className="bg-white shadow">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
+          <div className="py-6">
+            <h1 className="text-2xl font-bold text-gray-900">Data Import</h1>
+            <p className="text-gray-600">Import contacts, deals, and companies from CSV or Excel files</p>
+          </div>
+        </div>
       </div>
+
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
 
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
@@ -292,6 +298,7 @@ export default function DataImport() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

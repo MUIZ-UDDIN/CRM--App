@@ -167,12 +167,18 @@ export default function SuperAdminBilling() {
   }
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="min-h-full">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Billing Management</h1>
-        <p className="text-gray-600">Manage subscriptions and pricing</p>
+      <div className="bg-white shadow">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
+          <div className="py-6">
+            <h1 className="text-2xl font-bold text-gray-900">Billing Management</h1>
+            <p className="text-gray-600">Manage subscriptions and pricing</p>
+          </div>
+        </div>
       </div>
+
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -414,6 +420,7 @@ export default function SuperAdminBilling() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

@@ -195,24 +195,29 @@ export default function SupportTickets() {
   };
 
   return (
-    <div className="p-6">
+    <div className="min-h-full">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Support Tickets</h1>
-          <p className="text-gray-600">Manage and track support requests</p>
+      <div className="bg-white shadow">
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
+          <div className="py-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Support Tickets</h1>
+              <p className="text-gray-600">Manage and track support requests</p>
+            </div>
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <PlusIcon className="h-5 w-5" />
+              New Ticket
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-        >
-          <PlusIcon className="h-5 w-5" />
-          New Ticket
-        </button>
       </div>
 
       {/* Filters */}
-      <div className="flex gap-4 mb-6">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
+        <div className="flex gap-4 mb-6">
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -236,9 +241,11 @@ export default function SupportTickets() {
           <option value="high">High</option>
           <option value="urgent">Urgent</option>
         </select>
+        </div>
       </div>
 
-      {/* Tickets List */}
+      {/* Tickets Table */}
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 pb-6">
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -624,6 +631,7 @@ export default function SupportTickets() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
