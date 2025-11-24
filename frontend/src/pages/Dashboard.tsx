@@ -42,9 +42,11 @@ function Dashboard(): JSX.Element {
   };
   
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-      {renderDashboard()}
+    <div className="min-h-full">
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
+        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+        {renderDashboard()}
+      </div>
     </div>
   );
 }
