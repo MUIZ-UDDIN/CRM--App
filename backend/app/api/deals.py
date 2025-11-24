@@ -800,18 +800,42 @@ def move_deal_stage(
     """Move deal to different stage"""
     from ..models.deals import Pipeline, PipelineStage
     
+    context = get_tenant_context(current_user)
     user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     
-    deal = db.query(DealModel).filter(
+    # Build query based on role
+    query = db.query(DealModel).filter(
         and_(
             DealModel.id == uuid.UUID(deal_id),
-            DealModel.owner_id == user_id,
             DealModel.is_deleted == False
         )
-    ).first()
+    )
+    
+    # Apply role-based filtering
+    if context.is_super_admin():
+        # Super Admin can move any deal
+        pass
+    elif has_permission(current_user, Permission.MANAGE_ALL_DEALS):
+        # Company Admin can move any deal in their company
+        query = query.filter(DealModel.company_id == context.company_id)
+    elif has_permission(current_user, Permission.MANAGE_TEAM_DEALS):
+        # Sales Manager can move deals owned by their team members
+        team_member_ids = db.query(User.id).filter(
+            and_(
+                User.team_id == context.team_id,
+                User.is_active == True
+            )
+        ).all()
+        team_member_ids = [str(uid[0]) for uid in team_member_ids]
+        query = query.filter(DealModel.owner_id.in_([uuid.UUID(uid) for uid in team_member_ids]))
+    else:
+        # Sales Rep can only move their own deals
+        query = query.filter(DealModel.owner_id == user_id)
+    
+    deal = query.first()
     
     if not deal:
-        raise HTTPException(status_code=404, detail="Deal not found")
+        raise HTTPException(status_code=404, detail="Deal not found or you don't have permission to move it")
     
     # Handle stage_id - accept either UUID or stage name
     to_stage_id_str = stage_data.get("to_stage_id", str(deal.stage_id))
