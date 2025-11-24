@@ -89,8 +89,14 @@ export default function DataImport() {
   };
 
   const downloadTemplate = (type: EntityType) => {
+    // Contact templates are now available in the Contacts page import modal
+    if (type === 'contacts') {
+      toast.info('Contact templates are available in the Contacts page when you click Import');
+      return;
+    }
+
     const templates: Record<EntityType, string> = {
-      contacts: 'first_name,last_name,phone,title,company,email,type\nTest,Test,Test,Test,Test,Test,Test\nfdfsdsada,sadasdasdadad,343,NEW,Import,abcd12@gmail.com,Marketing Qualified Lead\nTest rahuk,rahul,9876543210,NEW,Import Company,abcd123@gmail.com,Lead\n',
+      contacts: '', // Removed - use Contacts page instead
       deals: 'name,value,stage,contact_email,expected_close_date,description\nNew Deal,5000,Prospecting,john@example.com,2024-12-31,Sample deal\n',
       companies: 'name,domain,industry,size,phone,address,city,state,country\nAcme Corp,acme.com,Technology,50,555-0100,123 Main St,New York,NY,USA\n',
       leads: 'first_name,last_name,email,phone,company,title,source,status\nJane,Smith,jane@example.com,555-0200,Tech Inc,Director,Referral,New\n'
@@ -112,11 +118,30 @@ export default function DataImport() {
   // Permission check
   if (!canImportData) {
     return (
-      <div className="p-6">
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <div className="font-semibold text-yellow-900 mb-2">Data Import Restricted</div>
-          <p className="text-yellow-800">You don't have permission to import company data.</p>
-          <p className="text-yellow-700 text-sm mt-2">💡 Contact your Company Admin to request a data import or to get import permissions.</p>
+      <div className="min-h-full">
+        <div className="bg-white shadow">
+          <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
+            <div className="py-6">
+              <h1 className="text-2xl font-bold text-gray-900">Data Import</h1>
+              <p className="text-gray-600">Import contacts, deals, and companies from CSV or Excel files</p>
+            </div>
+          </div>
+        </div>
+        <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+            <div className="font-semibold text-yellow-900 mb-2">Data Import Restricted</div>
+            <p className="text-yellow-800 mb-3">You don't have permission to import company data.</p>
+            <div className="text-sm text-yellow-700 space-y-1">
+              <p><strong>Access Levels:</strong></p>
+              <ul className="list-disc list-inside ml-2 space-y-1">
+                <li><strong>Super Admin:</strong> Can import data for any company</li>
+                <li><strong>Company Admin:</strong> Can import data for their company</li>
+                <li><strong>Sales Manager:</strong> Can import team-only data (optional)</li>
+                <li><strong>Sales Rep/Regular User:</strong> No import access</li>
+              </ul>
+              <p className="mt-3">💡 Contact your Company Admin to request a data import or to get import permissions.</p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -141,13 +166,16 @@ export default function DataImport() {
         <div className="flex gap-3">
           <InformationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-900">
-            <p className="font-medium mb-1">How to import data:</p>
-            <ol className="list-decimal list-inside space-y-1">
+            <p className="font-medium mb-2">How to import data:</p>
+            <ol className="list-decimal list-inside space-y-1 mb-3">
               <li>Download the template for your data type</li>
               <li>Fill in your data following the template format</li>
               <li>Upload the completed file (CSV or Excel)</li>
               <li>Review and confirm the import</li>
             </ol>
+            <p className="text-xs bg-blue-100 rounded px-2 py-1 inline-block">
+              <strong>Note:</strong> For contact imports, use the Import button on the Contacts page for templates and upload.
+            </p>
           </div>
         </div>
       </div>
