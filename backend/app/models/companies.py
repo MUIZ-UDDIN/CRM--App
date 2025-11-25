@@ -79,6 +79,7 @@ class Company(BaseModel):
     # Relationships
     users = relationship('User', back_populates='company', foreign_keys='User.company_id')
     teams = relationship('Team', back_populates='company', cascade='all, delete-orphan')
+    email_settings = relationship('EmailSettings', back_populates='company', uselist=False, cascade='all, delete-orphan')
     # contacts = relationship('Contact', back_populates='company')
     # deals = relationship('Deal', back_populates='company')
     # activities = relationship('Activity', back_populates='company')
