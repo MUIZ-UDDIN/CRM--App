@@ -203,11 +203,25 @@ async def get_gmail_auth_url(
             detail="You don't have permission to manage integrations"
         )
     
-    # TODO: Implement Gmail OAuth flow
-    # This will require Google OAuth credentials and redirect URI setup
+    # TODO: Implement Gmail OAuth flow with actual credentials
+    # For now, return a placeholder URL with required parameters
+    import urllib.parse
+    
+    # Placeholder OAuth URL with required parameters
+    params = {
+        "client_id": "YOUR_GOOGLE_CLIENT_ID",
+        "redirect_uri": "https://sunstonecrm.com/api/email-settings/gmail/callback",
+        "response_type": "code",
+        "scope": "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
+        "access_type": "offline",
+        "prompt": "consent"
+    }
+    
+    auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode(params)
+    
     return {
-        "auth_url": "https://accounts.google.com/o/oauth2/v2/auth?...",
-        "message": "Gmail OAuth integration coming soon"
+        "auth_url": auth_url,
+        "message": "Gmail OAuth integration requires Google Cloud Console setup. Please configure OAuth credentials first."
     }
 
 
