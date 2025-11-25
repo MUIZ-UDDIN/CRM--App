@@ -14,6 +14,7 @@ from .contacts import Contact, ContactStatus, LeadSource
 from .deals import Deal, Pipeline, PipelineStage, DealStatus
 from .activities import Activity, ActivityType, ActivityStatus
 from .emails import Email, EmailTemplate, EmailCampaign, EmailStatus
+from .email_settings import EmailSettings
 from .sms import SMSMessage, SMSDirection, SMSStatus
 from .sms_templates import SMSTemplate
 from .scheduled_sms import ScheduledSMS
@@ -95,6 +96,7 @@ __all__ = [
     'EmailTemplate',
     'EmailCampaign',
     'EmailStatus',
+    'EmailSettings',
     
     # SMS
     'SMSMessage',
