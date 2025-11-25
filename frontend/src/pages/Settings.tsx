@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import ActionButtons from '../components/common/ActionButtons';
 import { useAuth } from '../contexts/AuthContext';
 import * as twilioService from '../services/twilioService';
+import * as emailService from '../services/emailService';
 import apiClient from '../services/apiClient';
 import {
   UserGroupIcon,
@@ -170,8 +171,9 @@ export default function Settings() {
     } else if (activeTab === 'billing') {
       fetchBillingData();
     } else if (activeTab === 'integrations') {
-      // Check Twilio connection from backend
+      // Check all integrations from backend
       checkTwilioConnection();
+      checkEmailIntegrations();
     }
   }, [activeTab]);
 
@@ -494,6 +496,52 @@ export default function Settings() {
       ));
     }
   };
+
+  const checkEmailIntegrations = async () => {
+    try {
+      const data = await emailService.getEmailSettings();
+      
+      // Update SendGrid status
+      if (data.sendgrid_enabled && data.sendgrid_from_email) {
+        setSendGridDetails({
+          fromEmail: data.sendgrid_from_email,
+          fromName: data.sendgrid_from_name,
+        });
+        setIntegrations(prev => prev.map(i =>
+          i.name === 'SendGrid' ? { ...i, status: 'connected' } : i
+        ));
+      } else {
+        setSendGridDetails(null);
+        setIntegrations(prev => prev.map(i =>
+          i.name === 'SendGrid' ? { ...i, status: 'disconnected' } : i
+        ));
+      }
+      
+      // Update Gmail status
+      if (data.gmail_enabled && data.gmail_email) {
+        setGmailDetails({
+          email: data.gmail_email,
+          syncEnabled: data.gmail_sync_enabled,
+          syncFrequency: data.gmail_sync_frequency,
+        });
+        setIntegrations(prev => prev.map(i =>
+          i.name === 'Gmail' ? { ...i, status: 'connected' } : i
+        ));
+      } else {
+        setGmailDetails(null);
+        setIntegrations(prev => prev.map(i =>
+          i.name === 'Gmail' ? { ...i, status: 'disconnected' } : i
+        ));
+      }
+    } catch (error) {
+      // No settings found or error, set as disconnected
+      setSendGridDetails(null);
+      setGmailDetails(null);
+      setIntegrations(prev => prev.map(i =>
+        (i.name === 'SendGrid' || i.name === 'Gmail') ? { ...i, status: 'disconnected' } : i
+      ));
+    }
+  };
   
   const fetchPhoneNumbers = async () => {
     try {
@@ -539,6 +587,8 @@ export default function Settings() {
 
   const [integrations, setIntegrations] = useState<Integration[]>([
     { id: '1', name: 'Twilio', description: 'SMS, Voice calls, and messaging', status: 'disconnected', icon: '📱' },
+    { id: '2', name: 'SendGrid', description: 'Bulk email campaigns and transactional emails', status: 'disconnected', icon: '📧' },
+    { id: '3', name: 'Gmail', description: 'Send and receive emails via Gmail', status: 'disconnected', icon: '📬' },
   ]);
   
   const [twilioDetails, setTwilioDetails] = useState<any>(null);
@@ -550,6 +600,20 @@ export default function Settings() {
     accountSid: '',
     authToken: ''
   });
+  
+  // SendGrid state
+  const [showSendGridModal, setShowSendGridModal] = useState(false);
+  const [isSavingSendGrid, setIsSavingSendGrid] = useState(false);
+  const [sendGridForm, setSendGridForm] = useState({
+    apiKey: '',
+    fromEmail: '',
+    fromName: ''
+  });
+  const [sendGridDetails, setSendGridDetails] = useState<any>(null);
+  
+  // Gmail state
+  const [showGmailModal, setShowGmailModal] = useState(false);
+  const [gmailDetails, setGmailDetails] = useState<any>(null);
   
   const [showDeleteAccountModal, setShowDeleteAccountModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
@@ -977,6 +1041,27 @@ export default function Settings() {
       return;
     }
     
+    // SendGrid handling
+    if (integration.name === 'SendGrid' && integration.status === 'disconnected') {
+      setShowSendGridModal(true);
+      return;
+    }
+    
+    if (integration.name === 'SendGrid' && integration.status === 'connected') {
+      handleDisconnectSendGrid();
+      return;
+    }
+    
+    // Gmail handling
+    if (integration.name === 'Gmail' && integration.status === 'disconnected') {
+      handleConnectGmail();
+      return;
+    }
+    
+    if (integration.name === 'Gmail' && integration.status === 'connected') {
+      handleDisconnectGmail();
+      return;
+    }
   };
   
   const handleDisconnectTwilio = async () => {
@@ -1071,6 +1156,110 @@ export default function Settings() {
       toast.error(errorMessage);
     } finally {
       setIsSavingTwilio(false);
+    }
+  };
+
+  // SendGrid handlers
+  const handleSaveSendGrid = async () => {
+    if (isSavingSendGrid) return;
+    
+    if (!sendGridForm.apiKey || !sendGridForm.fromEmail || !sendGridForm.fromName) {
+      toast.error('Please fill in all SendGrid fields');
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(sendGridForm.fromEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    setIsSavingSendGrid(true);
+    
+    try {
+      await emailService.saveSendGridSettings({
+        apiKey: sendGridForm.apiKey,
+        fromEmail: sendGridForm.fromEmail,
+        fromName: sendGridForm.fromName,
+      });
+      
+      setShowSendGridModal(false);
+      toast.success('SendGrid connected successfully!');
+      
+      // Refresh email integrations
+      await checkEmailIntegrations();
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to connect SendGrid';
+      toast.error(errorMessage);
+    } finally {
+      setIsSavingSendGrid(false);
+    }
+  };
+
+  const handleDisconnectSendGrid = async () => {
+    if (!confirm('Are you sure you want to disconnect SendGrid? This will remove all settings.')) {
+      return;
+    }
+
+    try {
+      await emailService.deleteSendGridSettings();
+      
+      setIntegrations(prev => prev.map(i =>
+        i.name === 'SendGrid' ? { ...i, status: 'disconnected' } : i
+      ));
+      setSendGridDetails(null);
+      setSendGridForm({ apiKey: '', fromEmail: '', fromName: '' });
+      toast.success('SendGrid disconnected successfully');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to disconnect SendGrid';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Gmail handlers
+  const handleConnectGmail = async () => {
+    try {
+      const data = await emailService.getGmailAuthUrl();
+      
+      if (data.auth_url) {
+        // Open OAuth popup
+        window.open(data.auth_url, 'Gmail OAuth', 'width=600,height=700');
+        toast.success('Opening Gmail authorization window...');
+        
+        // Listen for OAuth callback
+        window.addEventListener('message', handleGmailCallback);
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to initiate Gmail connection';
+      toast.error(errorMessage);
+    }
+  };
+
+  const handleGmailCallback = async (event: MessageEvent) => {
+    if (event.data.type === 'gmail-oauth-success') {
+      window.removeEventListener('message', handleGmailCallback);
+      toast.success('Gmail connected successfully!');
+      await checkEmailIntegrations();
+    }
+  };
+
+  const handleDisconnectGmail = async () => {
+    if (!confirm('Are you sure you want to disconnect Gmail? This will remove all settings and stop email sync.')) {
+      return;
+    }
+
+    try {
+      await emailService.disconnectGmail();
+      
+      setIntegrations(prev => prev.map(i =>
+        i.name === 'Gmail' ? { ...i, status: 'disconnected' } : i
+      ));
+      setGmailDetails(null);
+      toast.success('Gmail disconnected successfully');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to disconnect Gmail';
+      toast.error(errorMessage);
     }
   };
 
@@ -2655,6 +2844,76 @@ export default function Settings() {
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSavingTwilio ? 'Connecting...' : 'Connect Twilio'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SendGrid Configuration Modal */}
+      {showSendGridModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Configure SendGrid</h3>
+              <button onClick={() => setShowSendGridModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                <input
+                  type="password"
+                  placeholder="SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                  value={sendGridForm.apiKey}
+                  onChange={(e) => setSendGridForm({...sendGridForm, apiKey: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
+                <input
+                  type="email"
+                  placeholder="noreply@yourcompany.com"
+                  value={sendGridForm.fromEmail}
+                  onChange={(e) => setSendGridForm({...sendGridForm, fromEmail: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                <input
+                  type="text"
+                  placeholder="Your Company"
+                  value={sendGridForm.fromName}
+                  onChange={(e) => setSendGridForm({...sendGridForm, fromName: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Note:</strong> Get your SendGrid API key from{' '}
+                  <a href="https://app.sendgrid.com/settings/api_keys" target="_blank" rel="noopener noreferrer" className="underline">
+                    SendGrid Dashboard
+                  </a>
+                  . Make sure to verify your sender email address.
+                </p>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  onClick={() => setShowSendGridModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveSendGrid}
+                  disabled={isSavingSendGrid}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSavingSendGrid ? 'Connecting...' : 'Connect SendGrid'}
                 </button>
               </div>
             </div>
