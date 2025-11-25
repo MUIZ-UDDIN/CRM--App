@@ -588,7 +588,8 @@ export default function Settings() {
   const [integrations, setIntegrations] = useState<Integration[]>([
     { id: '1', name: 'Twilio', description: 'SMS, Voice calls, and messaging', status: 'disconnected', icon: '📱' },
     { id: '2', name: 'SendGrid', description: 'Bulk email campaigns and transactional emails', status: 'disconnected', icon: '📧' },
-    { id: '3', name: 'Gmail', description: 'Send and receive emails via Gmail', status: 'disconnected', icon: '📬' },
+    // Gmail integration requires Google OAuth setup - uncomment when ready
+    // { id: '3', name: 'Gmail', description: 'Send and receive emails via Gmail', status: 'disconnected', icon: '📬' },
   ]);
   
   const [twilioDetails, setTwilioDetails] = useState<any>(null);
