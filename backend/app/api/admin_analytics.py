@@ -107,9 +107,12 @@ async def get_admin_dashboard_analytics(
             ).scalar() or 0
         
         # Get recent activities with role-based filtering
-        activities_query = db.query(Activity)
+        activities_query = db.query(Activity).filter(
+            Activity.created_at >= datetime.now() - timedelta(days=30),
+            Activity.is_deleted == False
+        )
         if user_role == 'super_admin':
-            # Super admin sees all activities
+            # Super admin sees all recent activities
             pass
         elif user_role == 'company_admin':
             # Company admin sees company activities
@@ -146,7 +149,8 @@ async def get_admin_dashboard_analytics(
         # Get upcoming activities with role-based filtering
         upcoming_query = db.query(Activity).filter(
             Activity.due_date >= datetime.now(),
-            Activity.status != 'completed'
+            Activity.status != 'completed',
+            Activity.is_deleted == False
         )
         if user_role == 'super_admin':
             # Super admin sees all upcoming activities

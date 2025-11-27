@@ -125,15 +125,15 @@ export default function Notifications() {
     const entityId = idMatch ? idMatch[1] : null;
     
     // Determine navigation based on content
-    // Company management
+    // Company management (Super Admin page)
     if (text.includes('company registered') || text.includes('company created') || text.includes('new company')) {
-      return '/companies';
+      return '/admin';
     }
     if (text.includes('company removed') || text.includes('company deleted') || text.includes('company deactivated')) {
-      return '/companies';
+      return '/admin';
     }
     if (text.includes('company')) {
-      return '/companies';
+      return '/admin';
     }
     
     // User management
