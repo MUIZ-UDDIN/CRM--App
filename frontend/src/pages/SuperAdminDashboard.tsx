@@ -141,19 +141,23 @@ export default function SuperAdminDashboard() {
       // Show success message with credentials
       const { admin_email, admin_password } = response.data;
       
-      // Show an alert with the credentials
-      alert(
-        `✅ Company Created Successfully!\n\n` +
-        `📧 Admin Email: ${admin_email}\n` +
-        `🔑 Password: ${admin_password}\n\n` +
-        `⚠️ IMPORTANT: Save these credentials!\n` +
-        `The admin can use these credentials to login to their account.`
-      );
-      
-      // Also show a toast notification
+      // Show a styled success toast with credentials
       toast.success(
-        `Company created! Admin credentials sent.`,
-        { duration: 5000 }
+        `Company created successfully!\n\nEmail: ${admin_email}\nPassword: ${admin_password}\n\n⚠️ IMPORTANT: Save these credentials!`,
+        { 
+          duration: 15000,
+          style: {
+            background: '#10b981',
+            color: '#fff',
+            padding: '16px',
+            borderRadius: '8px',
+            fontSize: '14px',
+            fontWeight: '500',
+            whiteSpace: 'pre-line',
+            maxWidth: '500px'
+          },
+          icon: '✅'
+        }
       );
       
       setShowCreateModal(false);
