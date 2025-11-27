@@ -20,6 +20,7 @@ import {
   ChevronDownIcon,
   ArrowPathIcon,
   UserCircleIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
 
 interface Deal {
@@ -65,6 +66,8 @@ export default function Deals() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showFilters, setShowFilters] = useState(true);
+  const [filterStage, setFilterStage] = useState('all');
   const [expandedStages, setExpandedStages] = useState<string[]>([]);
   const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -762,27 +765,44 @@ export default function Deals() {
         </div>
       </div>
 
-      {/* Search Bar */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-4">
-        <div className="relative max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+      {/* Search and Filters */}
+      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
+        <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search deals by title, company, or contact..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
           </div>
-          <input
-            type="text"
-            placeholder="Search deals by title, company, or contact..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary-500 focus:border-primary-500 sm:text-sm"
-          />
-          {searchQuery && (
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button
-              onClick={() => setSearchQuery('')}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2 rounded-lg transition-colors ${
+                showFilters 
+                  ? 'bg-primary-100 text-primary-600' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Toggle Filters"
             >
-              <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600" />
+              <FunnelIcon className="h-5 w-5" />
             </button>
-          )}
+            {showFilters && (
+              <select
+                value={filterStage}
+                onChange={(e) => setFilterStage(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px]"
+              >
+                <option value="all">All Stages</option>
+                {stages.map((stage) => (
+                  <option key={stage.id} value={stage.id}>{stage.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
       </div>
 
@@ -796,7 +816,7 @@ export default function Deals() {
           <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
             {/* Mobile: Vertical Accordion, Desktop: Grid */}
             <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 space-y-3 md:space-y-0">
-              {stages.map((stage) => {
+              {stages.filter(stage => filterStage === 'all' || stage.id === filterStage).map((stage) => {
                 const isExpanded = expandedStages.includes(stage.id);
                 const toggleStage = () => {
                   setExpandedStages(prev => 
