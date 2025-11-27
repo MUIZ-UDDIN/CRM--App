@@ -622,7 +622,6 @@ async def update_deal(
     # Send notifications
     try:
         from ..services.notification_service import NotificationService
-        from ..models.users import User
         from ..models.deals import PipelineStage
         
         updater = db.query(User).filter(User.id == uuid.UUID(user_id)).first()
