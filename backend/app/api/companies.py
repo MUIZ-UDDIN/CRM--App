@@ -149,12 +149,12 @@ def create_company(
     
     db_company = Company(
         name=company.name,
-        plan=PlanType.FREE,  # Always start with free plan
+        plan=PlanType.FREE.value,  # Always start with free plan
         domain=company.domain,
         timezone=company.timezone or "UTC",
         currency=company.currency or "USD",
         created_by=current_user.get('id'),
-        status=CompanyStatus.ACTIVE,
+        status=CompanyStatus.ACTIVE.value,
         trial_ends_at=datetime.utcnow() + timedelta(days=14)  # 14-day trial
     )
     
@@ -172,8 +172,8 @@ def create_company(
         last_name=company.admin_last_name,
         hashed_password=get_password_hash(temp_password),
         company_id=db_company.id,
-        user_role=UserRole.COMPANY_ADMIN,
-        status=UserStatus.ACTIVE
+        user_role=UserRole.COMPANY_ADMIN.value,
+        status=UserStatus.ACTIVE.value
     )
     
     db.add(admin_user)
@@ -633,16 +633,16 @@ def suspend_company(
         )
     
     # Check if company is already suspended
-    if company.status == CompanyStatus.SUSPENDED:
+    if company.status == CompanyStatus.SUSPENDED.value:
         return {"message": "Company is already suspended"}
     
     # Suspend company
-    company.status = CompanyStatus.SUSPENDED
+    company.status = CompanyStatus.SUSPENDED.value
     
     # Also suspend all users in the company
     users = db.query(User).filter(User.company_id == company.id).all()
     for user in users:
-        user.status = UserStatus.SUSPENDED
+        user.status = UserStatus.SUSPENDED.value
     
     db.commit()
     db.refresh(company)
@@ -672,16 +672,16 @@ def activate_company(
         )
     
     # Check if company is already active
-    if company.status == CompanyStatus.ACTIVE:
+    if company.status == CompanyStatus.ACTIVE.value:
         return {"message": "Company is already active"}
     
     # Activate company
-    company.status = CompanyStatus.ACTIVE
+    company.status = CompanyStatus.ACTIVE.value
     
     # Also activate all users in the company
     users = db.query(User).filter(User.company_id == company.id).all()
     for user in users:
-        user.status = UserStatus.ACTIVE
+        user.status = UserStatus.ACTIVE.value
     
     db.commit()
     db.refresh(company)
@@ -803,8 +803,8 @@ def add_company_user(
         last_name=user_data.last_name,
         hashed_password=get_password_hash(user_data.password),
         company_id=company_id,
-        user_role=user_data.user_role,
-        status=UserStatus.ACTIVE
+        user_role=user_data.user_role.value if hasattr(user_data.user_role, 'value') else user_data.user_role,
+        status=UserStatus.ACTIVE.value
     )
     
     db.add(new_user)
