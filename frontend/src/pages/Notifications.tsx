@@ -273,7 +273,9 @@ export default function Notifications() {
   };
 
   const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
+    // Parse the date string - if it doesn't have 'Z' suffix, it's UTC and needs to be marked
+    const dateStr = dateString.endsWith('Z') ? dateString : dateString + 'Z';
+    const date = new Date(dateStr);
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
