@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getRoleDashboardAnalytics } from '../../services/roleAnalyticsService';
 import { FaUsers, FaHandshake, FaPhoneAlt, FaEnvelope, FaExclamationTriangle, FaClock, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import axios from 'axios';
@@ -18,6 +18,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
  * @returns {React.Component} Company Admin Dashboard component
  */
 function CompanyAdminDashboard() {
+  const navigate = useNavigate();
+  
   // State for dashboard data
   const [stats, setStats] = useState({
     user_role: '',
@@ -89,7 +91,10 @@ function CompanyAdminDashboard() {
     <div className="space-y-6">
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div 
+          onClick={() => navigate('/users')}
+          className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
+        >
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="bg-blue-100 p-3 rounded-full">
@@ -106,7 +111,10 @@ function CompanyAdminDashboard() {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div 
+          onClick={() => navigate('/deals')}
+          className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
+        >
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="bg-green-100 p-3 rounded-full">
@@ -134,7 +142,10 @@ function CompanyAdminDashboard() {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div 
+          onClick={() => navigate('/contacts')}
+          className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
+        >
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="bg-purple-100 p-3 rounded-full">
