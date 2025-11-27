@@ -139,12 +139,16 @@ def create_company(
     import secrets
     from app.core.security import get_password_hash
     
-    # Check if admin email already exists (emails must be globally unique)
-    existing_user = db.query(User).filter(User.email == company.admin_email).first()
-    if existing_user:
+    # Check if admin email already exists as a Company Admin in another company
+    # Note: Same email can exist in different companies (multi-tenant), but not as Company Admin
+    existing_company_admin = db.query(User).filter(
+        User.email == company.admin_email,
+        User.user_role == UserRole.COMPANY_ADMIN.value
+    ).first()
+    if existing_company_admin:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Email '{company.admin_email}' is already registered in the system. Please use a different email."
+            detail=f"Email '{company.admin_email}' is already registered as a Company Admin. Please use a different email."
         )
     
     db_company = Company(
