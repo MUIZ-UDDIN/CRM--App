@@ -351,18 +351,28 @@ async def update_quote(
     db: Session = Depends(get_db)
 ):
     """Update quote"""
+    context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
-    if not company_id:
-        raise HTTPException(status_code=403, detail="No company associated with user")
-    
-    quote = db.query(QuoteModel).filter(
-        and_(
-            QuoteModel.id == uuid.UUID(quote_id),
-            QuoteModel.company_id == company_id,
-            QuoteModel.is_deleted == False
-        )
-    ).first()
+    # Super Admin can update quotes from any company
+    if context.is_super_admin():
+        quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.id == uuid.UUID(quote_id),
+                QuoteModel.is_deleted == False
+            )
+        ).first()
+    else:
+        if not company_id:
+            raise HTTPException(status_code=403, detail="No company associated with user")
+        
+        quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.id == uuid.UUID(quote_id),
+                QuoteModel.company_id == company_id,
+                QuoteModel.is_deleted == False
+            )
+        ).first()
     
     if not quote:
         raise HTTPException(status_code=404, detail="Quote not found")
