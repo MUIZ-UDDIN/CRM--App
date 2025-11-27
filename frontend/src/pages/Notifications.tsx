@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as notificationsService from '../services/notificationsService';
 import { 
@@ -26,6 +27,7 @@ interface Notification {
 }
 
 export default function Notifications() {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(true);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -112,6 +114,59 @@ export default function Notifications() {
     if (text.includes('ticket') || text.includes('support')) return 'support';
     if (text.includes('quote')) return 'quote';
     return 'other';
+  };
+
+  // Helper function to get proper navigation path based on notification
+  const getNavigationPath = (notification: Notification): string | null => {
+    const text = `${notification.title} ${notification.message}`.toLowerCase();
+    
+    // Extract ID from message if present (format: "deal: Deal Name" or "ID: 123")
+    const idMatch = notification.message.match(/id[:\s]+([a-f0-9-]+)/i);
+    const entityId = idMatch ? idMatch[1] : null;
+    
+    // Determine navigation based on content
+    if (text.includes('deal')) {
+      return '/deals';
+    }
+    if (text.includes('contact')) {
+      return '/contacts';
+    }
+    if (text.includes('quote')) {
+      return '/quotes';
+    }
+    if (text.includes('ticket') || text.includes('support')) {
+      return '/support';
+    }
+    if (text.includes('activity') || text.includes('meeting') || text.includes('call')) {
+      return '/activities';
+    }
+    if (text.includes('stage') || text.includes('pipeline')) {
+      return '/deals';
+    }
+    if (text.includes('workflow')) {
+      return '/workflows';
+    }
+    if (text.includes('file') || text.includes('folder')) {
+      return '/files';
+    }
+    
+    // If notification has a link, use it
+    if (notification.link) {
+      return notification.link;
+    }
+    
+    return null;
+  };
+
+  const handleNotificationClick = (notification: Notification) => {
+    const path = getNavigationPath(notification);
+    if (path) {
+      // Mark as read when clicking
+      if (!notification.read) {
+        handleMarkAsRead(notification.id);
+      }
+      navigate(path);
+    }
   };
 
   const filteredNotifications = notifications.filter(notification => {
@@ -299,17 +354,15 @@ export default function Notifications() {
                 const Icon = getIcon(notification.type);
                 const iconColor = getIconColor(notification.type);
                 
+                const hasNavigation = getNavigationPath(notification) !== null;
+                
                 return (
                   <div
                     key={notification.id}
-                    onClick={() => {
-                      if (notification.link) {
-                        window.location.href = notification.link;
-                      }
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                     className={`px-6 py-4 transition-all duration-200 ${
                       !notification.read ? 'bg-blue-50 border-l-4 border-blue-500' : ''
-                    } ${notification.link ? 'hover:bg-gray-50 cursor-pointer hover:shadow-md' : ''}`}
+                    } ${hasNavigation ? 'hover:bg-gray-50 cursor-pointer hover:shadow-md' : ''}`}
                   >
                     <div className="flex items-start space-x-4">
                       <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${iconColor} shadow-sm`}>
@@ -335,7 +388,7 @@ export default function Notifications() {
                             <p className="text-sm text-gray-600 mt-1 line-clamp-2">
                               {notification.message}
                             </p>
-                            {notification.link && (
+                            {hasNavigation && (
                               <p className="text-xs text-primary-600 mt-2 font-medium hover:underline">
                                 Click to view details →
                               </p>

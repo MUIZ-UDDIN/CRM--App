@@ -89,7 +89,7 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-primary-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md xl:max-w-lg 2xl:max-w-xl w-full space-y-6 sm:space-y-8">
         <div>
           <h2 className="mt-6 text-center text-2xl sm:text-3xl xl:text-4xl font-extrabold text-gray-900">

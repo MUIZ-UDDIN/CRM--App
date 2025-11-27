@@ -5,8 +5,8 @@ export default function AuthLayout() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary-50 to-secondary-50 flex">
       {/* Left side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-primary-500 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-400 opacity-90"></div>
+      <div className="hidden lg:flex lg:w-1/2 bg-primary-600 relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary-600 to-primary-500 opacity-95"></div>
         <div className="relative z-10 flex flex-col justify-center items-center text-white p-12">
           {/* Logo */}
           <div className="mb-8">
