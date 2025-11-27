@@ -125,27 +125,72 @@ export default function Notifications() {
     const entityId = idMatch ? idMatch[1] : null;
     
     // Determine navigation based on content
+    // Company management
+    if (text.includes('company registered') || text.includes('company created') || text.includes('new company')) {
+      return '/companies';
+    }
+    if (text.includes('company removed') || text.includes('company deleted') || text.includes('company deactivated')) {
+      return '/companies';
+    }
+    if (text.includes('company')) {
+      return '/companies';
+    }
+    
+    // User management
+    if (text.includes('user added') || text.includes('user created') || text.includes('new user')) {
+      return '/users';
+    }
+    if (text.includes('user removed') || text.includes('user deleted') || text.includes('user deactivated')) {
+      return '/users';
+    }
+    if (text.includes('user invited') || text.includes('invitation')) {
+      return '/users';
+    }
+    if (text.includes('user') && (text.includes('role') || text.includes('permission'))) {
+      return '/users';
+    }
+    
+    // Team management
+    if (text.includes('team')) {
+      return '/teams';
+    }
+    
+    // Deal management
     if (text.includes('deal')) {
       return '/deals';
     }
+    
+    // Contact management
     if (text.includes('contact')) {
       return '/contacts';
     }
+    
+    // Quote management
     if (text.includes('quote')) {
       return '/quotes';
     }
+    
+    // Support tickets
     if (text.includes('ticket') || text.includes('support')) {
       return '/support';
     }
+    
+    // Activities
     if (text.includes('activity') || text.includes('meeting') || text.includes('call')) {
       return '/activities';
     }
+    
+    // Pipeline/Stages
     if (text.includes('stage') || text.includes('pipeline')) {
       return '/deals';
     }
+    
+    // Workflows
     if (text.includes('workflow')) {
       return '/workflows';
     }
+    
+    // Files
     if (text.includes('file') || text.includes('folder')) {
       return '/files';
     }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
@@ -56,6 +57,7 @@ interface AuditLogEntry {
 }
 
 const PlatformDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<PlatformMetrics | null>(null);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
@@ -214,11 +216,15 @@ const PlatformDashboard: React.FC = () => {
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div 
+          onClick={() => navigate('/companies')}
+          className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200 hover:scale-105 transform"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Companies</p>
               <p className="text-3xl font-bold text-gray-900 mt-2">{metrics?.total_companies || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Click to view all</p>
             </div>
             <Building2 className="w-12 h-12 text-blue-600" />
           </div>
@@ -259,21 +265,29 @@ const PlatformDashboard: React.FC = () => {
 
       {/* Additional Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
+        <div 
+          onClick={() => navigate('/users')}
+          className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200 hover:scale-105 transform"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Users</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">{metrics?.total_users || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Across all companies</p>
             </div>
             <Users className="w-10 h-10 text-purple-600" />
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow p-6">
+        <div 
+          onClick={() => navigate('/deals')}
+          className="bg-white rounded-lg shadow p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200 hover:scale-105 transform"
+        >
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Total Deals</p>
               <p className="text-2xl font-bold text-gray-900 mt-2">{metrics?.total_deals || 0}</p>
+              <p className="text-xs text-gray-500 mt-1">Across all companies</p>
             </div>
             <TrendingUp className="w-10 h-10 text-orange-600" />
           </div>
