@@ -794,7 +794,7 @@ export default function Deals() {
               <select
                 value={filterStage}
                 onChange={(e) => setFilterStage(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[180px]"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-[200px]"
               >
                 <option value="all">All Stages</option>
                 {stages.map((stage) => (
