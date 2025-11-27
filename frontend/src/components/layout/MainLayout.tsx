@@ -308,8 +308,12 @@ export default function MainLayout() {
         },
       });
       
-      // Silently ignore 401 errors (user logged out)
-      if (response.status === 401) return;
+      // Handle 401 errors (token expired or invalid)
+      if (response.status === 401) {
+        // Trigger logout event to stop all intervals
+        window.dispatchEvent(new Event('auth:logout'));
+        return;
+      }
       
       if (response.ok) {
         const data = await response.json();
@@ -346,15 +350,19 @@ export default function MainLayout() {
         },
       });
       
-      // Silently ignore 401 errors (user logged out)
-      if (response.status === 401) return;
+      // Handle 401 errors (token expired or invalid)
+      if (response.status === 401) {
+        // Trigger logout event to stop all intervals
+        window.dispatchEvent(new Event('auth:logout'));
+        return;
+      }
       
       if (response.ok) {
         const data = await response.json();
         setUnreadCount(data.count);
       }
     } catch (error) {
-      // Silently ignore errors (likely 401)
+      // Silently ignore network errors
     }
   };
 
