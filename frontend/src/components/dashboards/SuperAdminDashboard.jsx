@@ -110,7 +110,7 @@ function SuperAdminDashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div 
-          onClick={() => navigate('/companies')}
+          onClick={() => navigate('/admin')}
           className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
         >
           <div className="p-6">
@@ -132,7 +132,7 @@ function SuperAdminDashboard() {
         </div>
         
         <div 
-          onClick={() => navigate('/users')}
+          onClick={() => navigate('/admin')}
           className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
         >
           <div className="p-6">
