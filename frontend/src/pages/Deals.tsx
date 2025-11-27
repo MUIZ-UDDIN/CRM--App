@@ -794,11 +794,18 @@ export default function Deals() {
               <select
                 value={filterStage}
                 onChange={(e) => setFilterStage(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-[200px]"
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-[200px] truncate"
+                title={stages.find(s => s.id === filterStage)?.name || 'All Stages'}
               >
                 <option value="all">All Stages</option>
                 {stages.map((stage) => (
-                  <option key={stage.id} value={stage.id}>{stage.name}</option>
+                  <option 
+                    key={stage.id} 
+                    value={stage.id}
+                    title={stage.name}
+                  >
+                    {stage.name.length > 25 ? stage.name.substring(0, 25) + '...' : stage.name}
+                  </option>
                 ))}
               </select>
             )}
