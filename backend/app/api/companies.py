@@ -212,8 +212,8 @@ def create_company(
     return CompanyCreateResponse(
         id=str(db_company.id),
         name=db_company.name,
-        plan=db_company.plan.value,
-        status=db_company.status.value,
+        plan=db_company.plan,  # Already a string
+        status=db_company.status,  # Already a string
         admin_email=company.admin_email,
         admin_password=temp_password,
         trial_ends_at=db_company.trial_ends_at
