@@ -57,8 +57,8 @@ async def get_admin_dashboard_analytics(
             companies_count = db.query(Company).count()
             total_users = db.query(User).count()
             active_users = db.query(User).filter(User.is_active == True).count()
-            total_deals = db.query(Deal).count()
-            total_value = db.query(func.sum(Deal.value)).scalar() or 0
+            total_deals = db.query(Deal).filter(Deal.is_deleted == False).count()
+            total_value = db.query(func.sum(Deal.value)).filter(Deal.is_deleted == False).scalar() or 0
         elif user_role == 'company_admin':
             # Company admin sees company-wide data
             companies_count = 1
@@ -67,9 +67,13 @@ async def get_admin_dashboard_analytics(
                 User.company_id == company_id,
                 User.is_active == True
             ).count()
-            total_deals = db.query(Deal).filter(Deal.company_id == company_id).count()
+            total_deals = db.query(Deal).filter(
+                Deal.company_id == company_id,
+                Deal.is_deleted == False
+            ).count()
             total_value = db.query(func.sum(Deal.value)).filter(
-                Deal.company_id == company_id
+                Deal.company_id == company_id,
+                Deal.is_deleted == False
             ).scalar() or 0
         elif user_role == 'sales_manager' and user_team_id:
             # Sales manager sees only their team's data
@@ -86,11 +90,13 @@ async def get_admin_dashboard_analytics(
             ).count()
             total_deals = db.query(Deal).filter(
                 Deal.company_id == company_id,
-                Deal.owner_id.in_(team_user_ids)
+                Deal.owner_id.in_(team_user_ids),
+                Deal.is_deleted == False
             ).count()
             total_value = db.query(func.sum(Deal.value)).filter(
                 Deal.company_id == company_id,
-                Deal.owner_id.in_(team_user_ids)
+                Deal.owner_id.in_(team_user_ids),
+                Deal.is_deleted == False
             ).scalar() or 0
         else:
             # Sales rep and other users see only their own data
@@ -99,11 +105,13 @@ async def get_admin_dashboard_analytics(
             active_users = 1 if current_user.get('is_active') else 0
             total_deals = db.query(Deal).filter(
                 Deal.company_id == company_id,
-                Deal.owner_id == user_id
+                Deal.owner_id == user_id,
+                Deal.is_deleted == False
             ).count()
             total_value = db.query(func.sum(Deal.value)).filter(
                 Deal.company_id == company_id,
-                Deal.owner_id == user_id
+                Deal.owner_id == user_id,
+                Deal.is_deleted == False
             ).scalar() or 0
         
         # Get recent activities with role-based filtering
