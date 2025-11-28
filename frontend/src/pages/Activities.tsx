@@ -42,6 +42,8 @@ export default function Activities() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [activityToDelete, setActivityToDelete] = useState<Activity | null>(null);
   const [showFilters, setShowFilters] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -63,7 +65,7 @@ export default function Activities() {
   
   // Prevent background scroll when modals are open
   useEffect(() => {
-    if (showAddModal || showEditModal || showViewModal) {
+    if (showAddModal || showEditModal || showViewModal || showDeleteModal) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -72,7 +74,7 @@ export default function Activities() {
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [showAddModal, showEditModal, showViewModal]);
+  }, [showAddModal, showEditModal, showViewModal, showDeleteModal]);
   
   // Check for action query parameter
   useEffect(() => {
@@ -156,11 +158,12 @@ export default function Activities() {
     }
     
     setSelectedActivity(activity);
-    // Convert ISO date to date format (YYYY-MM-DD)
+    // Convert ISO date to datetime-local format (YYYY-MM-DDTHH:MM)
     let formattedDate = '';
     if (activity.due_date) {
       const date = new Date(activity.due_date);
-      formattedDate = date.toISOString().slice(0, 10);
+      // Format as YYYY-MM-DDTHH:MM for datetime-local input
+      formattedDate = date.toISOString().slice(0, 16);
     }
     setActivityForm({
       type: activity.type,
@@ -175,16 +178,23 @@ export default function Activities() {
   };
   
   // Handle delete activity
-  const handleDelete = async (activity: Activity) => {
-    if (!confirm(`Delete activity "${activity.subject}"?`)) return;
+  const handleDelete = (activity: Activity) => {
+    setActivityToDelete(activity);
+    setShowDeleteModal(true);
+  };
+  
+  // Confirm delete activity
+  const confirmDelete = async () => {
+    if (!activityToDelete) return;
     
     try {
-      await activitiesService.deleteActivity(activity.id);
+      await activitiesService.deleteActivity(activityToDelete.id);
       toast.success('Activity deleted');
+      setShowDeleteModal(false);
+      setActivityToDelete(null);
       fetchActivities();
     } catch (error: any) {
-      console.error('Delete error:', error);
-      toast.error(error?.response?.data?.detail || error?.message || 'Failed to delete activity');
+      toast.error(error.response?.data?.detail || 'Failed to delete activity');
     }
   };
   
@@ -1009,6 +1019,51 @@ export default function Activities() {
                 <label className="text-sm font-medium text-gray-500">Duration</label>
                 <p className="text-gray-900">{selectedActivity.duration_minutes ? `${selectedActivity.duration_minutes} minutes` : 'N/A'}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && activityToDelete && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Delete Activity</h3>
+              <button 
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setActivityToDelete(null);
+                }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete the activity <span className="font-semibold">"{activityToDelete.subject}"</span>?
+              </p>
+              <p className="text-sm text-red-600 mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setActivityToDelete(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+              >
+                Delete
+              </button>
             </div>
           </div>
         </div>
