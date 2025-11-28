@@ -546,6 +546,7 @@ export default function Quotes() {
                 <option value="sent">Sent</option>
                 <option value="accepted">Accepted</option>
                 <option value="rejected">Rejected</option>
+                <option value="expired">Expired</option>
               </select>
             )}
           </div>
