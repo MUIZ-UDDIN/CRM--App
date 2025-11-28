@@ -1280,7 +1280,7 @@ export default function Deals() {
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Stage</label>
-                <p className="text-gray-900 capitalize">{selectedDeal.stage_id.replace('-', ' ')}</p>
+                <p className="text-gray-900">{stages.find(s => s.id === selectedDeal.stage_id)?.name || 'Unknown Stage'}</p>
               </div>
             </div>
           </div>
