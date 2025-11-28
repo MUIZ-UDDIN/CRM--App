@@ -1405,9 +1405,9 @@ async def export_analytics_pdf(
         if company_id:
             activity_filters.append(Activity.company_id == company_id)
         if date_from:
-            activity_filters.append(Activity.created_at >= datetime.fromisoformat(date_from))
+            activity_filters.append(Activity.due_date >= datetime.fromisoformat(date_from))
         if date_to:
-            activity_filters.append(Activity.created_at <= datetime.fromisoformat(date_to))
+            activity_filters.append(Activity.due_date <= datetime.fromisoformat(date_to + 'T23:59:59'))
         
         total_activities = db.query(func.count(Activity.id)).filter(and_(*activity_filters)).scalar() or 0
         completed = db.query(func.count(Activity.id)).filter(and_(*activity_filters, Activity.status == 'completed')).scalar() or 0
