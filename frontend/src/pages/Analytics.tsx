@@ -461,6 +461,7 @@ export default function Analytics() {
       const filters: any = {
         date_from: getDateFrom(dateRange),
         date_to: new Date().toISOString().split('T')[0],
+        report_type: reportType, // Add report type to filters
       };
       
       // Only add filter if it's not 'all'
@@ -475,11 +476,11 @@ export default function Analytics() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `analytics-report-${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = `${reportType}-report-${new Date().toISOString().split('T')[0]}.pdf`;
       link.click();
       window.URL.revokeObjectURL(url);
       
-      toast.success('PDF exported successfully!');
+      toast.success(`${reportType.charAt(0).toUpperCase() + reportType.slice(1)} report exported successfully!`);
     } catch (error) {
       console.error('Error exporting PDF:', error);
       toast.error('Failed to export PDF');
