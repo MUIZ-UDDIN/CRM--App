@@ -181,6 +181,11 @@ export default function Analytics() {
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
       
+      // Debug logging
+      console.log('📊 Dashboard KPIs Response:', dashboard);
+      console.log('💰 Total Revenue:', dashboard?.kpis?.total_revenue);
+      console.log('📈 Avg Deal Size:', dashboard?.kpis?.avg_deal_size);
+      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics data');
