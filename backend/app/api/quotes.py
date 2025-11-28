@@ -475,16 +475,25 @@ async def delete_quote(
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
     
-    if not company_id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
-    
-    quote = db.query(QuoteModel).filter(
-        and_(
-            QuoteModel.id == uuid.UUID(quote_id),
-            QuoteModel.company_id == company_id,
-            QuoteModel.is_deleted == False
-        )
-    ).first()
+    # Super Admin can delete quotes from any company
+    if context.is_super_admin():
+        quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.id == uuid.UUID(quote_id),
+                QuoteModel.is_deleted == False
+            )
+        ).first()
+    else:
+        if not company_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No company associated with user")
+        
+        quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.id == uuid.UUID(quote_id),
+                QuoteModel.company_id == company_id,
+                QuoteModel.is_deleted == False
+            )
+        ).first()
     
     if not quote:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Quote not found")
