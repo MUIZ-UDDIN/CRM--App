@@ -1352,16 +1352,124 @@ async def export_analytics_pdf(
     elements.append(Paragraph(date_text, styles['Normal']))
     elements.append(Spacer(1, 20))
     
-    # Summary table
-    summary_data = [
-        ['Metric', 'Value'],
-        ['Total Deals', str(total_deals)],
-        ['Total Value', f'${total_value:,.2f}'],
-        ['Deals Won', str(won_deals)],
-        ['Won Value', f'${won_value:,.2f}'],
-        ['Win Rate', f'{(won_deals/total_deals*100):.1f}%' if total_deals > 0 else '0%'],
-        ['Avg Deal Size', f'${(total_value/total_deals):.2f}' if total_deals > 0 else '$0.00']
-    ]
+    # Generate report-specific data based on report_type
+    if report_type == "sales":
+        # Sales Performance Report
+        summary_data = [
+            ['Metric', 'Value'],
+            ['Total Deals', str(total_deals)],
+            ['Total Value', f'${total_value:,.2f}'],
+            ['Deals Won', str(won_deals)],
+            ['Won Value', f'${won_value:,.2f}'],
+            ['Win Rate', f'{(won_deals/total_deals*100):.1f}%' if total_deals > 0 else '0%'],
+            ['Avg Deal Size', f'${(total_value/total_deals):.2f}' if total_deals > 0 else '$0.00']
+        ]
+    
+    elif report_type == "pipeline":
+        # Pipeline Analysis Report
+        from ..models.deals import Pipeline as PipelineModel, PipelineStage
+        
+        # Get pipeline stages data
+        stage_filters = [Deal.is_deleted == False]
+        if company_id:
+            stage_filters.append(Deal.company_id == company_id)
+        if date_from:
+            stage_filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
+        if date_to:
+            stage_filters.append(Deal.created_at <= datetime.fromisoformat(date_to))
+        if pipeline_id:
+            stage_filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
+        
+        stages = db.query(
+            PipelineStage.name,
+            func.count(Deal.id).label('deal_count'),
+            func.sum(Deal.value).label('total_value')
+        ).join(Deal, Deal.stage_id == PipelineStage.id)\
+         .filter(and_(*stage_filters))\
+         .group_by(PipelineStage.name)\
+         .all()
+        
+        summary_data = [['Stage', 'Deals', 'Total Value']]
+        for stage in stages:
+            summary_data.append([
+                stage.name,
+                str(stage.deal_count),
+                f'${stage.total_value:,.2f}' if stage.total_value else '$0.00'
+            ])
+    
+    elif report_type == "activity":
+        # Activity Summary Report
+        from ..models.activities import Activity
+        
+        activity_filters = [Activity.is_deleted == False]
+        if company_id:
+            activity_filters.append(Activity.company_id == company_id)
+        if date_from:
+            activity_filters.append(Activity.created_at >= datetime.fromisoformat(date_from))
+        if date_to:
+            activity_filters.append(Activity.created_at <= datetime.fromisoformat(date_to))
+        
+        total_activities = db.query(func.count(Activity.id)).filter(and_(*activity_filters)).scalar() or 0
+        completed = db.query(func.count(Activity.id)).filter(and_(*activity_filters, Activity.status == 'completed')).scalar() or 0
+        pending = db.query(func.count(Activity.id)).filter(and_(*activity_filters, Activity.status == 'pending')).scalar() or 0
+        
+        summary_data = [
+            ['Metric', 'Value'],
+            ['Total Activities', str(total_activities)],
+            ['Completed', str(completed)],
+            ['Pending', str(pending)],
+            ['Completion Rate', f'{(completed/total_activities*100):.1f}%' if total_activities > 0 else '0%']
+        ]
+    
+    elif report_type == "contacts":
+        # Contact Report
+        from ..models.contacts import Contact
+        
+        contact_filters = [Contact.is_deleted == False]
+        if company_id:
+            contact_filters.append(Contact.company_id == company_id)
+        if date_from:
+            contact_filters.append(Contact.created_at >= datetime.fromisoformat(date_from))
+        if date_to:
+            contact_filters.append(Contact.created_at <= datetime.fromisoformat(date_to))
+        
+        total_contacts = db.query(func.count(Contact.id)).filter(and_(*contact_filters)).scalar() or 0
+        leads = db.query(func.count(Contact.id)).filter(and_(*contact_filters, Contact.type == 'lead')).scalar() or 0
+        customers = db.query(func.count(Contact.id)).filter(and_(*contact_filters, Contact.type == 'customer')).scalar() or 0
+        
+        summary_data = [
+            ['Metric', 'Value'],
+            ['Total Contacts', str(total_contacts)],
+            ['Leads', str(leads)],
+            ['Customers', str(customers)],
+            ['Conversion Rate', f'{(customers/total_contacts*100):.1f}%' if total_contacts > 0 else '0%']
+        ]
+    
+    elif report_type == "revenue":
+        # Revenue Forecast Report
+        lost_deals = db.query(func.count(Deal.id)).filter(and_(*filters, Deal.status == DealStatus.LOST)).scalar() or 0
+        open_deals = db.query(func.count(Deal.id)).filter(and_(*filters, Deal.status == DealStatus.OPEN)).scalar() or 0
+        open_value = db.query(func.sum(Deal.value)).filter(and_(*filters, Deal.status == DealStatus.OPEN)).scalar() or 0
+        
+        summary_data = [
+            ['Metric', 'Value'],
+            ['Won Revenue', f'${won_value:,.2f}'],
+            ['Pipeline Value', f'${open_value:,.2f}' if open_value else '$0.00'],
+            ['Forecasted Revenue', f'${(won_value + (open_value * 0.5)):,.2f}' if open_value else f'${won_value:,.2f}'],
+            ['Won Deals', str(won_deals)],
+            ['Open Deals', str(open_deals)],
+            ['Lost Deals', str(lost_deals)]
+        ]
+    
+    else:
+        # Default fallback
+        summary_data = [
+            ['Metric', 'Value'],
+            ['Total Deals', str(total_deals)],
+            ['Total Value', f'${total_value:,.2f}'],
+            ['Deals Won', str(won_deals)],
+            ['Won Value', f'${won_value:,.2f}']
+        ]
     
     summary_table = Table(summary_data, colWidths=[3*inch, 3*inch])
     summary_table.setStyle(TableStyle([
