@@ -32,6 +32,8 @@ export default function Quotes() {
   const [currentPage, setCurrentPage] = useState(1);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [quoteToDelete, setQuoteToDelete] = useState<Quote | null>(null);
   const [showFilters, setShowFilters] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -186,16 +188,29 @@ export default function Quotes() {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (quote: Quote) => {
-    if (!confirm(`Delete quote "${quote.quote_number}"?`)) return;
+  const handleDelete = (quote: Quote) => {
+    setQuoteToDelete(quote);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!quoteToDelete) return;
     try {
-      await quotesService.deleteQuote(quote.id);
-      toast.success('Quote deleted');
+      await quotesService.deleteQuote(quoteToDelete.id);
+      toast.success('Quote deleted successfully');
+      setShowDeleteModal(false);
+      setQuoteToDelete(null);
       fetchQuotes();
     } catch (error: any) {
       console.error('Delete error:', error);
       toast.error(error?.response?.data?.detail || error?.message || 'Failed to delete quote');
+      setShowDeleteModal(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setQuoteToDelete(null);
   };
 
   const handleDownload = async (quote: Quote) => {
@@ -936,6 +951,47 @@ export default function Quotes() {
                 <label className="text-sm font-medium text-gray-500">Valid Until</label>
                 <p className="text-gray-900">{formatDate(selectedQuote.valid_until)}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && quoteToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={cancelDelete}
+          onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
+          style={{ isolation: 'isolate' }}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete <span className="font-semibold">"{quoteToDelete.quote_number}"</span>?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete
+              </button>
             </div>
           </div>
         </div>
