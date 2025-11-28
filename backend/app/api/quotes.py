@@ -400,6 +400,9 @@ async def update_quote(
             quote.deal_id = None
     if quote_data.valid_until is not None:
         quote.valid_until = quote_data.valid_until
+        # If quote was expired and valid_until is extended to future date, change status back to draft
+        if quote.status == QuoteStatus.EXPIRED and quote_data.valid_until > date.today():
+            quote.status = QuoteStatus.DRAFT
     if quote_data.description is not None:
         quote.description = quote_data.description
     if quote_data.terms is not None:
