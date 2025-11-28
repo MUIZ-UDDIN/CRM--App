@@ -172,7 +172,7 @@ export default function Notifications() {
     
     // Support tickets
     if (text.includes('ticket') || text.includes('support')) {
-      return '/support';
+      return '/support-tickets';
     }
     
     // Activities

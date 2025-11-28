@@ -31,6 +31,12 @@ interface Activity {
   priority?: number;
 }
 
+// Helper function to capitalize first letter
+const capitalize = (str: string) => {
+  if (!str) return '';
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 export default function Activities() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -516,7 +522,7 @@ export default function Activities() {
                           activity.type === 'email' ? 'bg-green-100 text-green-800' :
                           'bg-gray-100 text-gray-800'
                         }`}>
-                          {activity.type}
+                          {capitalize(activity.type)}
                         </span>
                       </td>
                       <td className="px-6 py-4">
@@ -546,7 +552,7 @@ export default function Activities() {
                           activity.status === 'overdue' ? 'bg-red-100 text-red-800' :
                           'bg-yellow-100 text-yellow-800'
                         }`}>
-                          {activity.status}
+                          {capitalize(activity.status || '')}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -594,14 +600,14 @@ export default function Activities() {
                               activity.type === 'email' ? 'bg-green-100 text-green-800' :
                               'bg-gray-100 text-gray-800'
                             }`}>
-                              {activity.type}
+                              {capitalize(activity.type)}
                             </span>
                             <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
                               activity.status === 'completed' ? 'bg-green-100 text-green-800' :
                               activity.status === 'overdue' ? 'bg-red-100 text-red-800' :
                               'bg-yellow-100 text-yellow-800'
                             }`}>
-                              {activity.status}
+                              {capitalize(activity.status || '')}
                             </span>
                           </div>
                           <h3 className="text-sm font-medium text-gray-900 truncate" title={activity.subject}>
