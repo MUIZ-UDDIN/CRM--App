@@ -181,11 +181,6 @@ export default function Analytics() {
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
       
-      // Debug logging
-      console.log('📊 Dashboard KPIs Response:', dashboard);
-      console.log('💰 Total Revenue:', dashboard?.kpis?.total_revenue);
-      console.log('📈 Avg Deal Size:', dashboard?.kpis?.avg_deal_size);
-      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics data');
@@ -783,7 +778,11 @@ export default function Analytics() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  ${dashboardKPIs?.kpis?.total_revenue != null ? (dashboardKPIs.kpis.total_revenue / 1000).toFixed(1) : '0'}K
+                  {dashboardKPIs?.kpis?.total_revenue != null 
+                    ? dashboardKPIs.kpis.total_revenue >= 1000 
+                      ? `$${(dashboardKPIs.kpis.total_revenue / 1000).toFixed(1)}K`
+                      : `$${dashboardKPIs.kpis.total_revenue.toFixed(0)}`
+                    : '$0'}
                 </p>
                 <p className={`text-sm mt-1 ${(dashboardKPIs?.kpis?.revenue_growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {(dashboardKPIs?.kpis?.revenue_growth || 0) >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.revenue_growth || 0).toFixed(1)}%
@@ -827,7 +826,11 @@ export default function Analytics() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Deal Size</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  ${dashboardKPIs?.kpis?.avg_deal_size != null ? (dashboardKPIs.kpis.avg_deal_size / 1000).toFixed(1) : '0'}K
+                  {dashboardKPIs?.kpis?.avg_deal_size != null 
+                    ? dashboardKPIs.kpis.avg_deal_size >= 1000 
+                      ? `$${(dashboardKPIs.kpis.avg_deal_size / 1000).toFixed(1)}K`
+                      : `$${dashboardKPIs.kpis.avg_deal_size.toFixed(0)}`
+                    : '$0'}
                 </p>
                 <p className={`text-sm mt-1 ${(dashboardKPIs?.kpis?.avg_deal_growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {(dashboardKPIs?.kpis?.avg_deal_growth || 0) >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.avg_deal_growth || 0).toFixed(1)}%
