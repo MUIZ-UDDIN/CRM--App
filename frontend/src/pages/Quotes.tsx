@@ -150,14 +150,8 @@ export default function Quotes() {
     setLoading(true);
     try {
       const data = await quotesService.getQuotes({ status: filterStatus !== 'all' ? filterStatus : undefined });
-      // Update expired quotes
-      const updatedQuotes = data.map((quote: Quote) => {
-        if (quote.status !== 'accepted' && quote.status !== 'rejected' && isQuoteExpired(quote.valid_until)) {
-          return { ...quote, status: 'expired' as const };
-        }
-        return quote;
-      });
-      setQuotes(updatedQuotes);
+      // Use status from backend - backend manages expired status automatically
+      setQuotes(data);
     } catch (error) {
       console.error('Error fetching quotes:', error);
       toast.error('Failed to load quotes');

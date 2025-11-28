@@ -131,6 +131,13 @@ async def get_quotes(
     
     quotes = query.order_by(desc(QuoteModel.created_at)).offset(skip).limit(limit).all()
     
+    # Auto-fix: If quote is marked as expired but valid_until is in the future, change to draft
+    from datetime import date as date_class
+    for q in quotes:
+        if q.status == QuoteStatus.EXPIRED and q.valid_until and q.valid_until > date_class.today():
+            q.status = QuoteStatus.DRAFT
+            db.commit()
+    
     return [
         QuoteResponse(
             id=str(q.id),
