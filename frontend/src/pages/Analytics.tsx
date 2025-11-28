@@ -778,10 +778,10 @@ export default function Analytics() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Revenue</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  ${dashboardKPIs?.kpis?.total_revenue ? (dashboardKPIs.kpis.total_revenue / 1000).toFixed(1) : '0'}K
+                  ${dashboardKPIs?.kpis?.total_revenue != null ? (dashboardKPIs.kpis.total_revenue / 1000).toFixed(1) : '0'}K
                 </p>
-                <p className={`text-sm mt-1 ${dashboardKPIs?.kpis?.revenue_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {dashboardKPIs?.kpis?.revenue_growth >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.revenue_growth || 0)}%
+                <p className={`text-sm mt-1 ${(dashboardKPIs?.kpis?.revenue_growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {(dashboardKPIs?.kpis?.revenue_growth || 0) >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.revenue_growth || 0).toFixed(1)}%
                 </p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
@@ -822,10 +822,10 @@ export default function Analytics() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Avg Deal Size</p>
                 <p className="text-2xl font-bold text-gray-900 mt-2">
-                  ${dashboardKPIs?.kpis?.avg_deal_size ? (dashboardKPIs.kpis.avg_deal_size / 1000).toFixed(1) : '0'}K
+                  ${dashboardKPIs?.kpis?.avg_deal_size != null ? (dashboardKPIs.kpis.avg_deal_size / 1000).toFixed(1) : '0'}K
                 </p>
-                <p className={`text-sm mt-1 ${dashboardKPIs?.kpis?.avg_deal_growth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {dashboardKPIs?.kpis?.avg_deal_growth >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.avg_deal_growth || 0)}%
+                <p className={`text-sm mt-1 ${(dashboardKPIs?.kpis?.avg_deal_growth || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {(dashboardKPIs?.kpis?.avg_deal_growth || 0) >= 0 ? '↑' : '↓'} {Math.abs(dashboardKPIs?.kpis?.avg_deal_growth || 0).toFixed(1)}%
                 </p>
               </div>
               <div className="p-3 bg-orange-100 rounded-lg">
