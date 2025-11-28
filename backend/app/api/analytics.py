@@ -1293,10 +1293,11 @@ async def export_analytics_pdf(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     pipeline_id: Optional[str] = Query(None),
+    report_type: Optional[str] = Query("sales", description="Report type: sales, pipeline, activity, contacts, revenue"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Export analytics data to PDF"""
+    """Export analytics data to PDF with support for different report types"""
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
@@ -1324,7 +1325,7 @@ async def export_analytics_pdf(
     elements = []
     styles = getSampleStyleSheet()
     
-    # Title
+    # Title based on report type
     title_style = ParagraphStyle(
         'CustomTitle',
         parent=styles['Heading1'],
@@ -1333,7 +1334,17 @@ async def export_analytics_pdf(
         spaceAfter=30,
         alignment=TA_CENTER
     )
-    elements.append(Paragraph("Analytics Report", title_style))
+    
+    # Set title based on report type
+    report_titles = {
+        "sales": "Sales Performance Report",
+        "pipeline": "Pipeline Analysis Report",
+        "activity": "Activity Summary Report",
+        "contacts": "Contact Report",
+        "revenue": "Revenue Forecast Report"
+    }
+    title = report_titles.get(report_type, "Analytics Report")
+    elements.append(Paragraph(title, title_style))
     elements.append(Spacer(1, 12))
     
     # Date range
