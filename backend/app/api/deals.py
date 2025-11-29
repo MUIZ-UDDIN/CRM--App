@@ -797,10 +797,16 @@ def move_deal_stage(
     db: Session = Depends(get_db)
 ):
     """Move deal to different stage"""
-    from ..models.deals import Pipeline, PipelineStage
-    
-    context = get_tenant_context(current_user)
-    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    try:
+        from ..models.deals import Pipeline, PipelineStage
+        
+        context = get_tenant_context(current_user)
+        user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    except Exception as e:
+        print(f"Error in move_deal_stage initialization: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to initialize deal move: {str(e)}")
     
     # Build query based on role
     query = db.query(DealModel).filter(
@@ -840,6 +846,16 @@ def move_deal_stage(
     to_stage_id_str = stage_data.get("to_stage_id", str(deal.stage_id))
     try:
         stage_id = uuid.UUID(to_stage_id_str)
+        # Verify the stage exists and is active
+        stage = db.query(PipelineStage).filter(
+            and_(
+                PipelineStage.id == stage_id,
+                PipelineStage.is_deleted == False,
+                PipelineStage.is_active == True
+            )
+        ).first()
+        if not stage:
+            raise HTTPException(status_code=400, detail=f"Stage not found or inactive")
     except (ValueError, AttributeError):
         # Try to find stage by name (case-insensitive)
         stage_name_map = {
@@ -854,7 +870,8 @@ def move_deal_stage(
             and_(
                 PipelineStage.pipeline_id == deal.pipeline_id,
                 PipelineStage.name == stage_name,
-                PipelineStage.is_deleted == False
+                PipelineStage.is_deleted == False,
+                PipelineStage.is_active == True
             )
         ).first()
         
@@ -866,11 +883,18 @@ def move_deal_stage(
     old_stage_id = deal.stage_id
     old_status = deal.status
     
-    deal.stage_id = stage_id
-    deal.updated_at = datetime.utcnow()
-    
-    db.commit()
-    db.refresh(deal)
+    try:
+        deal.stage_id = stage_id
+        deal.updated_at = datetime.utcnow()
+        
+        db.commit()
+        db.refresh(deal)
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating deal stage: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to update deal stage: {str(e)}")
     
     # Trigger workflows for stage change
     try:
