@@ -27,6 +27,14 @@ def check_analytics_permissions(current_user, analytics_type, company_id=None, t
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
     
+    # Debug logging
+    print(f"=== Analytics Permission Check ===")
+    print(f"User Role: {current_user.get('role')}")
+    print(f"User Role (alt): {current_user.get('user_role')}")
+    print(f"Is Super Admin: {context.is_super_admin()}")
+    print(f"Has VIEW_COMPANY_ANALYTICS: {has_permission(current_user, Permission.VIEW_COMPANY_ANALYTICS)}")
+    print(f"==================================")
+    
     # Super admin can access all analytics
     if context.is_super_admin():
         return True, "all"
