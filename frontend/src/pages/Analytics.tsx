@@ -406,6 +406,13 @@ export default function Analytics() {
         rate: item.conversion_rate || 0
       }))
     : [];
+  
+  // Debug: Log conversion data to verify it's changing
+  React.useEffect(() => {
+    if (conversionBySourceData.length > 0) {
+      console.log('📊 Conversion Data Updated:', JSON.stringify(conversionBySourceData));
+    }
+  }, [JSON.stringify(conversionBySourceData)]);
 
   // Document stats from API
   const documentStatsData = documentAnalytics?.document_summary ? [
@@ -943,8 +950,8 @@ export default function Analytics() {
               <h3 className="text-base sm:text-lg font-medium text-gray-900">Lead Sources</h3>
             </div>
             <div className="p-4 sm:p-6">
-              <ResponsiveContainer width="100%" height={250} key={`leadsource-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                <PieChart>
+              <ResponsiveContainer width="100%" height={250} key={`leadsource-${dateRange}-${selectedUser}-${selectedPipeline}-${JSON.stringify(leadSourceData)}`}>
+                <PieChart key={`piechart-${JSON.stringify(leadSourceData)}`}>
                   <Pie
                     data={leadSourceData}
                     cx="50%"
@@ -990,8 +997,8 @@ export default function Analytics() {
             <h3 className="text-base sm:text-lg font-medium text-gray-900">Conversion Rates by Lead Source</h3>
           </div>
           <div className="p-4 sm:p-6">
-            <ResponsiveContainer width="100%" height={250} key={`conversion-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-              <BarChart data={conversionBySourceData}>
+            <ResponsiveContainer width="100%" height={250} key={`conversion-${dateRange}-${selectedUser}-${selectedPipeline}-${JSON.stringify(conversionBySourceData)}`}>
+              <BarChart data={conversionBySourceData} key={`chart-${JSON.stringify(conversionBySourceData)}`}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="source" stroke="#6B7280" tick={{ fontSize: 10 }} />
                 <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
