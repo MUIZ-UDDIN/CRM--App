@@ -336,59 +336,50 @@ async def get_revenue_analytics(
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
-    # Get last 6 months of revenue data
-    monthly_data = []
-    current_date = datetime.now()
+    # Determine date range based on filters
+    if date_from and date_to:
+        start_date = datetime.fromisoformat(date_from)
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+    else:
+        # Default to last 6 months
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=180)
     
-    for i in range(5, -1, -1):  # Last 6 months
-        # Calculate the month properly by subtracting months, not days
-        year = current_date.year
-        month = current_date.month - i
-        
-        # Handle year rollover
-        while month <= 0:
-            month += 12
-            year -= 1
-        
-        month_start = datetime(year, month, 1)
-        
-        # Calculate next month start
-        if month == 12:
-            month_end = datetime(year + 1, 1, 1)
-        else:
-            month_end = datetime(year, month + 1, 1)
-        
-        # Build filters based on access level
-        # Use actual_close_date if set, otherwise use updated_at (when deal was marked as won)
-        filters = [
-            Deal.is_deleted == False,
-            Deal.status == DealStatus.WON,
-            or_(
-                and_(
-                    Deal.actual_close_date.isnot(None),
-                    Deal.actual_close_date >= month_start,
-                    Deal.actual_close_date < month_end
-                ),
-                and_(
-                    Deal.actual_close_date.is_(None),
-                    Deal.updated_at >= month_start,
-                    Deal.updated_at < month_end
+    # Calculate number of days in range
+    days_in_range = (end_date - start_date).days
+    
+    # Generate periods based on date range
+    monthly_data = []
+    
+    if days_in_range <= 31:
+        # For short ranges (<=31 days), show weekly data
+        current = start_date
+        while current < end_date:
+            period_start = current
+            period_end = min(current + timedelta(days=7), end_date)
+            
+            # Build filters for this period
+            filters = [
+                Deal.is_deleted == False,
+                Deal.status == DealStatus.WON,
+                or_(
+                    and_(
+                        Deal.actual_close_date.isnot(None),
+                        Deal.actual_close_date >= period_start,
+                        Deal.actual_close_date < period_end
+                    ),
+                    and_(
+                        Deal.actual_close_date.is_(None),
+                        Deal.updated_at >= period_start,
+                        Deal.updated_at < period_end
+                    )
                 )
-            )
-        ]
-        
-        # Apply access level filters
-        if access_level == "all":
-            # Super admin can see all data
-            pass
-        elif access_level == "company":
-            # Company admin can see company data
-            if company_id:
+            ]
+            
+            # Apply access level filters
+            if access_level == "company" and company_id:
                 filters.append(Deal.company_id == company_id)
-        elif access_level == "team":
-            # Team manager can see team data
-            if current_user.get('team_id'):
-                # Get team members
+            elif access_level == "team" and current_user.get('team_id'):
                 team_member_ids = db.query(User.id).filter(
                     User.team_id == uuid.UUID(current_user.get('team_id')),
                     User.is_deleted == False
@@ -397,29 +388,93 @@ async def get_revenue_analytics(
                     filters.append(Deal.owner_id.in_([m[0] for m in team_member_ids]))
                 else:
                     filters.append(Deal.owner_id == owner_id)
-        elif access_level == "own":
-            # Regular user can see own data
-            filters.append(Deal.owner_id == owner_id)
+            elif access_level == "own":
+                filters.append(Deal.owner_id == owner_id)
+            
+            if user_id:
+                filters.append(Deal.owner_id == uuid.UUID(user_id))
+            if pipeline_id:
+                filters.append(Deal.pipeline_id == uuid.UUID(pipeline_id))
+            
+            # Get revenue and deal count
+            revenue = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0.0
+            deal_count = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
+            
+            monthly_data.append({
+                "month": period_start.strftime("%b %d"),
+                "revenue": float(revenue),
+                "deal_count": deal_count
+            })
+            
+            current += timedelta(days=7)
+    else:
+        # For longer ranges, show monthly data
+        # Calculate months in range
+        months_in_range = []
+        current = start_date.replace(day=1)
+        while current < end_date:
+            months_in_range.append(current)
+            if current.month == 12:
+                current = current.replace(year=current.year + 1, month=1)
+            else:
+                current = current.replace(month=current.month + 1)
         
-        # Apply user filter
-        if user_id:
-            filters.append(Deal.owner_id == uuid.UUID(user_id))
-        
-        # Apply pipeline filter
-        if pipeline_id:
-            filters.append(Deal.pipeline_id == uuid.UUID(pipeline_id))
-        
-        # Get revenue for this month (won deals only)
-        revenue = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0.0
-        
-        # Get deal count for this month
-        deal_count = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
-        
-        monthly_data.append({
-            "month": month_start.strftime("%Y-%m"),
-            "revenue": float(revenue),
-            "deal_count": deal_count
-        })
+        for month_start in months_in_range:
+            # Calculate month end
+            if month_start.month == 12:
+                month_end = datetime(month_start.year + 1, 1, 1)
+            else:
+                month_end = datetime(month_start.year, month_start.month + 1, 1)
+            
+            month_end = min(month_end, end_date)
+            
+            # Build filters for this period
+            filters = [
+                Deal.is_deleted == False,
+                Deal.status == DealStatus.WON,
+                or_(
+                    and_(
+                        Deal.actual_close_date.isnot(None),
+                        Deal.actual_close_date >= month_start,
+                        Deal.actual_close_date < month_end
+                    ),
+                    and_(
+                        Deal.actual_close_date.is_(None),
+                        Deal.updated_at >= month_start,
+                        Deal.updated_at < month_end
+                    )
+                )
+            ]
+            
+            # Apply access level filters
+            if access_level == "company" and company_id:
+                filters.append(Deal.company_id == company_id)
+            elif access_level == "team" and current_user.get('team_id'):
+                team_member_ids = db.query(User.id).filter(
+                    User.team_id == uuid.UUID(current_user.get('team_id')),
+                    User.is_deleted == False
+                ).all()
+                if team_member_ids:
+                    filters.append(Deal.owner_id.in_([m[0] for m in team_member_ids]))
+                else:
+                    filters.append(Deal.owner_id == owner_id)
+            elif access_level == "own":
+                filters.append(Deal.owner_id == owner_id)
+            
+            if user_id:
+                filters.append(Deal.owner_id == uuid.UUID(user_id))
+            if pipeline_id:
+                filters.append(Deal.pipeline_id == uuid.UUID(pipeline_id))
+            
+            # Get revenue and deal count
+            revenue = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0.0
+            deal_count = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
+            
+            monthly_data.append({
+                "month": month_start.strftime("%Y-%m"),
+                "revenue": float(revenue),
+                "deal_count": deal_count
+            })
     
     # Calculate totals
     total_revenue = sum(m["revenue"] for m in monthly_data)
