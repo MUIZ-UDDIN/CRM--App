@@ -172,6 +172,13 @@ export default function Analytics() {
         analyticsService.getDashboardAnalytics(filters),
       ]);
       
+      // Debug logging
+      console.log('📧 Email Analytics Response:', email);
+      console.log('📞 Call Analytics Response:', call);
+      console.log('📄 Document Analytics Response:', document);
+      console.log('📊 Activity Analytics Response:', activity);
+      console.log('👥 Contact Analytics Response:', contact);
+      
       setPipelineAnalytics(pipeline);
       setActivityAnalytics(activity);
       setEmailAnalytics(email);
@@ -372,6 +379,8 @@ export default function Analytics() {
     { metric: 'Clicks', count: emailAnalytics.email_summary.total_clicked || 0 },
     { metric: 'Bounces', count: emailAnalytics.email_summary.total_bounced || 0 },
   ] : [];
+  
+  console.log('📧 Email Metrics Data for Chart:', emailMetricsData);
 
   // Call metrics from API
   const callMetricsData = Array.isArray(callAnalytics?.daily_calls)
@@ -382,6 +391,8 @@ export default function Analytics() {
         avgDuration: item.avg_duration || 0
       }))
     : [];
+  
+  console.log('📞 Call Metrics Data for Chart:', callMetricsData);
 
   // Contact status data from API
   const leadsByStatusData = Array.isArray(contactAnalytics?.contacts_by_status)
@@ -412,11 +423,15 @@ export default function Analytics() {
     { status: 'Viewed', count: documentAnalytics.document_summary.viewed || 0, color: '#3B82F6' },
     { status: 'Expired', count: documentAnalytics.document_summary.expired || 0, color: '#EF4444' },
   ] : [];
+  
+  console.log('📄 Document Stats Data for Chart:', documentStatsData);
 
   // Time to signature from API
   const timeToSignatureData = Array.isArray(documentAnalytics?.time_to_signature?.distribution) 
     ? documentAnalytics.time_to_signature.distribution 
     : [];
+  
+  console.log('⏱️ Time to Signature Data for Chart:', timeToSignatureData);
 
   const handleViewPipeline = () => {
     setShowPipelineModal(true);
