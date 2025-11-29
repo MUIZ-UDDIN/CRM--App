@@ -101,25 +101,11 @@ async def get_pipeline_analytics(
         filters.append(Deal.owner_id == owner_id)
     
     if date_from:
-        # Include deals that were created, updated, or closed in the date range
-        date_from_dt = datetime.fromisoformat(date_from)
-        filters.append(
-            or_(
-                Deal.created_at >= date_from_dt,
-                Deal.updated_at >= date_from_dt,
-                and_(Deal.actual_close_date.isnot(None), Deal.actual_close_date >= date_from_dt)
-            )
-        )
+        filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
     if date_to:
         # Add one day to include the entire end date
         end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
-        filters.append(
-            or_(
-                Deal.created_at < end_date,
-                Deal.updated_at < end_date,
-                and_(Deal.actual_close_date.isnot(None), Deal.actual_close_date < end_date)
-            )
-        )
+        filters.append(Deal.created_at < end_date)
     if user_id:
         filters.append(Deal.owner_id == uuid.UUID(user_id))
     if pipeline_id:

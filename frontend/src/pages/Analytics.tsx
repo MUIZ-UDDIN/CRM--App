@@ -181,17 +181,6 @@ export default function Analytics() {
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
       
-      // Debug: Check pipeline data
-      console.log('🔵 Pipeline Analytics Response:', pipeline);
-      console.log('📊 Pipeline Analytics Array:', pipeline?.pipeline_analytics);
-      
-      // Detailed breakdown
-      if (pipeline?.pipeline_analytics) {
-        pipeline.pipeline_analytics.forEach((stage: any, index: number) => {
-          console.log(`  Stage ${index + 1}: ${stage.stage_name} - Deals: ${stage.deal_count}, Value: $${stage.total_value}, Won: ${stage.deals_won}, Lost: ${stage.deals_lost}`);
-        });
-      }
-      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics data');
@@ -296,11 +285,6 @@ export default function Analytics() {
       })
     : [{ name: 'No Data', fullName: 'No Data', value: 0, deals: 0, color: '#E5E7EB' }];
   
-  // Debug: Check transformed pipeline data
-  console.log('🎯 Transformed Pipeline Data for Chart:', pipelineData);
-  pipelineData.forEach((item: any, index: number) => {
-    console.log(`  Chart Item ${index + 1}: ${item.name} - Deals: ${item.deals}, Value: $${item.value}`);
-  });
 
   // Activity data from API - show zeros if no data
   const activityData = Array.isArray(activityAnalytics?.activities_by_user) && activityAnalytics.activities_by_user.length > 0 
