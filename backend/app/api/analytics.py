@@ -63,7 +63,7 @@ async def get_pipeline_analytics(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get pipeline analytics with real database queries"""
+    """Get pipeline analytics with real database queries - shows WON deals only"""
     
     # Check analytics permissions
     access_level = enforce_analytics_permissions(current_user, "pipeline")
@@ -72,7 +72,8 @@ async def get_pipeline_analytics(
     company_id = current_user.get('company_id')
     
     # Build query filters based on access level
-    filters = [Deal.is_deleted == False]
+    # Filter for WON deals only to match KPIs and Revenue analytics
+    filters = [Deal.is_deleted == False, Deal.status == DealStatus.WON]
     
     # Apply access level filters
     if access_level == "all":
