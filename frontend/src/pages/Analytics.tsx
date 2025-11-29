@@ -414,7 +414,9 @@ export default function Analytics() {
   ] : [];
 
   // Time to signature from API
-  const timeToSignatureData = Array.isArray(documentAnalytics?.time_to_signature) ? documentAnalytics.time_to_signature : [];
+  const timeToSignatureData = Array.isArray(documentAnalytics?.time_to_signature?.distribution) 
+    ? documentAnalytics.time_to_signature.distribution 
+    : [];
 
   const handleViewPipeline = () => {
     setShowPipelineModal(true);
