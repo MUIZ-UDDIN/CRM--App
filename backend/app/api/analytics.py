@@ -541,126 +541,151 @@ async def get_email_analytics(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     user_id: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Get email analytics with open/click/bounce stats
+    """Get email analytics with open/click/bounce stats - Real database queries"""
+    from ..models.emails import Email, EmailStatus, EmailTemplate
     
-    Returns:
-    - Email sent/opened/clicked/bounced counts
-    - Open rates and click rates
-    - Email performance by user
-    - Best performing email templates
-    """
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "emails")
     
-    cache_key = f"analytics:emails:{date_from}:{date_to}:{user_id}"
-    cached = await get_cached_analytics(cache_key)
-    if cached:
-        return cached
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
     
-    data = {
+    # Build filters
+    filters = [Email.is_deleted == False]
+    
+    # Apply access level filters
+    if access_level == "all":
+        pass
+    elif access_level == "company":
+        if company_id:
+            filters.append(Email.company_id == company_id)
+    elif access_level == "team":
+        if current_user.get('team_id'):
+            team_member_ids = db.query(User.id).filter(
+                User.team_id == uuid.UUID(current_user.get('team_id')),
+                User.is_deleted == False
+            ).all()
+            if team_member_ids:
+                filters.append(Email.owner_id.in_([m[0] for m in team_member_ids]))
+            else:
+                filters.append(Email.owner_id == owner_id)
+    elif access_level == "own":
+        filters.append(Email.owner_id == owner_id)
+    
+    # Apply date filters
+    if date_from:
+        filters.append(Email.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        filters.append(Email.created_at < end_date)
+    if user_id:
+        filters.append(Email.owner_id == uuid.UUID(user_id))
+    
+    # Get email metrics
+    total_sent = db.query(func.count(Email.id)).filter(
+        and_(*filters, Email.status.in_([EmailStatus.SENT, EmailStatus.DELIVERED, EmailStatus.OPENED, EmailStatus.CLICKED]))
+    ).scalar() or 0
+    
+    total_delivered = db.query(func.count(Email.id)).filter(
+        and_(*filters, Email.status.in_([EmailStatus.DELIVERED, EmailStatus.OPENED, EmailStatus.CLICKED]))
+    ).scalar() or 0
+    
+    total_opened = db.query(func.count(Email.id)).filter(
+        and_(*filters, Email.status.in_([EmailStatus.OPENED, EmailStatus.CLICKED]))
+    ).scalar() or 0
+    
+    total_clicked = db.query(func.count(Email.id)).filter(
+        and_(*filters, Email.status == EmailStatus.CLICKED)
+    ).scalar() or 0
+    
+    total_bounced = db.query(func.count(Email.id)).filter(
+        and_(*filters, Email.status == EmailStatus.BOUNCED)
+    ).scalar() or 0
+    
+    # Calculate rates
+    open_rate = (total_opened / total_sent * 100) if total_sent > 0 else 0
+    click_rate = (total_clicked / total_sent * 100) if total_sent > 0 else 0
+    bounce_rate = (total_bounced / total_sent * 100) if total_sent > 0 else 0
+    click_to_open_rate = (total_clicked / total_opened * 100) if total_opened > 0 else 0
+    
+    # Get email by user
+    email_by_user_query = db.query(
+        Email.owner_id,
+        User.first_name,
+        User.last_name,
+        func.count(Email.id).label('sent'),
+        func.sum(case((Email.status.in_([EmailStatus.OPENED, EmailStatus.CLICKED]), 1), else_=0)).label('opened'),
+        func.sum(case((Email.status == EmailStatus.CLICKED, 1), else_=0)).label('clicked')
+    ).join(User, Email.owner_id == User.id)\
+     .filter(and_(*filters, Email.status.in_([EmailStatus.SENT, EmailStatus.DELIVERED, EmailStatus.OPENED, EmailStatus.CLICKED])))\
+     .group_by(Email.owner_id, User.first_name, User.last_name).all()
+    
+    email_by_user = []
+    for row in email_by_user_query:
+        sent = row.sent or 0
+        opened = row.opened or 0
+        clicked = row.clicked or 0
+        email_by_user.append({
+            "user_id": str(row.owner_id),
+            "user_name": f"{row.first_name} {row.last_name}".strip(),
+            "sent": sent,
+            "opened": opened,
+            "clicked": clicked,
+            "open_rate": round((opened / sent * 100) if sent > 0 else 0, 1),
+            "click_rate": round((clicked / sent * 100) if sent > 0 else 0, 1)
+        })
+    
+    # Get top performing templates
+    template_query = db.query(
+        EmailTemplate.id,
+        EmailTemplate.name,
+        func.count(Email.id).label('sent'),
+        func.sum(case((Email.status.in_([EmailStatus.OPENED, EmailStatus.CLICKED]), 1), else_=0)).label('opened'),
+        func.sum(case((Email.status == EmailStatus.CLICKED, 1), else_=0)).label('clicked')
+    ).join(Email, Email.template_id == EmailTemplate.id)\
+     .filter(and_(*filters, Email.status.in_([EmailStatus.SENT, EmailStatus.DELIVERED, EmailStatus.OPENED, EmailStatus.CLICKED])))\
+     .group_by(EmailTemplate.id, EmailTemplate.name)\
+     .order_by(func.count(Email.id).desc())\
+     .limit(5).all()
+    
+    top_templates = []
+    for row in template_query:
+        sent = row.sent or 0
+        opened = row.opened or 0
+        clicked = row.clicked or 0
+        top_templates.append({
+            "template_id": str(row.id),
+            "template_name": row.name,
+            "sent": sent,
+            "opened": opened,
+            "clicked": clicked,
+            "open_rate": round((opened / sent * 100) if sent > 0 else 0, 1),
+            "click_rate": round((clicked / sent * 100) if sent > 0 else 0, 1)
+        })
+    
+    return {
         "filters": {
             "date_from": date_from,
             "date_to": date_to,
             "user_id": user_id
         },
-        "email_metrics": {
-            "total_sent": 1250,
-            "total_delivered": 1227,
-            "total_opened": 875,
-            "total_clicked": 342,
-            "total_bounced": 23,
-            "total_unsubscribed": 5,
-            "open_rate": 71.3,
-            "click_rate": 27.9,
-            "bounce_rate": 1.8,
-            "click_to_open_rate": 39.1
+        "email_summary": {
+            "total_sent": total_sent,
+            "total_delivered": total_delivered,
+            "total_opened": total_opened,
+            "total_clicked": total_clicked,
+            "total_bounced": total_bounced,
+            "open_rate": round(open_rate, 1),
+            "click_rate": round(click_rate, 1),
+            "bounce_rate": round(bounce_rate, 1),
+            "click_to_open_rate": round(click_to_open_rate, 1)
         },
-        "email_by_type": [
-            {
-                "type": "follow_up",
-                "sent": 450,
-                "opened": 325,
-                "clicked": 145,
-                "open_rate": 72.2,
-                "click_rate": 32.2
-            },
-            {
-                "type": "cold_outreach",
-                "sent": 380,
-                "opened": 245,
-                "clicked": 85,
-                "open_rate": 64.5,
-                "click_rate": 22.4
-            },
-            {
-                "type": "newsletter",
-                "sent": 420,
-                "opened": 305,
-                "clicked": 112,
-                "open_rate": 72.6,
-                "click_rate": 26.7
-            }
-        ],
-        "email_by_user": [
-            {
-                "user_id": 1,
-                "user_name": "John Doe",
-                "sent": 425,
-                "opened": 312,
-                "clicked": 135,
-                "open_rate": 73.4,
-                "click_rate": 31.8
-            },
-            {
-                "user_id": 2,
-                "user_name": "Jane Smith",
-                "sent": 385,
-                "opened": 268,
-                "clicked": 98,
-                "open_rate": 69.6,
-                "click_rate": 25.5
-            },
-            {
-                "user_id": 3,
-                "user_name": "Mike Johnson",
-                "sent": 440,
-                "opened": 295,
-                "clicked": 109,
-                "open_rate": 67.0,
-                "click_rate": 24.8
-            }
-        ],
-        "top_performing_templates": [
-            {
-                "template_id": 1,
-                "template_name": "Product Demo Follow-up",
-                "sent": 145,
-                "opened": 118,
-                "clicked": 67,
-                "open_rate": 81.4,
-                "click_rate": 46.2
-            },
-            {
-                "template_id": 2,
-                "template_name": "Proposal Sent",
-                "sent": 89,
-                "opened": 72,
-                "clicked": 38,
-                "open_rate": 80.9,
-                "click_rate": 42.7
-            }
-        ],
-        "engagement_timeline": [
-            {"hour": "09:00", "opens": 45, "clicks": 18},
-            {"hour": "10:00", "opens": 67, "clicks": 28},
-            {"hour": "11:00", "opens": 82, "clicks": 35},
-            {"hour": "14:00", "opens": 75, "clicks": 30},
-            {"hour": "15:00", "opens": 58, "clicks": 22}
-        ]
+        "email_by_user": email_by_user,
+        "top_performing_templates": top_templates
     }
-    
-    await set_cached_analytics(cache_key, data, ttl=300)
-    return data
 
 
 @router.get("/calls")
@@ -668,98 +693,154 @@ async def get_call_analytics(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     user_id: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Get call analytics with durations, answered/missed stats
+    """Get call analytics with durations, answered/missed stats - Real database queries"""
+    from ..models.calls import Call, CallStatus
     
-    Returns:
-    - Call counts (answered/missed/voicemail)
-    - Call durations (avg/min/max)
-    - Call recordings stats
-    - Call performance by user
-    """
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "calls")
     
-    cache_key = f"analytics:calls:{date_from}:{date_to}:{user_id}"
-    cached = await get_cached_analytics(cache_key)
-    if cached:
-        return cached
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
     
-    data = {
+    # Build filters
+    filters = [Call.is_deleted == False]
+    
+    # Apply access level filters
+    if access_level == "all":
+        pass
+    elif access_level == "company":
+        if company_id:
+            filters.append(Call.company_id == company_id)
+    elif access_level == "team":
+        if current_user.get('team_id'):
+            team_member_ids = db.query(User.id).filter(
+                User.team_id == uuid.UUID(current_user.get('team_id')),
+                User.is_deleted == False
+            ).all()
+            if team_member_ids:
+                filters.append(Call.user_id.in_([m[0] for m in team_member_ids]))
+            else:
+                filters.append(Call.user_id == owner_id)
+    elif access_level == "own":
+        filters.append(Call.user_id == owner_id)
+    
+    # Apply date filters
+    if date_from:
+        filters.append(Call.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        filters.append(Call.created_at < end_date)
+    if user_id:
+        filters.append(Call.user_id == uuid.UUID(user_id))
+    
+    # Get call metrics
+    total_calls = db.query(func.count(Call.id)).filter(and_(*filters)).scalar() or 0
+    
+    answered_calls = db.query(func.count(Call.id)).filter(
+        and_(*filters, Call.status == CallStatus.COMPLETED)
+    ).scalar() or 0
+    
+    missed_calls = db.query(func.count(Call.id)).filter(
+        and_(*filters, Call.status.in_([CallStatus.NO_ANSWER, CallStatus.BUSY]))
+    ).scalar() or 0
+    
+    failed_calls = db.query(func.count(Call.id)).filter(
+        and_(*filters, Call.status == CallStatus.FAILED)
+    ).scalar() or 0
+    
+    # Get duration stats
+    duration_stats = db.query(
+        func.avg(Call.duration).label('avg_duration'),
+        func.sum(Call.duration).label('total_duration'),
+        func.min(Call.duration).label('min_duration'),
+        func.max(Call.duration).label('max_duration')
+    ).filter(and_(*filters, Call.status == CallStatus.COMPLETED)).first()
+    
+    avg_duration = int(duration_stats.avg_duration or 0)
+    total_duration = int(duration_stats.total_duration or 0)
+    min_duration = int(duration_stats.min_duration or 0)
+    max_duration = int(duration_stats.max_duration or 0)
+    
+    # Get recorded calls count
+    recorded_calls = db.query(func.count(Call.id)).filter(
+        and_(*filters, Call.recording_url.isnot(None))
+    ).scalar() or 0
+    
+    # Calculate rates
+    answer_rate = (answered_calls / total_calls * 100) if total_calls > 0 else 0
+    recording_rate = (recorded_calls / total_calls * 100) if total_calls > 0 else 0
+    total_duration_hours = total_duration / 3600
+    
+    # Get daily calls
+    daily_calls = db.query(
+        func.date(Call.created_at).label('call_date'),
+        func.count(case((Call.status == CallStatus.COMPLETED, 1))).label('answered'),
+        func.count(case((Call.status.in_([CallStatus.NO_ANSWER, CallStatus.BUSY]), 1))).label('missed'),
+        func.avg(case((Call.status == CallStatus.COMPLETED, Call.duration))).label('avg_duration')
+    ).filter(and_(*filters))\
+     .group_by(func.date(Call.created_at))\
+     .order_by(func.date(Call.created_at).desc())\
+     .limit(7).all()
+    
+    daily_data = []
+    for row in daily_calls:
+        daily_data.append({
+            "date": row.call_date.strftime("%Y-%m-%d") if row.call_date else "Unknown",
+            "answered": row.answered or 0,
+            "missed": row.missed or 0,
+            "avg_duration": int(row.avg_duration or 0)
+        })
+    
+    # Get calls by user
+    calls_by_user = db.query(
+        Call.user_id,
+        User.first_name,
+        User.last_name,
+        func.count(Call.id).label('total'),
+        func.count(case((Call.status == CallStatus.COMPLETED, 1))).label('answered'),
+        func.count(case((Call.status.in_([CallStatus.NO_ANSWER, CallStatus.BUSY]), 1))).label('missed'),
+        func.avg(case((Call.status == CallStatus.COMPLETED, Call.duration))).label('avg_duration')
+    ).join(User, Call.user_id == User.id)\
+     .filter(and_(*filters))\
+     .group_by(Call.user_id, User.first_name, User.last_name).all()
+    
+    user_data = []
+    for row in calls_by_user:
+        total = row.total or 0
+        answered = row.answered or 0
+        user_data.append({
+            "user_id": str(row.user_id),
+            "user_name": f"{row.first_name} {row.last_name}".strip(),
+            "total_calls": total,
+            "answered": answered,
+            "missed": row.missed or 0,
+            "avg_duration": int(row.avg_duration or 0),
+            "answer_rate": round((answered / total * 100) if total > 0 else 0, 1)
+        })
+    
+    return {
         "filters": {
             "date_from": date_from,
             "date_to": date_to,
             "user_id": user_id
         },
-        "call_metrics": {
-            "total_calls": 342,
-            "answered_calls": 285,
-            "missed_calls": 42,
-            "voicemail_calls": 15,
-            "answer_rate": 83.3,
-            "avg_duration_seconds": 456,
-            "total_duration_hours": 36.2,
-            "recorded_calls": 198,
-            "recording_rate": 69.5
+        "call_summary": {
+            "total_calls": total_calls,
+            "answered_calls": answered_calls,
+            "missed_calls": missed_calls,
+            "failed_calls": failed_calls,
+            "answer_rate": round(answer_rate, 1),
+            "avg_duration_seconds": avg_duration,
+            "total_duration_hours": round(total_duration_hours, 1),
+            "recorded_calls": recorded_calls,
+            "recording_rate": round(recording_rate, 1)
         },
-        "call_durations": {
-            "avg_duration": 456,
-            "min_duration": 45,
-            "max_duration": 1820,
-            "median_duration": 380,
-            "duration_distribution": [
-                {"range": "0-2 min", "count": 45},
-                {"range": "2-5 min", "count": 98},
-                {"range": "5-10 min", "count": 125},
-                {"range": "10-20 min", "count": 58},
-                {"range": "20+ min", "count": 16}
-            ]
-        },
-        "call_by_day": [
-            {"day": "Monday", "answered": 62, "missed": 8, "avg_duration": 445},
-            {"day": "Tuesday", "answered": 58, "missed": 7, "avg_duration": 478},
-            {"day": "Wednesday", "answered": 65, "missed": 9, "avg_duration": 432},
-            {"day": "Thursday", "answered": 55, "missed": 10, "avg_duration": 468},
-            {"day": "Friday", "answered": 45, "missed": 8, "avg_duration": 425}
-        ],
-        "call_by_user": [
-            {
-                "user_id": 1,
-                "user_name": "John Doe",
-                "total_calls": 125,
-                "answered": 108,
-                "missed": 12,
-                "avg_duration": 485,
-                "answer_rate": 86.4
-            },
-            {
-                "user_id": 2,
-                "user_name": "Jane Smith",
-                "total_calls": 98,
-                "answered": 82,
-                "missed": 14,
-                "avg_duration": 445,
-                "answer_rate": 83.7
-            },
-            {
-                "user_id": 3,
-                "user_name": "Mike Johnson",
-                "total_calls": 119,
-                "answered": 95,
-                "missed": 16,
-                "avg_duration": 438,
-                "answer_rate": 79.8
-            }
-        ],
-        "call_outcomes": [
-            {"outcome": "Deal Advanced", "count": 85, "percentage": 29.8},
-            {"outcome": "Follow-up Scheduled", "count": 125, "percentage": 43.9},
-            {"outcome": "Not Interested", "count": 45, "percentage": 15.8},
-            {"outcome": "No Answer", "count": 42, "percentage": 14.7}
-        ]
+        "daily_calls": daily_data,
+        "calls_by_user": user_data
     }
-    
-    await set_cached_analytics(cache_key, data, ttl=300)
-    return data
 
 
 @router.get("/contacts")
