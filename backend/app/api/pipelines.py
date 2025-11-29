@@ -65,18 +65,47 @@ async def get_pipelines(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Get all pipelines for current user's company"""
+    from sqlalchemy.orm import joinedload
+    
     company_id = current_user.get('company_id')
     
     # All users (including super admin) see only their company's pipelines
     if company_id:
-        pipelines = db.query(Pipeline).filter(
+        pipelines = db.query(Pipeline).options(
+            joinedload(Pipeline.stages)
+        ).filter(
             Pipeline.is_deleted == False,
             Pipeline.company_id == company_id
         ).all()
     else:
         pipelines = []
     
-    return pipelines
+    # Convert to dict to ensure stages are included
+    result = []
+    for pipeline in pipelines:
+        result.append({
+            "id": str(pipeline.id),
+            "name": pipeline.name,
+            "description": pipeline.description,
+            "is_default": pipeline.is_default,
+            "order_index": pipeline.order_index,
+            "company_id": str(pipeline.company_id) if pipeline.company_id else None,
+            "stages": [
+                {
+                    "id": str(stage.id),
+                    "name": stage.name,
+                    "description": stage.description,
+                    "order_index": stage.order_index,
+                    "probability": stage.probability,
+                    "is_closed": stage.is_closed,
+                    "is_won": stage.is_won
+                }
+                for stage in sorted(pipeline.stages, key=lambda s: s.order_index)
+                if not stage.is_deleted
+            ]
+        })
+    
+    return result
 
 
 @router.post("/pipelines")
