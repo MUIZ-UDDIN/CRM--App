@@ -184,49 +184,40 @@ def create_company(
     db.commit()
     db.refresh(admin_user)
     
-    # Create default pipeline and stages for the new company
-    try:
-        from app.models.deals import Pipeline, PipelineStage
-        
-        # Create default pipeline
-        default_pipeline = Pipeline(
-            name='Sales Pipeline',
-            description='Default sales pipeline',
-            is_default=True,
-            company_id=db_company.id,
-            order_index=0,
-            is_active=True
+    # Create default pipeline and stages for the new company (same as registration.py)
+    from app.models.deals import Pipeline, PipelineStage
+    
+    default_pipeline = Pipeline(
+        name='Sales Pipeline',
+        description='Default sales pipeline',
+        is_default=True,
+        company_id=db_company.id,
+        order_index=0
+    )
+    db.add(default_pipeline)
+    db.flush()  # Get pipeline ID
+    
+    # Create default stages (matching the stage names expected by the system)
+    default_stages = [
+        {'name': 'Qualification', 'order_index': 0, 'probability': 25.0},
+        {'name': 'Proposal', 'order_index': 1, 'probability': 50.0},
+        {'name': 'Negotiation', 'order_index': 2, 'probability': 75.0},
+        {'name': 'Closed Won', 'order_index': 3, 'probability': 100.0, 'is_closed': True, 'is_won': True},
+        {'name': 'Closed Lost', 'order_index': 4, 'probability': 0.0, 'is_closed': True, 'is_won': False},
+    ]
+    
+    for stage_data in default_stages:
+        stage = PipelineStage(
+            pipeline_id=default_pipeline.id,
+            name=stage_data['name'],
+            order_index=stage_data['order_index'],
+            probability=stage_data['probability'],
+            is_closed=stage_data.get('is_closed', False),
+            is_won=stage_data.get('is_won', False)
         )
-        db.add(default_pipeline)
-        db.flush()  # Get pipeline ID
-        
-        # Create default stages (matching the stage names expected by the system)
-        default_stages = [
-            {'name': 'Qualification', 'order_index': 0, 'probability': 25.0},
-            {'name': 'Proposal', 'order_index': 1, 'probability': 50.0},
-            {'name': 'Negotiation', 'order_index': 2, 'probability': 75.0},
-            {'name': 'Closed Won', 'order_index': 3, 'probability': 100.0, 'is_closed': True, 'is_won': True},
-            {'name': 'Closed Lost', 'order_index': 4, 'probability': 0.0, 'is_closed': True, 'is_won': False},
-        ]
-        
-        for stage_data in default_stages:
-            stage = PipelineStage(
-                pipeline_id=default_pipeline.id,
-                name=stage_data['name'],
-                order_index=stage_data['order_index'],
-                probability=stage_data['probability'],
-                is_closed=stage_data.get('is_closed', False),
-                is_won=stage_data.get('is_won', False),
-                is_active=True
-            )
-            db.add(stage)
-        
-        db.commit()
-        print(f"Default pipeline and stages created for company: {db_company.name}")
-    except Exception as pipeline_error:
-        print(f"Error creating default pipeline: {pipeline_error}")
-        # Don't fail company creation if pipeline creation fails
-        db.rollback()
+        db.add(stage)
+    
+    db.commit()
     
     # Log credentials (for now, until email sending is implemented)
     print(f"Company created: {db_company.name}")
@@ -481,7 +472,15 @@ def delete_company(
             db.query(Notification).filter(Notification.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
             pass
-        
+    
+    # Delete company-level notifications (notifications with company_id but no user_id)
+    try:
+        db.query(Notification).filter(Notification.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting company notifications: {e}")
+        pass
+    
+    if user_ids:
         try:
             db.query(Quote).filter(Quote.created_by.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
