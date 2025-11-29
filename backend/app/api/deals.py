@@ -820,10 +820,10 @@ def move_deal_stage(
     if context.is_super_admin():
         # Super Admin can move any deal
         pass
-    elif has_permission(current_user, Permission.MANAGE_ALL_DEALS):
+    elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
         # Company Admin can move any deal in their company
         query = query.filter(DealModel.company_id == context.company_id)
-    elif has_permission(current_user, Permission.MANAGE_TEAM_DEALS):
+    elif has_permission(current_user, Permission.VIEW_TEAM_DATA):
         # Sales Manager can move deals owned by their team members
         team_member_ids = db.query(User.id).filter(
             and_(
