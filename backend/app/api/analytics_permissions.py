@@ -31,15 +31,6 @@ def check_analytics_permissions(current_user, analytics_type, company_id=None, t
     # This ensures consistency across all analytics endpoints
     is_superuser = current_user.get("is_superuser", False)
     
-    # Debug logging
-    print(f"=== Analytics Permission Check ===")
-    print(f"User Role: {current_user.get('role')}")
-    print(f"User Role (alt): {current_user.get('user_role')}")
-    print(f"Is Superuser Flag: {is_superuser}")
-    print(f"Is Super Admin (context): {context.is_super_admin()}")
-    print(f"Has VIEW_COMPANY_ANALYTICS: {has_permission(current_user, Permission.VIEW_COMPANY_ANALYTICS)}")
-    print(f"==================================")
-    
     # Super admin can access all analytics (use is_superuser flag for consistency with Dashboard)
     if is_superuser:
         return True, "all"
