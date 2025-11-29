@@ -854,17 +854,42 @@ async def get_contact_analytics(
 ):
     """Get contact/lead analytics with source distribution, conversion rates"""
     from app.models.contacts import Contact
+    from app.models.users import User
     
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "contacts")
+    
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
     # Build filters
     filters = [Contact.is_deleted == False]
-    if company_id:
-        filters.append(Contact.company_id == company_id)
+    
+    # Apply access level filters
+    if access_level == "all":
+        pass
+    elif access_level == "company":
+        if company_id:
+            filters.append(Contact.company_id == company_id)
+    elif access_level == "team":
+        if current_user.get('team_id'):
+            team_member_ids = db.query(User.id).filter(
+                User.team_id == current_user.get('team_id'),
+                User.is_deleted == False
+            ).all()
+            if team_member_ids:
+                filters.append(Contact.owner_id.in_([m[0] for m in team_member_ids]))
+            else:
+                filters.append(Contact.owner_id == owner_id)
+    elif access_level == "own":
+        filters.append(Contact.owner_id == owner_id)
+    
+    # Apply date filters
     if date_from:
         filters.append(Contact.created_at >= datetime.fromisoformat(date_from))
     if date_to:
-        filters.append(Contact.created_at <= datetime.fromisoformat(date_to))
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        filters.append(Contact.created_at < end_date)
     if user_id:
         filters.append(Contact.owner_id == uuid.UUID(user_id))
     if source:
@@ -890,10 +915,18 @@ async def get_contact_analytics(
         })
     
     # Get conversion data (contacts with deals)
+    # Build deal filters for date range
+    deal_filters = [Deal.is_deleted == False]
+    if date_from:
+        deal_filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        deal_filters.append(Deal.created_at < end_date)
+    
     conversion_by_source = db.query(
         Contact.source,
         func.count(func.distinct(Contact.id)).label('total_leads'),
-        func.count(func.distinct(Deal.id)).label('converted')
+        func.count(func.distinct(case((and_(*deal_filters), Deal.id)))).label('converted')
     ).outerjoin(Deal, Deal.contact_id == Contact.id)\
      .filter(and_(*filters))\
      .group_by(Contact.source).all()
