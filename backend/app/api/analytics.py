@@ -359,11 +359,22 @@ async def get_revenue_analytics(
             month_end = datetime(year, month + 1, 1)
         
         # Build filters based on access level
+        # Use actual_close_date if set, otherwise use updated_at (when deal was marked as won)
         filters = [
             Deal.is_deleted == False,
             Deal.status == DealStatus.WON,
-            Deal.actual_close_date >= month_start,
-            Deal.actual_close_date < month_end
+            or_(
+                and_(
+                    Deal.actual_close_date.isnot(None),
+                    Deal.actual_close_date >= month_start,
+                    Deal.actual_close_date < month_end
+                ),
+                and_(
+                    Deal.actual_close_date.is_(None),
+                    Deal.updated_at >= month_start,
+                    Deal.updated_at < month_end
+                )
+            )
         ]
         
         # Apply access level filters
