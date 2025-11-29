@@ -341,14 +341,22 @@ async def get_revenue_analytics(
     current_date = datetime.now()
     
     for i in range(5, -1, -1):  # Last 6 months
-        month_date = current_date - timedelta(days=30 * i)
-        month_start = month_date.replace(day=1)
+        # Calculate the month properly by subtracting months, not days
+        year = current_date.year
+        month = current_date.month - i
+        
+        # Handle year rollover
+        while month <= 0:
+            month += 12
+            year -= 1
+        
+        month_start = datetime(year, month, 1)
         
         # Calculate next month start
-        if month_date.month == 12:
-            month_end = month_date.replace(year=month_date.year + 1, month=1, day=1)
+        if month == 12:
+            month_end = datetime(year + 1, 1, 1)
         else:
-            month_end = month_date.replace(month=month_date.month + 1, day=1)
+            month_end = datetime(year, month + 1, 1)
         
         # Build filters based on access level
         filters = [

@@ -181,10 +181,6 @@ export default function Analytics() {
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
       
-      // Debug: Check revenue data
-      console.log('📊 Revenue Analytics Response:', revenue);
-      console.log('📈 Monthly Revenue Data:', revenue?.monthly_revenue);
-      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics data');
@@ -272,9 +268,6 @@ export default function Analytics() {
         { month: 'May', revenue: 0, deals: 0, target: 0 },
         { month: 'Jun', revenue: 0, deals: 0, target: 0 },
       ];
-  
-  // Debug: Check transformed revenue data
-  console.log('💰 Transformed Revenue Data for Chart:', revenueData);
 
   // Pipeline data from API - show empty state if no data
   const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0
