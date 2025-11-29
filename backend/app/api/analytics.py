@@ -926,8 +926,7 @@ async def get_contact_analytics(
     conversion_by_source = db.query(
         Contact.source,
         func.count(func.distinct(Contact.id)).label('total_leads'),
-        func.count(func.distinct(case((and_(*deal_filters), Deal.id)))).label('converted'),
-        func.avg(case((and_(*deal_filters), Deal.close_date - Deal.open_date))).label('avg_deal_time')
+        func.count(func.distinct(case((and_(*deal_filters), Deal.id)))).label('converted')
     ).outerjoin(Deal, Deal.contact_id == Contact.id)\
      .filter(and_(*filters))\
      .group_by(Contact.source).all()
@@ -937,7 +936,6 @@ async def get_contact_analytics(
         total = row.total_leads or 0
         converted = row.converted or 0
         conversion_rate = (converted / total * 100) if total > 0 else 0
-        avg_deal_time = row.avg_deal_time or 0
         conversion_data.append({
             "source": row.source or 'Unknown',
             "total_leads": total,
