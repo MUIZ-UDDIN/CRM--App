@@ -923,6 +923,10 @@ async def get_contact_analytics(
         end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
         deal_filters.append(Deal.created_at < end_date)
     
+    # Debug logging
+    print(f" Contact Analytics Filters - date_from: {date_from}, date_to: {date_to}, user_id: {user_id}, source: {source}")
+    print(f" Deal Filters Count: {len(deal_filters)}")
+    
     conversion_by_source = db.query(
         Contact.source,
         func.count(func.distinct(Contact.id)).label('total_leads'),
@@ -930,6 +934,8 @@ async def get_contact_analytics(
     ).outerjoin(Deal, Deal.contact_id == Contact.id)\
      .filter(and_(*filters))\
      .group_by(Contact.source).all()
+    
+    print(f" Conversion Results: {[(row.source, row.total_leads, row.converted) for row in conversion_by_source]}")
     
     conversion_data = []
     for row in conversion_by_source:
