@@ -932,9 +932,10 @@ async def get_document_analytics(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     document_type: Optional[str] = Query(None),
-    current_user: dict = Depends(get_current_active_user)
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
 ):
-    """Get document & e-signature analytics
+    """Get document & e-signature analytics - Real database queries
     
     Returns:
     - Signed vs pending counts
@@ -942,85 +943,205 @@ async def get_document_analytics(
     - Contract completion rates
     - Document status breakdown
     """
+    from ..models.documents import Document, DocumentStatus as DocStatus, DocumentType
     
-    cache_key = f"analytics:documents:{date_from}:{date_to}:{document_type}"
-    cached = await get_cached_analytics(cache_key)
-    if cached:
-        return cached
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "documents")
     
-    data = {
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
+    
+    # Build filters
+    filters = [Document.is_deleted == False]
+    
+    # Apply access level filters
+    if access_level == "all":
+        pass
+    elif access_level == "company":
+        if company_id:
+            filters.append(Document.company_id == company_id)
+    elif access_level == "team":
+        if current_user.get('team_id'):
+            team_member_ids = db.query(User.id).filter(
+                User.team_id == uuid.UUID(current_user.get('team_id')),
+                User.is_deleted == False
+            ).all()
+            if team_member_ids:
+                filters.append(Document.owner_id.in_([m[0] for m in team_member_ids]))
+            else:
+                filters.append(Document.owner_id == owner_id)
+    elif access_level == "own":
+        filters.append(Document.owner_id == owner_id)
+    
+    # Apply date filters
+    if date_from:
+        filters.append(Document.created_at >= datetime.fromisoformat(date_from))
+    if date_to:
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        filters.append(Document.created_at < end_date)
+    if document_type:
+        filters.append(Document.type == document_type)
+    
+    # Get document counts by status
+    total_documents = db.query(func.count(Document.id)).filter(and_(*filters)).scalar() or 0
+    
+    signed_documents = db.query(func.count(Document.id)).filter(
+        and_(*filters, Document.status == DocStatus.SIGNED)
+    ).scalar() or 0
+    
+    pending_documents = db.query(func.count(Document.id)).filter(
+        and_(*filters, Document.status == DocStatus.SENT)
+    ).scalar() or 0
+    
+    viewed_documents = db.query(func.count(Document.id)).filter(
+        and_(*filters, Document.status == DocStatus.VIEWED)
+    ).scalar() or 0
+    
+    expired_documents = db.query(func.count(Document.id)).filter(
+        and_(*filters, Document.status == DocStatus.EXPIRED)
+    ).scalar() or 0
+    
+    draft_documents = db.query(func.count(Document.id)).filter(
+        and_(*filters, Document.status == DocStatus.DRAFT)
+    ).scalar() or 0
+    
+    declined_documents = db.query(func.count(Document.id)).filter(
+        and_(*filters, Document.status == DocStatus.DECLINED)
+    ).scalar() or 0
+    
+    # Calculate completion rate
+    completion_rate = (signed_documents / total_documents * 100) if total_documents > 0 else 0
+    
+    # Get time to signature stats (for signed documents only)
+    time_to_sign_query = db.query(
+        func.extract('epoch', Document.signed_at - Document.sent_at).label('seconds_to_sign')
+    ).filter(
+        and_(*filters, 
+             Document.status == DocStatus.SIGNED,
+             Document.sent_at.isnot(None),
+             Document.signed_at.isnot(None))
+    ).all()
+    
+    # Calculate time to signature metrics
+    if time_to_sign_query:
+        times_in_hours = [row.seconds_to_sign / 3600 for row in time_to_sign_query if row.seconds_to_sign]
+        if times_in_hours:
+            avg_time_hours = sum(times_in_hours) / len(times_in_hours)
+            min_time_hours = min(times_in_hours)
+            max_time_hours = max(times_in_hours)
+            
+            # Calculate distribution
+            under_24h = sum(1 for t in times_in_hours if t < 24)
+            one_to_three_days = sum(1 for t in times_in_hours if 24 <= t < 72)
+            four_to_seven_days = sum(1 for t in times_in_hours if 72 <= t < 168)
+            over_seven_days = sum(1 for t in times_in_hours if t >= 168)
+            
+            total_signed = len(times_in_hours)
+        else:
+            avg_time_hours = min_time_hours = max_time_hours = 0
+            under_24h = one_to_three_days = four_to_seven_days = over_seven_days = total_signed = 0
+    else:
+        avg_time_hours = min_time_hours = max_time_hours = 0
+        under_24h = one_to_three_days = four_to_seven_days = over_seven_days = total_signed = 0
+    
+    # Get document status breakdown
+    status_breakdown = []
+    for status in [DocStatus.SIGNED, DocStatus.SENT, DocStatus.VIEWED, DocStatus.EXPIRED, DocStatus.DRAFT, DocStatus.DECLINED]:
+        count = db.query(func.count(Document.id)).filter(
+            and_(*filters, Document.status == status)
+        ).scalar() or 0
+        
+        if count > 0:  # Only include statuses with documents
+            percentage = (count / total_documents * 100) if total_documents > 0 else 0
+            status_breakdown.append({
+                "status": status.value.title(),
+                "count": count,
+                "percentage": round(percentage, 1)
+            })
+    
+    # Get documents by type
+    document_by_type = []
+    for doc_type in [DocumentType.CONTRACT, DocumentType.PROPOSAL, DocumentType.NDA, DocumentType.INVOICE, DocumentType.QUOTE]:
+        type_filters = filters + [Document.type == doc_type]
+        
+        total = db.query(func.count(Document.id)).filter(and_(*type_filters)).scalar() or 0
+        signed = db.query(func.count(Document.id)).filter(
+            and_(*type_filters, Document.status == DocStatus.SIGNED)
+        ).scalar() or 0
+        pending = db.query(func.count(Document.id)).filter(
+            and_(*type_filters, Document.status.in_([DocStatus.SENT, DocStatus.VIEWED]))
+        ).scalar() or 0
+        
+        if total > 0:  # Only include types with documents
+            # Calculate avg time for this type
+            type_time_query = db.query(
+                func.extract('epoch', Document.signed_at - Document.sent_at).label('seconds_to_sign')
+            ).filter(
+                and_(*type_filters,
+                     Document.status == DocStatus.SIGNED,
+                     Document.sent_at.isnot(None),
+                     Document.signed_at.isnot(None))
+            ).all()
+            
+            if type_time_query:
+                type_times = [row.seconds_to_sign / 3600 for row in type_time_query if row.seconds_to_sign]
+                avg_time = sum(type_times) / len(type_times) if type_times else 0
+            else:
+                avg_time = 0
+            
+            completion = (signed / total * 100) if total > 0 else 0
+            
+            document_by_type.append({
+                "type": doc_type.value.title(),
+                "total": total,
+                "signed": signed,
+                "pending": pending,
+                "completion_rate": round(completion, 1),
+                "avg_time_hours": round(avg_time, 1)
+            })
+    
+    # Get total reminders sent
+    total_reminders = db.query(func.sum(Document.reminder_count)).filter(and_(*filters)).scalar() or 0
+    docs_with_reminders = db.query(func.count(Document.id)).filter(
+        and_(*filters, Document.reminder_count > 0)
+    ).scalar() or 0
+    avg_reminders = (total_reminders / docs_with_reminders) if docs_with_reminders > 0 else 0
+    
+    return {
         "filters": {
             "date_from": date_from,
             "date_to": date_to,
             "document_type": document_type
         },
-        "document_metrics": {
-            "total_documents": 185,
-            "signed_documents": 145,
-            "pending_documents": 28,
-            "viewed_documents": 12,
-            "expired_documents": 8,
-            "completion_rate": 78.4,
-            "avg_time_to_sign_hours": 36.5
+        "document_summary": {
+            "total_documents": total_documents,
+            "signed": signed_documents,
+            "pending": pending_documents,
+            "viewed": viewed_documents,
+            "expired": expired_documents,
+            "draft": draft_documents,
+            "declined": declined_documents,
+            "completion_rate": round(completion_rate, 1),
+            "avg_time_to_sign_hours": round(avg_time_hours, 1)
         },
-        "document_status": [
-            {"status": "Signed", "count": 145, "percentage": 78.4},
-            {"status": "Pending Signature", "count": 28, "percentage": 15.1},
-            {"status": "Viewed", "count": 12, "percentage": 6.5},
-            {"status": "Expired", "count": 8, "percentage": 4.3}
-        ],
+        "document_status": status_breakdown,
         "time_to_signature": {
-            "avg_hours": 36.5,
-            "median_hours": 24.0,
-            "min_hours": 2.5,
-            "max_hours": 168.0,
+            "avg_hours": round(avg_time_hours, 1),
+            "min_hours": round(min_time_hours, 1),
+            "max_hours": round(max_time_hours, 1),
             "distribution": [
-                {"range": "< 24 hours", "count": 68, "percentage": 47.0},
-                {"range": "1-3 days", "count": 45, "percentage": 31.0},
-                {"range": "4-7 days", "count": 22, "percentage": 15.2},
-                {"range": "> 7 days", "count": 10, "percentage": 6.9}
+                {"range": "< 24 hours", "count": under_24h, "percentage": round((under_24h / total_signed * 100) if total_signed > 0 else 0, 1)},
+                {"range": "1-3 days", "count": one_to_three_days, "percentage": round((one_to_three_days / total_signed * 100) if total_signed > 0 else 0, 1)},
+                {"range": "4-7 days", "count": four_to_seven_days, "percentage": round((four_to_seven_days / total_signed * 100) if total_signed > 0 else 0, 1)},
+                {"range": "> 7 days", "count": over_seven_days, "percentage": round((over_seven_days / total_signed * 100) if total_signed > 0 else 0, 1)}
             ]
         },
-        "document_by_type": [
-            {
-                "type": "Contract",
-                "total": 85,
-                "signed": 72,
-                "pending": 10,
-                "completion_rate": 84.7,
-                "avg_time_hours": 48.2
-            },
-            {
-                "type": "Proposal",
-                "total": 62,
-                "signed": 48,
-                "pending": 12,
-                "completion_rate": 77.4,
-                "avg_time_hours": 28.5
-            },
-            {
-                "type": "NDA",
-                "total": 38,
-                "signed": 35,
-                "pending": 3,
-                "completion_rate": 92.1,
-                "avg_time_hours": 18.3
-            }
-        ],
-        "document_by_deal_stage": [
-            {"stage": "Proposal", "documents": 62, "signed": 48},
-            {"stage": "Negotiation", "documents": 45, "signed": 38},
-            {"stage": "Closed Won", "documents": 78, "signed": 78}
-        ],
-        "reminders_sent": {
-            "total_reminders": 145,
-            "avg_reminders_per_doc": 2.3,
-            "effectiveness_rate": 68.5
+        "document_by_type": document_by_type,
+        "reminders": {
+            "total_reminders": int(total_reminders),
+            "avg_reminders_per_doc": round(avg_reminders, 1)
         }
     }
-    
-    await set_cached_analytics(cache_key, data, ttl=300)
-    return data
 
 
 @router.get("/custom")
