@@ -1018,45 +1018,6 @@ export default function Analytics() {
           </div>
         </div>
 
-        {/* Email Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Email Performance</h3>
-            </div>
-            <div className="p-4 sm:p-6">
-              <ResponsiveContainer width="100%" height={250} key={`email-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                <BarChart data={emailMetricsData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="metric" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="count" fill="#8B5CF6" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Call Activity</h3>
-            </div>
-            <div className="p-4 sm:p-6">
-              <ResponsiveContainer width="100%" height={250} key={`calls-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                <BarChart data={callMetricsData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="day" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="answered" fill="#10B981" name="Answered" />
-                  <Bar dataKey="missed" fill="#EF4444" name="Missed" />
-                  <Legend />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
         {/* Document & E-Sign Analytics */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
           <div className="bg-white rounded-lg shadow">

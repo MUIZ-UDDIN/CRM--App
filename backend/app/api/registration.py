@@ -242,14 +242,13 @@ async def register_company(
         db.add(default_pipeline)
         db.flush()  # Get pipeline ID
         
-        # Create default stages
+        # Create default stages (matching the stage names expected by the system)
         default_stages = [
-            {'name': 'Lead', 'order_index': 0, 'probability': 10.0},
-            {'name': 'Qualified', 'order_index': 1, 'probability': 25.0},
-            {'name': 'Proposal', 'order_index': 2, 'probability': 50.0},
-            {'name': 'Negotiation', 'order_index': 3, 'probability': 75.0},
-            {'name': 'Closed Won', 'order_index': 4, 'probability': 100.0, 'is_closed': True, 'is_won': True},
-            {'name': 'Closed Lost', 'order_index': 5, 'probability': 0.0, 'is_closed': True, 'is_won': False},
+            {'name': 'Qualification', 'order_index': 0, 'probability': 25.0},
+            {'name': 'Proposal', 'order_index': 1, 'probability': 50.0},
+            {'name': 'Negotiation', 'order_index': 2, 'probability': 75.0},
+            {'name': 'Closed Won', 'order_index': 3, 'probability': 100.0, 'is_closed': True, 'is_won': True},
+            {'name': 'Closed Lost', 'order_index': 4, 'probability': 0.0, 'is_closed': True, 'is_won': False},
         ]
         
         for stage_data in default_stages:
