@@ -101,18 +101,26 @@ async def get_pipeline_analytics(
         # Regular user can see own data
         filters.append(Deal.owner_id == owner_id)
     
+    # Apply date filters - use func.date() to match Dashboard KPI logic
     if date_from:
-        filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
+        date_from_obj = datetime.fromisoformat(date_from).date()
+        filters.append(func.date(Deal.created_at) >= date_from_obj)
     if date_to:
-        # Add one day to include the entire end date
-        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
-        filters.append(Deal.created_at < end_date)
+        date_to_obj = datetime.fromisoformat(date_to).date()
+        filters.append(func.date(Deal.created_at) <= date_to_obj)
     if user_id:
         filters.append(Deal.owner_id == uuid.UUID(user_id))
     if pipeline_id:
         filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
     
-    # Debug logging removed for production
+    # Debug logging
+    print(f"=== Pipeline Analytics Filters ===")
+    print(f"Date From: {date_from}")
+    print(f"Date To: {date_to}")
+    print(f"User ID: {user_id}")
+    print(f"Pipeline ID: {pipeline_id}")
+    print(f"Filters: {filters}")
+    print(f"=====================================")
     
     # Get stage analytics
     stage_stats = db.query(
