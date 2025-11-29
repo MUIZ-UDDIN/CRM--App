@@ -122,6 +122,14 @@ async def get_pipeline_analytics(
     print(f"Filters: {filters}")
     print(f"=====================================")
     
+    # Debug: Get actual deals to see what's being included
+    debug_deals = db.query(Deal.id, Deal.title, Deal.value, Deal.status, Deal.created_at).filter(and_(*filters)).all()
+    print(f"=== Deals Found by Pipeline Analytics ===")
+    for deal in debug_deals:
+        print(f"  Deal: {deal.title} | Value: ${deal.value} | Status: {deal.status} | Created: {deal.created_at}")
+    print(f"Total deals found: {len(debug_deals)}")
+    print(f"=========================================")
+    
     # Get stage analytics
     stage_stats = db.query(
         PipelineStage.id,
