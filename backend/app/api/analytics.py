@@ -71,6 +71,12 @@ async def get_pipeline_analytics(
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
+    print(f"=== Pipeline Analytics Access Control ===")
+    print(f"Access Level: {access_level}")
+    print(f"Company ID: {company_id}")
+    print(f"Owner ID: {owner_id}")
+    print(f"===========================================")
+    
     # Build query filters based on access level
     # Filter for WON deals only to match KPIs and Revenue analytics
     filters = [Deal.is_deleted == False, Deal.status == DealStatus.WON]
@@ -123,10 +129,10 @@ async def get_pipeline_analytics(
     print(f"=====================================")
     
     # Debug: Get actual deals to see what's being included
-    debug_deals = db.query(Deal.id, Deal.title, Deal.value, Deal.status, Deal.created_at).filter(and_(*filters)).all()
+    debug_deals = db.query(Deal.id, Deal.title, Deal.value, Deal.status, Deal.created_at, Deal.company_id).filter(and_(*filters)).all()
     print(f"=== Deals Found by Pipeline Analytics ===")
     for deal in debug_deals:
-        print(f"  Deal: {deal.title} | Value: ${deal.value} | Status: {deal.status} | Created: {deal.created_at}")
+        print(f"  Deal: {deal.title} | Value: ${deal.value} | Status: {deal.status} | Created: {deal.created_at} | Company: {deal.company_id}")
     print(f"Total deals found: {len(debug_deals)}")
     print(f"=========================================")
     
