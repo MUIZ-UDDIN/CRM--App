@@ -463,6 +463,13 @@ def update_user_role(
             detail="User not found"
         )
     
+    # Prevent changing the system super admin (admin@sunstonecrm.com) role
+    if user_to_update.email and user_to_update.email.lower() == "admin@sunstonecrm.com":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Cannot change the system super admin role. This account is protected."
+        )
+    
     # Prevent changing super admin role
     if user_to_update.user_role == UserRole.SUPER_ADMIN:
         raise HTTPException(

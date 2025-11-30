@@ -433,6 +433,13 @@ async def update_user(
         
         user.email = email_lower
     if user_update.role is not None:
+        # Prevent changing the system super admin (admin@sunstonecrm.com) role
+        if user.email and user.email.lower() == "admin@sunstonecrm.com":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot change the system super admin role. This account is protected."
+            )
+        
         # Normalize role from display name to database format
         role_mapping = {
             'Admin': 'company_admin',
