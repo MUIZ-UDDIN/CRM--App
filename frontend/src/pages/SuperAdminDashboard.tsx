@@ -313,18 +313,22 @@ export default function SuperAdminDashboard() {
 
   const getPlanBadge = (company: Company) => {
     const plan = company.plan || 'free';
+    const planLower = plan.toLowerCase();
     const colors = {
-      free: 'bg-gray-100 text-gray-800',
+      free: 'bg-yellow-100 text-yellow-800',  // Use trial colors for free
       pro: 'bg-blue-100 text-blue-800',
       enterprise: 'bg-purple-100 text-purple-800',
       trial: 'bg-yellow-100 text-yellow-800'
     };
 
-    const color = colors[plan.toLowerCase() as keyof typeof colors] || colors.free;
+    const color = colors[planLower as keyof typeof colors] || colors.free;
+    
+    // Display "TRIAL" for free plans to match filter logic
+    const displayText = planLower === 'free' ? 'TRIAL' : plan.toUpperCase();
     
     return (
       <span className={`px-2 py-1 text-xs font-medium rounded-full ${color}`}>
-        {plan.toUpperCase()}
+        {displayText}
       </span>
     );
   };
