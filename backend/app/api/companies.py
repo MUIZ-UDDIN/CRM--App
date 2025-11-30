@@ -289,6 +289,12 @@ def list_companies(
     for company in companies:
         company.user_count = db.query(User).filter(User.company_id == company.id).count()
         
+        # Set defaults for NULL values
+        if not company.plan or company.plan == '':
+            company.plan = 'free'
+        if not company.subscription_status or company.subscription_status == '':
+            company.subscription_status = 'trial'
+        
         # Calculate days remaining for trial accounts
         if company.subscription_status == 'trial' and company.trial_ends_at:
             now = datetime.utcnow()
