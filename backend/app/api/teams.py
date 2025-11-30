@@ -362,7 +362,8 @@ async def add_team_member(
         )
     
     # Check if user is in the same company
-    if str(user.company_id) != str(team.company_id):
+    # EXCEPTION: Super admin can join any team from any company
+    if user.user_role != "super_admin" and str(user.company_id) != str(team.company_id):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User must be in the same company as the team"
@@ -372,6 +373,7 @@ async def add_team_member(
     user.team_id = team_id
     
     # If not already a sales_manager, set as sales_rep
+    # IMPORTANT: Never change super_admin or company_admin roles
     if user.user_role not in ["super_admin", "company_admin", "sales_manager"]:
         user.user_role = "sales_rep"
     
