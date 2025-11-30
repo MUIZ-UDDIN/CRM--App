@@ -278,8 +278,16 @@ async def set_team_lead(
             detail="User not found"
         )
     
-    # Check if user is in team
-    if user.team_id != team_id:
+    # Check if user is in team (check both team_id and user_teams)
+    from app.models.users import user_teams
+    in_user_teams = db.execute(
+        user_teams.select().where(
+            user_teams.c.user_id == user_id,
+            user_teams.c.team_id == team_id
+        )
+    ).first()
+    
+    if user.team_id != team_id and not in_user_teams:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User must be a member of the team"
