@@ -326,6 +326,41 @@ export default function Contacts() {
   const handleCreate = async () => {
     if (submitting) return;
     
+    // Validate mandatory fields
+    if (!contactForm.first_name || !contactForm.first_name.trim()) {
+      toast.error('First name is required');
+      return;
+    }
+    
+    if (!contactForm.last_name || !contactForm.last_name.trim()) {
+      toast.error('Last name is required');
+      return;
+    }
+    
+    if (!contactForm.email || !contactForm.email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contactForm.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    if (!contactForm.phone || !contactForm.phone.trim()) {
+      toast.error('Phone number is required');
+      return;
+    }
+    
+    // Phone format validation (basic - allows +, digits, spaces, hyphens, parentheses)
+    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(contactForm.phone.replace(/\s/g, ''))) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
+    
     // Validate owner_id is set
     if (!contactForm.owner_id) {
       toast.error('Please select an owner');
@@ -403,6 +438,41 @@ export default function Contacts() {
   const handleUpdate = async () => {
     if (!selectedContact) return;
     if (submitting) return;
+    
+    // Validate mandatory fields
+    if (!contactForm.first_name || !contactForm.first_name.trim()) {
+      toast.error('First name is required');
+      return;
+    }
+    
+    if (!contactForm.last_name || !contactForm.last_name.trim()) {
+      toast.error('Last name is required');
+      return;
+    }
+    
+    if (!contactForm.email || !contactForm.email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+    
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(contactForm.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    
+    if (!contactForm.phone || !contactForm.phone.trim()) {
+      toast.error('Phone number is required');
+      return;
+    }
+    
+    // Phone format validation
+    const phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
+    if (!phoneRegex.test(contactForm.phone.replace(/\s/g, ''))) {
+      toast.error('Please enter a valid phone number');
+      return;
+    }
     
     try {
       // Validate owner_id is set
@@ -778,41 +848,64 @@ export default function Contacts() {
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="First Name"
+                    value={contactForm.first_name}
+                    onChange={(e) => setContactForm({...contactForm, first_name: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Last Name"
+                    value={contactForm.last_name}
+                    onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="text"
-                  placeholder="First Name"
-                  value={contactForm.first_name}
-                  onChange={(e) => setContactForm({...contactForm, first_name: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  value={contactForm.last_name}
-                  onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  type="email"
+                  placeholder="Email"
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
-              <input
-                type="email"
-                placeholder="Email"
-                value={contactForm.email}
-                onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <input
-                type="tel"
-                placeholder="Phone (e.g., +1234567890)"
-                value={contactForm.phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
-                  setContactForm({...contactForm, phone: value});
-                }}
-                pattern="[+]?[0-9\-() ]+"
-                title="Please enter a valid phone number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Phone (e.g., +1234567890)"
+                  value={contactForm.phone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                    setContactForm({...contactForm, phone: value});
+                  }}
+                  pattern="[+]?[0-9\-() ]+"
+                  title="Please enter a valid phone number"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Company
@@ -929,41 +1022,64 @@ export default function Contacts() {
             </div>
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    First Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="First Name"
+                    value={contactForm.first_name}
+                    onChange={(e) => setContactForm({...contactForm, first_name: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Last Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Last Name"
+                    value={contactForm.last_name}
+                    onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="text"
-                  placeholder="First Name"
-                  value={contactForm.first_name}
-                  onChange={(e) => setContactForm({...contactForm, first_name: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Last Name"
-                  value={contactForm.last_name}
-                  onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
-                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  type="email"
+                  placeholder="Email"
+                  value={contactForm.email}
+                  onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 />
               </div>
-              <input
-                type="email"
-                placeholder="Email"
-                value={contactForm.email}
-                onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
-              <input
-                type="tel"
-                placeholder="Phone (e.g., +1234567890)"
-                value={contactForm.phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
-                  setContactForm({...contactForm, phone: value});
-                }}
-                pattern="[+]?[0-9\-() ]+"
-                title="Please enter a valid phone number"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Phone <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="tel"
+                  placeholder="Phone (e.g., +1234567890)"
+                  value={contactForm.phone}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                    setContactForm({...contactForm, phone: value});
+                  }}
+                  pattern="[+]?[0-9\-() ]+"
+                  title="Please enter a valid phone number"
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Company
