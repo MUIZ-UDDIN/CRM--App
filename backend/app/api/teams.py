@@ -224,9 +224,15 @@ async def delete_team(
             detail="Team not found"
         )
     
-    # Check if team has members
-    members = db.query(User).filter(User.team_id == team_id).all()
-    if members:
+    # Check if team has members (both regular and super admin)
+    regular_members = db.query(User).filter(User.team_id == team_id).all()
+    
+    from app.models.users import user_teams
+    super_admin_count = db.execute(
+        user_teams.select().where(user_teams.c.team_id == team_id)
+    ).fetchall()
+    
+    if regular_members or super_admin_count:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot delete team with members. Remove members first."
@@ -312,8 +318,24 @@ async def get_team_members(
     validate_team_access(current_user, team_id)
     
     # Get team members
-    members = db.query(User).filter(User.team_id == team_id).all()
-    return members
+    # Regular users: from team_id field
+    regular_members = db.query(User).filter(User.team_id == team_id).all()
+    
+    # Super admins: from user_teams table
+    from app.models.users import user_teams
+    super_admin_ids = db.execute(
+        user_teams.select().where(user_teams.c.team_id == team_id)
+    ).fetchall()
+    
+    super_admin_members = []
+    if super_admin_ids:
+        user_ids = [row.user_id for row in super_admin_ids]
+        super_admin_members = db.query(User).filter(User.id.in_(user_ids)).all()
+    
+    # Combine both lists (avoid duplicates)
+    all_members = regular_members + [m for m in super_admin_members if m not in regular_members]
+    
+    return all_members
 
 
 @router.post("/{team_id}/members")
@@ -441,8 +463,16 @@ async def remove_team_member(
             detail="User not found"
         )
     
-    # Check if user is in the team
-    if user.team_id != team_id:
+    # Check if user is in the team (check both team_id and user_teams)
+    from app.models.users import user_teams
+    in_user_teams = db.execute(
+        user_teams.select().where(
+            user_teams.c.user_id == user_id,
+            user_teams.c.team_id == team_id
+        )
+    ).first()
+    
+    if user.team_id != team_id and not in_user_teams:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is not in this team"
@@ -453,11 +483,21 @@ async def remove_team_member(
         team.team_lead_id = None
     
     # Remove user from team
-    user.team_id = None
-    
-    # If user was a sales_rep, reset to company_user
-    if user.user_role == "sales_rep":
-        user.user_role = "company_user"
+    if user.user_role == "super_admin" and in_user_teams:
+        # Super admin: Remove from user_teams table
+        db.execute(
+            user_teams.delete().where(
+                user_teams.c.user_id == user_id,
+                user_teams.c.team_id == team_id
+            )
+        )
+    else:
+        # Regular user: Clear team_id field
+        user.team_id = None
+        
+        # If user was a sales_rep, reset to company_user
+        if user.user_role == "sales_rep":
+            user.user_role = "company_user"
     
     db.commit()
     
