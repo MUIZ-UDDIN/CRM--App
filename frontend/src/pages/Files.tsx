@@ -774,9 +774,9 @@ export default function Files() {
                   className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[160px]"
                 >
                   <option value="all">All Categories</option>
-                  <option value="Sales">Sales</option>
-                  <option value="Legal">Legal</option>
-                  <option value="Marketing">Marketing</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
                 </select>
                 <select
                   value={filterStatus}
@@ -827,15 +827,13 @@ export default function Files() {
                 </h3>
                 
                 <div className="space-y-0.5 sm:space-y-1 text-xs text-gray-600 flex-grow">
-                  {file.type === 'file' && (
-                    <>
-                      <p className="text-center">Size: {formatFileSize(file.size)}</p>
-                      <p className="text-center">Category: {file.category || 'N/A'}</p>
-                    </>
+                  {file.type === 'file' && file.size !== undefined && file.size !== null && (
+                    <p className="text-center">Size: {formatFileSize(file.size)}</p>
                   )}
                   {file.type === 'folder' && file.size !== undefined && file.size !== null && (
                     <p className="text-center">Size: {formatFileSize(file.size)}</p>
                   )}
+                  <p className="text-center">Category: {file.category || 'N/A'}</p>
                   <p className="text-center">Status: <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
                     file.status === 'active' ? 'bg-green-100 text-green-800' :
                     file.status === 'inactive' ? 'bg-red-100 text-red-800' :
