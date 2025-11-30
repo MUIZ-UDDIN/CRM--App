@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronDownIcon, XMarkIcon, PlusIcon } from '@heroicons/react/24/outline';
+import { ChevronDownIcon, XMarkIcon, PlusIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface StatusComboboxProps {
   value: string;
@@ -89,6 +89,19 @@ export default function StatusCombobox({ value, onChange, placeholder = "Select 
     }
   };
 
+  const handleDeleteCustom = (statusToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedStatuses = customStatuses.filter(s => s !== statusToDelete);
+    setCustomStatuses(updatedStatuses);
+    localStorage.setItem('customContactStatuses', JSON.stringify(updatedStatuses));
+    
+    // If the deleted status was selected, clear the input
+    if (searchTerm.toLowerCase() === statusToDelete.toLowerCase()) {
+      setSearchTerm('');
+      onChange('');
+    }
+  };
+
   // Capitalize first letter for display
   const capitalize = (str: string) => {
     return str.charAt(0).toUpperCase() + str.slice(1);
@@ -131,16 +144,33 @@ export default function StatusCombobox({ value, onChange, placeholder = "Select 
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
           {filteredStatuses.length > 0 ? (
             <>
-              {filteredStatuses.map((status, index) => (
-                <button
-                  key={index}
-                  type="button"
-                  onClick={() => handleSelectStatus(status)}
-                  className="w-full text-left px-3 py-2 text-sm hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                >
-                  {capitalize(status)}
-                </button>
-              ))}
+              {filteredStatuses.map((status, index) => {
+                const isCustom = customStatuses.includes(status);
+                return (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between hover:bg-gray-100 group"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSelectStatus(status)}
+                      className="flex-1 text-left px-3 py-2 text-sm focus:outline-none"
+                    >
+                      {capitalize(status)}
+                    </button>
+                    {isCustom && (
+                      <button
+                        type="button"
+                        onClick={(e) => handleDeleteCustom(status, e)}
+                        className="px-2 py-2 text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Delete custom status"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </>
           ) : searchTerm.trim() ? (
             <div className="px-3 py-2 text-sm text-gray-500">
