@@ -550,6 +550,14 @@ def delete_company(
         print(f"Error deleting folders by company_id: {e}")
         pass
     
+    # Delete quotes by company_id
+    try:
+        db.query(Quote).filter(Quote.company_id == company.id).delete(synchronize_session=False)
+        print(f"Deleted quotes for company {company.id}")
+    except Exception as e:
+        print(f"Error deleting quotes by company_id: {e}")
+        pass
+    
     # Delete billing data
     try:
         db.query(PaymentHistory).filter(PaymentHistory.company_id == company.id).delete(synchronize_session=False)
