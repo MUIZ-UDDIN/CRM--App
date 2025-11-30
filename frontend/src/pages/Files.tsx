@@ -478,6 +478,7 @@ export default function Files() {
       const folderData: any = {
         name: fileForm.name.trim(),
         description: fileForm.description.trim() || undefined,
+        category: fileForm.category || undefined,
         status: fileForm.status,
         tags: fileForm.tags ? fileForm.tags.split(',').map(t => t.trim()).filter(t => t) : [],
       };
@@ -546,14 +547,10 @@ export default function Files() {
       const updateData: any = {
         name: fileForm.name.trim(),
         description: fileForm.description.trim() || undefined,
+        category: fileForm.category ? fileForm.category.trim() : undefined,
         tags: fileForm.tags.split(',').map(t => t.trim()).filter(t => t),
         status: fileForm.status,
       };
-      
-      // Add category only for files
-      if (selectedFile.type === 'file') {
-        updateData.category = fileForm.category.trim() || undefined;
-      }
       
       // Use correct service method based on type
       if (selectedFile.type === 'folder') {
@@ -629,8 +626,8 @@ export default function Files() {
       file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (file.tags && file.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     
-    // Folders don't have categories, so skip category filter for folders
-    const matchesCategory = filterCategory === 'all' || file.category === filterCategory || file.type === 'folder';
+    // Apply category filter to both files and folders
+    const matchesCategory = filterCategory === 'all' || file.category === filterCategory;
     // Apply status filter to both files and folders
     const matchesStatus = filterStatus === 'all' || file.status === filterStatus;
     
@@ -1097,6 +1094,18 @@ export default function Files() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <SearchableCategorySelect
+                  categories={categories}
+                  value={fileForm.category}
+                  onChange={(value) => setFileForm({...fileForm, category: value})}
+                  onAddCategory={handleAddCategory}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Tags (Optional)
                 </label>
                 <input
@@ -1187,20 +1196,18 @@ export default function Files() {
                   {fileForm.name.length}/255 characters
                 </div>
               </div>
-              {selectedFile?.type === 'file' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Category
-                  </label>
-                  <SearchableCategorySelect
-                    categories={categories}
-                    value={fileForm.category}
-                    onChange={(value) => setFileForm({...fileForm, category: value})}
-                    onAddCategory={handleAddCategory}
-                    onDeleteCategory={handleDeleteCategory}
-                  />
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Category
+                </label>
+                <SearchableCategorySelect
+                  categories={categories}
+                  value={fileForm.category}
+                  onChange={(value) => setFileForm({...fileForm, category: value})}
+                  onAddCategory={handleAddCategory}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Description
