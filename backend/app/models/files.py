@@ -56,6 +56,7 @@ class Folder(BaseModel):
     
     name = Column(String(255), nullable=False, index=True)
     description = Column(Text)
+    category = Column(String(100), index=True)  # Sales, Legal, Marketing, etc.
     parent_id = Column(UUID(as_uuid=True), ForeignKey('folders.id'), index=True)
     owner_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False, index=True)
     company_id = Column(UUID(as_uuid=True), ForeignKey('companies.id'), nullable=True, index=True)

@@ -46,6 +46,7 @@ class FolderResponse(BaseModel):
     id: str
     name: str
     description: Optional[str]
+    category: Optional[str] = None
     status: Optional[str] = 'active'
     tags: List[str] = []
     parent_id: Optional[str] = None
@@ -77,6 +78,7 @@ class FileUpdate(BaseModel):
 class FolderCreate(BaseModel):
     name: str
     description: Optional[str] = None
+    category: Optional[str] = None
     status: Optional[str] = 'active'
     tags: List[str] = []
     parent_id: Optional[str] = None
@@ -135,6 +137,7 @@ async def upload_file(
     file: UploadFile = FastAPIFile(...),
     category: Optional[str] = Form(None),
     description: Optional[str] = Form(None),
+    status: Optional[str] = Form('active'),
     folder_id: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_active_user),
@@ -211,6 +214,7 @@ async def upload_file(
         size=file_size,
         category=category,
         description=description,
+        status=status if status else 'active',
         tags=tags_list,
         storage_path=str(file_path),
         url=str(file_path),
@@ -432,6 +436,7 @@ async def get_folders(
                 id=str(folder.id),
                 name=folder.name,
                 description=folder.description,
+                category=folder.category if hasattr(folder, 'category') else None,
                 status=folder.status if hasattr(folder, 'status') else 'active',
                 tags=folder.tags if hasattr(folder, 'tags') and folder.tags else [],
                 parent_id=str(folder.parent_id) if folder.parent_id else None,
@@ -462,6 +467,7 @@ async def create_folder(
     new_folder = Folder(
         name=folder_data.name,
         description=folder_data.description,
+        category=folder_data.category,
         status=folder_data.status,
         tags=folder_data.tags,
         parent_id=parent_uuid,
@@ -514,6 +520,7 @@ async def create_folder(
         id=str(new_folder.id),
         name=new_folder.name,
         description=new_folder.description,
+        category=new_folder.category,
         status=new_folder.status,
         tags=new_folder.tags or [],
         parent_id=str(new_folder.parent_id) if new_folder.parent_id else None,
@@ -594,6 +601,7 @@ async def update_folder(
         id=str(folder.id),
         name=folder.name,
         description=folder.description,
+        category=folder.category,
         status=folder.status,
         tags=folder.tags or [],
         parent_id=str(folder.parent_id) if folder.parent_id else None,
