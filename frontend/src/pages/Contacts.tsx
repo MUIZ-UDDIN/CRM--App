@@ -619,9 +619,11 @@ export default function Contacts() {
                           contact.status === 'qualified' ? 'bg-blue-100 text-blue-800' :
                           contact.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
                           contact.status === 'new' ? 'bg-gray-100 text-gray-800' :
-                          'bg-red-100 text-red-800'
+                          contact.status === 'unqualified' ? 'bg-orange-100 text-orange-800' :
+                          contact.status === 'lost' ? 'bg-red-100 text-red-800' :
+                          'bg-gray-100 text-gray-800'
                         }`}>
-                          {contact.status || 'new'}
+                          {contact.status ? contact.status.charAt(0).toUpperCase() + contact.status.slice(1) : 'New'}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -697,9 +699,15 @@ export default function Contacts() {
                               {contact.type || 'Lead'}
                             </span>
                             <span className={`px-2 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                              contact.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                              contact.status === 'customer' ? 'bg-green-100 text-green-800' :
+                              contact.status === 'qualified' ? 'bg-blue-100 text-blue-800' :
+                              contact.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                              contact.status === 'new' ? 'bg-gray-100 text-gray-800' :
+                              contact.status === 'unqualified' ? 'bg-orange-100 text-orange-800' :
+                              contact.status === 'lost' ? 'bg-red-100 text-red-800' :
+                              'bg-gray-100 text-gray-800'
                             }`}>
-                              {contact.status || 'Active'}
+                              {contact.status ? contact.status.charAt(0).toUpperCase() + contact.status.slice(1) : 'New'}
                             </span>
                           </div>
                           {/* Owner/Team Member */}
@@ -847,6 +855,25 @@ export default function Contacts() {
                 </div>
               </div>
               
+              {/* Status Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={contactForm.status}
+                  onChange={(e) => setContactForm({...contactForm, status: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="new">New</option>
+                  <option value="contacted">Contacted</option>
+                  <option value="qualified">Qualified</option>
+                  <option value="unqualified">Unqualified</option>
+                  <option value="customer">Customer</option>
+                  <option value="lost">Lost</option>
+                </select>
+              </div>
+              
               {/* Owner Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -983,6 +1010,25 @@ export default function Contacts() {
                       + Add New Value
                     </button>
                   </div>
+                </div>
+                
+                {/* Status Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Status <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={contactForm.status}
+                    onChange={(e) => setContactForm({...contactForm, status: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="new">New</option>
+                    <option value="contacted">Contacted</option>
+                    <option value="qualified">Qualified</option>
+                    <option value="unqualified">Unqualified</option>
+                    <option value="customer">Customer</option>
+                    <option value="lost">Lost</option>
+                  </select>
                 </div>
                 
                 {/* Owner Field */}
