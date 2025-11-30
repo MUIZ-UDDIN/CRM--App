@@ -364,14 +364,28 @@ export default function SuperAdminDashboard() {
     total: companies.length,
     active: companies.filter(c => {
       const status = c.subscription_status || c.status || 'active';
-      return status === 'active';
+      const plan = (c.plan || '').toLowerCase();
+      // Active if status is 'active' AND plan is NOT 'free'
+      // (free plans should count as trial, not active)
+      return status === 'active' && plan !== 'free';
     }).length,
     trial: companies.filter(c => {
       const status = c.subscription_status || c.status || 'active';
       const daysLeft = c.days_remaining || 0;
       const plan = (c.plan || '').toLowerCase();
-      // Count as trial if: status is 'trial' with days remaining, OR plan is 'free'
-      return (status === 'trial' && daysLeft > 0) || plan === 'free';
+      
+      // Count as trial if:
+      // 1. Plan is 'free' (regardless of status), OR
+      // 2. Status is 'trial' with days remaining > 0
+      if (plan === 'free') {
+        return true;
+      }
+      
+      if (status === 'trial' && daysLeft > 0) {
+        return true;
+      }
+      
+      return false;
     }).length,
     expired: companies.filter(c => {
       const status = c.subscription_status || c.status || 'active';
