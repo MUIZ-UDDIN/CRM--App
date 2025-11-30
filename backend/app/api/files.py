@@ -567,6 +567,8 @@ async def update_folder(
         folder.name = folder_update['name']
     if 'description' in folder_update:
         folder.description = folder_update['description']
+    if 'category' in folder_update:
+        folder.category = folder_update['category']
     if 'status' in folder_update:
         folder.status = folder_update['status']
     if 'tags' in folder_update:
