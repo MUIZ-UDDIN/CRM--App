@@ -501,37 +501,125 @@ async def get_revenue_analytics(
 
 
 @router.get("/users")
-async def get_user_analytics(current_user: dict = Depends(get_current_active_user)):
-    """Get user performance analytics"""
+async def get_user_analytics(
+    date_from: Optional[str] = Query(None),
+    date_to: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Get user performance analytics with real database queries"""
+    from app.models.users import User
+    from app.models.activities import Activity
+    from app.models.contacts import Contact
+    from app.models.deals import Deal
+    
+    # Check analytics permissions
+    access_level = enforce_analytics_permissions(current_user, "users")
+    
+    owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    company_id = current_user.get('company_id')
+    
+    # Build user filters based on access level
+    user_filters = [User.is_deleted == False]
+    
+    if access_level == "all":
+        pass  # Super admin sees all users
+    elif access_level == "company":
+        if company_id:
+            user_filters.append(User.company_id == company_id)
+    elif access_level == "team":
+        if current_user.get('team_id'):
+            user_filters.append(User.team_id == current_user.get('team_id'))
+        else:
+            user_filters.append(User.id == owner_id)
+    elif access_level == "own":
+        user_filters.append(User.id == owner_id)
+    
+    # Build date filters
+    deal_filters = [Deal.is_deleted == False]
+    activity_filters = [Activity.is_deleted == False]
+    contact_filters = [Contact.is_deleted == False]
+    
+    if date_from:
+        date_from_dt = datetime.fromisoformat(date_from)
+        deal_filters.append(Deal.created_at >= date_from_dt)
+        activity_filters.append(Activity.created_at >= date_from_dt)
+        contact_filters.append(Contact.created_at >= date_from_dt)
+    if date_to:
+        end_date = datetime.fromisoformat(date_to) + timedelta(days=1)
+        deal_filters.append(Deal.created_at < end_date)
+        activity_filters.append(Activity.created_at < end_date)
+        contact_filters.append(Contact.created_at < end_date)
+    
+    # Get users based on access level
+    users = db.query(User).filter(and_(*user_filters)).all()
+    
+    user_performance = []
+    for user in users:
+        user_id = user.id
+        
+        # Get deals count and value for this user
+        deals_query = db.query(
+            func.count(Deal.id).label('count'),
+            func.sum(Deal.value).label('total_value')
+        ).filter(and_(*deal_filters, Deal.owner_id == user_id)).first()
+        
+        deals_count = deals_query.count or 0
+        deals_value = float(deals_query.total_value or 0)
+        
+        # Get completed activities count
+        activities_completed = db.query(func.count(Activity.id)).filter(
+            and_(*activity_filters, Activity.user_id == user_id, Activity.status == 'completed')
+        ).scalar() or 0
+        
+        # Calculate conversion rate (contacts with deals / total contacts)
+        total_contacts = db.query(func.count(Contact.id)).filter(
+            and_(*contact_filters, Contact.owner_id == user_id)
+        ).scalar() or 0
+        
+        converted_contacts = db.query(func.count(func.distinct(Contact.id))).filter(
+            and_(*contact_filters, Contact.owner_id == user_id)
+        ).join(Deal, Deal.contact_id == Contact.id).filter(
+            and_(*deal_filters)
+        ).scalar() or 0
+        
+        conversion_rate = (converted_contacts / total_contacts * 100) if total_contacts > 0 else 0
+        
+        user_performance.append({
+            "user_id": str(user_id),
+            "user_name": f"{user.first_name} {user.last_name}".strip(),
+            "deals_count": deals_count,
+            "deals_value": deals_value,
+            "activities_completed": activities_completed,
+            "conversion_rate": round(conversion_rate, 1)
+        })
+    
+    # Calculate summary stats
+    total_users = len(user_performance)
+    if total_users > 0:
+        total_deals = sum(u['deals_count'] for u in user_performance)
+        total_value = sum(u['deals_value'] for u in user_performance)
+        avg_deals_per_user = total_deals / total_users
+        avg_value_per_user = total_value / total_users
+        
+        # Find top performer by deals value
+        top_performer = max(user_performance, key=lambda x: x['deals_value'])['user_name'] if user_performance else "N/A"
+    else:
+        avg_deals_per_user = 0
+        avg_value_per_user = 0
+        top_performer = "N/A"
+    
     return {
-        "user_performance": [
-            {
-                "user_name": "John Doe",
-                "deals_count": 12,
-                "deals_value": 480000.0,
-                "activities_completed": 95,
-                "conversion_rate": 75.0
-            },
-            {
-                "user_name": "Jane Smith",
-                "deals_count": 8,
-                "deals_value": 320000.0,
-                "activities_completed": 72,
-                "conversion_rate": 68.5
-            },
-            {
-                "user_name": "Mike Johnson",
-                "deals_count": 15,
-                "deals_value": 195000.0,
-                "activities_completed": 48,
-                "conversion_rate": 42.3
-            }
-        ],
+        "filters": {
+            "date_from": date_from,
+            "date_to": date_to
+        },
+        "user_performance": user_performance,
         "summary": {
-            "total_users": 3,
-            "avg_deals_per_user": 11.7,
-            "avg_value_per_user": 331666.67,
-            "top_performer": "John Doe"
+            "total_users": total_users,
+            "avg_deals_per_user": round(avg_deals_per_user, 1),
+            "avg_value_per_user": round(avg_value_per_user, 2),
+            "top_performer": top_performer
         }
     }
 
