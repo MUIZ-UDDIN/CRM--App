@@ -816,19 +816,19 @@ export default function Files() {
                   {file.type === 'folder' && file.size !== undefined && file.size !== null && (
                     <p className="text-center">Size: {formatFileSize(file.size)}</p>
                   )}
-                  <p>Status: <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
+                  <p className="text-center">Status: <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full ${
                     file.status === 'active' ? 'bg-green-100 text-green-800' :
                     file.status === 'inactive' ? 'bg-red-100 text-red-800' :
                     file.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
                     'bg-gray-100 text-gray-800'
                   }`}>{file.status ? file.status.charAt(0).toUpperCase() + file.status.slice(1) : 'N/A'}</span></p>
-                  {file.contact && <p>Contact: {file.contact}</p>}
-                  {file.deal && <p className="truncate" title={file.deal}>Deal: {file.deal}</p>}
-                  <p className="text-gray-500 mt-2">{formatDate(file.created_at)}</p>
+                  {file.contact && <p className="text-center">Contact: {file.contact}</p>}
+                  {file.deal && <p className="text-center truncate" title={file.deal}>Deal: {file.deal}</p>}
+                  <p className="text-center text-gray-500 mt-2">{formatDate(file.created_at)}</p>
                 </div>
 
                 {file.tags && file.tags.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-2 flex flex-wrap gap-1 justify-center">
                     {file.tags.slice(0, 2).map((tag, idx) => (
                       <span key={idx} className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded">
                         {tag}
