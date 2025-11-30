@@ -50,6 +50,8 @@ export default function SuperAdminDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
+  const [showSuspendModal, setShowSuspendModal] = useState(false);
+  const [companyToSuspend, setCompanyToSuspend] = useState<Company | null>(null);
   const [apiError, setApiError] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newCompany, setNewCompany] = useState({
@@ -63,19 +65,25 @@ export default function SuperAdminDashboard() {
     fetchCompanies();
   }, []);
 
-  const handleSuspendCompany = async (companyId: string) => {
-    if (!confirm('Are you sure you want to suspend this company? All users will be unable to access the system.')) {
-      return;
-    }
+  const handleSuspendCompany = (company: Company) => {
+    setCompanyToSuspend(company);
+    setShowSuspendModal(true);
+    setOpenDropdownId(null);
+  };
+
+  const confirmSuspend = async () => {
+    if (!companyToSuspend) return;
 
     try {
       const token = localStorage.getItem('token');
       await axios.post(
-        `${API_URL}/api/billing/subscriptions/${companyId}/suspend`,
+        `${API_URL}/api/billing/subscriptions/${companyToSuspend.id}/suspend`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Company suspended successfully');
+      setShowSuspendModal(false);
+      setCompanyToSuspend(null);
       fetchCompanies();
     } catch (error: any) {
       // Don't log 404 errors to console
@@ -85,6 +93,11 @@ export default function SuperAdminDashboard() {
       const errorMsg = error.response?.data?.detail || 'Failed to suspend company';
       toast.error(errorMsg);
     }
+  };
+
+  const cancelSuspend = () => {
+    setShowSuspendModal(false);
+    setCompanyToSuspend(null);
   };
 
   const handleActivateCompany = async (companyId: string) => {
@@ -352,8 +365,9 @@ export default function SuperAdminDashboard() {
     trial: companies.filter(c => {
       const status = c.subscription_status || c.status || 'active';
       const daysLeft = c.days_remaining || 0;
+      const plan = (c.plan || '').toLowerCase();
       // Count as trial if: status is 'trial' with days remaining, OR plan is 'free'
-      return (status === 'trial' && daysLeft > 0) || c.plan === 'free';
+      return (status === 'trial' && daysLeft > 0) || plan === 'free';
     }).length,
     expired: companies.filter(c => {
       const status = c.subscription_status || c.status || 'active';
@@ -605,7 +619,7 @@ export default function SuperAdminDashboard() {
                                 <button
                                   onClick={() => {
                                     setOpenDropdownId(null);
-                                    handleSuspendCompany(company.id);
+                                    handleSuspendCompany(company);
                                   }}
                                   className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2"
                                 >
@@ -913,6 +927,54 @@ export default function SuperAdminDashboard() {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
               >
                 Yes, Delete Company
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend Confirmation Modal */}
+      {showSuspendModal && companyToSuspend && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={cancelSuspend}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">⚠️ Confirm Company Suspension</h3>
+              <button onClick={cancelSuspend} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3">
+                Are you sure you want to suspend <span className="font-semibold text-orange-600">"{companyToSuspend.name}"</span>?
+              </p>
+              <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3">
+                <p className="text-sm font-semibold text-orange-800 mb-2">This will:</p>
+                <ul className="text-sm text-orange-700 space-y-1 ml-4">
+                  <li>• Block all {companyToSuspend.user_count} users from accessing the system</li>
+                  <li>• Disable all company features and integrations</li>
+                  <li>• Prevent users from logging in</li>
+                  <li>• Keep all data intact (can be reactivated later)</li>
+                </ul>
+              </div>
+              <p className="text-sm text-gray-600">
+                💡 You can reactivate the company at any time to restore access.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelSuspend}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmSuspend}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700"
+              >
+                Yes, Suspend Company
               </button>
             </div>
           </div>
