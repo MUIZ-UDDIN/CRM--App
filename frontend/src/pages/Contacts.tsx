@@ -40,6 +40,7 @@ export default function Contacts() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
@@ -48,6 +49,7 @@ export default function Contacts() {
   const [currentPage, setCurrentPage] = useState(1);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [contactToDelete, setContactToDelete] = useState<Contact | null>(null);
   const [contactTypes, setContactTypes] = useState<string[]>([]);
   const [users, setUsers] = useState<Array<{id: string, name: string, email: string}>>([]);
   const [showAddTypeModal, setShowAddTypeModal] = useState(false);
@@ -268,17 +270,29 @@ export default function Contacts() {
   };
   
   // Handle delete contact
-  const handleDelete = async (contact: Contact) => {
-    if (!confirm(`Delete ${contact.first_name} ${contact.last_name}?`)) return;
-    
+  const handleDelete = (contact: Contact) => {
+    setContactToDelete(contact);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!contactToDelete) return;
     try {
-      await contactsService.deleteContact(contact.id);
-      toast.success('Contact deleted');
+      await contactsService.deleteContact(contactToDelete.id);
+      toast.success('Contact deleted successfully');
+      setShowDeleteModal(false);
+      setContactToDelete(null);
       fetchContacts();
     } catch (error: any) {
       console.error('Delete error:', error);
       toast.error(error?.response?.data?.detail || error?.message || 'Failed to delete contact');
+      setShowDeleteModal(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setContactToDelete(null);
   };
   
   // Handle add new contact type
@@ -900,7 +914,6 @@ export default function Contacts() {
                     const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
                     setContactForm({...contactForm, phone: value});
                   }}
-                  pattern="[+]?[0-9\-() ]+"
                   title="Please enter a valid phone number"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -1074,7 +1087,6 @@ export default function Contacts() {
                     const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
                     setContactForm({...contactForm, phone: value});
                   }}
-                  pattern="[+]?[0-9\-() ]+"
                   title="Please enter a valid phone number"
                   required
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
@@ -1291,6 +1303,45 @@ export default function Contacts() {
                   Add Type
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && contactToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={cancelDelete}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete <span className="font-semibold">"{contactToDelete.first_name} {contactToDelete.last_name}"</span>?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete
+              </button>
             </div>
           </div>
         </div>
