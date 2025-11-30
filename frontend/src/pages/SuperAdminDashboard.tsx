@@ -345,12 +345,23 @@ export default function SuperAdminDashboard() {
 
   const stats = {
     total: companies.length,
-    active: companies.filter(c => c.subscription_status === 'active').length,
-    trial: companies.filter(c => c.subscription_status === 'trial' && (c.days_remaining || 0) > 0).length,
-    expired: companies.filter(c => 
-      c.subscription_status === 'expired' || 
-      (c.subscription_status === 'trial' && (c.days_remaining || 0) === 0)
-    ).length,
+    active: companies.filter(c => {
+      const status = c.subscription_status || c.status || 'active';
+      return status === 'active';
+    }).length,
+    trial: companies.filter(c => {
+      const status = c.subscription_status || c.status || 'active';
+      const daysLeft = c.days_remaining || 0;
+      // Count as trial if: status is 'trial' with days remaining, OR plan is 'free'
+      return (status === 'trial' && daysLeft > 0) || c.plan === 'free';
+    }).length,
+    expired: companies.filter(c => {
+      const status = c.subscription_status || c.status || 'active';
+      const daysLeft = c.days_remaining || 0;
+      // Count as expired if: status is 'expired', 'suspended', OR trial with 0 days remaining
+      return status === 'expired' || status === 'suspended' || 
+             (status === 'trial' && daysLeft === 0);
+    }).length,
     totalUsers: companies.reduce((sum, c) => sum + c.user_count, 0)
   };
 
