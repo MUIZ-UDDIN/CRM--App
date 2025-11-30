@@ -26,6 +26,7 @@ class ContactBase(BaseModel):
     type: Optional[str] = None
 
 class ContactCreate(ContactBase):
+    status: Optional[str] = 'new'
     owner_id: Optional[str] = None
 
 class ContactUpdate(BaseModel):

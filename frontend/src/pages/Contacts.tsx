@@ -6,6 +6,7 @@ import ActionButtons from '../components/common/ActionButtons';
 import ContactUpload from '../components/contacts/ContactUpload';
 import Pagination from '../components/common/Pagination';
 import CompanyCombobox from '../components/common/CompanyCombobox';
+import StatusCombobox from '../components/common/StatusCombobox';
 import { 
   UserGroupIcon, 
   PlusIcon, 
@@ -860,18 +861,12 @@ export default function Contacts() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Status <span className="text-red-500">*</span>
                 </label>
-                <select
+                <StatusCombobox
                   value={contactForm.status}
-                  onChange={(e) => setContactForm({...contactForm, status: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="new">New</option>
-                  <option value="contacted">Contacted</option>
-                  <option value="qualified">Qualified</option>
-                  <option value="unqualified">Unqualified</option>
-                  <option value="customer">Customer</option>
-                  <option value="lost">Lost</option>
-                </select>
+                  onChange={(value) => setContactForm({...contactForm, status: value})}
+                  placeholder="Select or type status"
+                  required
+                />
               </div>
               
               {/* Owner Field */}
@@ -1017,18 +1012,12 @@ export default function Contacts() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Status <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <StatusCombobox
                     value={contactForm.status}
-                    onChange={(e) => setContactForm({...contactForm, status: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  >
-                    <option value="new">New</option>
-                    <option value="contacted">Contacted</option>
-                    <option value="qualified">Qualified</option>
-                    <option value="unqualified">Unqualified</option>
-                    <option value="customer">Customer</option>
-                    <option value="lost">Lost</option>
-                  </select>
+                    onChange={(value) => setContactForm({...contactForm, status: value})}
+                    placeholder="Select or type status"
+                    required
+                  />
                 </div>
                 
                 {/* Owner Field */}
