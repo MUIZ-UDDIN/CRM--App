@@ -63,7 +63,7 @@ class Contact(BaseModel):
     country = Column(String(100))
     
     # Lead Information
-    status = Column(SQLEnum(ContactStatus), default=ContactStatus.NEW, nullable=False, index=True)
+    status = Column(String(50), default='new', nullable=False, index=True)
     source = Column(SQLEnum(LeadSource), index=True)
     lead_score = Column(Integer, default=0, index=True)  # AI-generated score 0-100
     
