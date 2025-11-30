@@ -355,7 +355,7 @@ async def add_team_member(
         )
     
     # Check if user is already in a team
-    # EXCEPTION: Super admin can switch between teams (join any team)
+    # EXCEPTION: Super admin can be in multiple teams
     if user.team_id and user.user_role != "super_admin":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -370,13 +370,33 @@ async def add_team_member(
             detail="User must be in the same company as the team"
         )
     
-    # Add user to team (or switch team for super admin)
-    user.team_id = team_id
-    
-    # If not already a sales_manager, set as sales_rep
-    # IMPORTANT: Never change super_admin or company_admin roles
-    if user.user_role not in ["super_admin", "company_admin", "sales_manager"]:
-        user.user_role = "sales_rep"
+    # Add user to team
+    if user.user_role == "super_admin":
+        # Super admin: Add to user_teams table (many-to-many)
+        # Check if already in this team
+        from app.models.users import user_teams
+        existing = db.execute(
+            user_teams.select().where(
+                user_teams.c.user_id == member.user_id,
+                user_teams.c.team_id == team_id
+            )
+        ).first()
+        
+        if not existing:
+            db.execute(
+                user_teams.insert().values(
+                    user_id=member.user_id,
+                    team_id=team_id
+                )
+            )
+    else:
+        # Regular users: Use team_id field (single team)
+        user.team_id = team_id
+        
+        # If not already a sales_manager, set as sales_rep
+        # IMPORTANT: Never change super_admin or company_admin roles
+        if user.user_role not in ["super_admin", "company_admin", "sales_manager"]:
+            user.user_role = "sales_rep"
     
     db.commit()
     

@@ -33,6 +33,16 @@ user_roles = Table(
     Column('role_id', UUID(as_uuid=True), ForeignKey('roles.id'), primary_key=True)
 )
 
+# Association table for many-to-many relationship between users and teams
+# Allows super admin to be in multiple teams simultaneously
+user_teams = Table(
+    'user_teams',
+    BaseModel.metadata,
+    Column('user_id', UUID(as_uuid=True), ForeignKey('users.id', ondelete='CASCADE'), primary_key=True),
+    Column('team_id', UUID(as_uuid=True), ForeignKey('teams.id', ondelete='CASCADE'), primary_key=True),
+    Column('joined_at', DateTime, server_default=text('CURRENT_TIMESTAMP'))
+)
+
 
 class Role(BaseModel):
     """Role model for RBAC"""
