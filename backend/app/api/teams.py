@@ -355,7 +355,8 @@ async def add_team_member(
         )
     
     # Check if user is already in a team
-    if user.team_id:
+    # EXCEPTION: Super admin can switch between teams (join any team)
+    if user.team_id and user.user_role != "super_admin":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User is already in a team"
@@ -369,7 +370,7 @@ async def add_team_member(
             detail="User must be in the same company as the team"
         )
     
-    # Add user to team
+    # Add user to team (or switch team for super admin)
     user.team_id = team_id
     
     # If not already a sales_manager, set as sales_rep
