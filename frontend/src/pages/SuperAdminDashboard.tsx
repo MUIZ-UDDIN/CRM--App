@@ -370,29 +370,48 @@ export default function SuperAdminDashboard() {
       return status === 'active' && plan !== 'free';
     }).length,
     trial: companies.filter(c => {
-      const status = c.subscription_status || c.status || 'active';
+      const subscriptionStatus = c.subscription_status || '';
+      const status = c.status || '';
       const daysLeft = c.days_remaining || 0;
       const plan = (c.plan || '').toLowerCase();
       
+      // Debug logging
+      console.log('Company:', c.name, {
+        plan,
+        subscription_status: subscriptionStatus,
+        status,
+        days_remaining: daysLeft
+      });
+      
       // Count as trial if:
-      // 1. Plan is 'free' (regardless of status), OR
-      // 2. Status is 'trial' with days remaining > 0
+      // 1. Plan is 'free' (regardless of subscription_status), OR
+      // 2. subscription_status is 'trial' (regardless of days), OR
+      // 3. Status is 'trial' with days remaining > 0
+      
       if (plan === 'free') {
+        console.log('  -> Counted as trial (free plan)');
+        return true;
+      }
+      
+      if (subscriptionStatus === 'trial') {
+        console.log('  -> Counted as trial (subscription_status=trial)');
         return true;
       }
       
       if (status === 'trial' && daysLeft > 0) {
+        console.log('  -> Counted as trial (status=trial with days)');
         return true;
       }
       
+      console.log('  -> NOT counted as trial');
       return false;
     }).length,
     expired: companies.filter(c => {
-      const status = c.subscription_status || c.status || 'active';
+      const subscriptionStatus = c.subscription_status || c.status || 'active';
       const daysLeft = c.days_remaining || 0;
       // Count as expired if: status is 'expired', 'suspended', OR trial with 0 days remaining
-      return status === 'expired' || status === 'suspended' || 
-             (status === 'trial' && daysLeft === 0);
+      return subscriptionStatus === 'expired' || subscriptionStatus === 'suspended' || 
+             (subscriptionStatus === 'trial' && daysLeft === 0);
     }).length,
     totalUsers: companies.reduce((sum, c) => sum + c.user_count, 0)
   };
