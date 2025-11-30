@@ -5,6 +5,7 @@ import * as contactsService from '../services/contactsService';
 import ActionButtons from '../components/common/ActionButtons';
 import ContactUpload from '../components/contacts/ContactUpload';
 import Pagination from '../components/common/Pagination';
+import CompanyCombobox from '../components/common/CompanyCombobox';
 import { 
   UserGroupIcon, 
   PlusIcon, 
@@ -803,13 +804,16 @@ export default function Contacts() {
                 title="Please enter a valid phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="text"
-                placeholder="Company"
-                value={contactForm.company}
-                onChange={(e) => setContactForm({...contactForm, company: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Company
+                </label>
+                <CompanyCombobox
+                  value={contactForm.company}
+                  onChange={(value) => setContactForm({...contactForm, company: value})}
+                  placeholder="Select or type company name"
+                />
+              </div>
               <input
                 type="text"
                 placeholder="Title"
@@ -938,13 +942,16 @@ export default function Contacts() {
                 title="Please enter a valid phone number"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
               />
-              <input
-                type="text"
-                placeholder="Company"
-                value={contactForm.company}
-                onChange={(e) => setContactForm({...contactForm, company: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Company
+                </label>
+                <CompanyCombobox
+                  value={contactForm.company}
+                  onChange={(value) => setContactForm({...contactForm, company: value})}
+                  placeholder="Select or type company name"
+                />
+              </div>
                 <input
                   type="text"
                   placeholder="Title"
