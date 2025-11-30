@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as contactsService from '../services/contactsService';
 import ActionButtons from '../components/common/ActionButtons';
-import ActionDropdown from '../components/common/ActionDropdown';
 import ContactUpload from '../components/contacts/ContactUpload';
 import Pagination from '../components/common/Pagination';
 import CompanyCombobox from '../components/common/CompanyCombobox';
@@ -571,40 +570,40 @@ export default function Contacts() {
           ) : (
             <>
               {/* Desktop Table View */}
-              <div className="hidden md:block overflow-hidden">
+              <div className="hidden md:block overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Company</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Email</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/6">Type</th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Actions</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Owner</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {paginatedContacts.map((contact) => (
                     <tr key={contact.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-4">
-                        <div className="text-sm font-medium text-gray-900 truncate max-w-xs" title={`${contact.first_name} ${contact.last_name}`}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
                           {contact.first_name} {contact.last_name}
                         </div>
-                        {contact.title && (
-                          <div className="text-sm text-gray-500 truncate max-w-xs" title={contact.title}>{contact.title}</div>
-                        )}
+                        <div className="text-sm text-gray-500">{contact.title}</div>
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="text-sm text-gray-900 truncate max-w-xs" title={contact.company || ''}>
-                          {contact.company || '-'}
-                        </div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {contact.company}
                       </td>
-                      <td className="px-4 py-4">
-                        <div className="text-sm text-gray-600 truncate max-w-xs" title={contact.email}>
-                          {contact.email}
-                        </div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {contact.email}
                       </td>
-                      <td className="px-4 py-4">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full whitespace-nowrap ${
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {contact.phone}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
                           contact.type?.toLowerCase().trim() === 'customer' ? 'bg-blue-100 text-blue-800' :
                           contact.type?.toLowerCase().trim() === 'prospect' ? 'bg-teal-100 text-teal-800' :
                           contact.type?.toLowerCase().trim() === 'marketing qualified lead' ? 'bg-purple-100 text-purple-800' :
@@ -614,8 +613,22 @@ export default function Contacts() {
                           {contact.type || 'Lead'}
                         </span>
                       </td>
-                      <td className="px-4 py-4 text-right">
-                        <ActionDropdown
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          contact.status === 'customer' ? 'bg-green-100 text-green-800' :
+                          contact.status === 'qualified' ? 'bg-blue-100 text-blue-800' :
+                          contact.status === 'contacted' ? 'bg-yellow-100 text-yellow-800' :
+                          contact.status === 'new' ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {contact.status || 'new'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {users.find(u => u.id === contact.owner_id)?.name || 'Unassigned'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <ActionButtons
                           onView={() => handleView(contact)}
                           onEdit={() => handleEdit(contact)}
                           onDelete={() => handleDelete(contact)}
