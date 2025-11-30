@@ -608,8 +608,10 @@ export default function Files() {
       file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (file.tags && file.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     
+    // Folders don't have categories, so skip category filter for folders
     const matchesCategory = filterCategory === 'all' || file.category === filterCategory || file.type === 'folder';
-    const matchesStatus = filterStatus === 'all' || file.status === filterStatus || file.type === 'folder';
+    // Apply status filter to both files and folders
+    const matchesStatus = filterStatus === 'all' || file.status === filterStatus;
     
     return matchesSearch && matchesCategory && matchesStatus;
   });
@@ -1082,6 +1084,7 @@ export default function Files() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="active">Active</option>
+                  <option value="draft">Draft</option>
                   <option value="inactive">Inactive</option>
                   <option value="archived">Archived</option>
                 </select>
@@ -1217,6 +1220,7 @@ export default function Files() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   <option value="active">Active</option>
+                  <option value="draft">Draft</option>
                   <option value="inactive">Inactive</option>
                   <option value="archived">Archived</option>
                 </select>
