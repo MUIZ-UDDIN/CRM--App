@@ -851,11 +851,11 @@ export default function MainLayout() {
                 
                 {/* Notifications Dropdown */}
                 {showNotifications && (
-                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
                     <div className="p-4 border-b border-gray-200">
                       <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
                     </div>
-                    <div className="max-h-96 overflow-y-auto">
+                    <div className="max-h-96 overflow-y-auto overflow-x-hidden">
                       {notificationsList.length === 0 ? (
                         <div className="p-8 text-center text-gray-500">
                           <BellIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
@@ -873,18 +873,18 @@ export default function MainLayout() {
                             notification.isCall && 'bg-green-50 border-l-4 border-green-500'
                           )}
                         >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1 pr-2">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="flex-1 min-w-0">
                               <h4 className={clsx(
-                                'text-sm font-medium',
+                                'text-sm font-medium break-words',
                                 !notification.read ? 'text-gray-900' : 'text-gray-700'
                               )}>
                                 {notification.title}
                               </h4>
-                              <p className="text-sm text-gray-600 mt-1">
+                              <p className="text-sm text-gray-600 mt-1 break-words">
                                 {notification.message}
                               </p>
-                              <p className="text-xs text-gray-400 mt-1">
+                              <p className="text-xs text-gray-400 mt-1 whitespace-nowrap">
                                 {notification.time}
                               </p>
                               
