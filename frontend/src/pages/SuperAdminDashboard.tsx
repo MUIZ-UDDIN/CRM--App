@@ -12,7 +12,8 @@ import {
   PlayIcon,
   EllipsisVerticalIcon,
   PlusIcon,
-  TrashIcon
+  TrashIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import toast from 'react-hot-toast';
@@ -47,6 +48,8 @@ export default function SuperAdminDashboard() {
   const [selectedCompany, setSelectedCompany] = useState<Company | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [companyToDelete, setCompanyToDelete] = useState<Company | null>(null);
   const [apiError, setApiError] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [newCompany, setNewCompany] = useState({
@@ -170,25 +173,35 @@ export default function SuperAdminDashboard() {
     }
   };
 
-  const handleDeleteCompany = async (companyId: string, companyName: string) => {
-    if (!confirm(`⚠️ WARNING: Delete "${companyName}"?\n\nThis will permanently delete:\n• The company\n• All users in the company\n• All company data\n\nThis action CANNOT be undone!`)) {
-      return;
-    }
+  const handleDeleteCompany = (company: Company) => {
+    setCompanyToDelete(company);
+    setShowDeleteModal(true);
+    setOpenDropdownId(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!companyToDelete) return;
 
     try {
       const token = localStorage.getItem('token');
       await axios.delete(
-        `${API_URL}/api/companies/${companyId}`,
+        `${API_URL}/api/companies/${companyToDelete.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success('Company and all users deleted successfully');
-      setOpenDropdownId(null);
+      setShowDeleteModal(false);
+      setCompanyToDelete(null);
       fetchCompanies();
     } catch (error: any) {
       console.error('Failed to delete company:', error);
       const errorMsg = error.response?.data?.detail || 'Failed to delete company';
       toast.error(errorMsg);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setCompanyToDelete(null);
   };
 
   const fetchCompanies = async () => {
@@ -604,10 +617,7 @@ export default function SuperAdminDashboard() {
                               <div className="border-t border-gray-200 my-1"></div>
                               
                               <button
-                                onClick={() => {
-                                  setOpenDropdownId(null);
-                                  handleDeleteCompany(company.id, company.name);
-                                }}
+                                onClick={() => handleDeleteCompany(company)}
                                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                               >
                                 <TrashIcon className="w-4 h-4" />
@@ -845,6 +855,53 @@ export default function SuperAdminDashboard() {
                 className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
               >
                 Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && companyToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={cancelDelete}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">⚠️ Confirm Company Deletion</h3>
+              <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700 mb-3">
+                Are you sure you want to delete <span className="font-semibold text-red-600">"{companyToDelete.name}"</span>?
+              </p>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                <p className="text-sm font-semibold text-red-800 mb-2">This will permanently delete:</p>
+                <ul className="text-sm text-red-700 space-y-1 ml-4">
+                  <li>• The company</li>
+                  <li>• All users in the company ({companyToDelete.user_count} users)</li>
+                  <li>• All company data (contacts, deals, files, etc.)</li>
+                </ul>
+              </div>
+              <p className="text-sm font-semibold text-red-600">
+                ⚠️ This action CANNOT be undone!
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete Company
               </button>
             </div>
           </div>
