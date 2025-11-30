@@ -318,14 +318,38 @@ async def get_companies_analytics(
                 Deal.company_id == company.id
             ).scalar() or 0
             
+            # Set defaults for NULL/empty values
+            plan = company.plan if company.plan else 'free'
+            subscription_status = company.subscription_status if company.subscription_status else 'trial'
+            
+            # Calculate days remaining for trial accounts
+            days_remaining = None
+            if subscription_status == 'trial' and company.trial_ends_at:
+                from datetime import datetime
+                now = datetime.utcnow()
+                trial_end = company.trial_ends_at
+                # Remove timezone info for comparison if present
+                if trial_end.tzinfo is not None:
+                    trial_end = trial_end.replace(tzinfo=None)
+                days_left = (trial_end - now).days
+                days_remaining = max(0, days_left)
+            
             companies_data.append({
                 "id": str(company.id),
                 "name": company.name,
+                "plan": plan,
+                "subscription_status": subscription_status,
+                "trial_ends_at": company.trial_ends_at.isoformat() if company.trial_ends_at else None,
+                "days_remaining": days_remaining,
                 "user_count": user_count,
                 "deal_count": deal_count,
                 "total_value": float(total_value),
                 "status": company.status if hasattr(company, 'status') else "active",
-                "created_at": company.created_at.isoformat() if company.created_at else None
+                "created_at": company.created_at.isoformat() if company.created_at else None,
+                "domain": company.domain if hasattr(company, 'domain') else None,
+                "logo_url": company.logo_url if hasattr(company, 'logo_url') else None,
+                "timezone": company.timezone if hasattr(company, 'timezone') else "UTC",
+                "currency": company.currency if hasattr(company, 'currency') else "USD"
             })
         
         return {
