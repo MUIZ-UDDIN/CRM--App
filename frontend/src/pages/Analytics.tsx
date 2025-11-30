@@ -58,6 +58,7 @@ export default function Analytics() {
   const [documentAnalytics, setDocumentAnalytics] = useState<any>(null);
   const [revenueAnalytics, setRevenueAnalytics] = useState<any>(null);
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
+  const [chartKey, setChartKey] = useState(0);
   
   // Check if user can see all company data and filter by user
   // super_admin, company_admin, admin, sales_manager: Can see company/team data + filter by user
@@ -182,6 +183,7 @@ export default function Analytics() {
       setDocumentAnalytics(document);
       setRevenueAnalytics(revenue);
       setDashboardKPIs(dashboard);
+      setChartKey(prev => prev + 1); // Force chart re-render
       
     } catch (error) {
       console.error('Error fetching analytics:', error);
@@ -398,14 +400,16 @@ export default function Analytics() {
   const leadScoringData = Array.isArray(contactAnalytics?.lead_scoring) ? contactAnalytics.lead_scoring : [];
 
   // Conversion by source from API
-  const conversionBySourceData = Array.isArray(contactAnalytics?.conversion_by_source)
-    ? contactAnalytics.conversion_by_source.map((item: any) => ({
-        source: item.source || 'Unknown',
-        leads: item.total_leads || 0,
-        converted: item.converted || 0,
-        rate: item.conversion_rate || 0
-      }))
-    : [];
+  const conversionBySourceData = React.useMemo(() => {
+    return Array.isArray(contactAnalytics?.conversion_by_source)
+      ? contactAnalytics.conversion_by_source.map((item: any) => ({
+          source: item.source || 'Unknown',
+          leads: item.total_leads || 0,
+          converted: item.converted || 0,
+          rate: item.conversion_rate || 0
+        }))
+      : [];
+  }, [contactAnalytics]);
 
   // Document stats from API
   const documentStatsData = documentAnalytics?.document_summary ? [
@@ -990,8 +994,8 @@ export default function Analytics() {
             <h3 className="text-base sm:text-lg font-medium text-gray-900">Conversion Rates by Lead Source</h3>
           </div>
           <div className="p-4 sm:p-6">
-            <ResponsiveContainer width="100%" height={250} key={`conversion-${dateRange}-${selectedUser}-${selectedPipeline}-${JSON.stringify(conversionBySourceData)}`}>
-              <BarChart data={conversionBySourceData} key={`chart-${JSON.stringify(conversionBySourceData)}`}>
+            <ResponsiveContainer width="100%" height={250} key={`conversion-${chartKey}`}>
+              <BarChart data={conversionBySourceData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="source" stroke="#6B7280" tick={{ fontSize: 10 }} />
                 <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
