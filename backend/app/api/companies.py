@@ -463,9 +463,19 @@ def delete_company(
         except Exception:
             pass
         
+        # Delete files by owner_id
         try:
-            db.query(File).filter(File.uploaded_by.in_(user_ids)).delete(synchronize_session=False)
-        except Exception:
+            db.query(File).filter(File.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting files by owner_id: {e}")
+            pass
+        
+        # Delete folders by owner_id
+        try:
+            from app.models.files import Folder
+            db.query(Folder).filter(Folder.owner_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting folders by owner_id: {e}")
             pass
         
         try:
@@ -521,6 +531,23 @@ def delete_company(
     try:
         db.query(TwilioSettings).filter(TwilioSettings.company_id == company.id).delete(synchronize_session=False)
     except Exception:
+        pass
+    
+    # Delete files and folders by company_id
+    try:
+        from app.models.files import Folder
+        db.query(File).filter(File.company_id == company.id).delete(synchronize_session=False)
+        print(f"Deleted files for company {company.id}")
+    except Exception as e:
+        print(f"Error deleting files by company_id: {e}")
+        pass
+    
+    try:
+        from app.models.files import Folder
+        db.query(Folder).filter(Folder.company_id == company.id).delete(synchronize_session=False)
+        print(f"Deleted folders for company {company.id}")
+    except Exception as e:
+        print(f"Error deleting folders by company_id: {e}")
         pass
     
     # Delete billing data
