@@ -318,9 +318,20 @@ async def get_companies_analytics(
                 Deal.company_id == company.id
             ).scalar() or 0
             
+            # Check if this company has any super admin users
+            has_super_admin = db.query(User).filter(
+                User.company_id == company.id,
+                User.role == 'super_admin'
+            ).count() > 0
+            
             # Set defaults for NULL/empty values
             plan = company.plan if company.plan else 'free'
             subscription_status = company.subscription_status if company.subscription_status else 'trial'
+            
+            # Super admin company should have special treatment
+            if has_super_admin:
+                plan = 'super_admin'
+                subscription_status = 'active'
             
             # Calculate days remaining for trial accounts
             days_remaining = None
@@ -349,7 +360,8 @@ async def get_companies_analytics(
                 "domain": company.domain if hasattr(company, 'domain') else None,
                 "logo_url": company.logo_url if hasattr(company, 'logo_url') else None,
                 "timezone": company.timezone if hasattr(company, 'timezone') else "UTC",
-                "currency": company.currency if hasattr(company, 'currency') else "USD"
+                "currency": company.currency if hasattr(company, 'currency') else "USD",
+                "is_super_admin_company": has_super_admin
             })
         
         return {

@@ -37,6 +37,7 @@ interface Company {
   logo_url: string | null;
   timezone: string;
   currency: string;
+  is_super_admin_company?: boolean;
 }
 
 export default function SuperAdminDashboard() {
@@ -256,22 +257,32 @@ export default function SuperAdminDashboard() {
     const subscriptionStatus = company.subscription_status || 'trial';
     const daysLeft = company.days_remaining || 0;
     
+    // Super admin company always shows Active
+    if (company.is_super_admin_company) {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 flex items-center gap-1">
+          <CheckCircleIcon className="w-3 h-3" />
+          Active
+        </span>
+      );
+    }
+    
+    // Check if suspended (check status field for suspended)
+    if (status === 'suspended') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 flex items-center gap-1">
+          <XCircleIcon className="w-3 h-3" />
+          Suspended
+        </span>
+      );
+    }
+    
     // Check if trial expired (subscription_status='trial' and days_remaining=0)
     if (subscriptionStatus === 'trial' && daysLeft === 0) {
       return (
         <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center gap-1">
           <XCircleIcon className="w-3 h-3" />
           Expired
-        </span>
-      );
-    }
-    
-    // Check if suspended
-    if (status === 'suspended') {
-      return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 flex items-center gap-1">
-          <XCircleIcon className="w-3 h-3" />
-          Suspended
         </span>
       );
     }
@@ -288,6 +299,15 @@ export default function SuperAdminDashboard() {
   const getPlanBadge = (company: Company) => {
     const plan = company.plan || 'free';
     const planLower = plan.toLowerCase();
+    
+    // Super admin company
+    if (company.is_super_admin_company || planLower === 'super_admin') {
+      return (
+        <span className="px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+          SUPER ADMIN
+        </span>
+      );
+    }
     
     // Only 2 plans: TRIAL (free) and PRO (paid)
     if (planLower === 'free') {
