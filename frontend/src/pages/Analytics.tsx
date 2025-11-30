@@ -406,13 +406,6 @@ export default function Analytics() {
         rate: item.conversion_rate || 0
       }))
     : [];
-  
-  // Debug: Log conversion data to verify it's changing
-  React.useEffect(() => {
-    if (conversionBySourceData.length > 0) {
-      console.log('📊 Conversion Data Updated:', JSON.stringify(conversionBySourceData));
-    }
-  }, [JSON.stringify(conversionBySourceData)]);
 
   // Document stats from API
   const documentStatsData = documentAnalytics?.document_summary ? [
