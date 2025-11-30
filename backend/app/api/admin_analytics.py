@@ -332,6 +332,11 @@ async def get_companies_analytics(
             if has_super_admin:
                 plan = 'super_admin'
                 subscription_status = 'active'
+            else:
+                # If plan is 'pro' but subscription_status is 'trial', it means no billing configured yet
+                # Show as TRIAL instead of PRO
+                if plan == 'pro' and subscription_status == 'trial':
+                    plan = 'free'  # Will display as TRIAL in frontend
             
             # Calculate days remaining for trial accounts
             days_remaining = None

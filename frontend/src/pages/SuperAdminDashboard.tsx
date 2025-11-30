@@ -396,10 +396,15 @@ export default function SuperAdminDashboard() {
       return false;
     }).length,
     expired: companies.filter(c => {
-      const subscriptionStatus = c.subscription_status || c.status || 'active';
+      const status = c.status || 'active';
+      const subscriptionStatus = c.subscription_status || 'trial';
       const daysLeft = c.days_remaining || 0;
-      // Count as expired if: status is 'expired', 'suspended', OR trial with 0 days remaining
-      return subscriptionStatus === 'expired' || subscriptionStatus === 'suspended' || 
+      // Count as expired/suspended if:
+      // 1. status is 'suspended', OR
+      // 2. subscription_status is 'expired', OR
+      // 3. trial with 0 days remaining
+      return status === 'suspended' || 
+             subscriptionStatus === 'expired' || 
              (subscriptionStatus === 'trial' && daysLeft === 0);
     }).length,
     totalUsers: companies.reduce((sum, c) => sum + c.user_count, 0)
@@ -479,7 +484,7 @@ export default function SuperAdminDashboard() {
         <div className="bg-white rounded-lg shadow p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Expired</p>
+              <p className="text-sm text-gray-600">Expired/Suspended</p>
               <p className="text-2xl font-bold text-red-600">{stats.expired}</p>
             </div>
             <XCircleIcon className="w-8 h-8 text-red-600" />
