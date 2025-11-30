@@ -41,6 +41,7 @@ export default function Files() {
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
@@ -49,6 +50,7 @@ export default function Files() {
   const [currentPage, setCurrentPage] = useState(1);
   const [files, setFiles] = useState<FileItem[]>([]); 
   const [selectedFile, setSelectedFile] = useState<FileItem | null>(null);
+  const [fileToDelete, setFileToDelete] = useState<FileItem | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<string | null>(null);
   const [currentFolderName, setCurrentFolderName] = useState<string>('All Files');
   const [folderPath, setFolderPath] = useState<Array<{id: string, name: string}>>([]);
@@ -188,20 +190,33 @@ export default function Files() {
     setShowEditModal(true);
   };
 
-  const handleDelete = async (file: FileItem) => {
-    if (!confirm(`Delete "${file.name}"?`)) return;
+  const handleDelete = (file: FileItem) => {
+    setFileToDelete(file);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!fileToDelete) return;
     try {
-      if (file.type === 'folder') {
-        await filesService.deleteFolder(file.id);
+      if (fileToDelete.type === 'folder') {
+        await filesService.deleteFolder(fileToDelete.id);
       } else {
-        await filesService.deleteFile(file.id);
+        await filesService.deleteFile(fileToDelete.id);
       }
-      toast.success(`${file.type === 'folder' ? 'Folder' : 'File'} deleted successfully`);
+      toast.success(`${fileToDelete.type === 'folder' ? 'Folder' : 'File'} deleted successfully`);
+      setShowDeleteModal(false);
+      setFileToDelete(null);
       fetchFiles();
     } catch (error: any) {
       console.error('Delete error:', error);
       toast.error(error?.response?.data?.detail || 'Failed to delete');
+      setShowDeleteModal(false);
     }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setFileToDelete(null);
   };
 
   const handleDownload = async (file: FileItem) => {
@@ -1290,6 +1305,50 @@ export default function Files() {
                 <label className="text-sm font-medium text-gray-500">Created</label>
                 <p className="text-gray-900">{formatDate(selectedFile.created_at)}</p>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && fileToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={cancelDelete}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete {fileToDelete.type === 'folder' ? 'folder' : 'file'} <span className="font-semibold">"{fileToDelete.name}"</span>?
+              </p>
+              {fileToDelete.type === 'folder' && (
+                <p className="text-sm text-red-600 mt-2">
+                  Warning: This will also delete all files inside this folder.
+                </p>
+              )}
+              <p className="text-sm text-gray-500 mt-2">
+                This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete
+              </button>
             </div>
           </div>
         </div>
