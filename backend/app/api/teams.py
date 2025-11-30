@@ -280,8 +280,10 @@ async def set_team_lead(
         )
     
     # Set user as team lead and update role to sales_manager
+    # BUT: Don't change role if user is super_admin or company_admin
     team.team_lead_id = user_id
-    user.user_role = "sales_manager"
+    if user.user_role not in ["super_admin", "company_admin"]:
+        user.user_role = "sales_manager"
     
     db.commit()
     db.refresh(team)
