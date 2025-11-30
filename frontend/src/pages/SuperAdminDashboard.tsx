@@ -364,11 +364,18 @@ export default function SuperAdminDashboard() {
   const stats = {
     total: companies.length,
     active: companies.filter(c => {
-      const status = c.subscription_status || c.status || 'active';
-      const plan = (c.plan || '').toLowerCase();
-      // Active if status is 'active' AND plan is NOT 'free'
-      // (free plans should count as trial, not active)
-      return status === 'active' && plan !== 'free';
+      const status = c.status || 'active';
+      const subscriptionStatus = c.subscription_status || 'trial';
+      const daysLeft = c.days_remaining || 0;
+      
+      // Active means: Not suspended, not expired
+      // Count as active if:
+      // 1. status is NOT 'suspended', AND
+      // 2. NOT (trial expired - subscription_status='trial' AND days_remaining=0)
+      const isSuspended = status === 'suspended';
+      const isExpired = subscriptionStatus === 'trial' && daysLeft === 0;
+      
+      return !isSuspended && !isExpired;
     }).length,
     trial: companies.filter(c => {
       const subscriptionStatus = c.subscription_status || '';
