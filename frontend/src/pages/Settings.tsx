@@ -130,9 +130,14 @@ export default function Settings() {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [showCreateTeamModal, setShowCreateTeamModal] = useState(false);
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
+  const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
+  const [showRemoveMemberModal, setShowRemoveMemberModal] = useState(false);
+  const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [availableUsers, setAvailableUsers] = useState<TeamMember[]>([]);
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [teamForm, setTeamForm] = useState({ name: '', description: '' });
+  const [teamNameError, setTeamNameError] = useState('');
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -367,33 +372,98 @@ export default function Settings() {
     }
   };
 
+  // Sanitize input to prevent script tags
+  const sanitizeInput = (input: string): string => {
+    // Remove script tags and other potentially dangerous HTML
+    return input
+      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+      .replace(/<[^>]*>/g, '') // Remove all HTML tags
+      .trim();
+  };
+
+  // Validate team name
+  const validateTeamName = (name: string): boolean => {
+    const sanitized = sanitizeInput(name);
+    
+    if (!sanitized) {
+      setTeamNameError('Team name is required');
+      return false;
+    }
+    
+    if (sanitized.length < 2) {
+      setTeamNameError('Team name must be at least 2 characters');
+      return false;
+    }
+    
+    // Check if input contains script tags or HTML
+    if (name !== sanitized) {
+      setTeamNameError('Scripting tags and HTML are not allowed in team name');
+      return false;
+    }
+    
+    setTeamNameError('');
+    return true;
+  };
+
+  const handleTeamNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setTeamForm({ ...teamForm, name: value });
+    
+    // Clear error when user starts typing
+    if (teamNameError) {
+      setTeamNameError('');
+    }
+  };
+
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate team name
+    if (!validateTeamName(teamForm.name)) {
+      return;
+    }
+    
     try {
-      const response = await apiClient.post('/teams', teamForm);
+      // Sanitize inputs before sending
+      const sanitizedData = {
+        name: sanitizeInput(teamForm.name),
+        description: sanitizeInput(teamForm.description)
+      };
+      
+      const response = await apiClient.post('/teams', sanitizedData);
       toast.success('Team created successfully');
       setTeams([...teams, response.data]);
       setSelectedTeam(response.data);
       setShowCreateTeamModal(false);
       setTeamForm({ name: '', description: '' });
+      setTeamNameError('');
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to create team');
     }
   };
 
-  const handleDeleteTeam = async (teamId: string) => {
-    if (!confirm('Are you sure you want to delete this team? All members will be unassigned.')) {
-      return;
-    }
+  const openDeleteTeamModal = (team: Team) => {
+    setTeamToDelete(team);
+    setShowDeleteTeamModal(true);
+  };
+
+  const closeDeleteTeamModal = () => {
+    setShowDeleteTeamModal(false);
+    setTeamToDelete(null);
+  };
+
+  const confirmDeleteTeam = async () => {
+    if (!teamToDelete) return;
     
     try {
-      await apiClient.delete(`/teams/${teamId}`);
+      await apiClient.delete(`/teams/${teamToDelete.id}`);
       toast.success('Team deleted successfully');
-      setTeams(teams.filter(team => team.id !== teamId));
+      setTeams(teams.filter(team => team.id !== teamToDelete.id));
       setSelectedTeam(null);
+      closeDeleteTeamModal();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to delete team');
+      closeDeleteTeamModal();
     }
   };
 
@@ -414,19 +484,27 @@ export default function Settings() {
     }
   };
 
-  const handleRemoveMemberFromTeam = async (userId: string) => {
-    if (!selectedTeam) return;
-    
-    if (!confirm('Are you sure you want to remove this member from the team?')) {
-      return;
-    }
+  const openRemoveMemberModal = (member: TeamMember) => {
+    setMemberToRemove(member);
+    setShowRemoveMemberModal(true);
+  };
+
+  const closeRemoveMemberModal = () => {
+    setShowRemoveMemberModal(false);
+    setMemberToRemove(null);
+  };
+
+  const confirmRemoveMember = async () => {
+    if (!selectedTeam || !memberToRemove) return;
     
     try {
-      await apiClient.delete(`/teams/${selectedTeam.id}/members/${userId}`);
+      await apiClient.delete(`/teams/${selectedTeam.id}/members/${memberToRemove.id}`);
       toast.success('Member removed from team');
       fetchTeamMembersForTeam(selectedTeam.id);
+      closeRemoveMemberModal();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to remove member from team');
+      closeRemoveMemberModal();
     }
   };
 
@@ -1587,7 +1665,7 @@ export default function Settings() {
                         </div>
                         {(isCompanyAdmin || isSuperAdmin) && (
                           <button
-                            onClick={() => handleDeleteTeam(selectedTeam.id)}
+                            onClick={() => openDeleteTeamModal(selectedTeam)}
                             className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                             title="Delete team"
                           >
@@ -1676,7 +1754,7 @@ export default function Settings() {
                                           </button>
                                         )}
                                         <button
-                                          onClick={() => handleRemoveMemberFromTeam(member.id)}
+                                          onClick={() => openRemoveMemberModal(member)}
                                           className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
                                           title="Remove from team"
                                         >
@@ -2285,10 +2363,20 @@ export default function Settings() {
                   required
                   maxLength={100}
                   value={teamForm.name}
-                  onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  onChange={handleTeamNameChange}
+                  className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    teamNameError ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Sales Team"
                 />
+                {teamNameError && (
+                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {teamNameError}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -3201,6 +3289,84 @@ export default function Settings() {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Delete Team Confirmation Modal */}
+      {showDeleteTeamModal && teamToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={closeDeleteTeamModal}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <button onClick={closeDeleteTeamModal} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete <span className="font-semibold">"{teamToDelete.name}"</span>?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                All members will be unassigned from this team. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeDeleteTeamModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDeleteTeam}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Member Confirmation Modal */}
+      {showRemoveMemberModal && memberToRemove && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={closeRemoveMemberModal}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Removal</h3>
+              <button onClick={closeRemoveMemberModal} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to remove <span className="font-semibold">{memberToRemove.first_name} {memberToRemove.last_name}</span> from the team?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This member will be unassigned from the team. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeRemoveMemberModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmRemoveMember}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Remove
+              </button>
+            </div>
+          </div>
         </div>
       )}
       </div>
