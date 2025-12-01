@@ -40,13 +40,29 @@ export default function WorkflowTemplates() {
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [workflowName, setWorkflowName] = useState('');
+  const [existingWorkflows, setExistingWorkflows] = useState<string[]>([]);
+  const [nameError, setNameError] = useState('');
   
   // Check if user can manage automations
   const canManageAutomations = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   useEffect(() => {
     fetchTemplates();
+    fetchExistingWorkflows();
   }, [filterCategory]);
+
+  const fetchExistingWorkflows = async () => {
+    try {
+      const response = await apiClient.get('/workflows');
+      const workflowNames = response.data.map((w: any) => w.name.toLowerCase().trim());
+      setExistingWorkflows(workflowNames);
+    } catch (error) {
+      console.error('Failed to fetch workflows:', error);
+    }
+  };
 
   const fetchTemplates = async () => {
     try {
@@ -64,15 +80,66 @@ export default function WorkflowTemplates() {
     }
   };
 
-  const useTemplate = async (templateId: string, templateName: string) => {
-    const workflowName = prompt(`Create workflow from "${templateName}".\n\nEnter workflow name:`);
-    if (!workflowName) return;
+  const openTemplateModal = (template: Template) => {
+    setSelectedTemplate(template);
+    setWorkflowName('');
+    setNameError('');
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedTemplate(null);
+    setWorkflowName('');
+    setNameError('');
+  };
+
+  const validateWorkflowName = (name: string): boolean => {
+    const trimmedName = name.trim();
+    
+    if (!trimmedName) {
+      setNameError('Workflow name is required');
+      return false;
+    }
+    
+    if (trimmedName.length < 3) {
+      setNameError('Workflow name must be at least 3 characters');
+      return false;
+    }
+    
+    // Check for duplicate name (case-insensitive)
+    if (existingWorkflows.includes(trimmedName.toLowerCase())) {
+      setNameError('A workflow with this name already exists. Please choose a different name.');
+      return false;
+    }
+    
+    setNameError('');
+    return true;
+  };
+
+  const handleWorkflowNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setWorkflowName(value);
+    
+    // Clear error when user starts typing
+    if (nameError) {
+      setNameError('');
+    }
+  };
+
+  const createWorkflowFromTemplate = async () => {
+    if (!selectedTemplate || !validateWorkflowName(workflowName)) {
+      return;
+    }
 
     try {
-      const response = await apiClient.post(`/workflow-templates/${templateId}/use`, null, {
-        params: { workflow_name: workflowName }
+      const response = await apiClient.post(`/workflow-templates/${selectedTemplate.id}/use`, null, {
+        params: { workflow_name: workflowName.trim() }
       });
       toast.success('Workflow created successfully!');
+      closeModal();
+      // Refresh existing workflows list
+      fetchExistingWorkflows();
     } catch (error) {
       handleApiError(error, { toastMessage: 'Failed to create workflow' });
     }
@@ -215,7 +282,7 @@ export default function WorkflowTemplates() {
               )}
 
               <button
-                onClick={() => useTemplate(template.id, template.name)}
+                onClick={() => openTemplateModal(template)}
                 className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
               >
                 <RocketLaunchIcon className="h-4 w-4" />
@@ -236,6 +303,65 @@ export default function WorkflowTemplates() {
         </p>
       </div>
       </div>
+
+      {/* Create Workflow Modal */}
+      {showModal && selectedTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                Create Workflow from Template
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Template: <span className="font-medium">{selectedTemplate.name}</span>
+              </p>
+
+              <div className="mb-4">
+                <label htmlFor="workflowName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Workflow Name <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="workflowName"
+                  type="text"
+                  value={workflowName}
+                  onChange={handleWorkflowNameChange}
+                  onKeyPress={(e) => e.key === 'Enter' && createWorkflowFromTemplate()}
+                  placeholder="Enter a unique workflow name"
+                  className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    nameError ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  autoFocus
+                />
+                {nameError && (
+                  <p className="mt-2 text-sm text-red-600 flex items-start gap-1">
+                    <svg className="w-4 h-4 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {nameError}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={closeModal}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={createWorkflowFromTemplate}
+                  disabled={!workflowName.trim()}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  <RocketLaunchIcon className="h-4 w-4" />
+                  Create Workflow
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
