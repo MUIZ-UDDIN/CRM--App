@@ -125,8 +125,8 @@ def create_company(
             detail="Permission denied: Cannot create companies"
         )
     
-    # Check if company name already exists
-    existing_company = db.query(Company).filter(Company.name == company.name).first()
+    # Check if company name already exists (case-insensitive)
+    existing_company = db.query(Company).filter(Company.name.ilike(company.name)).first()
     if existing_company:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -147,10 +147,10 @@ def create_company(
     import secrets
     from app.core.security import get_password_hash
     
-    # Check if admin email already exists as a Company Admin in another company
+    # Check if admin email already exists as a Company Admin in another company (case-insensitive)
     # Note: Same email can exist in different companies (multi-tenant), but not as Company Admin
     existing_company_admin = db.query(User).filter(
-        User.email == company.admin_email,
+        User.email.ilike(company.admin_email),
         User.user_role == UserRole.COMPANY_ADMIN.value
     ).first()
     if existing_company_admin:

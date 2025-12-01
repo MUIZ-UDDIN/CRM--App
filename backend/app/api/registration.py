@@ -174,12 +174,12 @@ async def register_company(
     
     # Check if email already exists with the SAME company name (prevent duplicate company registration)
     # Note: Same email CAN exist in different companies (multi-tenant support)
-    # First check if company name exists
-    existing_company = db.query(Company).filter(Company.name == request.company_name).first()
+    # First check if company name exists (case-insensitive: Test = test = TEST)
+    existing_company = db.query(Company).filter(Company.name.ilike(request.company_name)).first()
     if existing_company:
-        # Check if this email is already registered for this company
+        # Check if this email is already registered for this company (case-insensitive)
         existing_user_in_company = db.query(User).filter(
-            User.email == request.admin_email.lower(),
+            User.email.ilike(request.admin_email),
             User.company_id == existing_company.id,
             User.is_deleted == False
         ).first()
