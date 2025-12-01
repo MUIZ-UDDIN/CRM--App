@@ -366,29 +366,11 @@ export default function Settings() {
 
   const fetchAvailableUsers = async () => {
     try {
-      let allUsers: TeamMember[] = [];
-      
-      if (isSuperAdmin) {
-        // For super admin, get users from ALL companies
-        const companiesResponse = await apiClient.get('/companies');
-        const companies = companiesResponse.data;
-        
-        // Fetch users from each company
-        for (const company of companies) {
-          try {
-            const usersResponse = await apiClient.get(`/companies/${company.id}/users`);
-            allUsers = [...allUsers, ...usersResponse.data];
-          } catch (err) {
-            console.error(`Failed to load users for company ${company.id}:`, err);
-          }
-        }
-      } else {
-        // For company admin, get only their company users
-        const response = await apiClient.get(`/companies/${user?.company_id}/users`);
-        allUsers = response.data;
-      }
-      
-      setAvailableUsers(allUsers);
+      // Use /users/ endpoint which handles role-based permissions
+      // For super admin: returns ALL users from ALL companies
+      // For company admin: returns only their company users
+      const response = await apiClient.get('/users');
+      setAvailableUsers(response.data);
     } catch (error: any) {
       console.error('Failed to load available users:', error);
       toast.error('Failed to load available users');

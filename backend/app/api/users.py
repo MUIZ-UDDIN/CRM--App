@@ -208,9 +208,9 @@ async def get_all_users(
     
     # Apply filters based on role permissions
     if context.is_super_admin():
-        # Super admin can see all users or filter by company
-        if company_id:
-            query = query.filter(UserModel.company_id == company_id)
+        # Super admin can see ALL users from ALL companies
+        # Don't filter by company_id for super admin
+        pass
     elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
         # Company admin can see all users in their company
         query = query.filter(UserModel.company_id == company_id)
@@ -254,6 +254,8 @@ async def get_all_users(
             first_name=user.first_name,
             last_name=user.last_name,
             role=user.role,
+            user_role=user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role) if user.user_role else None,
+            company_id=str(user.company_id) if user.company_id else None,
             phone=user.phone,
             title=user.title,
             department=user.department,
@@ -262,7 +264,8 @@ async def get_all_users(
             avatar=user.avatar_url,
             team_id=str(user.team_id) if user.team_id else None,
             is_active=user.is_active,
-            created_at=user.created_at
+            created_at=user.created_at,
+            status=user.status.value if hasattr(user.status, 'value') else str(user.status) if user.status else None
         )
         for user in users
     ]
