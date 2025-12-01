@@ -203,8 +203,8 @@ async def get_all_users(
     context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
     
-    # Start with base query - only exclude deleted users
-    query = db.query(UserModel).filter(UserModel.is_deleted == False)
+    # Start with base query - no need to filter deleted users since we permanently delete
+    query = db.query(UserModel)
     
     # Apply filters based on role permissions
     if context.is_super_admin():
@@ -551,10 +551,7 @@ async def delete_user(
     if str(current_user["id"]) == user_id:
         raise HTTPException(status_code=400, detail="Cannot delete your own account")
     
-    user = db.query(UserModel).filter(
-        UserModel.id == user_id,
-        UserModel.is_deleted == False
-    ).first()
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
     
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -593,12 +590,17 @@ async def delete_user(
                     detail="Company admins cannot delete super admin users"
                 )
     
-    # Soft delete
-    user.is_deleted = True
-    user.updated_at = datetime.utcnow()
+    # Permanent delete - CASCADE will handle related records
+    # The database foreign keys with ondelete='CASCADE' will automatically delete:
+    # - Deals owned by this user
+    # - Contacts owned by this user
+    # - Activities created by this user
+    # - Team memberships
+    # - etc.
+    db.delete(user)
     db.commit()
     
-    return {"message": "User deleted successfully"}
+    return {"message": "User permanently deleted successfully"}
 
 
 @router.get("/assignable/list", response_model=List[UserResponse])
@@ -614,10 +616,7 @@ async def get_assignable_users(
     
     # Super Admin can assign to anyone in any company
     if context.is_super_admin():
-        users = db.query(UserModel).filter(
-            UserModel.is_deleted == False,
-            UserModel.is_active == True
-        ).all()
+        users = db.query(UserModel).filter(UserModel.is_active == True).all()
     
     # Company Admin can assign within their company
     elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
@@ -625,7 +624,6 @@ async def get_assignable_users(
             return []
         users = db.query(UserModel).filter(
             UserModel.company_id == company_id,
-            UserModel.is_deleted == False,
             UserModel.is_active == True
         ).all()
     
@@ -633,14 +631,10 @@ async def get_assignable_users(
     elif has_permission(current_user, Permission.MANAGE_TEAM_USERS):
         if not team_id:
             # If no team, can only assign to self
-            users = db.query(UserModel).filter(
-                UserModel.id == user_id,
-                UserModel.is_deleted == False
-            ).all()
+            users = db.query(UserModel).filter(UserModel.id == user_id).all()
         else:
             users = db.query(UserModel).filter(
                 UserModel.team_id == team_id,
-                UserModel.is_deleted == False,
                 UserModel.is_active == True
             ).all()
     
