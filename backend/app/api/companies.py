@@ -125,6 +125,14 @@ def create_company(
             detail="Permission denied: Cannot create companies"
         )
     
+    # Check if company name already exists
+    existing_company = db.query(Company).filter(Company.name == company.name).first()
+    if existing_company:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Company name '{company.name}' already exists. Please choose a different company name."
+        )
+    
     # Check if domain already exists
     if company.domain:
         existing = db.query(Company).filter(Company.domain == company.domain).first()
