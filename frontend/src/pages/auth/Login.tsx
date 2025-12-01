@@ -11,6 +11,8 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [isSuspended, setIsSuspended] = useState(false);
+  const [supportEmail] = useState('admin@sunstonecrm.com');
 
   const { login, isLoading, error, clearError, isAuthenticated } = useAuth();
   const navigate = useNavigate();
@@ -91,12 +93,64 @@ export default function Login() {
       navigate('/dashboard');
       
     } catch (error: any) {
-      toast.error(error.message || 'Login failed');
+      // Check if account is suspended
+      if (error.response?.status === 403 && error.response?.data?.detail === 'ACCOUNT_SUSPENDED') {
+        setIsSuspended(true);
+      } else {
+        toast.error(error.message || 'Login failed');
+      }
       console.error('Login error:', error);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  // If account is suspended, show suspension message
+  if (isSuspended) {
+    return (
+      <div className="w-full max-w-md xl:max-w-lg 2xl:max-w-xl space-y-6 sm:space-y-8">
+        <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6 sm:p-8">
+          <div className="flex items-center justify-center mb-4">
+            <div className="bg-red-100 rounded-full p-3">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+          </div>
+          
+          <h2 className="text-2xl font-bold text-red-900 text-center mb-3">
+            Account Suspended
+          </h2>
+          
+          <p className="text-red-800 text-center mb-6">
+            Your company account has been suspended and you cannot log in at this time.
+          </p>
+          
+          <div className="bg-white rounded-lg p-4 mb-6">
+            <p className="text-sm text-gray-700 mb-2">
+              <span className="font-semibold">Need help?</span> Please contact our support team:
+            </p>
+            <a 
+              href={`mailto:${supportEmail}`}
+              className="flex items-center justify-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              {supportEmail}
+            </a>
+          </div>
+          
+          <button
+            onClick={() => setIsSuspended(false)}
+            className="w-full py-3 px-4 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors duration-200"
+          >
+            Back to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-md xl:max-w-lg 2xl:max-w-xl space-y-6 sm:space-y-8">

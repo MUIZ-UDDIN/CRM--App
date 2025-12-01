@@ -108,7 +108,11 @@ async def login(request: LoginRequest, db: Session = Depends(get_db)):
             logger.warning(f"Login blocked for suspended company: {company.name}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your company account has been suspended. Please contact support for assistance.",
+                detail="ACCOUNT_SUSPENDED",  # Special code for frontend to detect
+                headers={
+                    "X-Suspension-Reason": "Your company account has been suspended.",
+                    "X-Support-Email": "admin@sunstonecrm.com"
+                }
             )
     
     logger.info(f"Successful login for email: {request.email}, role: {user.user_role}")
