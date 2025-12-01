@@ -664,23 +664,25 @@ async def upload_csv_contacts(
                     failed_imports += 1
                     continue
                 
-                # Check for existing non-deleted contact with same email (case-insensitive)
+                # Check for existing non-deleted contact with same email in same company (case-insensitive)
                 existing_contact = db.query(ContactModel).filter(
                     and_(
                         ContactModel.email.ilike(email),
+                        ContactModel.company_id == (uuid.UUID(company_id) if isinstance(company_id, str) else company_id),
                         ContactModel.is_deleted == False
                     )
                 ).first()
                 
                 if existing_contact:
-                    errors.append(f"Row {index + 1}: Contact with email {email} already exists")
+                    errors.append(f"Row {index + 1}: Contact with email {email} already exists in your company")
                     failed_imports += 1
                     continue
                 
-                # Delete any soft-deleted contacts with same email to avoid unique constraint violation
+                # Delete any soft-deleted contacts with same email in same company to avoid unique constraint violation
                 deleted_contacts = db.query(ContactModel).filter(
                     and_(
                         ContactModel.email.ilike(email),
+                        ContactModel.company_id == (uuid.UUID(company_id) if isinstance(company_id, str) else company_id),
                         ContactModel.is_deleted == True
                     )
                 ).all()
@@ -773,23 +775,25 @@ async def upload_excel_contacts(
                     failed_imports += 1
                     continue
                 
-                # Check for existing non-deleted contact with same email (case-insensitive)
+                # Check for existing non-deleted contact with same email in same company (case-insensitive)
                 existing_contact = db.query(ContactModel).filter(
                     and_(
                         ContactModel.email.ilike(email),
+                        ContactModel.company_id == (uuid.UUID(company_id) if isinstance(company_id, str) else company_id),
                         ContactModel.is_deleted == False
                     )
                 ).first()
                 
                 if existing_contact:
-                    errors.append(f"Row {index + 1}: Contact with email {email} already exists")
+                    errors.append(f"Row {index + 1}: Contact with email {email} already exists in your company")
                     failed_imports += 1
                     continue
                 
-                # Delete any soft-deleted contacts with same email to avoid unique constraint violation
+                # Delete any soft-deleted contacts with same email in same company to avoid unique constraint violation
                 deleted_contacts = db.query(ContactModel).filter(
                     and_(
                         ContactModel.email.ilike(email),
+                        ContactModel.company_id == (uuid.UUID(company_id) if isinstance(company_id, str) else company_id),
                         ContactModel.is_deleted == True
                     )
                 ).all()
