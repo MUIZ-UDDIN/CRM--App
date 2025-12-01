@@ -141,6 +141,7 @@ export default function Settings() {
   const [isCreatingTeam, setIsCreatingTeam] = useState(false);
   const [isAddingMember, setIsAddingMember] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState('');
+  const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -365,9 +366,29 @@ export default function Settings() {
 
   const fetchAvailableUsers = async () => {
     try {
-      const response = await apiClient.get(`/companies/${user?.company_id}/users`);
-      // Show all company users (not just those without teams)
-      setAvailableUsers(response.data);
+      let allUsers: TeamMember[] = [];
+      
+      if (isSuperAdmin) {
+        // For super admin, get users from ALL companies
+        const companiesResponse = await apiClient.get('/companies');
+        const companies = companiesResponse.data;
+        
+        // Fetch users from each company
+        for (const company of companies) {
+          try {
+            const usersResponse = await apiClient.get(`/companies/${company.id}/users`);
+            allUsers = [...allUsers, ...usersResponse.data];
+          } catch (err) {
+            console.error(`Failed to load users for company ${company.id}:`, err);
+          }
+        }
+      } else {
+        // For company admin, get only their company users
+        const response = await apiClient.get(`/companies/${user?.company_id}/users`);
+        allUsers = response.data;
+      }
+      
+      setAvailableUsers(allUsers);
     } catch (error: any) {
       console.error('Failed to load available users:', error);
       toast.error('Failed to load available users');
@@ -2460,46 +2481,99 @@ export default function Settings() {
             ) : (
               <div className="space-y-4">
                 {/* Combined Search + Dropdown */}
-                <div>
+                <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Select User *
                   </label>
-                  <input
-                    type="text"
-                    list="users-datalist"
-                    placeholder="Type to search or select from dropdown..."
-                    value={userSearchTerm}
-                    onChange={(e) => {
-                      setUserSearchTerm(e.target.value);
-                      // Find user by name or email
-                      const matchedUser = availableUsers.find(u => 
-                        `${u.first_name} ${u.last_name} (${u.email})` === e.target.value ||
-                        `${u.first_name} ${u.last_name}` === e.target.value
-                      );
-                      if (matchedUser) {
-                        setSelectedUserId(matchedUser.id);
-                      }
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <datalist id="users-datalist">
-                    {availableUsers
-                      .filter((user) => {
-                        if (!userSearchTerm) return true;
-                        const searchLower = userSearchTerm.toLowerCase();
-                        const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-                        const email = user.email.toLowerCase();
-                        return fullName.includes(searchLower) || email.includes(searchLower);
-                      })
-                      .map((user) => (
-                        <option 
-                          key={user.id} 
-                          value={`${user.first_name} ${user.last_name} (${user.email})`}
-                        >
-                          {user.user_role ? `${user.user_role}` : ''}
-                        </option>
-                      ))}
-                  </datalist>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      placeholder="Type to search or click to select..."
+                      value={userSearchTerm}
+                      onChange={(e) => {
+                        setUserSearchTerm(e.target.value);
+                        setShowUserDropdown(true);
+                      }}
+                      onFocus={() => setShowUserDropdown(true)}
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowUserDropdown(!showUserDropdown)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+                  </div>
+
+                  {/* Custom Dropdown - Opens Below */}
+                  {showUserDropdown && (
+                    <>
+                      {/* Backdrop to close dropdown */}
+                      <div 
+                        className="fixed inset-0 z-10" 
+                        onClick={() => setShowUserDropdown(false)}
+                      />
+                      
+                      {/* Dropdown List */}
+                      <div className="absolute z-20 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                        {availableUsers
+                          .filter((user) => {
+                            if (!userSearchTerm) return true;
+                            const searchLower = userSearchTerm.toLowerCase();
+                            const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+                            const email = user.email.toLowerCase();
+                            const role = (user.user_role || '').toLowerCase();
+                            return fullName.includes(searchLower) || email.includes(searchLower) || role.includes(searchLower);
+                          })
+                          .map((user) => (
+                            <div
+                              key={user.id}
+                              onClick={() => {
+                                setSelectedUserId(user.id);
+                                setUserSearchTerm(`${user.first_name} ${user.last_name} (${user.email})`);
+                                setShowUserDropdown(false);
+                              }}
+                              className={`p-3 cursor-pointer hover:bg-blue-50 border-b border-gray-100 last:border-b-0 ${
+                                selectedUserId === user.id ? 'bg-blue-50' : ''
+                              }`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <div className="flex-1">
+                                  <p className="font-medium text-gray-900">
+                                    {user.first_name} {user.last_name}
+                                  </p>
+                                  <p className="text-sm text-gray-600">{user.email}</p>
+                                  {user.user_role && (
+                                    <p className="text-xs text-gray-500 mt-1">
+                                      {user.user_role}
+                                    </p>
+                                  )}
+                                </div>
+                                {selectedUserId === user.id && (
+                                  <CheckCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 ml-2" />
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        {availableUsers.filter((user) => {
+                          if (!userSearchTerm) return true;
+                          const searchLower = userSearchTerm.toLowerCase();
+                          const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+                          const email = user.email.toLowerCase();
+                          const role = (user.user_role || '').toLowerCase();
+                          return fullName.includes(searchLower) || email.includes(searchLower) || role.includes(searchLower);
+                        }).length === 0 && (
+                          <div className="p-4 text-center text-gray-500">
+                            No users match your search
+                          </div>
+                        )}
+                      </div>
+                    </>
+                  )}
+
                   {selectedUserId && (
                     <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
                       <p className="text-sm text-blue-900">
@@ -2516,6 +2590,7 @@ export default function Settings() {
                       setShowAddMemberModal(false);
                       setUserSearchTerm('');
                       setSelectedUserId('');
+                      setShowUserDropdown(false);
                     }}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                   >
