@@ -2459,70 +2459,54 @@ export default function Settings() {
               </div>
             ) : (
               <div className="space-y-4">
-                {/* Search Input */}
+                {/* Combined Search + Dropdown */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Search User *
+                    Select User *
                   </label>
                   <input
                     type="text"
-                    placeholder="Search by name or email..."
+                    list="users-datalist"
+                    placeholder="Type to search or select from dropdown..."
                     value={userSearchTerm}
-                    onChange={(e) => setUserSearchTerm(e.target.value)}
+                    onChange={(e) => {
+                      setUserSearchTerm(e.target.value);
+                      // Find user by name or email
+                      const matchedUser = availableUsers.find(u => 
+                        `${u.first_name} ${u.last_name} (${u.email})` === e.target.value ||
+                        `${u.first_name} ${u.last_name}` === e.target.value
+                      );
+                      if (matchedUser) {
+                        setSelectedUserId(matchedUser.id);
+                      }
+                    }}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
-                </div>
-
-                {/* Filtered User List */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Select User
-                  </label>
-                  <div className="max-h-64 overflow-y-auto border border-gray-300 rounded-lg">
+                  <datalist id="users-datalist">
                     {availableUsers
                       .filter((user) => {
+                        if (!userSearchTerm) return true;
                         const searchLower = userSearchTerm.toLowerCase();
                         const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
                         const email = user.email.toLowerCase();
                         return fullName.includes(searchLower) || email.includes(searchLower);
                       })
                       .map((user) => (
-                        <div
-                          key={user.id}
-                          onClick={() => setSelectedUserId(user.id)}
-                          className={`p-3 cursor-pointer hover:bg-blue-50 border-b border-gray-200 last:border-b-0 ${
-                            selectedUserId === user.id ? 'bg-blue-100' : ''
-                          }`}
+                        <option 
+                          key={user.id} 
+                          value={`${user.first_name} ${user.last_name} (${user.email})`}
                         >
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium text-gray-900">
-                                {user.first_name} {user.last_name}
-                              </p>
-                              <p className="text-sm text-gray-600">{user.email}</p>
-                              {user.user_role && (
-                                <p className="text-xs text-gray-500 mt-1">
-                                  Role: {user.user_role}
-                                </p>
-                              )}
-                            </div>
-                            {selectedUserId === user.id && (
-                              <CheckCircleIcon className="w-5 h-5 text-blue-600" />
-                            )}
-                          </div>
-                        </div>
+                          {user.user_role ? `${user.user_role}` : ''}
+                        </option>
                       ))}
-                    {availableUsers.filter((user) => {
-                      const searchLower = userSearchTerm.toLowerCase();
-                      const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
-                      const email = user.email.toLowerCase();
-                      return fullName.includes(searchLower) || email.includes(searchLower);
-                    }).length === 0 && (
-                      <div className="p-4 text-center text-gray-500">
-                        No users match your search
-                      </div>
-                    )}
-                  </div>
+                  </datalist>
+                  {selectedUserId && (
+                    <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-lg">
+                      <p className="text-sm text-blue-900">
+                        ✓ Selected: {availableUsers.find(u => u.id === selectedUserId)?.first_name} {availableUsers.find(u => u.id === selectedUserId)?.last_name}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex gap-3 pt-4">
