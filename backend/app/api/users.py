@@ -203,13 +203,14 @@ async def get_all_users(
     context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
     
-    # Start with base query
+    # Start with base query - only exclude deleted users
     query = db.query(UserModel).filter(UserModel.is_deleted == False)
     
     # Apply filters based on role permissions
     if context.is_super_admin():
         # Super admin can see ALL users from ALL companies
-        # Don't filter by company_id for super admin
+        # Including inactive and suspended users (but not deleted)
+        # Don't filter by company_id, status, or is_active for super admin
         pass
     elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS):
         # Company admin can see all users in their company
@@ -246,6 +247,15 @@ async def get_all_users(
         query = query.filter(UserModel.status == status)
     
     users = query.all()
+    
+    # Debug logging for super admin
+    if context.is_super_admin():
+        total_count = db.query(UserModel).filter(UserModel.is_deleted == False).count()
+        active_count = db.query(UserModel).filter(UserModel.is_deleted == False, UserModel.is_active == True).count()
+        print(f"[DEBUG] Super Admin User Query:")
+        print(f"  Total non-deleted users: {total_count}")
+        print(f"  Active non-deleted users: {active_count}")
+        print(f"  Returned users: {len(users)}")
     
     return [
         UserResponse(
