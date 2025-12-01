@@ -252,7 +252,7 @@ function SuperAdminDashboard() {
                             ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
                             ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
                           `}>
-                            {activity.status}
+                            {activity.status ? activity.status.charAt(0).toUpperCase() + activity.status.slice(1) : ''}
                           </span>
                         </td>
                         <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
@@ -302,7 +302,7 @@ function SuperAdminDashboard() {
                             ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
                             ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
                           `}>
-                            {activity.status}
+                            {activity.status ? activity.status.charAt(0).toUpperCase() + activity.status.slice(1) : ''}
                           </span>
                         </td>
                         <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-500">
