@@ -132,6 +132,7 @@ export default function Settings() {
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
   const [showDeleteTeamModal, setShowDeleteTeamModal] = useState(false);
   const [showRemoveMemberModal, setShowRemoveMemberModal] = useState(false);
+  const [showDeleteMemberModal, setShowDeleteMemberModal] = useState(false);
   const [teamToDelete, setTeamToDelete] = useState<Team | null>(null);
   const [memberToRemove, setMemberToRemove] = useState<TeamMember | null>(null);
   const [availableUsers, setAvailableUsers] = useState<TeamMember[]>([]);
@@ -1105,11 +1106,16 @@ export default function Settings() {
     }
   };
 
-  const handleDeleteTeamMember = async (member: TeamMember) => {
-    if (!confirm(`Remove ${member.name}? This will permanently delete their account.`)) return;
+  const openDeleteTeamMemberModal = (member: TeamMember) => {
+    setMemberToRemove(member);
+    setShowDeleteMemberModal(true);
+  };
+
+  const handleDeleteTeamMember = async () => {
+    if (!memberToRemove) return;
     
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users/${member.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${memberToRemove.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -1118,15 +1124,17 @@ export default function Settings() {
       });
       
       if (response.ok) {
-        setTeamMembers(teamMembers.filter(m => m.id !== member.id));
-        toast.success('Team member removed permanently');
+        setTeamMembers(teamMembers.filter(m => m.id !== memberToRemove.id));
+        toast.success('Team member deleted permanently');
+        setShowDeleteMemberModal(false);
+        setMemberToRemove(null);
       } else {
         const error = await response.json();
-        toast.error(error.detail || 'Failed to remove team member');
+        toast.error(error.detail || 'Failed to delete team member');
       }
     } catch (error) {
       console.error('Error deleting team member:', error);
-      toast.error('Failed to remove team member');
+      toast.error('Failed to delete team member');
     }
   };
 
@@ -1851,7 +1859,7 @@ export default function Settings() {
                         <td className="px-6 py-4 text-right">
                           <ActionButtons
                             onEdit={() => handleEditTeamMember(member)}
-                            onDelete={() => handleDeleteTeamMember(member)}
+                            onDelete={() => openDeleteTeamMemberModal(member)}
                             showView={false}
                           />
                         </td>
@@ -3482,6 +3490,45 @@ export default function Settings() {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
               >
                 Yes, Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Member Confirmation Modal */}
+      {showDeleteMemberModal && memberToRemove && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={() => setShowDeleteMemberModal(false)}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <button onClick={() => setShowDeleteMemberModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to permanently delete <span className="font-semibold">{memberToRemove.first_name} {memberToRemove.last_name}</span>?
+              </p>
+              <p className="text-sm text-red-600 mt-2 font-medium">
+                ⚠️ This will permanently delete their account and all associated data. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteMemberModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={handleDeleteTeamMember}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete Permanently
               </button>
             </div>
           </div>
