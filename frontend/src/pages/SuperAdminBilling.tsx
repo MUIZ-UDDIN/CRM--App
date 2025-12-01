@@ -61,12 +61,33 @@ export default function SuperAdminBilling() {
 
   const fetchData = async () => {
     try {
-      const [subsResponse, plansResponse, priceResponse] = await Promise.all([
-        apiClient.get('/billing/subscriptions/all'),
+      const [companiesResponse, plansResponse, priceResponse] = await Promise.all([
+        apiClient.get('/companies/'),
         apiClient.get('/billing/plans'),
         apiClient.get('/billing/plans/current-price')
       ]);
-      setSubscriptions(subsResponse.data);
+      
+      // Transform companies data to match subscription format
+      const companiesData = companiesResponse.data.map((company: any) => ({
+        id: company.id,
+        company_id: company.id,
+        company_name: company.name,
+        plan_name: company.plan || 'free',
+        status: company.subscription_status || 'trial',
+        billing_cycle: 'monthly',
+        monthly_price: parseFloat(priceResponse.data?.monthly_price || 50),
+        user_count: company.user_count || 0,
+        total_amount: (parseFloat(priceResponse.data?.monthly_price || 50)) * (company.user_count || 0),
+        current_period_start: company.created_at,
+        current_period_end: company.trial_ends_at,
+        trial_ends_at: company.trial_ends_at,
+        card_last_4: null,
+        card_brand: null,
+        auto_renew: true,
+        payment_provider: 'stripe'
+      }));
+      
+      setSubscriptions(companiesData);
       setPlans(plansResponse.data);
       // Set current price from backend
       if (priceResponse.data?.monthly_price) {
@@ -146,12 +167,34 @@ export default function SuperAdminBilling() {
   }
 
   const currentPlan = plans[0];
+  
+  // Calculate stats matching Super Admin Dashboard logic
+  const activeCount = subscriptions.filter(s => {
+    // Active means: Not suspended, not expired
+    const isSuspended = s.status === 'suspended';
+    const isExpired = s.status === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) < new Date());
+    return !isSuspended && !isExpired;
+  }).length;
+  
+  const trialCount = subscriptions.filter(s => {
+    // Count as trial if plan is 'free' or status is 'trial'
+    const planLower = (s.plan_name || '').toLowerCase();
+    return planLower === 'free' || s.status === 'trial';
+  }).length;
+  
+  const suspendedCount = subscriptions.filter(s => {
+    // Count as suspended/expired if status is suspended or trial expired
+    const isExpired = s.status === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) < new Date());
+    return s.status === 'suspended' || s.status === 'expired' || isExpired;
+  }).length;
+  
   const totalRevenue = subscriptions
-    .filter(s => s.status === 'active')
+    .filter(s => {
+      const isSuspended = s.status === 'suspended';
+      const isExpired = s.status === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) < new Date());
+      return !isSuspended && !isExpired;
+    })
     .reduce((sum, s) => sum + s.total_amount, 0);
-  const activeCount = subscriptions.filter(s => s.status === 'active').length;
-  const trialCount = subscriptions.filter(s => s.status === 'trial').length;
-  const suspendedCount = subscriptions.filter(s => s.status === 'suspended').length;
 
   // Permission check - only Super Admin can access platform billing
   if (!isSuperAdmin()) {
