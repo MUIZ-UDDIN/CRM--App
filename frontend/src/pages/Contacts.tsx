@@ -192,20 +192,22 @@ export default function Contacts() {
     }
   }, [searchParams]);
 
+  // Fetch all contact types (called on mount and after changes)
+  const fetchAllTypes = async () => {
+    try {
+      const allContacts = await contactsService.getContacts({});
+      const types = allContacts
+        .map((contact: Contact) => contact.type)
+        .filter((type: string | undefined): type is string => !!type);
+      const uniqueTypes = [...new Set(types)].sort() as string[];
+      setContactTypes(uniqueTypes);
+    } catch (error) {
+      console.error('Error fetching types:', error);
+    }
+  };
+
   // Fetch all contact types on mount
   useEffect(() => {
-    const fetchAllTypes = async () => {
-      try {
-        const allContacts = await contactsService.getContacts({});
-        const types = allContacts
-          .map((contact: Contact) => contact.type)
-          .filter((type: string | undefined): type is string => !!type);
-        const uniqueTypes = [...new Set(types)].sort() as string[];
-        setContactTypes(uniqueTypes);
-      } catch (error) {
-        console.error('Error fetching types:', error);
-      }
-    };
     fetchAllTypes();
   }, []);
 
@@ -237,6 +239,9 @@ export default function Contacts() {
         // Removed search parameter - doing client-side filtering instead
       });
       setContacts(data);
+      
+      // Refresh all contact types to include any new types
+      await fetchAllTypes();
     } catch (error) {
       console.error('Error:', error);
       toast.error('Failed to load contacts');
