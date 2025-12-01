@@ -153,14 +153,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
               payload: { user: validatedUser, token },
             });
           } catch (apiError) {
-            console.error('API user validation failed:', apiError);
+            if (import.meta.env.DEV) {
+              console.error('API user validation failed:', apiError);
+            }
             // API failed, force logout
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             dispatch({ type: 'LOGOUT' });
           }
         } catch (error) {
-          console.error('Auth check failed:', error);
+          if (import.meta.env.DEV) {
+            console.error('Auth check failed:', error);
+          }
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           dispatch({ type: 'LOGOUT' });
@@ -219,13 +223,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Verify the token was actually set
       const storedToken = localStorage.getItem('token');
       if (!storedToken) {
-        console.error('Token was not stored in localStorage');
+        if (import.meta.env.DEV) {
+          console.error('Token was not stored in localStorage');
+        }
         localStorage.setItem('token', token); // Try again
       }
       
       return response;
     } catch (error: any) {
-      console.error('Login error:', error);
+      if (import.meta.env.DEV) {
+        console.error('Login error:', error);
+      }
       
       // Clear any partial auth state
       localStorage.removeItem('token');

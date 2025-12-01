@@ -38,7 +38,12 @@ class ApiService {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        const error: any = new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        error.response = {
+          status: response.status,
+          data: errorData
+        };
+        throw error;
       }
 
       const contentType = response.headers.get('content-type');
@@ -48,7 +53,9 @@ class ApiService {
       return response.text() as any;
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.error('Backend connection failed. Using mock data.');
+        if (import.meta.env.DEV) {
+          console.error('Backend connection failed. Using mock data.');
+        }
         throw new Error('Backend connection failed');
       }
       throw error;

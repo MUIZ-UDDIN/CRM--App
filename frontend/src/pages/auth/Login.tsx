@@ -96,10 +96,16 @@ export default function Login() {
       // Check if account is suspended
       if (error.response?.status === 403 && error.response?.data?.detail === 'ACCOUNT_SUSPENDED') {
         setIsSuspended(true);
+      } else if (error.message === 'ACCOUNT_SUSPENDED') {
+        // Fallback check if response structure is different
+        setIsSuspended(true);
       } else {
         toast.error(error.message || 'Login failed');
       }
-      console.error('Login error:', error);
+      // Only log in development mode
+      if (import.meta.env.DEV) {
+        console.error('Login error:', error);
+      }
     } finally {
       setIsSubmitting(false);
     }
