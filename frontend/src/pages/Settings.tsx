@@ -138,6 +138,9 @@ export default function Settings() {
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [teamForm, setTeamForm] = useState({ name: '', description: '' });
   const [teamNameError, setTeamNameError] = useState('');
+  const [isCreatingTeam, setIsCreatingTeam] = useState(false);
+  const [isAddingMember, setIsAddingMember] = useState(false);
+  const [userSearchTerm, setUserSearchTerm] = useState('');
   const [subscription, setSubscription] = useState<any>(null);
   const [invoices, setInvoices] = useState<any[]>([]);
   const [billingLoading, setBillingLoading] = useState(false);
@@ -363,9 +366,8 @@ export default function Settings() {
   const fetchAvailableUsers = async () => {
     try {
       const response = await apiClient.get(`/companies/${user?.company_id}/users`);
-      // Filter out users who are already in a team
-      const availableUsers = response.data.filter((u: any) => !u.team_id);
-      setAvailableUsers(availableUsers);
+      // Show all company users (not just those without teams)
+      setAvailableUsers(response.data);
     } catch (error: any) {
       console.error('Failed to load available users:', error);
       toast.error('Failed to load available users');
@@ -401,6 +403,16 @@ export default function Settings() {
       return false;
     }
     
+    // Check for duplicate team names (case-insensitive)
+    const isDuplicate = teams.some(
+      team => team.name.toLowerCase() === sanitized.toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      setTeamNameError('A team with this name already exists');
+      return false;
+    }
+    
     setTeamNameError('');
     return true;
   };
@@ -418,10 +430,15 @@ export default function Settings() {
   const handleCreateTeam = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Prevent multiple clicks
+    if (isCreatingTeam) return;
+    
     // Validate team name
     if (!validateTeamName(teamForm.name)) {
       return;
     }
+    
+    setIsCreatingTeam(true);
     
     try {
       // Sanitize inputs before sending
@@ -439,6 +456,8 @@ export default function Settings() {
       setTeamNameError('');
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to create team');
+    } finally {
+      setIsCreatingTeam(false);
     }
   };
 
@@ -468,7 +487,9 @@ export default function Settings() {
   };
 
   const handleAddMemberToTeam = async () => {
-    if (!selectedTeam || !selectedUserId) return;
+    if (!selectedTeam || !selectedUserId || isAddingMember) return;
+    
+    setIsAddingMember(true);
     
     try {
       await apiClient.post(`/teams/${selectedTeam.id}/members`, {
@@ -479,8 +500,11 @@ export default function Settings() {
       fetchTeamMembersForTeam(selectedTeam.id);
       setShowAddMemberModal(false);
       setSelectedUserId('');
+      setUserSearchTerm('');
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to add member to team');
+    } finally {
+      setIsAddingMember(false);
     }
   };
 
@@ -2404,9 +2428,10 @@ export default function Settings() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  disabled={isCreatingTeam}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                 >
-                  Create Team
+                  {isCreatingTeam ? 'Creating...' : 'Create Team'}
                 </button>
               </div>
             </form>
@@ -2423,8 +2448,8 @@ export default function Settings() {
             {availableUsers.length === 0 ? (
               <div className="text-center py-6">
                 <UserIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                <p className="text-gray-500">No available users to add</p>
-                <p className="text-sm text-gray-500 mt-1">All users are already assigned to teams</p>
+                <p className="text-gray-500">No users found</p>
+                <p className="text-sm text-gray-500 mt-1">No users available in your company</p>
                 <button
                   onClick={() => setShowAddMemberModal(false)}
                   className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -2434,38 +2459,90 @@ export default function Settings() {
               </div>
             ) : (
               <div className="space-y-4">
+                {/* Search Input */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select User *
+                    Search User *
                   </label>
-                  <select
-                    value={selectedUserId}
-                    onChange={(e) => setSelectedUserId(e.target.value)}
+                  <input
+                    type="text"
+                    placeholder="Search by name or email..."
+                    value={userSearchTerm}
+                    onChange={(e) => setUserSearchTerm(e.target.value)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select a user</option>
-                    {availableUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.first_name} {user.last_name} ({user.email})
-                      </option>
-                    ))}
-                  </select>
+                  />
+                </div>
+
+                {/* Filtered User List */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Select User
+                  </label>
+                  <div className="max-h-64 overflow-y-auto border border-gray-300 rounded-lg">
+                    {availableUsers
+                      .filter((user) => {
+                        const searchLower = userSearchTerm.toLowerCase();
+                        const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+                        const email = user.email.toLowerCase();
+                        return fullName.includes(searchLower) || email.includes(searchLower);
+                      })
+                      .map((user) => (
+                        <div
+                          key={user.id}
+                          onClick={() => setSelectedUserId(user.id)}
+                          className={`p-3 cursor-pointer hover:bg-blue-50 border-b border-gray-200 last:border-b-0 ${
+                            selectedUserId === user.id ? 'bg-blue-100' : ''
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {user.first_name} {user.last_name}
+                              </p>
+                              <p className="text-sm text-gray-600">{user.email}</p>
+                              {user.user_role && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                  Role: {user.user_role}
+                                </p>
+                              )}
+                            </div>
+                            {selectedUserId === user.id && (
+                              <CheckCircleIcon className="w-5 h-5 text-blue-600" />
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    {availableUsers.filter((user) => {
+                      const searchLower = userSearchTerm.toLowerCase();
+                      const fullName = `${user.first_name} ${user.last_name}`.toLowerCase();
+                      const email = user.email.toLowerCase();
+                      return fullName.includes(searchLower) || email.includes(searchLower);
+                    }).length === 0 && (
+                      <div className="p-4 text-center text-gray-500">
+                        No users match your search
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
                   <button
                     type="button"
-                    onClick={() => setShowAddMemberModal(false)}
+                    onClick={() => {
+                      setShowAddMemberModal(false);
+                      setUserSearchTerm('');
+                      setSelectedUserId('');
+                    }}
                     className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={handleAddMemberToTeam}
-                    disabled={!selectedUserId}
+                    disabled={!selectedUserId || isAddingMember}
                     className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                   >
-                    Add to Team
+                    {isAddingMember ? 'Adding...' : 'Add to Team'}
                   </button>
                 </div>
               </div>
