@@ -631,6 +631,11 @@ async def upload_csv_contacts(
     if not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="File must be a CSV file")
     
+    # Get company_id from current user
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
+    
     try:
         content = await file.read()
         content_str = content.decode('utf-8')
@@ -705,6 +710,7 @@ async def upload_csv_contacts(
                     'type': contact_type.strip(),
                     'status': ContactStatus.NEW,
                     'owner_id': owner_id,
+                    'company_id': uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
                     'created_at': datetime.utcnow(),
                     'updated_at': datetime.utcnow()
                 }
@@ -740,6 +746,11 @@ async def upload_excel_contacts(
     """Upload contacts from Excel file with Type and Owner support"""
     if not (file.filename.endswith('.xlsx') or file.filename.endswith('.xls')):
         raise HTTPException(status_code=400, detail="File must be an Excel file (.xlsx or .xls)")
+    
+    # Get company_id from current user
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=400, detail="User must belong to a company")
     
     try:
         content = await file.read()
@@ -808,6 +819,7 @@ async def upload_excel_contacts(
                     'type': contact_type.strip(),
                     'status': ContactStatus.NEW,
                     'owner_id': owner_id,
+                    'company_id': uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
                     'created_at': datetime.utcnow(),
                     'updated_at': datetime.utcnow()
                 }
