@@ -248,15 +248,6 @@ async def get_all_users(
     
     users = query.all()
     
-    # Debug logging for super admin
-    if context.is_super_admin():
-        total_count = db.query(UserModel).filter(UserModel.is_deleted == False).count()
-        active_count = db.query(UserModel).filter(UserModel.is_deleted == False, UserModel.is_active == True).count()
-        print(f"[DEBUG] Super Admin User Query:")
-        print(f"  Total non-deleted users: {total_count}")
-        print(f"  Active non-deleted users: {active_count}")
-        print(f"  Returned users: {len(users)}")
-    
     return [
         UserResponse(
             id=str(user.id),

@@ -369,14 +369,7 @@ export default function Settings() {
       // Use /users/ endpoint which handles role-based permissions
       // For super admin: returns ALL users from ALL companies
       // For company admin: returns only their company users
-      console.log('Current user:', user);
-      console.log('Is Super Admin?', isSuperAdmin);
-      console.log('User role:', user?.role);
-      
       const response = await apiClient.get('/users');
-      console.log('Fetched users count:', response.data.length);
-      console.log('Fetched users:', response.data);
-      
       setAvailableUsers(response.data);
     } catch (error: any) {
       console.error('Failed to load available users:', error);

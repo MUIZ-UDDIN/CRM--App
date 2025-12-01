@@ -295,7 +295,10 @@ def list_companies(
     # Add user count and calculate days_remaining
     from datetime import datetime
     for company in companies:
-        company.user_count = db.query(User).filter(User.company_id == company.id).count()
+        company.user_count = db.query(User).filter(
+            User.company_id == company.id,
+            User.is_deleted == False
+        ).count()
         
         # Set defaults for NULL values
         if not company.plan or company.plan == '':
@@ -341,7 +344,10 @@ def get_company(
             detail="Company not found"
         )
     
-    company.user_count = db.query(User).filter(User.company_id == company.id).count()
+    company.user_count = db.query(User).filter(
+        User.company_id == company.id,
+        User.is_deleted == False
+    ).count()
     
     # Calculate days remaining if on trial
     if company.subscription_status == 'trial' and company.trial_ends_at:
