@@ -28,6 +28,8 @@ interface CompanySubscription {
   current_period_start: string;
   current_period_end: string;
   trial_ends_at: string | null;
+  last_payment_date?: string | null;
+  has_payment_method?: boolean;
   card_last_4: string | null;
   card_brand: string | null;
   auto_renew: boolean;
@@ -68,24 +70,29 @@ export default function SuperAdminBilling() {
       ]);
       
       // Transform companies data to match subscription format
-      const companiesData = companiesResponse.data.map((company: any) => ({
-        id: company.id,
-        company_id: company.id,
-        company_name: company.name,
-        plan_name: company.plan || 'free',
-        status: company.subscription_status || 'trial',
-        billing_cycle: 'monthly',
-        monthly_price: parseFloat(priceResponse.data?.monthly_price || 50),
-        user_count: company.user_count || 0,
-        total_amount: (parseFloat(priceResponse.data?.monthly_price || 50)) * (company.user_count || 0),
-        current_period_start: company.created_at,
-        current_period_end: company.trial_ends_at,
-        trial_ends_at: company.trial_ends_at,
-        card_last_4: null,
-        card_brand: null,
-        auto_renew: true,
-        payment_provider: 'stripe'
-      }));
+      // Exclude super admin company (admin@sunstonecrm.com)
+      const companiesData = companiesResponse.data
+        .filter((company: any) => !company.is_super_admin_company)
+        .map((company: any) => ({
+          id: company.id,
+          company_id: company.id,
+          company_name: company.name,
+          plan_name: company.plan || 'free',
+          status: company.subscription_status || 'trial',
+          billing_cycle: 'monthly',
+          monthly_price: parseFloat(priceResponse.data?.monthly_price || 50),
+          user_count: company.user_count || 0,
+          total_amount: (parseFloat(priceResponse.data?.monthly_price || 50)) * (company.user_count || 0),
+          current_period_start: company.created_at,
+          current_period_end: company.trial_ends_at,
+          trial_ends_at: company.trial_ends_at,
+          last_payment_date: company.last_payment_date,
+          has_payment_method: !!company.last_payment_date || !!company.square_customer_id,
+          card_last_4: null,
+          card_brand: null,
+          auto_renew: true,
+          payment_provider: 'square'
+        }));
       
       setSubscriptions(companiesData);
       setPlans(plansResponse.data);
@@ -168,31 +175,34 @@ export default function SuperAdminBilling() {
 
   const currentPlan = plans[0];
   
-  // Calculate stats matching Super Admin Dashboard logic
+  // Calculate stats for BILLING page (different from dashboard)
+  // Active Subscriptions = Companies that have PAID (have payment method)
   const activeCount = subscriptions.filter(s => {
-    // Active means: Not suspended, not expired
-    const isSuspended = s.status === 'suspended';
-    const isExpired = s.status === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) < new Date());
-    return !isSuspended && !isExpired;
+    // Only count as active if they have a payment method (actually paying)
+    return s.has_payment_method && s.status !== 'suspended' && s.status !== 'expired';
   }).length;
   
+  // Trial Subscriptions = Companies on free trial (no payment yet)
   const trialCount = subscriptions.filter(s => {
-    // Count as trial if plan is 'free' or status is 'trial'
+    // Count as trial if they're on trial and have NOT paid yet
     const planLower = (s.plan_name || '').toLowerCase();
-    return planLower === 'free' || s.status === 'trial';
+    const isOnTrial = planLower === 'free' || s.status === 'trial';
+    const hasNotPaid = !s.has_payment_method;
+    const notExpired = !s.trial_ends_at || new Date(s.trial_ends_at) >= new Date();
+    return isOnTrial && hasNotPaid && notExpired;
   }).length;
   
+  // Suspended = Suspended or expired trials
   const suspendedCount = subscriptions.filter(s => {
-    // Count as suspended/expired if status is suspended or trial expired
-    const isExpired = s.status === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) < new Date());
+    const isExpired = s.status === 'trial' && s.trial_ends_at && new Date(s.trial_ends_at) < new Date();
     return s.status === 'suspended' || s.status === 'expired' || isExpired;
   }).length;
   
+  // Monthly Revenue = Only from companies that have PAID
   const totalRevenue = subscriptions
     .filter(s => {
-      const isSuspended = s.status === 'suspended';
-      const isExpired = s.status === 'trial' && (!s.trial_ends_at || new Date(s.trial_ends_at) < new Date());
-      return !isSuspended && !isExpired;
+      // Only count revenue from companies with payment methods
+      return s.has_payment_method && s.status !== 'suspended' && s.status !== 'expired';
     })
     .reduce((sum, s) => sum + s.total_amount, 0);
 
