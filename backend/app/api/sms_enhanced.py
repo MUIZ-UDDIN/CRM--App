@@ -902,9 +902,8 @@ async def delete_template(
     if not template:
         raise HTTPException(status_code=404, detail="Template not found")
     
-    # Soft delete
-    template.is_active = False
-    template.is_deleted = True
+    # Permanent delete
+    db.delete(template)
     db.commit()
     
     return {"message": "Template deleted successfully"}

@@ -290,9 +290,8 @@ async def delete_company_admin(
             detail="Cannot delete the last admin for a company"
         )
     
-    # Soft delete the admin
-    admin.is_deleted = True
-    admin.status = UserStatus.INACTIVE
+    # Permanent delete the admin
+    db.delete(admin)
     db.commit()
     
     return {"message": "Company admin deleted successfully"}

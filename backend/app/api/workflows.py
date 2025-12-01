@@ -470,7 +470,8 @@ async def delete_workflow(
                 detail="You can only delete your own workflows."
             )
     
-    workflow.is_deleted = True
+    # Permanent delete - CASCADE will handle related workflow executions
+    db.delete(workflow)
     db.commit()
     
     # Send deletion notification

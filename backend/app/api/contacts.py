@@ -559,8 +559,8 @@ async def delete_contact(
     
     try:
         contact_name = f"{contact.first_name} {contact.last_name}"
-        contact.is_deleted = True
-        contact.updated_at = datetime.utcnow()
+        # Permanent delete - CASCADE will handle related records
+        db.delete(contact)
         db.commit()
         
         # Send deletion notification

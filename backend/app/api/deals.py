@@ -748,10 +748,8 @@ async def delete_deal(
             detail="You don't have permission to delete deals. Only managers and administrators can delete deals. Please contact your manager if you need to remove a deal."
         )
     
-    # Soft delete
-    deal.is_deleted = True
-    deal.updated_at = datetime.utcnow()
-    
+    # Permanent delete - CASCADE will handle related records
+    db.delete(deal)
     db.commit()
     
     # Send deletion notification

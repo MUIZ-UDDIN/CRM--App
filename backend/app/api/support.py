@@ -473,9 +473,8 @@ async def delete_ticket(
             detail="You don't have permission to delete this ticket"
         )
     
-    # Soft delete
-    ticket.is_deleted = True
-    ticket.updated_at = datetime.utcnow()
+    # Permanent delete
+    db.delete(ticket)
     db.commit()
     
     return {"message": "Ticket deleted successfully"}

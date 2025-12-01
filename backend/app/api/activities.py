@@ -429,10 +429,8 @@ async def delete_activity(
             detail="You don't have permission to delete activities. Only managers and administrators can delete activities. Please contact your manager if you need to remove an activity."
         )
     
-    # Soft delete
-    activity.is_deleted = True
-    activity.updated_at = datetime.utcnow()
-    
+    # Permanent delete
+    db.delete(activity)
     db.commit()
     
     # Send deletion notification

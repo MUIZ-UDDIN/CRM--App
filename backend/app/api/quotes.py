@@ -517,7 +517,8 @@ async def delete_quote(
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to delete quotes. Only managers and administrators can delete quotes.")
     
-    quote.is_deleted = True
+    # Permanent delete - CASCADE will handle related records
+    db.delete(quote)
     db.commit()
     
     # Send deletion notification

@@ -277,7 +277,8 @@ async def delete_notification(
     if not notification:
         raise HTTPException(status_code=404, detail="Notification not found")
     
-    notification.is_deleted = True
+    # Permanent delete
+    db.delete(notification)
     db.commit()
     
     # Broadcast WebSocket event for real-time sync

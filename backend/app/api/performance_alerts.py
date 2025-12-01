@@ -251,8 +251,8 @@ async def delete_alert(
     if not alert:
         raise HTTPException(status_code=404, detail="Alert not found")
     
-    alert.is_deleted = True
-    alert.updated_at = datetime.utcnow()
+    # Permanent delete
+    db.delete(alert)
     db.commit()
     
     return {"message": "Alert deleted successfully"}

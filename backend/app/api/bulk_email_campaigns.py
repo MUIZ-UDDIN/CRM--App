@@ -327,8 +327,8 @@ async def delete_campaign(
     if campaign.status in ['sending', 'sent']:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot delete sent or sending campaign")
     
-    campaign.is_deleted = True
-    campaign.updated_at = datetime.utcnow()
+    # Permanent delete
+    db.delete(campaign)
     db.commit()
     
     return {"message": "Campaign deleted successfully"}

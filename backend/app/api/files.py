@@ -635,7 +635,8 @@ async def delete_folder(
         raise HTTPException(status_code=404, detail="Folder not found")
     
     folder_name = folder.name
-    folder.is_deleted = True
+    # Permanent delete - CASCADE will handle related files
+    db.delete(folder)
     db.commit()
     
     # Send folder deletion notification
@@ -834,7 +835,8 @@ async def delete_file(
     else:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You don't have permission to delete files. Only managers and administrators can delete files.")
     
-    file.is_deleted = True
+    # Permanent delete
+    db.delete(file)
     db.commit()
     
     # Send deletion notification

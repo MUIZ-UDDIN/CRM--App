@@ -459,8 +459,8 @@ async def delete_email(
             detail="You don't have permission to delete emails. Only managers and administrators can delete emails. Please contact your manager if you need to remove an email."
         )
     
-    email.is_deleted = True
-    email.updated_at = datetime.utcnow()
+    # Permanent delete
+    db.delete(email)
     db.commit()
     
     # Broadcast WebSocket event for real-time sync

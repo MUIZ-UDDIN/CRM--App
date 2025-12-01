@@ -262,8 +262,8 @@ async def delete_pipeline(
             detail=f"Cannot delete pipeline with {deal_count} active deals"
         )
     
-    pipeline.is_deleted = True
-    pipeline.updated_at = datetime.utcnow()
+    # Permanent delete - CASCADE will handle related stages
+    db.delete(pipeline)
     db.commit()
     
     # Send deletion notification
@@ -466,8 +466,8 @@ async def delete_stage(
     # Get pipeline before deleting to access company_id
     pipeline = db.query(Pipeline).filter(Pipeline.id == stage.pipeline_id).first()
     
-    stage.is_deleted = True
-    stage.updated_at = datetime.utcnow()
+    # Permanent delete
+    db.delete(stage)
     db.commit()
     
     # Broadcast WebSocket event for real-time sync
