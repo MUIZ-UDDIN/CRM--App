@@ -385,19 +385,19 @@ export default function Settings() {
   const validateTeamName = (name: string): boolean => {
     const sanitized = sanitizeInput(name);
     
-    if (!sanitized) {
+    // Check if input contains script tags or HTML FIRST
+    if (name !== sanitized) {
+      setTeamNameError('HTML tags and scripts are not allowed. Please enter plain text only.');
+      return false;
+    }
+    
+    if (!sanitized || !name.trim()) {
       setTeamNameError('Team name is required');
       return false;
     }
     
     if (sanitized.length < 2) {
       setTeamNameError('Team name must be at least 2 characters');
-      return false;
-    }
-    
-    // Check if input contains script tags or HTML
-    if (name !== sanitized) {
-      setTeamNameError('Scripting tags and HTML are not allowed in team name');
       return false;
     }
     
