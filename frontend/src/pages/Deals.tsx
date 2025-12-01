@@ -921,15 +921,15 @@ export default function Deals() {
                                       <span className="truncate" title={deal.company}>{deal.company}</span>
                                     </div>
                                   </div>
-                                  <div className="flex items-center">
+                                  <div className="flex items-center text-sm text-gray-600">
                                     <UserIcon className="h-4 w-4 mr-2 text-gray-400 flex-shrink-0" />
                                     <span className="truncate" title={deal.contact}>{deal.contact}</span>
                                   </div>
                                   {/* Owner Info */}
                                   {deal.owner_name && (
                                     <div className="flex items-center justify-between">
-                                      <div className="flex items-center text-xs text-gray-500">
-                                        <UserCircleIcon className="h-4 w-4 mr-1 flex-shrink-0" />
+                                      <div className="flex items-center text-sm text-gray-600">
+                                        <UserCircleIcon className="h-4 w-4 mr-2 flex-shrink-0" />
                                         <span className="truncate" title={deal.owner_name}>{deal.owner_name}</span>
                                       </div>
                                       {canAssignDeals && (
