@@ -94,7 +94,7 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
   });
 
   const downloadTemplate = () => {
-    const template = 'first_name,last_name,phone,title,company,email,type\nTest,Test,Test,Test,Test,Test,Test\nfdfsdsada,sadasdasdadad,343,NEW,Import,abcd12@gmail.com,Marketing Qualified Lead\nTest rahuk,rahul,9876543210,NEW,Import Company,abcd123@gmail.com,Lead\n';
+    const template = 'first_name,last_name,email,phone,company,title,type\nJohn,Doe,john.doe@example.com,+1234567890,Acme Corp,Sales Manager,Lead\nJane,Smith,jane.smith@example.com,+1987654321,Tech Solutions,Marketing Director,Prospect\nMichael,Johnson,michael.j@example.com,+1555123456,Global Industries,CEO,Customer\nSarah,Williams,sarah.w@example.com,+1444987654,Innovation Labs,Product Manager,Marketing Qualified Lead\n';
     const blob = new Blob([template], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -181,17 +181,17 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
             <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">last_name</code>
           </div>
           <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">phone</code>
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">email</code>
+            <span className="text-red-500 ml-1">*</span>
           </div>
           <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">title</code>
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">phone</code>
           </div>
           <div className="flex items-center">
             <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">company</code>
           </div>
           <div className="flex items-center">
-            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">email</code>
-            <span className="text-red-500">*</span>
+            <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">title</code>
           </div>
           <div className="flex items-center">
             <code className="bg-gray-200 px-2 py-1 rounded text-xs font-mono mr-2 w-32">type</code>
@@ -199,7 +199,7 @@ const ContactUpload: React.FC<ContactUploadProps> = ({ onUploadComplete }) => {
         </div>
         <p className="text-xs text-gray-500 mt-3">* Required field</p>
         <p className="text-xs text-gray-600 mt-2">
-          <strong>Column Order:</strong> first_name, last_name, phone, title, company, email, type<br/>
+          <strong>Column Order:</strong> first_name, last_name, email, phone, company, title, type<br/>
           <strong>Type Values:</strong> Lead, Prospect, Customer, Partner, Marketing Qualified Lead
         </p>
       </div>
