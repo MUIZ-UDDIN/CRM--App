@@ -440,49 +440,49 @@ def delete_company(
         try:
             db.query(Contact).filter(Contact.owner_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(Deal).filter(Deal.owner_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(Email).filter(Email.owner_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(SMSMessage).filter(SMSMessage.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(Call).filter(Call.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(Document).filter(Document.created_by.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(Workflow).filter(Workflow.created_by.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         # Delete files by owner_id
         try:
             db.query(File).filter(File.owner_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting files by owner_id: {e}")
-            pass
+            db.rollback()
         
         # Delete folders by owner_id
         try:
@@ -490,62 +490,62 @@ def delete_company(
             db.query(Folder).filter(Folder.owner_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting folders by owner_id: {e}")
-            pass
+            db.rollback()
         
         try:
             db.query(Notification).filter(Notification.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
     
     # Delete company-level notifications (notifications with company_id but no user_id)
     try:
         db.query(Notification).filter(Notification.company_id == company.id).delete(synchronize_session=False)
     except Exception as e:
         print(f"Error deleting company notifications: {e}")
-        pass
+        db.rollback()
     
     if user_ids:
         try:
             db.query(Quote).filter(Quote.created_by.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(SupportTicket).filter(SupportTicket.created_by.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(AuditLog).filter(AuditLog.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
         
         try:
             db.query(SecurityLog).filter(SecurityLog.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception:
-            pass
+            db.rollback()
     
     # Delete company-level data (skip pipelines for now - delete after deals)
     
     try:
         db.query(EmailTemplate).filter(EmailTemplate.company_id == company.id).delete(synchronize_session=False)
     except Exception:
-        pass
+        db.rollback()
     
     try:
         db.query(SMSTemplate).filter(SMSTemplate.company_id == company.id).delete(synchronize_session=False)
     except Exception:
-        pass
+        db.rollback()
     
     try:
         db.query(PhoneNumber).filter(PhoneNumber.company_id == company.id).delete(synchronize_session=False)
     except Exception:
-        pass
+        db.rollback()
     
     try:
         db.query(TwilioSettings).filter(TwilioSettings.company_id == company.id).delete(synchronize_session=False)
     except Exception:
-        pass
+        db.rollback()
     
     # Delete files and folders by company_id
     try:
@@ -554,7 +554,7 @@ def delete_company(
         print(f"Deleted files for company {company.id}")
     except Exception as e:
         print(f"Error deleting files by company_id: {e}")
-        pass
+        db.rollback()
     
     try:
         from app.models.files import Folder
@@ -562,7 +562,7 @@ def delete_company(
         print(f"Deleted folders for company {company.id}")
     except Exception as e:
         print(f"Error deleting folders by company_id: {e}")
-        pass
+        db.rollback()
     
     # Delete quotes by company_id
     try:
@@ -570,79 +570,86 @@ def delete_company(
         print(f"Deleted quotes for company {company.id}")
     except Exception as e:
         print(f"Error deleting quotes by company_id: {e}")
-        pass
+        db.rollback()
     
-    # Get all user IDs first (needed for deleting related records)
-    company_user_ids_for_deletion = [user.id for user in db.query(User.id).filter(User.company_id == company.id).all()]
-    
+    # Use the user_ids we already got at the beginning (line 436)
     # Delete all tables with foreign keys to users (MUST be before deleting users)
-    if company_user_ids_for_deletion:
+    if user_ids:
         # Delete workflows (owner_id -> users.id)
         try:
             from app.models.workflows import Workflow
-            deleted_workflows = db.query(Workflow).filter(Workflow.owner_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            deleted_workflows = db.query(Workflow).filter(Workflow.owner_id.in_(user_ids)).delete(synchronize_session=False)
             print(f"Deleted {deleted_workflows} workflows")
         except Exception as e:
             print(f"Error deleting workflows: {e}")
+            db.rollback()
         
         # Delete workflow templates (created_by_id -> users.id)
         try:
             from app.models.workflow_templates import WorkflowTemplate
-            db.query(WorkflowTemplate).filter(WorkflowTemplate.created_by_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            db.query(WorkflowTemplate).filter(WorkflowTemplate.created_by_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting workflow templates: {e}")
+            db.rollback()
         
         # Delete support tickets (created_by_id, assigned_to_id -> users.id)
         try:
             from app.models.support_tickets import SupportTicket
             db.query(SupportTicket).filter(
-                (SupportTicket.created_by_id.in_(company_user_ids_for_deletion)) |
-                (SupportTicket.assigned_to_id.in_(company_user_ids_for_deletion))
+                (SupportTicket.created_by_id.in_(user_ids)) |
+                (SupportTicket.assigned_to_id.in_(user_ids))
             ).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting support tickets: {e}")
+            db.rollback()
         
         # Delete SMS templates (user_id -> users.id)
         try:
             from app.models.sms_templates import SMSTemplate
-            db.query(SMSTemplate).filter(SMSTemplate.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            db.query(SMSTemplate).filter(SMSTemplate.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting SMS templates: {e}")
+            db.rollback()
         
         # Delete scheduled SMS (user_id -> users.id)
         try:
             from app.models.scheduled_sms import ScheduledSMS
-            db.query(ScheduledSMS).filter(ScheduledSMS.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            db.query(ScheduledSMS).filter(ScheduledSMS.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting scheduled SMS: {e}")
+            db.rollback()
         
         # Delete phone numbers (user_id -> users.id)
         try:
             from app.models.phone_numbers import PhoneNumber
-            db.query(PhoneNumber).filter(PhoneNumber.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            db.query(PhoneNumber).filter(PhoneNumber.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting phone numbers: {e}")
+            db.rollback()
         
         # Delete performance alerts (user_id -> users.id)
         try:
             from app.models.performance_alerts import PerformanceAlert
-            db.query(PerformanceAlert).filter(PerformanceAlert.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            db.query(PerformanceAlert).filter(PerformanceAlert.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting performance alerts: {e}")
+            db.rollback()
         
         # Delete inbox messages (user_id -> users.id)
         try:
             from app.models.inbox import InboxMessage
-            db.query(InboxMessage).filter(InboxMessage.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            db.query(InboxMessage).filter(InboxMessage.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting inbox messages: {e}")
+            db.rollback()
         
         # Delete sessions (user_id -> users.id)
         try:
             from app.models.security import Session
-            db.query(Session).filter(Session.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            db.query(Session).filter(Session.user_id.in_(user_ids)).delete(synchronize_session=False)
         except Exception as e:
             print(f"Error deleting sessions: {e}")
+            db.rollback()
     
     # Delete billing data
     try:
