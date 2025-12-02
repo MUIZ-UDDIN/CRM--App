@@ -447,10 +447,20 @@ def delete_company(
         except Exception:
             db.rollback()
         
+        # Delete activities (owner_id -> users.id) - CRITICAL
         try:
-            db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        except Exception:
+            activity_count = db.query(Activity).filter(Activity.owner_id.in_(user_ids)).count()
+            if activity_count > 0:
+                deleted_activities = db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
+                db.commit()
+                print(f"✅ Successfully deleted {deleted_activities} activities")
+        except Exception as e:
+            print(f"❌ CRITICAL ERROR deleting activities: {e}")
             db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete activities: {str(e)}"
+            )
         
         try:
             db.query(Email).filter(Email.owner_id.in_(user_ids)).delete(synchronize_session=False)
