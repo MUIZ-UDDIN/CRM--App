@@ -92,7 +92,7 @@ function CompanyAdminDashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div 
-          onClick={() => navigate('/users')}
+          onClick={() => navigate('/settings?tab=team')}
           className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
         >
           <div className="p-6">
@@ -162,7 +162,10 @@ function CompanyAdminDashboard() {
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div 
+          onClick={() => navigate('/deals')}
+          className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
+        >
           <div className="p-6">
             <div className="flex items-center justify-between">
               <div className="bg-yellow-100 p-3 rounded-full">
