@@ -572,6 +572,78 @@ def delete_company(
         print(f"Error deleting quotes by company_id: {e}")
         pass
     
+    # Get all user IDs first (needed for deleting related records)
+    company_user_ids_for_deletion = [user.id for user in db.query(User.id).filter(User.company_id == company.id).all()]
+    
+    # Delete all tables with foreign keys to users (MUST be before deleting users)
+    if company_user_ids_for_deletion:
+        # Delete workflows (owner_id -> users.id)
+        try:
+            from app.models.workflows import Workflow
+            deleted_workflows = db.query(Workflow).filter(Workflow.owner_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+            print(f"Deleted {deleted_workflows} workflows")
+        except Exception as e:
+            print(f"Error deleting workflows: {e}")
+        
+        # Delete workflow templates (created_by_id -> users.id)
+        try:
+            from app.models.workflow_templates import WorkflowTemplate
+            db.query(WorkflowTemplate).filter(WorkflowTemplate.created_by_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting workflow templates: {e}")
+        
+        # Delete support tickets (created_by_id, assigned_to_id -> users.id)
+        try:
+            from app.models.support_tickets import SupportTicket
+            db.query(SupportTicket).filter(
+                (SupportTicket.created_by_id.in_(company_user_ids_for_deletion)) |
+                (SupportTicket.assigned_to_id.in_(company_user_ids_for_deletion))
+            ).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting support tickets: {e}")
+        
+        # Delete SMS templates (user_id -> users.id)
+        try:
+            from app.models.sms_templates import SMSTemplate
+            db.query(SMSTemplate).filter(SMSTemplate.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting SMS templates: {e}")
+        
+        # Delete scheduled SMS (user_id -> users.id)
+        try:
+            from app.models.scheduled_sms import ScheduledSMS
+            db.query(ScheduledSMS).filter(ScheduledSMS.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting scheduled SMS: {e}")
+        
+        # Delete phone numbers (user_id -> users.id)
+        try:
+            from app.models.phone_numbers import PhoneNumber
+            db.query(PhoneNumber).filter(PhoneNumber.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting phone numbers: {e}")
+        
+        # Delete performance alerts (user_id -> users.id)
+        try:
+            from app.models.performance_alerts import PerformanceAlert
+            db.query(PerformanceAlert).filter(PerformanceAlert.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting performance alerts: {e}")
+        
+        # Delete inbox messages (user_id -> users.id)
+        try:
+            from app.models.inbox import InboxMessage
+            db.query(InboxMessage).filter(InboxMessage.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting inbox messages: {e}")
+        
+        # Delete sessions (user_id -> users.id)
+        try:
+            from app.models.security import Session
+            db.query(Session).filter(Session.user_id.in_(company_user_ids_for_deletion)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting sessions: {e}")
+    
     # Delete billing data
     try:
         db.query(PaymentHistory).filter(PaymentHistory.company_id == company.id).delete(synchronize_session=False)
