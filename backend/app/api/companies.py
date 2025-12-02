@@ -686,6 +686,90 @@ def delete_company(
         except Exception as e:
             print(f"Error deleting sessions: {e}")
             db.rollback()
+        
+        # Delete email campaigns (user_id -> users.id)
+        try:
+            from app.models.email_campaigns import EmailCampaign
+            db.query(EmailCampaign).filter(EmailCampaign.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting email campaigns: {e}")
+            db.rollback()
+        
+        # Delete CRM defaults (created_by_id -> users.id)
+        try:
+            from app.models.crm_defaults import DealStageDefault, PipelineDefault, ActivityTypeDefault
+            db.query(DealStageDefault).filter(DealStageDefault.created_by_id.in_(user_ids)).delete(synchronize_session=False)
+            db.query(PipelineDefault).filter(PipelineDefault.created_by_id.in_(user_ids)).delete(synchronize_session=False)
+            db.query(ActivityTypeDefault).filter(ActivityTypeDefault.created_by_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting CRM defaults: {e}")
+            db.rollback()
+        
+        # Delete custom fields (created_by_id -> users.id)
+        try:
+            from app.models.custom_fields import CustomField
+            db.query(CustomField).filter(CustomField.created_by_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting custom fields: {e}")
+            db.rollback()
+        
+        # Delete call transcripts (user_id -> users.id)
+        try:
+            from app.models.call_transcripts import CallTranscript
+            db.query(CallTranscript).filter(CallTranscript.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting call transcripts: {e}")
+            db.rollback()
+        
+        # Delete conversations (user_id -> users.id)
+        try:
+            from app.models.conversations import Conversation
+            db.query(Conversation).filter(Conversation.user_id.in_(user_ids)).delete(synchronize_session=False)
+        except Exception as e:
+            print(f"Error deleting conversations: {e}")
+            db.rollback()
+    
+    # Delete company-level data
+    
+    # Delete email settings (company_id -> companies.id)
+    try:
+        from app.models.email_settings import EmailSettings
+        db.query(EmailSettings).filter(EmailSettings.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting email settings: {e}")
+        db.rollback()
+    
+    # Delete custom fields by company (company_id -> companies.id)
+    try:
+        from app.models.custom_fields import CustomField
+        db.query(CustomField).filter(CustomField.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting custom fields by company: {e}")
+        db.rollback()
+    
+    # Delete workflow executions (company_id -> companies.id)
+    try:
+        from app.models.workflows import WorkflowExecution
+        db.query(WorkflowExecution).filter(WorkflowExecution.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting workflow executions: {e}")
+        db.rollback()
+    
+    # Delete template usage (company_id -> companies.id)
+    try:
+        from app.models.workflow_templates import TemplateUsage
+        db.query(TemplateUsage).filter(TemplateUsage.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting template usage: {e}")
+        db.rollback()
+    
+    # Delete email campaigns by company (company_id -> companies.id)
+    try:
+        from app.models.email_campaigns import EmailCampaign
+        db.query(EmailCampaign).filter(EmailCampaign.company_id == company.id).delete(synchronize_session=False)
+    except Exception as e:
+        print(f"Error deleting email campaigns by company: {e}")
+        db.rollback()
     
     # Delete billing data
     try:
@@ -721,6 +805,20 @@ def delete_company(
     
     # Get all pipeline IDs for this company
     company_pipeline_ids = [p.id for p in db.query(Pipeline.id).filter(Pipeline.company_id == company.id).all()]
+    
+    # Delete analytics data BEFORE deals/pipelines (they reference them)
+    try:
+        from app.models.analytics import DealMetrics, PipelineMetrics
+        # Delete deal metrics
+        if company_pipeline_ids:
+            db.query(DealMetrics).filter(DealMetrics.pipeline_id.in_(company_pipeline_ids)).delete(synchronize_session=False)
+        # Delete pipeline metrics
+        if company_pipeline_ids:
+            db.query(PipelineMetrics).filter(PipelineMetrics.pipeline_id.in_(company_pipeline_ids)).delete(synchronize_session=False)
+        print(f"✅ Deleted analytics data for company {company.id}")
+    except Exception as e:
+        print(f"Error deleting analytics: {e}")
+        db.rollback()
     
     # Delete all deals (by owner_id, company_id, and pipeline_id to catch all)
     try:
