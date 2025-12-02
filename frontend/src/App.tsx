@@ -50,6 +50,9 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 
+// Hooks
+import { useActivityTracker } from './hooks/useActivityTracker';
+
 // Styles
 import './index.css';
 
@@ -67,6 +70,9 @@ const queryClient = new QueryClient({
 // Global 401 handler component
 function GlobalAuthHandler() {
   const navigate = useNavigate();
+  
+  // Track user activity and extend session automatically
+  useActivityTracker();
 
   useEffect(() => {
     // Intercept fetch globally
