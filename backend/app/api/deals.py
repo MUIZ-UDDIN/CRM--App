@@ -643,8 +643,31 @@ async def update_deal(
                 new_stage=new_stage.name if new_stage else "Unknown"
             )
         else:
-            # Notify about general update
-            changes = ", ".join([f"{k}: {v}" for k, v in deal_data.items() if k not in ['stage_id']])
+            # Notify about general update - resolve IDs to names
+            from ..models.contacts import Contact
+            
+            change_list = []
+            for k, v in deal_data.items():
+                if k not in ['stage_id']:
+                    # Resolve contact_id to contact name
+                    if k == 'contact_id' and v:
+                        try:
+                            contact = db.query(Contact).filter(Contact.id == v).first()
+                            if contact:
+                                v = f"{contact.first_name} {contact.last_name}"
+                        except:
+                            pass
+                    # Resolve owner_id to owner name
+                    elif k == 'owner_id' and v:
+                        try:
+                            owner = db.query(User).filter(User.id == v).first()
+                            if owner:
+                                v = f"{owner.first_name} {owner.last_name}"
+                        except:
+                            pass
+                    change_list.append(f"{k}: {v}")
+            
+            changes = ", ".join(change_list)
             if changes:
                 NotificationService.notify_deal_updated(
                     db=db,

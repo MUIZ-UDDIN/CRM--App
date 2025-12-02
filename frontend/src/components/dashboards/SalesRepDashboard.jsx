@@ -7,8 +7,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { getRoleDashboardAnalytics } from '../../services/roleAnalyticsService';
-import { FaHandshake, FaChartLine, FaExclamationTriangle, FaClock, FaChevronDown, FaChevronUp } from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+import { FaHandshake, FaChartLine, FaExclamationTriangle, FaClock, FaChevronDown, FaChevronUp, FaUsers, FaEnvelope } from 'react-icons/fa';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -18,6 +18,8 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
  * @returns {React.Component} Sales Rep Dashboard component
  */
 function SalesRepDashboard() {
+  const navigate = useNavigate();
+  
   // State for dashboard data
   const [stats, setStats] = useState({
     user_role: '',
@@ -81,17 +83,55 @@ function SalesRepDashboard() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-2xl font-bold">{stats.metrics?.my_deals || 0}</h3>
-          <p className="text-gray-500">My Deals</p>
+        <div 
+          onClick={() => navigate('/deals')}
+          className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
+        >
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="bg-green-100 p-3 rounded-full">
+                <FaHandshake className="text-green-500 text-xl" />
+              </div>
+              <div className="text-right">
+                <h3 className="text-3xl font-bold">{stats.metrics?.my_deals || 0}</h3>
+                <p className="text-gray-500">My Deals</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-2xl font-bold">{stats.metrics?.my_contacts || 0}</h3>
-          <p className="text-gray-500">My Contacts</p>
+        
+        <div 
+          onClick={() => navigate('/contacts')}
+          className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
+        >
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="bg-purple-100 p-3 rounded-full">
+                <FaEnvelope className="text-purple-500 text-xl" />
+              </div>
+              <div className="text-right">
+                <h3 className="text-3xl font-bold">{stats.metrics?.my_contacts || 0}</h3>
+                <p className="text-gray-500">My Contacts</p>
+              </div>
+            </div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-2xl font-bold">{stats.metrics?.my_activities || 0}</h3>
-          <p className="text-gray-500">My Activities</p>
+        
+        <div 
+          onClick={() => navigate('/activities')}
+          className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
+        >
+          <div className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="bg-blue-100 p-3 rounded-full">
+                <FaClock className="text-blue-500 text-xl" />
+              </div>
+              <div className="text-right">
+                <h3 className="text-3xl font-bold">{stats.metrics?.my_activities || 0}</h3>
+                <p className="text-gray-500">My Activities</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
       {/* Recent & Upcoming Activities */}
