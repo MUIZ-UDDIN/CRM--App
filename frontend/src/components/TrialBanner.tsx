@@ -85,12 +85,22 @@ export default function TrialBanner() {
     return null;
   }
 
+  // ONLY show trial banner to Company Admin and Super Admin
+  // Regular users (sales_rep, regular_user, company_user) should NOT see trial messages
+  const isCompanyAdmin = userRole === 'company_admin' || 
+                         userRole === 'admin' || 
+                         userRole === 'Admin';
+  
+  const isSuperAdmin = userRole === 'super_admin' || 
+                       userEmail === 'admin@sunstonecrm.com';
+  
+  // Hide banner completely for regular users
+  if (!isCompanyAdmin && !isSuperAdmin) {
+    return null;
+  }
+
   // Check if user can see "View Plans" button
-  // ONLY show to company_admin or admin roles, but NOT if they're from super admin's company
-  const canViewPlans = (userRole === 'company_admin' || 
-                        userRole === 'admin' || 
-                        userRole === 'Admin') &&
-                       userEmail !== 'admin@sunstonecrm.com';
+  const canViewPlans = isCompanyAdmin && !isSuperAdmin;
 
   // Show different banners based on status
   const isTrialExpired = companyInfo.subscription_status === 'expired' || companyInfo.days_remaining <= 0;
