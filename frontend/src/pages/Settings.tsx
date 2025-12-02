@@ -158,9 +158,9 @@ export default function Settings() {
   const isRegularAdmin = user?.role === 'Admin' || user?.role === 'admin';
   const isAdmin = isSuperAdmin || isCompanyAdmin || isRegularAdmin;
   
-  // Default roles (Super Admin and Admin removed - these are system-level roles)
-  // Admin role (company_admin) should not be assignable through team member invitation
-  const defaultRoles = ['Sales Manager', 'Sales Rep', 'Regular User', 'Support'];
+  // Default roles - Only 2 roles as per scope: Company Admin and Regular User
+  // Super Admin is system-level and not assignable by Company Admins
+  const defaultRoles = ['Company Admin', 'Regular User'];
 
   useEffect(() => {
     // Load custom roles from localStorage
@@ -877,6 +877,16 @@ export default function Settings() {
       return;
     }
     
+    // CRITICAL: Prevent Company Admin from inviting new Company Admins
+    // Only Super Admin can assign Company Admin role
+    const inviteRole = teamMemberForm.role.toLowerCase();
+    const isInvitingCompanyAdmin = inviteRole === 'company_admin' || inviteRole === 'company admin';
+    
+    if (!isSuperAdmin && isInvitingCompanyAdmin) {
+      toast.error('Only Super Admin can invite Company Admins');
+      return;
+    }
+    
     try {
       const response = await fetch(`${API_BASE_URL}/api/team/members`, {
         method: 'POST',
@@ -1065,6 +1075,26 @@ export default function Settings() {
     if (/<[^>]+>/gi.test(teamMemberForm.first_name) || /<[^>]+>/gi.test(teamMemberForm.last_name)) {
       toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
       return;
+    }
+    
+    // CRITICAL: Prevent Company Admin from changing Company Admin roles (including their own)
+    // Only Super Admin can change Company Admin roles
+    const originalRole = (selectedMember.role || selectedMember.user_role || '').toLowerCase();
+    const newRole = teamMemberForm.role.toLowerCase();
+    const isTargetCompanyAdmin = originalRole === 'company_admin' || originalRole === 'company admin';
+    const isChangingToCompanyAdmin = newRole === 'company_admin' || newRole === 'company admin';
+    
+    if (!isSuperAdmin) {
+      // Company Admin cannot change any Company Admin's role (including their own)
+      if (isTargetCompanyAdmin && originalRole !== newRole) {
+        toast.error('Only Super Admin can change Company Admin roles');
+        return;
+      }
+      // Company Admin cannot promote anyone to Company Admin
+      if (isChangingToCompanyAdmin && !isTargetCompanyAdmin) {
+        toast.error('Only Super Admin can assign Company Admin role');
+        return;
+      }
     }
     
     try {
@@ -2862,28 +2892,36 @@ export default function Settings() {
                 </div>
                 <div className="relative">
                   <div className="relative">
-                    <input
-                      type="text"
-                      placeholder={!teamMemberForm.role ? "Search and select role..." : ""}
-                      value={roleSearchTerm || teamMemberForm.role || ''}
-                      onChange={(e) => {
-                        setRoleSearchTerm(e.target.value);
-                        setShowRoleDropdown(true);
-                      }}
-                      onFocus={(e) => {
-                        // Clear the input to show dropdown when focused
-                        if (!roleSearchTerm && teamMemberForm.role) {
-                          setRoleSearchTerm('');
-                        }
-                        setShowRoleDropdown(true);
-                      }}
-                      onBlur={() => setTimeout(() => {
-                        setShowRoleDropdown(false);
-                        setRoleSearchTerm(''); // Clear search term when closing
-                      }, 200)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                      required
-                    />
+                    {/* Check if editing a Company Admin - only Super Admin can change their role */}
+                    {!isSuperAdmin && selectedMember && (selectedMember.role?.toLowerCase() === 'company_admin' || selectedMember.role?.toLowerCase() === 'company admin' || selectedMember.user_role?.toLowerCase() === 'company_admin' || selectedMember.user_role?.toLowerCase() === 'company admin') ? (
+                      <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
+                        {teamMemberForm.role}
+                        <p className="text-xs text-gray-500 mt-1">Only Super Admin can change Company Admin roles</p>
+                      </div>
+                    ) : (
+                      <input
+                        type="text"
+                        placeholder={!teamMemberForm.role ? "Search and select role..." : ""}
+                        value={roleSearchTerm || teamMemberForm.role || ''}
+                        onChange={(e) => {
+                          setRoleSearchTerm(e.target.value);
+                          setShowRoleDropdown(true);
+                        }}
+                        onFocus={(e) => {
+                          // Clear the input to show dropdown when focused
+                          if (!roleSearchTerm && teamMemberForm.role) {
+                            setRoleSearchTerm('');
+                          }
+                          setShowRoleDropdown(true);
+                        }}
+                        onBlur={() => setTimeout(() => {
+                          setShowRoleDropdown(false);
+                          setRoleSearchTerm(''); // Clear search term when closing
+                        }, 200)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                        required
+                      />
+                    )}
                   </div>
                   {showRoleDropdown && (
                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
