@@ -515,12 +515,20 @@ def delete_company(
                 detail=f"Failed to delete notifications: {str(e)}"
             )
     
-    # Delete company-level notifications (notifications with company_id but no user_id)
+    # Delete company-level notifications (company_id -> companies.id) - CRITICAL
     try:
-        db.query(Notification).filter(Notification.company_id == company.id).delete(synchronize_session=False)
+        company_notif_count = db.query(Notification).filter(Notification.company_id == company.id).count()
+        if company_notif_count > 0:
+            deleted_company_notifs = db.query(Notification).filter(Notification.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_company_notifs} company notifications")
     except Exception as e:
-        print(f"Error deleting company notifications: {e}")
+        print(f"❌ CRITICAL ERROR deleting company notifications: {e}")
         db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete company notifications: {str(e)}"
+        )
     
     if user_ids:
         try:
