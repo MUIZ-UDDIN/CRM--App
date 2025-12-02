@@ -142,50 +142,51 @@ ROLE_PERMISSIONS = {
     ],
     
     UserRole.COMPANY_ADMIN: [
-        # Company Management
+        # Company Management (Admin + Sales Manager combined)
         Permission.EDIT_COMPANY, 
         Permission.VIEW_BILLING,
+        Permission.MANAGE_BILLING,  # Company admins can manage their own billing
         
-        # User Management
+        # User Management (Full company + team access)
         Permission.MANAGE_COMPANY_USERS, 
         Permission.MANAGE_TEAM_USERS,
         
-        # Data Access
+        # Data Access (Full company access)
         Permission.VIEW_COMPANY_DATA, 
         Permission.VIEW_TEAM_DATA, 
         Permission.VIEW_OWN_DATA,
         
-        # Analytics
+        # Analytics (Full company analytics)
         Permission.VIEW_COMPANY_ANALYTICS, 
         Permission.VIEW_TEAM_ANALYTICS, 
         Permission.VIEW_OWN_ANALYTICS,
         
-        # Lead/Deal Management
+        # Lead/Deal Management (Full company access)
         Permission.ASSIGN_COMPANY_LEADS, 
         Permission.ASSIGN_TEAM_LEADS,
         Permission.MANAGE_OWN_LEADS,
         
-        # Integrations
+        # Integrations (Full company access)
         Permission.MANAGE_COMPANY_INTEGRATIONS,
         Permission.MANAGE_TEAM_INTEGRATIONS,
         Permission.USE_INTEGRATIONS,
         
-        # Automations
+        # Automations (Full company access)
         Permission.MANAGE_COMPANY_AUTOMATIONS, 
         Permission.MANAGE_TEAM_AUTOMATIONS,
         Permission.USE_PERSONAL_AUTOMATIONS,
         
-        # CRM Customization
+        # CRM Customization (Full company access)
         Permission.CUSTOMIZE_COMPANY_CRM,
         Permission.VIEW_TEAM_CRM_SETTINGS,
         
-        # Data Export/Import
+        # Data Export/Import (Full company access)
         Permission.EXPORT_COMPANY_DATA, 
         Permission.EXPORT_TEAM_DATA,
         Permission.IMPORT_COMPANY_DATA,
         Permission.IMPORT_TEAM_DATA,
         
-        # Support and Notifications
+        # Support and Notifications (Full company access)
         Permission.MANAGE_COMPANY_SUPPORT,
         Permission.MANAGE_TEAM_SUPPORT,
         Permission.VIEW_USER_SUPPORT,
@@ -193,115 +194,53 @@ ROLE_PERMISSIONS = {
         Permission.VIEW_SUPPORT_TICKETS,
         Permission.MANAGE_SUPPORT_TICKETS,
         
-        # Notifications
+        # Notifications (Full company access)
         Permission.MANAGE_NOTIFICATIONS,
         Permission.VIEW_COMPANY_NOTIFICATIONS,
         Permission.VIEW_TEAM_NOTIFICATIONS,
         Permission.VIEW_OWN_NOTIFICATIONS
     ],
     
-    UserRole.SALES_MANAGER: [
-        # User Management
-        Permission.MANAGE_TEAM_USERS,
-        
-        # Data Access
-        Permission.VIEW_TEAM_DATA, 
+    UserRole.REGULAR_USER: [
+        # Data Access (Own data only - Sales Rep/Employee)
         Permission.VIEW_OWN_DATA,
         
-        # Analytics
-        Permission.VIEW_TEAM_ANALYTICS, 
+        # Analytics (Own analytics only)
         Permission.VIEW_OWN_ANALYTICS,
         
-        # Lead/Deal Management
-        Permission.ASSIGN_TEAM_LEADS,
+        # Lead/Deal Management (Own leads only)
         Permission.MANAGE_OWN_LEADS,
         
-        # Integrations
-        Permission.MANAGE_TEAM_INTEGRATIONS,
+        # Integrations (Can use integrations)
         Permission.USE_INTEGRATIONS,
         
-        # Automations
-        Permission.MANAGE_TEAM_AUTOMATIONS,
+        # Automations (Personal automations only)
         Permission.USE_PERSONAL_AUTOMATIONS,
         
-        # CRM Customization
-        Permission.VIEW_TEAM_CRM_SETTINGS,
-        
-        # Data Export/Import
-        Permission.EXPORT_TEAM_DATA,
-        Permission.IMPORT_TEAM_DATA,
-        
-        # Support and Notifications
-        Permission.MANAGE_TEAM_SUPPORT,
-        Permission.VIEW_USER_SUPPORT,
-        Permission.CREATE_SUPPORT_TICKETS,
-        Permission.VIEW_SUPPORT_TICKETS,
-        
-        # Notifications
-        Permission.VIEW_TEAM_NOTIFICATIONS,
-        Permission.VIEW_OWN_NOTIFICATIONS
-    ],
-    
-    UserRole.SALES_REP: [
-        # Data Access
-        Permission.VIEW_OWN_DATA,
-        
-        # Analytics
-        Permission.VIEW_OWN_ANALYTICS,
-        
-        # Lead/Deal Management
-        Permission.MANAGE_OWN_LEADS,
-        
-        # Integrations
-        Permission.USE_INTEGRATIONS,
-        
-        # Automations
-        Permission.USE_PERSONAL_AUTOMATIONS,
-        
-        # Support and Notifications
+        # Support and Notifications (Basic access)
         Permission.VIEW_USER_SUPPORT,
         Permission.CREATE_SUPPORT_TICKETS,
         
-        # Notifications
-        Permission.VIEW_OWN_NOTIFICATIONS
-    ],
-    
-    UserRole.COMPANY_USER: [
-        # Data Access
-        Permission.VIEW_OWN_DATA,
-        
-        # Analytics
-        Permission.VIEW_OWN_ANALYTICS,
-        
-        # Integrations
-        Permission.USE_INTEGRATIONS,
-        
-        # Support and Notifications
-        Permission.VIEW_USER_SUPPORT,
-        Permission.CREATE_SUPPORT_TICKETS,
-        
-        # Notifications
+        # Notifications (Own notifications only)
         Permission.VIEW_OWN_NOTIFICATIONS
     ]
 }
 
 
 def get_permissions_for_role(role: str) -> list:
-    """Get permissions for a specific role"""
+    """Get permissions for a specific role - Simplified to 3 roles"""
     if isinstance(role, str):
         role_lower = role.lower()
         role_lower = role_lower.replace(' ', '_')  # Handle spaces in role names
         
         if role_lower == "super_admin":
             return ROLE_PERMISSIONS[UserRole.SUPER_ADMIN]
-        elif role_lower in ["company_admin", "admin"]:
+        elif role_lower in ["company_admin", "admin", "sales_manager"]:
+            # Map old sales_manager to company_admin
             return ROLE_PERMISSIONS[UserRole.COMPANY_ADMIN]
-        elif role_lower == "sales_manager":
-            return ROLE_PERMISSIONS[UserRole.SALES_MANAGER]
-        elif role_lower in ["sales_rep", "regular_user"]:
-            return ROLE_PERMISSIONS[UserRole.SALES_REP]
-        elif role_lower == "company_user":
-            return ROLE_PERMISSIONS[UserRole.COMPANY_USER]
+        elif role_lower in ["regular_user", "sales_rep", "company_user", "user", "employee"]:
+            # Map all user types to regular_user
+            return ROLE_PERMISSIONS[UserRole.REGULAR_USER]
     
-    # Default to empty list if role not found
-    return ROLE_PERMISSIONS.get(role, [])
+    # Default to regular_user if role not found
+    return ROLE_PERMISSIONS.get(role, ROLE_PERMISSIONS[UserRole.REGULAR_USER])

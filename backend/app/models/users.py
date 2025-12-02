@@ -10,12 +10,10 @@ from .base import BaseModel
 
 
 class UserRole(str, enum.Enum):
-    """User role types for RBAC"""
-    SUPER_ADMIN = "super_admin"
-    COMPANY_ADMIN = "company_admin"
-    COMPANY_USER = "company_user"
-    SALES_MANAGER = "sales_manager"
-    SALES_REP = "sales_rep"
+    """User role types for RBAC - Simplified to 3 roles"""
+    SUPER_ADMIN = "super_admin"  # SaaS Owner - Full platform access
+    COMPANY_ADMIN = "company_admin"  # Company Admin/Sales Manager - Full company access
+    REGULAR_USER = "regular_user"  # Sales Rep/Company User/Employee - Own data access
 
 
 class UserStatus(str, enum.Enum):
