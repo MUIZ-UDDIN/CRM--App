@@ -55,19 +55,17 @@ export function useActivityTracker() {
           try {
             // Validate token with backend (this will extend session if valid)
             await apiService.getCurrentUser();
-            console.log('✅ Session extended due to user activity');
+            // Session extended silently
           } catch (error) {
             // Token is invalid, logout will be handled by API interceptor
-            console.log('⚠️ Session validation failed');
           }
         }
 
         // Warn user if session is about to expire and they haven't been warned
         if (timeUntilExpiry < SESSION_WARNING_TIME && timeUntilExpiry > 0 && !hasWarnedRef.current) {
           hasWarnedRef.current = true;
-          const minutesLeft = Math.floor(timeUntilExpiry / 60000);
-          console.log(`⚠️ Session will expire in ${minutesLeft} minutes`);
           // You can show a toast notification here if desired
+          // const minutesLeft = Math.floor(timeUntilExpiry / 60000);
           // toast.warning(`Your session will expire in ${minutesLeft} minutes. Click anywhere to extend.`);
         }
       } catch (error) {
