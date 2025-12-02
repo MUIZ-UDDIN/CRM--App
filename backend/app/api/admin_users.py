@@ -210,12 +210,7 @@ def create_company_user(
             detail=f"Invalid role: {user_data.role}"
         )
     
-    # Validate team requirement for Sales Manager
-    if role == UserRole.SALES_MANAGER and not user_data.team_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Sales Manager must be assigned to a team"
-        )
+    # Team assignment is optional for all roles now
     
     # If team_id provided, verify it exists and belongs to this company
     if user_data.team_id:
@@ -525,12 +520,7 @@ def update_user_role(
                 detail=f"This company already has a Company Admin ({admin_name}). Please change their role first or contact support."
             )
     
-    # Check if changing to Sales Manager and ensure they have a team
-    if new_role == UserRole.SALES_MANAGER and not user_to_update.team_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot assign Sales Manager role. User must be assigned to a team first. Please assign them to a team and try again."
-        )
+    # Team assignment is optional for all roles
     
     # Store old role for notification
     old_role = user_to_update.user_role.value if user_to_update.user_role else "unknown"

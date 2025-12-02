@@ -121,17 +121,13 @@ class User(BaseModel):
         """Check if user can manage company settings"""
         return self.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN]
     
-    def is_sales_manager(self) -> bool:
-        """Check if user is a sales manager"""
-        return self.user_role == UserRole.SALES_MANAGER
-    
-    def is_sales_rep(self) -> bool:
-        """Check if user is a sales rep"""
-        return self.user_role == UserRole.SALES_REP
+    def is_regular_user(self) -> bool:
+        """Check if user is a regular user (sales rep/employee)"""
+        return self.user_role == UserRole.REGULAR_USER
     
     def can_manage_team(self) -> bool:
-        """Check if user can manage team"""
-        return self.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN, UserRole.SALES_MANAGER]
+        """Check if user can manage team - only admins"""
+        return self.user_role in [UserRole.SUPER_ADMIN, UserRole.COMPANY_ADMIN]
     
     def __repr__(self):
         return f"<User {self.email}>"

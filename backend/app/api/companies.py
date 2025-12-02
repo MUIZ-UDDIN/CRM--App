@@ -107,7 +107,7 @@ class CompanyUserCreate(BaseModel):
     first_name: str
     last_name: str
     password: str
-    user_role: UserRole = UserRole.COMPANY_USER
+    user_role: UserRole = UserRole.REGULAR_USER
 
 
 # Super Admin endpoints
@@ -861,12 +861,12 @@ def add_company_user(
     # Company admin can manage their own company's users
     elif has_permission(current_user, Permission.MANAGE_COMPANY_USERS) and context.can_access_company(company_id):
         has_manage_permission = True
-    # Sales manager can only add users with sales_rep or company_user roles
+    # Company admins can add any role within their company
     elif has_permission(current_user, Permission.MANAGE_TEAM_USERS) and context.can_access_company(company_id):
-        if user_data.user_role not in [UserRole.SALES_REP, UserRole.COMPANY_USER]:
+        if user_data.user_role not in [UserRole.REGULAR_USER, UserRole.COMPANY_ADMIN]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Sales managers can only add sales reps or company users"
+                detail="You can only add regular users or company admins"
             )
         has_manage_permission = True
     
