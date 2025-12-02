@@ -649,8 +649,17 @@ async def update_deal(
             change_list = []
             for k, v in deal_data.items():
                 if k not in ['stage_id']:
-                    # Resolve contact_id to contact name
-                    if k == 'contact_id' and v:
+                    # Resolve contact (UUID) to contact name
+                    if k == 'contact' and v:
+                        try:
+                            contact_id = uuid.UUID(v) if isinstance(v, str) else v
+                            contact = db.query(Contact).filter(Contact.id == contact_id).first()
+                            if contact:
+                                v = f"{contact.first_name} {contact.last_name}"
+                        except:
+                            pass
+                    # Resolve contact_id to contact name (alternative key)
+                    elif k == 'contact_id' and v:
                         try:
                             contact = db.query(Contact).filter(Contact.id == v).first()
                             if contact:
@@ -663,6 +672,15 @@ async def update_deal(
                             owner = db.query(User).filter(User.id == v).first()
                             if owner:
                                 v = f"{owner.first_name} {owner.last_name}"
+                        except:
+                            pass
+                    # Resolve company to company name
+                    elif k == 'company' and v:
+                        try:
+                            from ..models.companies import Company
+                            company_obj = db.query(Company).filter(Company.id == uuid.UUID(v) if isinstance(v, str) else v).first()
+                            if company_obj:
+                                v = company_obj.name
                         except:
                             pass
                     change_list.append(f"{k}: {v}")
