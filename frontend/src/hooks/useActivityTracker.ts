@@ -16,7 +16,7 @@ const SESSION_EXTEND_THRESHOLD = 30 * 60 * 1000; // Extend if less than 30 min r
 export function useActivityTracker() {
   const { isAuthenticated, logout } = useAuth();
   const lastActivityRef = useRef<number>(Date.now());
-  const activityCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const activityCheckIntervalRef = useRef<number | null>(null);
   const hasWarnedRef = useRef<boolean>(false);
 
   useEffect(() => {
