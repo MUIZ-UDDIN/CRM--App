@@ -92,7 +92,7 @@ function CompanyAdminDashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <div 
-          onClick={() => navigate('/settings?tab=team')}
+          onClick={() => navigate('/settings?tab=team_members')}
           className="bg-white rounded-lg shadow overflow-hidden cursor-pointer hover:shadow-xl transition-all duration-200 hover:scale-105 transform"
         >
           <div className="p-6">
