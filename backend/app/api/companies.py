@@ -871,44 +871,8 @@ def delete_company(
         print(f"Error deleting pipelines: {e}")
         db.rollback()
     
-    # CRITICAL: Delete teams BEFORE users (teams.team_lead_id -> users.id)
-    try:
-        from app.models.users import Team
-        team_count = db.query(Team).filter(Team.company_id == company.id).count()
-        if team_count > 0:
-            deleted_teams = db.query(Team).filter(Team.company_id == company.id).delete(synchronize_session=False)
-            db.commit()
-            print(f"✅ Successfully deleted {deleted_teams} teams")
-    except Exception as e:
-        print(f"❌ CRITICAL ERROR deleting teams: {e}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete teams: {str(e)}"
-        )
-    
-    # CRITICAL: NULL out users.manager_id BEFORE deleting users (self-referencing FK)
-    try:
-        manager_count = db.query(User).filter(
-            User.company_id == company.id,
-            User.manager_id.isnot(None)
-        ).count()
-        if manager_count > 0:
-            db.query(User).filter(User.company_id == company.id).update(
-                {User.manager_id: None},
-                synchronize_session=False
-            )
-            db.commit()
-            print(f"✅ Successfully nulled manager_id for {manager_count} users")
-    except Exception as e:
-        print(f"❌ CRITICAL ERROR nulling manager_id: {e}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to null manager_id: {str(e)}"
-        )
-    
-    # CRITICAL: NULL out users.team_id BEFORE deleting users (users.team_id -> teams.id)
+    # CRITICAL STEP 1: NULL out users.team_id FIRST (users.team_id -> teams.id)
+    # Must happen BEFORE deleting teams because users reference teams!
     try:
         team_member_count = db.query(User).filter(
             User.company_id == company.id,
@@ -927,6 +891,43 @@ def delete_company(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to null team_id: {str(e)}"
+        )
+    
+    # CRITICAL STEP 2: NOW delete teams (after users.team_id is nulled)
+    try:
+        from app.models.users import Team
+        team_count = db.query(Team).filter(Team.company_id == company.id).count()
+        if team_count > 0:
+            deleted_teams = db.query(Team).filter(Team.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_teams} teams")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR deleting teams: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete teams: {str(e)}"
+        )
+    
+    # CRITICAL STEP 3: NULL out users.manager_id (self-referencing FK)
+    try:
+        manager_count = db.query(User).filter(
+            User.company_id == company.id,
+            User.manager_id.isnot(None)
+        ).count()
+        if manager_count > 0:
+            db.query(User).filter(User.company_id == company.id).update(
+                {User.manager_id: None},
+                synchronize_session=False
+            )
+            db.commit()
+            print(f"✅ Successfully nulled manager_id for {manager_count} users")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR nulling manager_id: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to null manager_id: {str(e)}"
         )
     
     # Delete all users in the company
