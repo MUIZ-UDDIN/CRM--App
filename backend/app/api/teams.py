@@ -10,7 +10,7 @@ from pydantic import BaseModel, UUID4
 from app.core.database import get_db
 from app.core.security import get_current_user, get_current_active_user
 from app.models import User, Team, Company
-from app.middleware.tenant import require_company_admin, require_sales_manager, validate_team_access
+from app.middleware.tenant import require_company_admin, require_admin, validate_team_access
 from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
 
@@ -293,11 +293,9 @@ async def set_team_lead(
             detail="User must be a member of the team"
         )
     
-    # Set user as team lead and update role to sales_manager
-    # BUT: Don't change role if user is super_admin or company_admin
+    # Set user as team lead
+    # Note: Team leads are now company_admins, no role change needed
     team.team_lead_id = user_id
-    if user.user_role not in ["super_admin", "company_admin"]:
-        user.user_role = "sales_manager"
     
     db.commit()
     db.refresh(team)
@@ -423,10 +421,10 @@ async def add_team_member(
         # Regular users: Use team_id field (single team)
         user.team_id = team_id
         
-        # If not already a sales_manager, set as sales_rep
+        # Set as regular_user if not already admin
         # IMPORTANT: Never change super_admin or company_admin roles
-        if user.user_role not in ["super_admin", "company_admin", "sales_manager"]:
-            user.user_role = "sales_rep"
+        if user.user_role not in ["super_admin", "company_admin"]:
+            user.user_role = "regular_user"
     
     db.commit()
     
@@ -503,9 +501,8 @@ async def remove_team_member(
         # Regular user: Clear team_id field
         user.team_id = None
         
-        # If user was a sales_rep, reset to company_user
-        if user.user_role == "sales_rep":
-            user.user_role = "company_user"
+        # Keep as regular_user (no role change needed)
+        # User remains regular_user whether in team or not
     
     db.commit()
     

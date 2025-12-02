@@ -179,12 +179,15 @@ async def add_team_member(
         # Map role to user_role (lowercase with underscores)
         role_mapping = {
             'Admin': 'company_admin',
-            'Sales Manager': 'sales_manager',
-            'Sales Rep': 'sales_rep',
-            'Regular User': 'company_user',
-            'Support': 'support'
+            'Company Admin': 'company_admin',
+            'Sales Manager': 'company_admin',  # Merged into company_admin
+            'Sales Rep': 'regular_user',  # New unified role
+            'Regular User': 'regular_user',  # New unified role
+            'Company User': 'regular_user',  # New unified role
+            'User': 'regular_user',  # New unified role
+            'Employee': 'regular_user'  # New unified role
         }
-        user_role = role_mapping.get(request.role, 'company_user')
+        user_role = role_mapping.get(request.role, 'regular_user')
         
         new_user = User(
             email=request.email.lower(),

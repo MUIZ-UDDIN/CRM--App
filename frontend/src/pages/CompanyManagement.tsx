@@ -63,7 +63,7 @@ const CompanyManagement: React.FC = () => {
     first_name: '',
     last_name: '',
     email: '',
-    role: 'sales_rep',
+    role: 'regular_user',
     team_id: '',
   });
 
@@ -156,12 +156,6 @@ const CompanyManagement: React.FC = () => {
       return;
     }
 
-    // Validate team requirement for Sales Manager
-    if (newUser.role === 'sales_manager' && !newUser.team_id) {
-      toast.error('Sales Manager must be assigned to a team');
-      return;
-    }
-
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`${API_URL}/admin/companies/${companyId}/users`, {
@@ -184,7 +178,7 @@ const CompanyManagement: React.FC = () => {
           first_name: '',
           last_name: '',
           email: '',
-          role: 'sales_rep',
+          role: 'regular_user',
           team_id: '',
         });
         fetchUsers();
@@ -252,7 +246,7 @@ const CompanyManagement: React.FC = () => {
 
   // Normalize role to lowercase with underscores
   const normalizeRole = (role: string): string => {
-    if (!role) return 'sales_rep';
+    if (!role) return 'regular_user';
     // Handle both enum values and display names
     const cleaned = role.toLowerCase().trim().replace(/\s+/g, '_');
     return cleaned;
@@ -268,17 +262,18 @@ const CompanyManagement: React.FC = () => {
     const roleMap: { [key: string]: string } = {
       'company_admin': 'Company Admin',
       'companyadmin': 'Company Admin',
-      'sales_manager': 'Sales Manager',
-      'salesmanager': 'Sales Manager',
-      'sales_rep': 'Sales Rep',
-      'salesrep': 'Sales Rep',
+      'sales_manager': 'Company Admin',  // Legacy - now company_admin
+      'salesmanager': 'Company Admin',
       'super_admin': 'Super Admin',
       'superadmin': 'Super Admin',
-      'company_user': 'Company User',
-      'companyuser': 'Company User',
-      'user': 'Sales Rep',
-      'regular_user': 'Sales Rep',
-      'regularuser': 'Sales Rep',
+      'regular_user': 'Regular User',
+      'regularuser': 'Regular User',
+      'sales_rep': 'Regular User',  // Legacy - now regular_user
+      'salesrep': 'Regular User',
+      'company_user': 'Regular User',  // Legacy - now regular_user
+      'companyuser': 'Regular User',
+      'user': 'Regular User',
+      'employee': 'Regular User',
     };
     
     const displayName = roleMap[normalized] || role.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -291,10 +286,10 @@ const CompanyManagement: React.FC = () => {
       case 'company_admin':
       case 'super_admin':
         return <ShieldCheckIcon className="w-5 h-5 text-purple-600" />;
-      case 'sales_manager':
-        return <UserGroupIcon className="w-5 h-5 text-blue-600" />;
-      case 'sales_rep':
-      case 'company_user':
+      case 'regular_user':
+      case 'sales_rep':  // Legacy
+      case 'sales_manager':  // Legacy
+      case 'company_user':  // Legacy
         return <UserIcon className="w-5 h-5 text-green-600" />;
       default:
         return <UserIcon className="w-5 h-5 text-gray-600" />;
@@ -307,10 +302,10 @@ const CompanyManagement: React.FC = () => {
       case 'company_admin':
       case 'super_admin':
         return 'bg-purple-100 text-purple-800';
-      case 'sales_manager':
-        return 'bg-blue-100 text-blue-800';
-      case 'sales_rep':
-      case 'company_user':
+      case 'regular_user':
+      case 'sales_rep':  // Legacy
+      case 'sales_manager':  // Legacy
+      case 'company_user':  // Legacy
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -646,32 +641,12 @@ const CompanyManagement: React.FC = () => {
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   required
                 >
-                  <option value="sales_rep">Sales Rep</option>
-                  <option value="sales_manager">Sales Manager</option>
+                  <option value="regular_user">Regular User</option>
                   <option value="company_admin">Company Admin</option>
                 </select>
               </div>
               
-              {newUser.role === 'sales_manager' && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Team * (Required for Sales Manager)
-                  </label>
-                  <select
-                    value={newUser.team_id}
-                    onChange={(e) => setNewUser({ ...newUser, team_id: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    required
-                  >
-                    <option value="">Select a team</option>
-                    {teams.map((team) => (
-                      <option key={team.id} value={team.id}>
-                        {team.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
+              {/* Team assignment removed - company admins manage all company data, regular users manage own data */}
               
               <div className="flex gap-3 pt-4">
                 <button
@@ -729,8 +704,7 @@ const CompanyManagement: React.FC = () => {
                 <div className="space-y-2">
                   {[
                     { value: 'company_admin', label: 'Company Admin', icon: ShieldCheckIcon, color: 'purple' },
-                    { value: 'sales_manager', label: 'Sales Manager', icon: UserGroupIcon, color: 'blue' },
-                    { value: 'sales_rep', label: 'Sales Rep', icon: UserIcon, color: 'green' },
+                    { value: 'regular_user', label: 'Regular User', icon: UserIcon, color: 'green' },
                   ]
                     .filter(role => normalizeRole(selectedUserForRoleChange.role) !== role.value)
                     .map((role) => {
@@ -749,9 +723,8 @@ const CompanyManagement: React.FC = () => {
                           <div>
                             <div className="font-medium text-gray-900">{role.label}</div>
                             <div className="text-xs text-gray-500">
-                              {role.value === 'company_admin' && 'Full access to company data'}
-                              {role.value === 'sales_manager' && 'Manage team members and deals'}
-                              {role.value === 'sales_rep' && 'Access to own deals and contacts'}
+                              {role.value === 'company_admin' && 'Full access to company data and team management'}
+                              {role.value === 'regular_user' && 'Access to own deals and contacts'}
                             </div>
                           </div>
                         </button>

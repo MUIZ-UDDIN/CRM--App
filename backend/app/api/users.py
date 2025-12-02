@@ -448,11 +448,12 @@ async def update_user(
         role_mapping = {
             'Admin': 'company_admin',
             'Company Admin': 'company_admin',
-            'Sales Manager': 'sales_manager',
-            'Sales Rep': 'sales_rep',
-            'Regular User': 'company_user',
-            'Support': 'support',
-            'User': 'company_user'
+            'Sales Manager': 'company_admin',  # Merged into company_admin
+            'Sales Rep': 'regular_user',  # New unified role
+            'Regular User': 'regular_user',  # New unified role
+            'Company User': 'regular_user',  # New unified role
+            'User': 'regular_user',  # New unified role
+            'Employee': 'regular_user'  # New unified role
         }
         
         # Get normalized role (or use as-is if already normalized)
