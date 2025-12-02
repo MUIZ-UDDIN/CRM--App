@@ -472,10 +472,8 @@ def delete_company(
         except Exception:
             db.rollback()
         
-        try:
-            db.query(Workflow).filter(Workflow.created_by.in_(user_ids)).delete(synchronize_session=False)
-        except Exception:
-            db.rollback()
+        # NOTE: Workflows use owner_id, not created_by - this is handled later at line ~580
+        # Don't delete workflows here to avoid duplicate deletion attempts
         
         # Delete files by owner_id
         try:
@@ -575,14 +573,24 @@ def delete_company(
     # Use the user_ids we already got at the beginning (line 436)
     # Delete all tables with foreign keys to users (MUST be before deleting users)
     if user_ids:
-        # Delete workflows (owner_id -> users.id)
+        # Delete workflows (owner_id -> users.id) - CRITICAL: Must happen before user deletion
         try:
             from app.models.workflows import Workflow
-            deleted_workflows = db.query(Workflow).filter(Workflow.owner_id.in_(user_ids)).delete(synchronize_session=False)
-            print(f"Deleted {deleted_workflows} workflows")
+            # First check how many workflows exist
+            workflow_count = db.query(Workflow).filter(Workflow.owner_id.in_(user_ids)).count()
+            print(f"Found {workflow_count} workflows to delete for company {company.id}")
+            
+            if workflow_count > 0:
+                deleted_workflows = db.query(Workflow).filter(Workflow.owner_id.in_(user_ids)).delete(synchronize_session=False)
+                db.commit()  # Commit immediately to ensure deletion
+                print(f"✅ Successfully deleted {deleted_workflows} workflows")
         except Exception as e:
-            print(f"Error deleting workflows: {e}")
+            print(f"❌ CRITICAL ERROR deleting workflows: {e}")
             db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to delete workflows: {str(e)}"
+            )
         
         # Delete workflow templates (created_by_id -> users.id)
         try:
