@@ -83,6 +83,15 @@ const processQueue = (error: any, token: string | null = null) => {
 // Track if we've already logged out to prevent multiple redirects
 let hasLoggedOut = false;
 
+// Reset logout flag when user navigates to login page
+if (typeof window !== 'undefined') {
+  window.addEventListener('load', () => {
+    if (window.location.pathname === '/auth/login') {
+      hasLoggedOut = false;
+    }
+  });
+}
+
 // Handle 401 errors with silent logout
 apiClient.interceptors.response.use(
   (response) => response,

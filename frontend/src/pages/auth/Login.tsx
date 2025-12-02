@@ -18,6 +18,29 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
   
+  // Safety check: On mount, ensure login page is in clean state
+  useEffect(() => {
+    // Clear any error state from previous attempts
+    clearError();
+    
+    // If there's no token, ensure user data is also cleared
+    const token = localStorage.getItem('token');
+    if (!token) {
+      localStorage.removeItem('user');
+    }
+  }, []);
+  
+  // Safety check: If user is on login page, ensure auth state is clean
+  useEffect(() => {
+    // If there's no token but isAuthenticated is true, clear the state
+    const token = localStorage.getItem('token');
+    if (!token && isAuthenticated) {
+      localStorage.removeItem('user');
+      // Force page reload to reset auth state
+      window.location.reload();
+    }
+  }, [isAuthenticated]);
+  
   // Load saved credentials on component mount
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');

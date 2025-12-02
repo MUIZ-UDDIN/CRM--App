@@ -152,14 +152,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
               type: 'AUTH_SUCCESS',
               payload: { user: validatedUser, token },
             });
-          } catch (apiError) {
+          } catch (apiError: any) {
             if (import.meta.env.DEV) {
               console.error('API user validation failed:', apiError);
             }
-            // API failed, force logout
+            // API failed, clear auth state and ensure loading is false
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             dispatch({ type: 'LOGOUT' });
+            dispatch({ type: 'SET_LOADING', payload: false });
           }
         } catch (error) {
           if (import.meta.env.DEV) {
@@ -168,6 +169,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           localStorage.removeItem('token');
           localStorage.removeItem('user');
           dispatch({ type: 'LOGOUT' });
+          dispatch({ type: 'SET_LOADING', payload: false });
         }
       } else {
         dispatch({ type: 'SET_LOADING', payload: false });
@@ -291,8 +293,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const logout = () => {
+    // Clear all auth-related data
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    
+    // Dispatch logout action
     dispatch({ type: 'LOGOUT' });
+    
+    // Force redirect to login page
+    window.location.href = '/auth/login';
   };
 
   const clearError = () => {
