@@ -789,6 +789,48 @@ def delete_company(
             detail=f"Failed to delete teams: {str(e)}"
         )
     
+    # CRITICAL: NULL out users.manager_id BEFORE deleting users (self-referencing FK)
+    try:
+        manager_count = db.query(User).filter(
+            User.company_id == company.id,
+            User.manager_id.isnot(None)
+        ).count()
+        if manager_count > 0:
+            db.query(User).filter(User.company_id == company.id).update(
+                {User.manager_id: None},
+                synchronize_session=False
+            )
+            db.commit()
+            print(f"✅ Successfully nulled manager_id for {manager_count} users")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR nulling manager_id: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to null manager_id: {str(e)}"
+        )
+    
+    # CRITICAL: NULL out users.team_id BEFORE deleting users (users.team_id -> teams.id)
+    try:
+        team_member_count = db.query(User).filter(
+            User.company_id == company.id,
+            User.team_id.isnot(None)
+        ).count()
+        if team_member_count > 0:
+            db.query(User).filter(User.company_id == company.id).update(
+                {User.team_id: None},
+                synchronize_session=False
+            )
+            db.commit()
+            print(f"✅ Successfully nulled team_id for {team_member_count} users")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR nulling team_id: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to null team_id: {str(e)}"
+        )
+    
     # Delete all users in the company
     try:
         user_count = db.query(User).filter(User.company_id == company.id).count()
