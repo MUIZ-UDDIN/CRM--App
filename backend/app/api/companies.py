@@ -773,11 +773,31 @@ def delete_company(
         print(f"Error deleting pipelines: {e}")
         db.rollback()
     
+    # CRITICAL: Delete teams BEFORE users (teams.team_lead_id -> users.id)
+    try:
+        from app.models.users import Team
+        team_count = db.query(Team).filter(Team.company_id == company.id).count()
+        if team_count > 0:
+            deleted_teams = db.query(Team).filter(Team.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_teams} teams")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR deleting teams: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete teams: {str(e)}"
+        )
+    
     # Delete all users in the company
     try:
-        db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
+        user_count = db.query(User).filter(User.company_id == company.id).count()
+        if user_count > 0:
+            deleted_users = db.query(User).filter(User.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_users} users")
     except Exception as e:
-        print(f"Error deleting users: {e}")
+        print(f"❌ CRITICAL ERROR deleting users: {e}")
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
