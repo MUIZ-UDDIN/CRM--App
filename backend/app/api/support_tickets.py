@@ -38,11 +38,11 @@ def validate_no_html(text: str, field_name: str) -> None:
     """Validate that input doesn't contain HTML/script tags"""
     if not text:
         return
-    # Check for HTML tags
-    if re.search(r'<[^>]+>', text):
+    # Check for HTML tags (must have < followed by letters/slash and >)
+    if re.search(r'<\s*[a-zA-Z/][^>]*>', text):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"{field_name} cannot contain HTML or script tags. Please use plain text only."
+            detail="HTML tags and scripts are not allowed. Please enter plain text only."
         )
 
 
@@ -113,10 +113,13 @@ async def create_ticket(
         # Validate input for HTML/script tags
         validate_no_html(ticket.subject, "Subject")
         validate_no_html(ticket.description, "Description")
+        if ticket.category:
+            validate_no_html(ticket.category, "Category")
         
         # Sanitize input (additional safety layer)
         sanitized_subject = sanitize_input(ticket.subject)
         sanitized_description = sanitize_input(ticket.description)
+        sanitized_category = sanitize_input(ticket.category) if ticket.category else None
         
         # Map priority string to enum (case-insensitive)
         priority_map = {
@@ -132,7 +135,7 @@ async def create_ticket(
             description=sanitized_description,
             status=TicketStatus.OPEN,
             priority=priority_map.get(ticket.priority.lower(), TicketPriority.MEDIUM),
-            category=ticket.category,
+            category=sanitized_category,
             created_by_id=uuid.UUID(user_id),
             company_id=uuid.UUID(company_id),
             created_at=datetime.utcnow(),
