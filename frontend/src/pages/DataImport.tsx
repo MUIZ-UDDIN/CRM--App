@@ -138,7 +138,7 @@ export default function DataImport() {
   const downloadTemplate = (type: EntityType) => {
     const templates: Record<EntityType, string> = {
       contacts: 'first_name,last_name,email,phone,company,title,type\nJohn,Doe,john.doe@example.com,+1234567890,Acme Corp,Sales Manager,Lead\nJane,Smith,jane.smith@example.com,+1987654321,Tech Solutions,Marketing Director,Prospect\nMichael,Johnson,michael.j@example.com,+1555123456,Global Industries,CEO,Customer\nSarah,Williams,sarah.w@example.com,+1444987654,Innovation Labs,Product Manager,Marketing Qualified Lead\n',
-      deals: 'title,value,company,contact,expected_close_date,status\nNew Enterprise Deal,50000,Acme Corp,john.doe@example.com,2024-12-31,open\nConsulting Project,25000,Tech Solutions,jane.smith@example.com,2024-12-25,open\nProduct Integration,75000,Global Industries,michael.j@example.com,2025-01-15,open\n',
+      deals: 'title,value,company,contact,stage,expected_close_date,status\nNew Enterprise Deal,50000,Acme Corp,john.doe@example.com,Qualification,2024-12-31,open\nConsulting Project,25000,Tech Solutions,jane.smith@example.com,Proposal,2024-12-25,open\nProduct Integration,75000,Global Industries,michael.j@example.com,Negotiation,2025-01-15,open\nClosed Deal,100000,Innovation Labs,sarah.w@example.com,Closed Won,2024-12-20,won\n',
       activities: 'type,subject,description,status,due_date,duration_minutes,priority\ncall,Follow-up Call,Call to discuss proposal details,pending,2024-12-15,30,1\nmeeting,Product Demo,Schedule product demonstration,pending,2024-12-20,60,1\ntask,Send Proposal,Prepare and send proposal document,pending,2024-12-18,45,2\nemail,Contract Review,Review and send contract for signature,pending,2024-12-22,15,1\n'
     };
 

@@ -323,12 +323,12 @@ async def process_import_job(
                     "errors": errors
                 }
             
-            # Get first stage of the pipeline
-            first_stage = db.query(PipelineStage).filter(
+            # Get all stages of the pipeline for lookup
+            all_stages = db.query(PipelineStage).filter(
                 PipelineStage.pipeline_id == default_pipeline.id
-            ).order_by(PipelineStage.order_index).first()
+            ).order_by(PipelineStage.order_index).all()
             
-            if not first_stage:
+            if not all_stages:
                 errors.append("No stages found in pipeline. Please create pipeline stages first.")
                 return {
                     "total_rows": len(df),
@@ -336,6 +336,10 @@ async def process_import_job(
                     "error_rows": len(df),
                     "errors": errors
                 }
+            
+            # Create stage name to ID mapping (case-insensitive)
+            stage_map = {stage.name.lower(): stage for stage in all_stages}
+            default_stage = all_stages[0]  # First stage as default
             
             for index, row in df.iterrows():
                 try:
@@ -359,6 +363,16 @@ async def process_import_job(
                     except ValueError:
                         deal_status = DealStatus.OPEN
                     
+                    # Find stage by name from CSV, or use default
+                    stage_to_use = default_stage
+                    if 'stage' in row and pd.notna(row.get('stage')):
+                        stage_name = str(row.get('stage', '')).strip().lower()
+                        if stage_name in stage_map:
+                            stage_to_use = stage_map[stage_name]
+                        else:
+                            # Stage name not found, use default but add warning
+                            errors.append(f"Row {index + 1}: Stage '{row.get('stage')}' not found, using default stage '{default_stage.name}'")
+                    
                     # Create deal
                     deal_data = {
                         'title': title,
@@ -367,7 +381,7 @@ async def process_import_job(
                         'expected_close_date': pd.to_datetime(row.get('expected_close_date')) if pd.notna(row.get('expected_close_date')) else None,
                         'status': deal_status,
                         'pipeline_id': default_pipeline.id,
-                        'stage_id': first_stage.id,
+                        'stage_id': stage_to_use.id,
                         'owner_id': uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
                         'company_id': target_company_uuid,
                         'created_at': datetime.utcnow(),
