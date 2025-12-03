@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   ArrowUpTrayIcon,
   DocumentArrowUpIcon,
@@ -32,9 +32,34 @@ export default function DataImport() {
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState<string>('');
+  const [loadingCompanies, setLoadingCompanies] = useState(false);
   
   // Check if user can import data
   const canImportData = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
+  
+  // Fetch companies for Super Admin
+  useEffect(() => {
+    if (isSuperAdmin()) {
+      fetchCompanies();
+    }
+  }, []);
+  
+  const fetchCompanies = async () => {
+    setLoadingCompanies(true);
+    try {
+      const response = await apiClient.get('/companies/');
+      setCompanies(response.data);
+      if (response.data.length > 0) {
+        setSelectedCompany(response.data[0].id);
+      }
+    } catch (error: any) {
+      handleApiError(error, { toastMessage: 'Failed to load companies' });
+    } finally {
+      setLoadingCompanies(false);
+    }
+  };
 
   const entityTypes = [
     { value: 'contacts', label: 'Contacts & Leads', description: 'Import contacts and leads' },
@@ -65,11 +90,22 @@ export default function DataImport() {
       toast.error('Please select a file');
       return;
     }
+    
+    // Super Admin must select a company
+    if (isSuperAdmin() && !selectedCompany) {
+      toast.error('Please select a company to import data for');
+      return;
+    }
 
     setUploading(true);
     const formData = new FormData();
     formData.append('file', file);
     formData.append('entity_type', selectedType);
+    
+    // Add company_id for Super Admin
+    if (isSuperAdmin() && selectedCompany) {
+      formData.append('company_id', selectedCompany);
+    }
 
     try {
       const response = await apiClient.post('/import/', formData, {
@@ -153,6 +189,35 @@ export default function DataImport() {
 
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
 
+      {/* Company Selection - Super Admin Only */}
+      {isSuperAdmin() && (
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Company</h2>
+          <p className="text-sm text-gray-600 mb-4">
+            As Super Admin, you can import data for any company. Select the target company below.
+          </p>
+          {loadingCompanies ? (
+            <div className="flex items-center gap-2 text-gray-600">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600"></div>
+              Loading companies...
+            </div>
+          ) : (
+            <select
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            >
+              <option value="">Select a company</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name} {company.subscription_status && `(${company.subscription_status})`}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
+
       {/* Instructions */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
         <div className="flex gap-3">
@@ -160,6 +225,7 @@ export default function DataImport() {
           <div className="text-sm text-blue-900">
             <p className="font-medium mb-2">How to import data:</p>
             <ol className="list-decimal list-inside space-y-1 mb-3">
+              {isSuperAdmin() && <li>Select the target company</li>}
               <li>Download the template for your data type</li>
               <li>Fill in your data following the template format</li>
               <li>Upload the completed file (CSV or Excel)</li>
