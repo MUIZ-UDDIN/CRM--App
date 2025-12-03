@@ -72,7 +72,7 @@ export default function DataImport() {
     formData.append('entity_type', selectedType);
 
     try {
-      const response = await apiClient.post('/api/import/', formData, {
+      const response = await apiClient.post('/import/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
