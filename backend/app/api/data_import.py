@@ -39,20 +39,28 @@ class ImportJobResponse(BaseModel):
 async def create_import_job(
     entity_type: str = Form(...),
     file: UploadFile = File(...),
-    background_tasks: BackgroundTasks = BackgroundTasks(),
+    company_id: Optional[str] = Form(None),  # For Super Admin to specify target company
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Create a new data import job"""
     context = get_tenant_context(current_user)
-    company_id = current_user.get('company_id')
+    
+    # Determine target company_id
+    target_company_id = company_id if company_id and context.is_super_admin() else current_user.get('company_id')
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
+    
+    if not target_company_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Company ID is required"
+        )
     
     # Check permissions based on entity type
     if entity_type == "contacts" or entity_type == "deals" or entity_type == "activities":
         if context.is_super_admin():
-            # Super admin can import any data
+            # Super admin can import any data for any company
             pass
         elif has_permission(current_user, Permission.IMPORT_COMPANY_DATA):
             # Company admin can import company data
@@ -85,27 +93,30 @@ async def create_import_job(
     # Create import job
     job_id = str(uuid.uuid4())
     
-    # Process import in background
-    background_tasks.add_task(
-        process_import_job,
+    # Process import synchronously to return results immediately
+    result = await process_import_job(
         job_id=job_id,
         entity_type=entity_type,
         file_content=contents,
         file_extension=file_extension,
         user_id=user_id,
-        company_id=company_id,
+        company_id=target_company_id,
         team_id=user_team_id,
         is_super_admin=context.is_super_admin(),
         db=db
     )
     
-    # Return job details
+    # Return job details with results
     return ImportJobResponse(
         job_id=job_id,
         entity_type=entity_type,
         file_name=file.filename,
-        status="processing",
-        created_at=datetime.utcnow()
+        status="completed" if result["error_rows"] == 0 else "completed_with_errors",
+        created_at=datetime.utcnow(),
+        total_rows=result.get("total_rows", 0),
+        processed_rows=result.get("processed_rows", 0),
+        error_rows=result.get("error_rows", 0),
+        errors=result.get("errors", [])
     )
 
 
@@ -215,15 +226,165 @@ async def process_import_job(
     db: Session
 ):
     """Process import job in background"""
-    # In a real implementation, this would:
-    # 1. Parse the file based on file_extension
-    # 2. Validate the data
-    # 3. Import the data into the database
-    # 4. Update the job status in the database
+    from app.models.contacts import Contact as ContactModel, ContactStatus
+    from app.models.deals import Deal as DealModel
+    from app.models.activities import Activity as ActivityModel
+    from sqlalchemy import and_
     
-    # For now, we'll just simulate a delay
-    import asyncio
-    await asyncio.sleep(5)
+    successful_imports = 0
+    failed_imports = 0
+    errors = []
     
-    # In a real implementation, you would update the job status in the database
-    pass
+    try:
+        # Parse file based on extension
+        if file_extension == "csv":
+            content_str = file_content.decode('utf-8')
+            delimiter = '\t' if '\t' in content_str and content_str.count('\t') > content_str.count(',') else ','
+            df = pd.read_csv(io.StringIO(content_str), delimiter=delimiter)
+        else:  # xlsx or xls
+            df = pd.read_excel(io.BytesIO(file_content))
+        
+        total_rows = len(df)
+        
+        # Process based on entity type
+        if entity_type == "contacts":
+            for index, row in df.iterrows():
+                try:
+                    # Clean and validate email
+                    email = str(row.get('email', '')).strip().lower()
+                    if not email or '@' not in email:
+                        errors.append(f"Row {index + 1}: Invalid or missing email")
+                        failed_imports += 1
+                        continue
+                    
+                    # Check for existing contact
+                    existing_contact = db.query(ContactModel).filter(
+                        and_(
+                            ContactModel.email.ilike(email),
+                            ContactModel.company_id == (uuid.UUID(company_id) if isinstance(company_id, str) else company_id),
+                            ContactModel.is_deleted == False
+                        )
+                    ).first()
+                    
+                    if existing_contact:
+                        errors.append(f"Row {index + 1}: Contact with email {email} already exists")
+                        failed_imports += 1
+                        continue
+                    
+                    # Create contact
+                    contact_data = {
+                        'first_name': str(row.get('first_name', '')).strip(),
+                        'last_name': str(row.get('last_name', '')).strip(),
+                        'email': email,
+                        'phone': str(row.get('phone', '')).strip() if pd.notna(row.get('phone')) else '',
+                        'company': str(row.get('company', '')).strip() if pd.notna(row.get('company')) else '',
+                        'title': str(row.get('title', '')).strip() if pd.notna(row.get('title')) else '',
+                        'type': str(row.get('type', 'Lead')).strip() if pd.notna(row.get('type')) else 'Lead',
+                        'status': ContactStatus.NEW,
+                        'owner_id': uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
+                        'company_id': uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
+                        'created_at': datetime.utcnow(),
+                        'updated_at': datetime.utcnow()
+                    }
+                    
+                    db_contact = ContactModel(**contact_data)
+                    db.add(db_contact)
+                    db.commit()
+                    successful_imports += 1
+                    
+                except Exception as e:
+                    db.rollback()
+                    errors.append(f"Row {index + 1}: {str(e)}")
+                    failed_imports += 1
+        
+        elif entity_type == "deals":
+            for index, row in df.iterrows():
+                try:
+                    # Validate required fields
+                    title = str(row.get('title', '')).strip()
+                    if not title:
+                        errors.append(f"Row {index + 1}: Title is required")
+                        failed_imports += 1
+                        continue
+                    
+                    value = float(row.get('value', 0))
+                    if value <= 0:
+                        errors.append(f"Row {index + 1}: Value must be positive")
+                        failed_imports += 1
+                        continue
+                    
+                    # Create deal
+                    deal_data = {
+                        'title': title,
+                        'value': value,
+                        'company': str(row.get('company', '')).strip() if pd.notna(row.get('company')) else '',
+                        'contact': str(row.get('contact', '')).strip() if pd.notna(row.get('contact')) else '',
+                        'expected_close_date': pd.to_datetime(row.get('expected_close_date')) if pd.notna(row.get('expected_close_date')) else None,
+                        'status': str(row.get('status', 'open')).strip() if pd.notna(row.get('status')) else 'open',
+                        'owner_id': uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
+                        'company_id': uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
+                        'created_at': datetime.utcnow(),
+                        'updated_at': datetime.utcnow()
+                    }
+                    
+                    db_deal = DealModel(**deal_data)
+                    db.add(db_deal)
+                    db.commit()
+                    successful_imports += 1
+                    
+                except Exception as e:
+                    db.rollback()
+                    errors.append(f"Row {index + 1}: {str(e)}")
+                    failed_imports += 1
+        
+        elif entity_type == "activities":
+            for index, row in df.iterrows():
+                try:
+                    # Validate required fields
+                    activity_type = str(row.get('type', '')).strip()
+                    subject = str(row.get('subject', '')).strip()
+                    
+                    if not activity_type or not subject:
+                        errors.append(f"Row {index + 1}: Type and subject are required")
+                        failed_imports += 1
+                        continue
+                    
+                    # Create activity
+                    activity_data = {
+                        'type': activity_type,
+                        'subject': subject,
+                        'description': str(row.get('description', '')).strip() if pd.notna(row.get('description')) else '',
+                        'status': str(row.get('status', 'pending')).strip() if pd.notna(row.get('status')) else 'pending',
+                        'due_date': pd.to_datetime(row.get('due_date')) if pd.notna(row.get('due_date')) else None,
+                        'duration_minutes': int(row.get('duration_minutes', 30)) if pd.notna(row.get('duration_minutes')) else 30,
+                        'priority': int(row.get('priority', 1)) if pd.notna(row.get('priority')) else 1,
+                        'owner_id': uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
+                        'company_id': uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
+                        'created_at': datetime.utcnow(),
+                        'updated_at': datetime.utcnow()
+                    }
+                    
+                    db_activity = ActivityModel(**activity_data)
+                    db.add(db_activity)
+                    db.commit()
+                    successful_imports += 1
+                    
+                except Exception as e:
+                    db.rollback()
+                    errors.append(f"Row {index + 1}: {str(e)}")
+                    failed_imports += 1
+        
+        return {
+            "total_rows": total_rows,
+            "processed_rows": successful_imports,
+            "error_rows": failed_imports,
+            "errors": errors[:10]  # Limit to first 10 errors
+        }
+        
+    except Exception as e:
+        return {
+            "total_rows": 0,
+            "processed_rows": 0,
+            "error_rows": 0,
+            "errors": [f"Failed to process file: {str(e)}"]
+        }
