@@ -162,20 +162,6 @@ function Sidebar() {
             </li>
           )}
           
-          {/* Data Export/Import - Based on permissions */}
-          {hasPermission('export_any_data') || 
-           hasPermission('export_company_data') || 
-           hasPermission('export_team_data') || 
-           hasPermission('import_company_data') || 
-           hasPermission('import_team_data') && (
-            <li>
-              <Link to="/data" className={`flex items-center px-4 py-3 ${isActive('/data') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
-                <FaFileExport className="mr-3 text-lg" />
-                <span>Data Export/Import</span>
-              </Link>
-            </li>
-          )}
-          
           {/* Support - Available to all users */}
           <li>
             <Link to="/support" className={`flex items-center px-4 py-3 ${isActive('/support') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>

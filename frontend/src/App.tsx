@@ -24,7 +24,6 @@ import SuperAdminBilling from './pages/SuperAdminBilling';
 import PlatformDashboard from './pages/PlatformDashboard';
 import CompanyManagement from './pages/CompanyManagement';
 import CompanyBilling from './pages/CompanyBilling';
-import DataImport from './pages/DataImport';
 import PipelineSettings from './pages/PipelineSettings';
 import Workflows from './pages/Workflows';
 import Inbox from './pages/Inbox';
@@ -142,7 +141,6 @@ function App() {
                 <Route path="admin/platform" element={<PlatformDashboard />} />
                 <Route path="admin/billing" element={<SuperAdminBilling />} />
                 <Route path="billing" element={<CompanyBilling />} />
-                <Route path="import" element={<DataImport />} />
                 <Route path="support-tickets" element={<SupportTickets />} />
                 <Route path="workflow-templates" element={<WorkflowTemplates />} />
                 <Route path="profile" element={<Profile />} />
