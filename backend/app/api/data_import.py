@@ -369,9 +369,7 @@ async def process_import_job(
                         stage_name = str(row.get('stage', '')).strip().lower()
                         if stage_name in stage_map:
                             stage_to_use = stage_map[stage_name]
-                        else:
-                            # Stage name not found, use default but add warning
-                            errors.append(f"Row {index + 1}: Stage '{row.get('stage')}' not found, using default stage '{default_stage.name}'")
+                        # If stage not found, silently use default (no error added)
                     
                     # Create deal
                     deal_data = {
