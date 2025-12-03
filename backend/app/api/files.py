@@ -168,7 +168,8 @@ async def upload_file(
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
-    # Check for duplicate file with same name in the same folder for this company
+    # Check for duplicate file with same name in the same folder for THIS USER
+    # Different users can have files with the same name
     folder_uuid = None
     if folder_id and folder_id.strip():
         try:
@@ -180,7 +181,7 @@ async def upload_file(
         and_(
             File.name == file.filename,
             File.folder_id == folder_uuid,
-            File.company_id == company_id,
+            File.owner_id == user_id,  # Check by owner, not just company
             File.is_deleted == False
         )
     ).first()
@@ -188,7 +189,7 @@ async def upload_file(
     if existing_file:
         raise HTTPException(
             status_code=400,
-            detail=f"A file with name '{file.filename}' already exists in this location. Please rename the file or choose a different location."
+            detail=f"You already have a file with name '{file.filename}' in this location. Please rename the file or choose a different location."
         )
     
     # Create uploads directory if it doesn't exist
@@ -488,6 +489,23 @@ async def create_folder(
     
     parent_uuid = uuid.UUID(folder_data.parent_id) if folder_data.parent_id else None
     print(f"Creating folder '{folder_data.name}' with parent_id: {parent_uuid}")
+    
+    # Check for duplicate folder with same name in the same parent folder for THIS USER
+    # Different users can have folders with the same name
+    existing_folder = db.query(Folder).filter(
+        and_(
+            Folder.name == folder_data.name,
+            Folder.parent_id == parent_uuid,
+            Folder.owner_id == user_id,  # Check by owner, not just company
+            Folder.is_deleted == False
+        )
+    ).first()
+    
+    if existing_folder:
+        raise HTTPException(
+            status_code=400,
+            detail=f"You already have a folder with name '{folder_data.name}' in this location. Please choose a different name."
+        )
     
     new_folder = Folder(
         name=folder_data.name,
