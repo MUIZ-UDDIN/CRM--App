@@ -1553,7 +1553,8 @@ export default function Settings() {
                   value={companyForm.email}
                   onChange={(e) => setCompanyForm({...companyForm, email: e.target.value})}
                   maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  disabled={!isAdmin}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {companyForm.email.length}/255 characters
@@ -1572,7 +1573,8 @@ export default function Settings() {
                   }}
                   pattern="[+]?[0-9\-() ]+"
                   maxLength={50}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  disabled={!isAdmin}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {companyForm.phone.length}/50 characters
@@ -1585,7 +1587,8 @@ export default function Settings() {
                   value={companyForm.address}
                   onChange={(e) => setCompanyForm({...companyForm, address: e.target.value})}
                   maxLength={255}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  disabled={!isAdmin}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 />
                 <div className="text-xs text-gray-500 mt-1">
                   {companyForm.address.length}/255 characters
@@ -1602,7 +1605,8 @@ export default function Settings() {
                     setCompanyForm({...companyForm, city: value});
                   }}
                   maxLength={100}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  disabled={!isAdmin}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Enter city name (letters only)"
                 />
                 <div className="text-xs text-gray-500 mt-1">
@@ -1620,7 +1624,8 @@ export default function Settings() {
                     setCompanyForm({...companyForm, state: value});
                   }}
                   maxLength={100}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  disabled={!isAdmin}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Enter state name (letters only)"
                 />
                 <div className="text-xs text-gray-500 mt-1">
@@ -1638,7 +1643,8 @@ export default function Settings() {
                     setCompanyForm({...companyForm, zip: value});
                   }}
                   maxLength={20}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  disabled={!isAdmin}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="Enter ZIP code (numbers only)"
                 />
                 <div className="text-xs text-gray-500 mt-1">

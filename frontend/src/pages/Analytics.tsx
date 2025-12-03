@@ -546,8 +546,8 @@ export default function Analytics() {
           </div>
         )}
         
-        {/* Filter Applied Indicator */}
-        {!loading && filterApplied && (dateRange !== 'last30days' || selectedUser !== 'all' || selectedPipeline !== 'all') && (
+        {/* Filter Applied Indicator - Hidden for Sales Reps (they can't change filters) */}
+        {!loading && canFilterByUser && filterApplied && (dateRange !== 'last30days' || selectedUser !== 'all' || selectedPipeline !== 'all') && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
