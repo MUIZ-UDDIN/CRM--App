@@ -137,9 +137,9 @@ export default function DataImport() {
 
   const downloadTemplate = (type: EntityType) => {
     const templates: Record<EntityType, string> = {
-      contacts: 'first_name,last_name,email,phone,mobile,company,title,status,source,lead_score,address_line1,city,state,postal_code,country,notes\nJohn,Doe,john.doe@example.com,555-0100,555-0101,Acme Corp,Sales Director,lead,website,75,123 Main St,New York,NY,10001,USA,Interested in enterprise plan\nJane,Smith,jane.smith@example.com,555-0200,555-0201,Tech Solutions,CEO,qualified,referral,90,456 Tech Ave,San Francisco,CA,94105,USA,Ready for demo call\n',
-      deals: 'title,value,currency,company,expected_close_date,description,probability\nNew Enterprise Deal,50000,USD,Acme Corp,2024-12-31,Enterprise software license,75\nConsulting Project,25000,USD,Tech Solutions,2024-12-25,6-month consulting engagement,60\n',
-      activities: 'type,title,description,due_date,priority,status\ncall,Follow-up Call,Call to discuss proposal,2024-12-15,high,pending\nmeeting,Product Demo,Schedule product demonstration,2024-12-20,high,pending\ntask,Send Proposal,Prepare and send proposal document,2024-12-18,medium,pending\n'
+      contacts: 'first_name,last_name,email,phone,company,title,type\nJohn,Doe,john.doe@example.com,+1234567890,Acme Corp,Sales Manager,Lead\nJane,Smith,jane.smith@example.com,+1987654321,Tech Solutions,Marketing Director,Prospect\nMichael,Johnson,michael.j@example.com,+1555123456,Global Industries,CEO,Customer\nSarah,Williams,sarah.w@example.com,+1444987654,Innovation Labs,Product Manager,Marketing Qualified Lead\n',
+      deals: 'title,value,company,contact,expected_close_date,status\nNew Enterprise Deal,50000,Acme Corp,john.doe@example.com,2024-12-31,open\nConsulting Project,25000,Tech Solutions,jane.smith@example.com,2024-12-25,open\nProduct Integration,75000,Global Industries,michael.j@example.com,2025-01-15,open\n',
+      activities: 'type,subject,description,status,due_date,duration_minutes,priority\ncall,Follow-up Call,Call to discuss proposal details,pending,2024-12-15,30,1\nmeeting,Product Demo,Schedule product demonstration,pending,2024-12-20,60,1\ntask,Send Proposal,Prepare and send proposal document,pending,2024-12-18,45,2\nemail,Contract Review,Review and send contract for signature,pending,2024-12-22,15,1\n'
     };
 
     const blob = new Blob([templates[type]], { type: 'text/csv' });
