@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from uuid import UUID
 import uuid
+import re
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
@@ -20,6 +21,29 @@ from app.models.permissions import Permission
 from app.middleware.tenant import get_tenant_context
 
 router = APIRouter(prefix="/support-tickets", tags=["Support Tickets"])
+
+
+def sanitize_input(text: str) -> str:
+    """Remove HTML tags and script tags from input"""
+    if not text:
+        return text
+    # Remove script tags and their content
+    text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # Remove all HTML tags
+    text = re.sub(r'<[^>]+>', '', text)
+    return text.strip()
+
+
+def validate_no_html(text: str, field_name: str) -> None:
+    """Validate that input doesn't contain HTML/script tags"""
+    if not text:
+        return
+    # Check for HTML tags
+    if re.search(r'<[^>]+>', text):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{field_name} cannot contain HTML or script tags. Please use plain text only."
+        )
 
 
 class TicketCreate(BaseModel):
@@ -86,7 +110,15 @@ async def create_ticket(
                 )
             company_id = str(first_company.id)
         
-        # Map priority string to enum
+        # Validate input for HTML/script tags
+        validate_no_html(ticket.subject, "Subject")
+        validate_no_html(ticket.description, "Description")
+        
+        # Sanitize input (additional safety layer)
+        sanitized_subject = sanitize_input(ticket.subject)
+        sanitized_description = sanitize_input(ticket.description)
+        
+        # Map priority string to enum (case-insensitive)
         priority_map = {
             'low': TicketPriority.LOW,
             'medium': TicketPriority.MEDIUM,
@@ -96,8 +128,8 @@ async def create_ticket(
         
         new_ticket = SupportTicket(
             id=uuid.uuid4(),
-            subject=ticket.subject,
-            description=ticket.description,
+            subject=sanitized_subject,
+            description=sanitized_description,
             status=TicketStatus.OPEN,
             priority=priority_map.get(ticket.priority.lower(), TicketPriority.MEDIUM),
             category=ticket.category,

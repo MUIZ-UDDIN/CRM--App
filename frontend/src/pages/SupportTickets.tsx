@@ -33,6 +33,15 @@ interface Ticket {
 
 export default function SupportTickets() {
   const { user } = useAuth();
+  
+  // Utility function to capitalize first letter of each word
+  const capitalizeWords = (str: string) => {
+    if (!str) return str;
+    return str
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -160,27 +169,30 @@ export default function SupportTickets() {
   };
 
   const getPriorityColor = (priority: string) => {
+    const normalizedPriority = priority?.toLowerCase();
     const colors = {
       low: 'bg-gray-100 text-gray-800',
       medium: 'bg-blue-100 text-blue-800',
       high: 'bg-orange-100 text-orange-800',
       urgent: 'bg-red-100 text-red-800'
     };
-    return colors[priority as keyof typeof colors] || colors.medium;
+    return colors[normalizedPriority as keyof typeof colors] || colors.medium;
   };
 
   const getStatusColor = (status: string) => {
+    const normalizedStatus = status?.toLowerCase();
     const colors = {
       open: 'bg-yellow-100 text-yellow-800',
       in_progress: 'bg-blue-100 text-blue-800',
       resolved: 'bg-green-100 text-green-800',
       closed: 'bg-gray-100 text-gray-800'
     };
-    return colors[status as keyof typeof colors] || colors.open;
+    return colors[normalizedStatus as keyof typeof colors] || colors.open;
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
+    const normalizedStatus = status?.toLowerCase();
+    switch (normalizedStatus) {
       case 'open':
         return <ExclamationCircleIcon className="h-5 w-5" />;
       case 'in_progress':
@@ -296,12 +308,12 @@ export default function SupportTickets() {
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(ticket.status)}`}>
                       {getStatusIcon(ticket.status)}
-                      {ticket.status.replace('_', ' ')}
+                      {capitalizeWords(ticket.status)}
                     </span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(ticket.priority)}`}>
-                      {ticket.priority}
+                      {capitalizeWords(ticket.priority)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
