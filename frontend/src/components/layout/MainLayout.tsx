@@ -25,6 +25,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { clsx } from 'clsx';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePermissions } from '../../hooks/usePermissions';
 import ImageViewer from '../ImageViewer';
 import TrialBanner from '../TrialBanner';
 import ActiveCallPanel from '../ActiveCallPanel';
@@ -41,40 +42,48 @@ interface NavItem {
   children?: Array<{ name: string; href: string }>;
 }
 
-const navigation: NavItem[] = [
-  { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
-  { 
-    name: 'Sales', 
-    icon: CurrencyDollarIcon,
-    children: [
-      { name: 'Deals', href: '/deals' },
-      { name: 'Pipeline', href: '/pipeline-settings' },
-      { name: 'Quotes', href: '/quotes' },
-      { name: 'Analytics', href: '/analytics' },
-    ]
-  },
-  {
-    name: 'Communications',
-    icon: InboxIcon,
-    children: [
-      { name: 'Contacts', href: '/contacts' },
-      { name: 'Email', href: '/inbox' },
-      { name: 'SMS', href: '/sms' },
-      { name: 'Calls', href: '/calls' },
-    ]
-  },
-  { 
-    name: 'More', 
-    icon: FolderIcon,
-    children: [
-      { name: 'Activities', href: '/activities' },
-      { name: 'Files', href: '/files' },
-      { name: 'Workflows', href: '/workflows' },
-      { name: 'Templates', href: '/workflow-templates' },
-      { name: 'Data Import/Export', href: '/data-import' },
-    ]
-  },
-];
+// Base navigation - will be filtered based on user role
+const getNavigation = (isSuperAdmin: () => boolean, isCompanyAdmin: () => boolean, isSalesManager: () => boolean): NavItem[] => {
+  const isSalesRep = !isSuperAdmin() && !isCompanyAdmin() && !isSalesManager();
+  
+  return [
+    { name: 'Dashboard', href: '/dashboard', icon: HomeIcon },
+    { 
+      name: 'Sales', 
+      icon: CurrencyDollarIcon,
+      children: [
+        { name: 'Deals', href: '/deals' },
+        // Pipeline - Hide from Sales Reps
+        ...(!isSalesRep ? [{ name: 'Pipeline', href: '/pipeline-settings' }] : []),
+        { name: 'Quotes', href: '/quotes' },
+        { name: 'Analytics', href: '/analytics' },
+      ]
+    },
+    {
+      name: 'Communications',
+      icon: InboxIcon,
+      children: [
+        { name: 'Contacts', href: '/contacts' },
+        { name: 'Email', href: '/inbox' },
+        { name: 'SMS', href: '/sms' },
+        { name: 'Calls', href: '/calls' },
+      ]
+    },
+    { 
+      name: 'More', 
+      icon: FolderIcon,
+      children: [
+        { name: 'Activities', href: '/activities' },
+        { name: 'Files', href: '/files' },
+        { name: 'Workflows', href: '/workflows' },
+        // Templates - Hide from Sales Reps
+        ...(!isSalesRep ? [{ name: 'Templates', href: '/workflow-templates' }] : []),
+        // Data Import/Export - Hide from Sales Reps
+        ...(!isSalesRep ? [{ name: 'Data Import/Export', href: '/data-import' }] : []),
+      ]
+    },
+  ];
+};
 
 // Notifications will be fetched from API
 
@@ -82,6 +91,8 @@ export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
+  const navigation = getNavigation(isSuperAdmin, isCompanyAdmin, isSalesManager);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
