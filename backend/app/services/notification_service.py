@@ -551,19 +551,16 @@ class NotificationService:
         entity_type: str = "general",
         entity_id: Optional[uuid.UUID] = None
     ):
-        """Notify ALL company users + super admins when a file is uploaded"""
-        # Get all company users + all super admins (no exclusion)
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="File Uploaded",
-                message=f"{uploader_name} uploaded a file: {file_name} to {entity_type}",
-                notification_type=NotificationType.INFO
-            )
+        """Notify ONLY the uploader when a file is uploaded"""
+        # Only notify the user who uploaded the file
+        NotificationService._create_notification(
+            db=db,
+            user_id=uploader_id,
+            company_id=company_id,
+            title="File Uploaded",
+            message=f"You uploaded a file: {file_name} to {entity_type}",
+            notification_type=NotificationType.SUCCESS
+        )
         
         db.commit()
     
@@ -576,20 +573,17 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when a workflow is created"""
-        # Get all company users + all super admins (no exclusion)
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="New Workflow Created",
-                message=f"{creator_name} created a new workflow: {workflow_name}",
-                notification_type=NotificationType.SUCCESS,
-                link=f"/workflows/{workflow_id}"
-            )
+        """Notify ONLY the creator when a workflow is created"""
+        # Only notify the user who created the workflow
+        NotificationService._create_notification(
+            db=db,
+            user_id=creator_id,
+            company_id=company_id,
+            title="Workflow Created",
+            message=f"You created a new workflow: {workflow_name}",
+            notification_type=NotificationType.SUCCESS,
+            link=f"/workflows/{workflow_id}"
+        )
         
         db.commit()
     
@@ -603,18 +597,16 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when a template is created"""
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title=f"New {template_type.title()} Template Created",
-                message=f"{creator_name} created a new {template_type} template: {template_name}",
-                notification_type=NotificationType.SUCCESS
-            )
+        """Notify ONLY the creator when a template is created"""
+        # Only notify the user who created the template
+        NotificationService._create_notification(
+            db=db,
+            user_id=creator_id,
+            company_id=company_id,
+            title=f"{template_type.title()} Template Created",
+            message=f"You created a new {template_type} template: {template_name}",
+            notification_type=NotificationType.SUCCESS
+        )
         
         db.commit()
     
@@ -926,18 +918,17 @@ class NotificationService:
         deleter_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when a file is deleted"""
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="File Deleted",
-                message=f"{deleter_name} deleted file: {file_name}",
-                notification_type=NotificationType.WARNING,
-                link="/files"
-            )
+        """Notify ONLY the deleter when a file is deleted"""
+        # Only notify the user who deleted the file
+        NotificationService._create_notification(
+            db=db,
+            user_id=deleter_id,
+            company_id=company_id,
+            title="File Deleted",
+            message=f"You deleted file: {file_name}",
+            notification_type=NotificationType.WARNING,
+            link="/files"
+        )
         db.commit()
     
     @staticmethod
@@ -948,19 +939,17 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when a folder is created"""
-        # Get all company users + all super admins (no exclusion)
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="Folder Created",
-                message=f"{creator_name} created a new folder: {folder_name}",
-                notification_type=NotificationType.SUCCESS,
-                link="/files"
-            )
+        """Notify ONLY the creator when a folder is created"""
+        # Only notify the user who created the folder
+        NotificationService._create_notification(
+            db=db,
+            user_id=creator_id,
+            company_id=company_id,
+            title="Folder Created",
+            message=f"You created a new folder: {folder_name}",
+            notification_type=NotificationType.SUCCESS,
+            link="/files"
+        )
         db.commit()
     
     @staticmethod
@@ -971,18 +960,17 @@ class NotificationService:
         deleter_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when a folder is deleted"""
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="Folder Deleted",
-                message=f"{deleter_name} deleted folder: {folder_name}",
-                notification_type=NotificationType.WARNING,
-                link="/files"
-            )
+        """Notify ONLY the deleter when a folder is deleted"""
+        # Only notify the user who deleted the folder
+        NotificationService._create_notification(
+            db=db,
+            user_id=deleter_id,
+            company_id=company_id,
+            title="Folder Deleted",
+            message=f"You deleted folder: {folder_name}",
+            notification_type=NotificationType.WARNING,
+            link="/files"
+        )
         db.commit()
     
     @staticmethod
@@ -993,18 +981,17 @@ class NotificationService:
         deleter_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when an activity is deleted"""
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="Activity Deleted",
-                message=f"{deleter_name} deleted a {activity_type} activity",
-                notification_type=NotificationType.WARNING,
-                link="/activities"
-            )
+        """Notify ONLY the deleter when an activity is deleted"""
+        # Only notify the user who deleted the activity
+        NotificationService._create_notification(
+            db=db,
+            user_id=deleter_id,
+            company_id=company_id,
+            title="Activity Deleted",
+            message=f"You deleted a {activity_type} activity",
+            notification_type=NotificationType.WARNING,
+            link="/activities"
+        )
         db.commit()
     
     @staticmethod
