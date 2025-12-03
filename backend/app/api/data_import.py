@@ -302,10 +302,11 @@ async def process_import_job(
             
             # Get default pipeline and first stage for the company
             target_company_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+            
+            # Try to get default pipeline (is_default might be boolean or string)
             default_pipeline = db.query(Pipeline).filter(
-                Pipeline.company_id == target_company_uuid,
-                Pipeline.is_default == True
-            ).first()
+                Pipeline.company_id == target_company_uuid
+            ).order_by(Pipeline.order_index).first()
             
             if not default_pipeline:
                 # Get any pipeline for this company
