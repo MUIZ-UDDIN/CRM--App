@@ -28,10 +28,21 @@ interface ImportResult {
 export default function DataImport() {
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
-  const [selectedType, setSelectedType] = useState<EntityType>('contacts');
-  const [file, setFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [result, setResult] = useState<ImportResult | null>(null);
+  const [files, setFiles] = useState<{[key: string]: File | null}>({
+    contacts: null,
+    deals: null,
+    activities: null
+  });
+  const [uploading, setUploading] = useState<{[key: string]: boolean}>({
+    contacts: false,
+    deals: false,
+    activities: false
+  });
+  const [results, setResults] = useState<{[key: string]: ImportResult | null}>({
+    contacts: null,
+    deals: null,
+    activities: null
+  });
   const [companies, setCompanies] = useState<any[]>([]);
   const [selectedCompany, setSelectedCompany] = useState<string>('');
   const [loadingCompanies, setLoadingCompanies] = useState(false);
@@ -67,7 +78,7 @@ export default function DataImport() {
     { value: 'activities', label: 'Activities', description: 'Import tasks, calls, and meetings' }
   ];
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = (type: EntityType, e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
       
@@ -80,12 +91,13 @@ export default function DataImport() {
         return;
       }
       
-      setFile(selectedFile);
-      setResult(null);
+      setFiles(prev => ({ ...prev, [type]: selectedFile }));
+      setResults(prev => ({ ...prev, [type]: null }));
     }
   };
 
-  const handleUpload = async () => {
+  const handleUpload = async (type: EntityType) => {
+    const file = files[type];
     if (!file) {
       toast.error('Please select a file');
       return;
@@ -97,10 +109,10 @@ export default function DataImport() {
       return;
     }
 
-    setUploading(true);
+    setUploading(prev => ({ ...prev, [type]: true }));
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('entity_type', selectedType);
+    formData.append('entity_type', type);
     
     // Add company_id for Super Admin
     if (isSuperAdmin() && selectedCompany) {
@@ -114,12 +126,12 @@ export default function DataImport() {
         }
       });
       
-      setResult(response.data);
+      setResults(prev => ({ ...prev, [type]: response.data }));
       toast.success(`Import started! Processing ${response.data.total_rows || 0} rows`);
     } catch (error: any) {
       handleApiError(error, { toastMessage: 'Failed to import data' });
     } finally {
-      setUploading(false);
+      setUploading(prev => ({ ...prev, [type]: false }));
     }
   };
 
@@ -238,152 +250,131 @@ export default function DataImport() {
         </div>
       </div>
 
-      {/* Entity Type Selection */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Select Data Type</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {entityTypes.map((type) => (
-            <button
-              key={type.value}
-              onClick={() => setSelectedType(type.value as EntityType)}
-              className={`p-4 border-2 rounded-lg text-left transition-all ${
-                selectedType === type.value
-                  ? 'border-blue-600 bg-blue-50'
-                  : 'border-gray-200 hover:border-gray-300'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold text-gray-900">{type.label}</h3>
-                {selectedType === type.value && (
-                  <CheckCircleIcon className="w-5 h-5 text-blue-600" />
-                )}
+      {/* Import Cards - One for Each Entity Type */}
+      <div className="space-y-6">
+        {entityTypes.map((type) => (
+          <div key={type.value} className="bg-white rounded-lg shadow p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900">{type.label}</h2>
+                <p className="text-sm text-gray-600">{type.description}</p>
               </div>
-              <p className="text-sm text-gray-600">{type.description}</p>
               <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  downloadTemplate(type.value as EntityType);
-                }}
-                className="mt-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+                onClick={() => downloadTemplate(type.value as EntityType)}
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
               >
                 Download Template
               </button>
-            </button>
-          ))}
-        </div>
-      </div>
+            </div>
 
-      {/* File Upload */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Upload File</h2>
-        
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
-          <input
-            type="file"
-            id="file-upload"
-            accept=".csv,.xlsx,.xls"
-            onChange={handleFileChange}
-            className="hidden"
-          />
-          
-          {file ? (
-            <div className="space-y-4">
-              <DocumentArrowUpIcon className="w-16 h-16 text-green-500 mx-auto" />
-              <div>
-                <p className="font-medium text-gray-900">{file.name}</p>
-                <p className="text-sm text-gray-600">{(file.size / 1024).toFixed(2)} KB</p>
-              </div>
-              <div className="flex gap-3 justify-center">
-                <label
-                  htmlFor="file-upload"
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
-                >
-                  Change File
-                </label>
-                <button
-                  onClick={handleUpload}
-                  disabled={uploading}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-                >
-                  {uploading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Uploading...
-                    </>
+            {/* File Upload Section */}
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+              <input
+                type="file"
+                id={`file-upload-${type.value}`}
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => handleFileChange(type.value as EntityType, e)}
+                className="hidden"
+              />
+              
+              {files[type.value] ? (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <DocumentArrowUpIcon className="w-12 h-12 text-green-500 flex-shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{files[type.value]!.name}</p>
+                      <p className="text-sm text-gray-600">{(files[type.value]!.size / 1024).toFixed(2)} KB</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <label
+                        htmlFor={`file-upload-${type.value}`}
+                        className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                      >
+                        Change
+                      </label>
+                      <button
+                        onClick={() => handleUpload(type.value as EntityType)}
+                        disabled={uploading[type.value]}
+                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                      >
+                        {uploading[type.value] ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                            Importing...
+                          </>
+                        ) : (
+                          <>
+                            <ArrowUpTrayIcon className="w-5 h-5" />
+                            Import
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center">
+                  <ArrowUpTrayIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                  <label
+                    htmlFor={`file-upload-${type.value}`}
+                    className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                  >
+                    Choose File
+                  </label>
+                  <p className="text-xs text-gray-500 mt-2">CSV, XLSX, or XLS (Max 10MB)</p>
+                </div>
+              )}
+            </div>
+
+            {/* Import Result for this type */}
+            {results[type.value] && (
+              <div className="mt-4 border-t pt-4">
+                <div className="flex items-center gap-3 mb-3">
+                  {results[type.value]!.status === 'completed' ? (
+                    <CheckCircleIcon className="w-6 h-6 text-green-500" />
+                  ) : results[type.value]!.status === 'failed' ? (
+                    <XCircleIcon className="w-6 h-6 text-red-500" />
                   ) : (
-                    <>
-                      <ArrowUpTrayIcon className="w-5 h-5" />
-                      Import Data
-                    </>
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                   )}
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <ArrowUpTrayIcon className="w-16 h-16 text-gray-400 mx-auto" />
-              <div>
-                <label
-                  htmlFor="file-upload"
-                  className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
-                >
-                  Choose File
-                </label>
-                <p className="text-sm text-gray-600 mt-2">or drag and drop</p>
-              </div>
-              <p className="text-xs text-gray-500">CSV, XLSX, or XLS (Max 10MB)</p>
-            </div>
-          )}
-        </div>
-      </div>
+                  <div>
+                    <p className="font-medium text-gray-900">Import {results[type.value]!.status}</p>
+                    <p className="text-sm text-gray-600">{results[type.value]!.file_name}</p>
+                  </div>
+                </div>
 
-      {/* Import Result */}
-      {result && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center gap-3 mb-4">
-            {result.status === 'completed' ? (
-              <CheckCircleIcon className="w-8 h-8 text-green-500" />
-            ) : result.status === 'failed' ? (
-              <XCircleIcon className="w-8 h-8 text-red-500" />
-            ) : (
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            )}
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Import {result.status}</h2>
-              <p className="text-sm text-gray-600">{result.file_name}</p>
-            </div>
-          </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-gray-50 rounded p-3">
+                    <p className="text-xs text-gray-600">Total Rows</p>
+                    <p className="text-xl font-bold text-gray-900">{results[type.value]!.total_rows || 0}</p>
+                  </div>
+                  <div className="bg-green-50 rounded p-3">
+                    <p className="text-xs text-gray-600">Processed</p>
+                    <p className="text-xl font-bold text-green-600">{results[type.value]!.processed_rows || 0}</p>
+                  </div>
+                  <div className="bg-red-50 rounded p-3">
+                    <p className="text-xs text-gray-600">Errors</p>
+                    <p className="text-xl font-bold text-red-600">{results[type.value]!.error_rows || 0}</p>
+                  </div>
+                </div>
 
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Total Rows</p>
-              <p className="text-2xl font-bold text-gray-900">{result.total_rows || 0}</p>
-            </div>
-            <div className="bg-green-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Processed</p>
-              <p className="text-2xl font-bold text-green-600">{result.processed_rows || 0}</p>
-            </div>
-            <div className="bg-red-50 rounded-lg p-4">
-              <p className="text-sm text-gray-600">Errors</p>
-              <p className="text-2xl font-bold text-red-600">{result.error_rows || 0}</p>
-            </div>
-          </div>
-
-          {result.errors && result.errors.length > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <h3 className="font-medium text-red-900 mb-2">Errors:</h3>
-              <ul className="list-disc list-inside space-y-1 text-sm text-red-800">
-                {result.errors.slice(0, 10).map((error, index) => (
-                  <li key={index}>{error}</li>
-                ))}
-                {result.errors.length > 10 && (
-                  <li className="text-red-600">...and {result.errors.length - 10} more errors</li>
+                {results[type.value]!.errors && results[type.value]!.errors!.length > 0 && (
+                  <div className="mt-3 bg-red-50 border border-red-200 rounded p-3">
+                    <p className="text-sm font-medium text-red-900 mb-2">Errors:</p>
+                    <ul className="list-disc list-inside space-y-1 text-xs text-red-800">
+                      {results[type.value]!.errors!.slice(0, 5).map((error, index) => (
+                        <li key={index}>{error}</li>
+                      ))}
+                      {results[type.value]!.errors!.length > 5 && (
+                        <li className="text-red-600">...and {results[type.value]!.errors!.length - 5} more errors</li>
+                      )}
+                    </ul>
+                  </div>
                 )}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );
