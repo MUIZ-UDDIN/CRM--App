@@ -118,8 +118,9 @@ export default function SupportTickets() {
       setShowCreateModal(false);
       setNewTicket({ subject: '', description: '', priority: 'medium', category: '' });
       fetchTickets();
-    } catch (error) {
-      toast.error('Failed to create ticket');
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to create ticket';
+      toast.error(errorMessage);
     } finally {
       setIsCreating(false);
     }
