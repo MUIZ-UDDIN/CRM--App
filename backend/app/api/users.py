@@ -591,13 +591,87 @@ async def delete_user(
                     detail="Company admins cannot delete super admin users"
                 )
     
-    # Permanent delete - CASCADE will handle related records
-    # The database foreign keys with ondelete='CASCADE' will automatically delete:
-    # - Deals owned by this user
-    # - Contacts owned by this user
-    # - Activities created by this user
-    # - Team memberships
-    # - etc.
+    # Delete user's data first to avoid NOT NULL constraint violations
+    from app.models.contacts import Contact
+    from app.models.deals import Deal
+    from app.models.activities import Activity
+    from app.models.emails import Email
+    from app.models.sms import SMSMessage
+    from app.models.calls import Call
+    from app.models.documents import Document
+    from app.models.files import File, Folder
+    from app.models.workflows import Workflow
+    from app.models.notifications import Notification
+    from app.models.quotes import Quote
+    from app.models.support_tickets import SupportTicket
+    from app.models.audit_log import AuditLog
+    from app.models.security_log import SecurityLog
+    
+    try:
+        # Delete activities (owner_id is NOT NULL, so must delete before user)
+        deleted_activities = db.query(Activity).filter(Activity.owner_id == user.id).delete(synchronize_session=False)
+        if deleted_activities > 0:
+            print(f"✅ Deleted {deleted_activities} activities for user {user_id}")
+        
+        # Delete contacts
+        deleted_contacts = db.query(Contact).filter(Contact.owner_id == user.id).delete(synchronize_session=False)
+        if deleted_contacts > 0:
+            print(f"✅ Deleted {deleted_contacts} contacts for user {user_id}")
+        
+        # Delete deals
+        deleted_deals = db.query(Deal).filter(Deal.owner_id == user.id).delete(synchronize_session=False)
+        if deleted_deals > 0:
+            print(f"✅ Deleted {deleted_deals} deals for user {user_id}")
+        
+        # Delete emails
+        db.query(Email).filter(Email.owner_id == user.id).delete(synchronize_session=False)
+        
+        # Delete SMS messages
+        db.query(SMSMessage).filter(SMSMessage.user_id == user.id).delete(synchronize_session=False)
+        
+        # Delete calls
+        db.query(Call).filter(Call.user_id == user.id).delete(synchronize_session=False)
+        
+        # Delete documents
+        db.query(Document).filter(Document.created_by == user.id).delete(synchronize_session=False)
+        
+        # Delete files
+        db.query(File).filter(File.owner_id == user.id).delete(synchronize_session=False)
+        
+        # Delete folders
+        db.query(Folder).filter(Folder.owner_id == user.id).delete(synchronize_session=False)
+        
+        # Delete workflows
+        db.query(Workflow).filter(Workflow.owner_id == user.id).delete(synchronize_session=False)
+        
+        # Delete notifications
+        db.query(Notification).filter(Notification.user_id == user.id).delete(synchronize_session=False)
+        
+        # Delete quotes
+        db.query(Quote).filter(Quote.created_by == user.id).delete(synchronize_session=False)
+        
+        # Delete support tickets
+        db.query(SupportTicket).filter(SupportTicket.created_by == user.id).delete(synchronize_session=False)
+        
+        # Delete audit logs
+        db.query(AuditLog).filter(AuditLog.user_id == user.id).delete(synchronize_session=False)
+        
+        # Delete security logs
+        db.query(SecurityLog).filter(SecurityLog.user_id == user.id).delete(synchronize_session=False)
+        
+        # Commit all deletions
+        db.commit()
+        print(f"✅ Deleted all related data for user {user_id}")
+        
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error deleting user data: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete user data: {str(e)}"
+        )
+    
+    # Now delete the user
     db.delete(user)
     db.commit()
     
