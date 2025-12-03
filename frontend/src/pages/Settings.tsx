@@ -830,7 +830,8 @@ export default function Settings() {
     // Only show billing tab for Company Admins (Super Admins use /admin/billing, Sales Managers/Reps have no billing access)
     ...(isCompanyAdmin ? [{ id: 'billing' as TabType, name: 'Billing', icon: CreditCardIcon }] : []),
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
-    { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
+    // Only show Custom Fields tab for Admins (Super Admin, Company Admin, Sales Manager) - Hide from Sales Reps
+    ...(isAdmin ? [{ id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon }] : []),
   ];
 
   const handleAddTeamMember = async () => {
