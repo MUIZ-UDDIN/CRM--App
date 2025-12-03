@@ -457,7 +457,7 @@ export default function Notifications() {
                               notification.type === 'success' ? 'bg-green-100 text-green-800' :
                               'bg-blue-100 text-blue-800'
                             }`}>
-                              {notification.type}
+                              {notification.type.charAt(0).toUpperCase() + notification.type.slice(1)}
                             </span>
                           </div>
                           

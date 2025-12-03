@@ -87,6 +87,7 @@ async def create_ticket(
     db: Session = Depends(get_db)
 ):
     """Create a support ticket - All roles can create"""
+    import traceback
     try:
         context = get_tenant_context(current_user)
         company_id = current_user.get('company_id')
