@@ -298,6 +298,44 @@ async def process_import_job(
                     failed_imports += 1
         
         elif entity_type == "deals":
+            from app.models.deals import Pipeline, PipelineStage, DealStatus
+            
+            # Get default pipeline and first stage for the company
+            target_company_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+            default_pipeline = db.query(Pipeline).filter(
+                Pipeline.company_id == target_company_uuid,
+                Pipeline.is_default == True
+            ).first()
+            
+            if not default_pipeline:
+                # Get any pipeline for this company
+                default_pipeline = db.query(Pipeline).filter(
+                    Pipeline.company_id == target_company_uuid
+                ).first()
+            
+            if not default_pipeline:
+                errors.append("No pipeline found for this company. Please create a pipeline first.")
+                return {
+                    "total_rows": len(df),
+                    "processed_rows": 0,
+                    "error_rows": len(df),
+                    "errors": errors
+                }
+            
+            # Get first stage of the pipeline
+            first_stage = db.query(PipelineStage).filter(
+                PipelineStage.pipeline_id == default_pipeline.id
+            ).order_by(PipelineStage.order_index).first()
+            
+            if not first_stage:
+                errors.append("No stages found in pipeline. Please create pipeline stages first.")
+                return {
+                    "total_rows": len(df),
+                    "processed_rows": 0,
+                    "error_rows": len(df),
+                    "errors": errors
+                }
+            
             for index, row in df.iterrows():
                 try:
                     # Validate required fields
@@ -313,19 +351,39 @@ async def process_import_job(
                         failed_imports += 1
                         continue
                     
+                    # Parse status
+                    status_str = str(row.get('status', 'open')).strip().lower() if pd.notna(row.get('status')) else 'open'
+                    try:
+                        deal_status = DealStatus(status_str)
+                    except ValueError:
+                        deal_status = DealStatus.OPEN
+                    
                     # Create deal
                     deal_data = {
                         'title': title,
                         'value': value,
                         'company': str(row.get('company', '')).strip() if pd.notna(row.get('company')) else '',
-                        'contact': str(row.get('contact', '')).strip() if pd.notna(row.get('contact')) else '',
                         'expected_close_date': pd.to_datetime(row.get('expected_close_date')) if pd.notna(row.get('expected_close_date')) else None,
-                        'status': str(row.get('status', 'open')).strip() if pd.notna(row.get('status')) else 'open',
+                        'status': deal_status,
+                        'pipeline_id': default_pipeline.id,
+                        'stage_id': first_stage.id,
                         'owner_id': uuid.UUID(user_id) if isinstance(user_id, str) else user_id,
-                        'company_id': uuid.UUID(company_id) if isinstance(company_id, str) else company_id,
+                        'company_id': target_company_uuid,
                         'created_at': datetime.utcnow(),
                         'updated_at': datetime.utcnow()
                     }
+                    
+                    # Handle contact if provided (email)
+                    contact_email = str(row.get('contact', '')).strip() if pd.notna(row.get('contact')) else ''
+                    if contact_email:
+                        # Try to find contact by email
+                        contact = db.query(ContactModel).filter(
+                            ContactModel.email.ilike(contact_email),
+                            ContactModel.company_id == target_company_uuid,
+                            ContactModel.is_deleted == False
+                        ).first()
+                        if contact:
+                            deal_data['contact_id'] = contact.id
                     
                     db_deal = DealModel(**deal_data)
                     db.add(db_deal)
