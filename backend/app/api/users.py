@@ -632,7 +632,7 @@ async def delete_user(
         db.query(Call).filter(Call.user_id == user.id).delete(synchronize_session=False)
         
         # Delete documents
-        db.query(Document).filter(Document.created_by == user.id).delete(synchronize_session=False)
+        db.query(Document).filter(Document.owner_id == user.id).delete(synchronize_session=False)
         
         # Delete files
         db.query(File).filter(File.owner_id == user.id).delete(synchronize_session=False)
@@ -647,10 +647,10 @@ async def delete_user(
         db.query(Notification).filter(Notification.user_id == user.id).delete(synchronize_session=False)
         
         # Delete quotes
-        db.query(Quote).filter(Quote.created_by == user.id).delete(synchronize_session=False)
+        db.query(Quote).filter(Quote.owner_id == user.id).delete(synchronize_session=False)
         
         # Delete support tickets
-        db.query(SupportTicket).filter(SupportTicket.created_by == user.id).delete(synchronize_session=False)
+        db.query(SupportTicket).filter(SupportTicket.created_by_id == user.id).delete(synchronize_session=False)
         
         # Delete audit logs
         db.query(AuditLog).filter(AuditLog.user_id == user.id).delete(synchronize_session=False)
