@@ -12,7 +12,7 @@ import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../utils/errorHandler';
 
-type EntityType = 'contacts' | 'deals' | 'companies' | 'leads';
+type EntityType = 'deals' | 'companies' | 'leads';
 
 interface ImportResult {
   job_id: string;
@@ -28,7 +28,7 @@ interface ImportResult {
 export default function DataImport() {
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
-  const [selectedType, setSelectedType] = useState<EntityType>('contacts');
+  const [selectedType, setSelectedType] = useState<EntityType>('deals');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -37,7 +37,6 @@ export default function DataImport() {
   const canImportData = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   const entityTypes = [
-    { value: 'contacts', label: 'Contacts', description: 'Import customer contacts' },
     { value: 'deals', label: 'Deals', description: 'Import sales deals' },
     { value: 'companies', label: 'Companies', description: 'Import company records' },
     { value: 'leads', label: 'Leads', description: 'Import sales leads' }
@@ -73,7 +72,7 @@ export default function DataImport() {
     formData.append('entity_type', selectedType);
 
     try {
-      const response = await apiClient.post('/import/', formData, {
+      const response = await apiClient.post('/api/import/', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -89,20 +88,10 @@ export default function DataImport() {
   };
 
   const downloadTemplate = (type: EntityType) => {
-    // Contact templates are now available in the Contacts page import modal
-    if (type === 'contacts') {
-      toast('Contact templates are available in the Contacts page when you click Import', {
-        icon: 'ℹ️',
-        duration: 4000,
-      });
-      return;
-    }
-
     const templates: Record<EntityType, string> = {
-      contacts: '', // Removed - use Contacts page instead
-      deals: 'name,value,stage,contact_email,expected_close_date,description\nNew Deal,5000,Prospecting,john@example.com,2024-12-31,Sample deal\n',
-      companies: 'name,domain,industry,size,phone,address,city,state,country\nAcme Corp,acme.com,Technology,50,555-0100,123 Main St,New York,NY,USA\n',
-      leads: 'first_name,last_name,email,phone,company,title,source,status\nJane,Smith,jane@example.com,555-0200,Tech Inc,Director,Referral,New\n'
+      deals: 'title,value,stage,contact_id,expected_close_date,description,priority\nNew Deal,5000,Prospecting,,2024-12-31,Sample deal description,high\nFollow-up Deal,10000,Negotiation,,2024-12-25,Another sample deal,medium\n',
+      companies: 'name,domain,industry,size,phone,email,address,city,state,country,website\nAcme Corporation,acme.com,Technology,50,555-0100,contact@acme.com,123 Main St,New York,NY,USA,https://acme.com\nTech Solutions Inc,techsolutions.com,Software,100,555-0200,info@techsolutions.com,456 Tech Ave,San Francisco,CA,USA,https://techsolutions.com\n',
+      leads: 'first_name,last_name,email,phone,company,title,source,status,notes\nJohn,Doe,john.doe@example.com,555-0300,Example Corp,Sales Director,Website,new,Interested in enterprise plan\nJane,Smith,jane.smith@example.com,555-0400,Tech Startup,CEO,Referral,qualified,Ready for demo\n'
     };
 
     const blob = new Blob([templates[type]], { type: 'text/csv' });
@@ -157,7 +146,7 @@ export default function DataImport() {
         <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-6">
             <h1 className="text-2xl font-bold text-gray-900">Data Import</h1>
-            <p className="text-gray-600">Import contacts, deals, and companies from CSV or Excel files</p>
+            <p className="text-gray-600">Import deals, companies, and leads from CSV or Excel files</p>
           </div>
         </div>
       </div>
@@ -177,7 +166,7 @@ export default function DataImport() {
               <li>Review and confirm the import</li>
             </ol>
             <p className="text-xs bg-blue-100 rounded px-2 py-1 inline-block">
-              <strong>Note:</strong> For contact imports, use the Import button on the Contacts page for templates and upload.
+              <strong>Note:</strong> For contact imports, use the Import button on the Contacts page.
             </p>
           </div>
         </div>
