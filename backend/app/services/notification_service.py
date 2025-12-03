@@ -371,20 +371,17 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when a contact is created"""
-        # Get all company users + all super admins (no exclusion)
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="New Contact Created",
-                message=f"{creator_name} created a new contact: {contact_name}",
-                notification_type=NotificationType.SUCCESS,
-                link=f"/contacts/{contact_id}"
-            )
+        """Notify ONLY the creator when a contact is created"""
+        # Only notify the user who created the contact
+        NotificationService._create_notification(
+            db=db,
+            user_id=creator_id,
+            company_id=company_id,
+            title="Contact Created",
+            message=f"You created a new contact: {contact_name}",
+            notification_type=NotificationType.SUCCESS,
+            link=f"/contacts/{contact_id}"
+        )
         
         db.commit()
     
@@ -423,19 +420,17 @@ class NotificationService:
         company_id: uuid.UUID,
         quote_amount: float
     ):
-        """Notify ALL company users + super admins when a quote is created"""
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title="New Quote Created",
-                message=f"{creator_name} created a new quote: {quote_title} (${quote_amount:,.2f})",
-                notification_type=NotificationType.SUCCESS,
-                link=f"/quotes/{quote_id}"
-            )
+        """Notify ONLY the creator when a quote is created"""
+        # Only notify the user who created the quote
+        NotificationService._create_notification(
+            db=db,
+            user_id=creator_id,
+            company_id=company_id,
+            title="Quote Created",
+            message=f"You created a new quote: {quote_title} (${quote_amount:,.2f})",
+            notification_type=NotificationType.SUCCESS,
+            link=f"/quotes/{quote_id}"
+        )
         
         db.commit()
     
@@ -449,20 +444,17 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify ALL company users + super admins when an activity is created"""
-        # Get all company users + all super admins (no exclusion)
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
-        
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title=f"New {activity_type.title()} Activity",
-                message=f"{creator_name} created a new {activity_type}: {activity_subject}",
-                notification_type=NotificationType.INFO,
-                link=f"/activities/{activity_id}"
-            )
+        """Notify ONLY the creator when an activity is created"""
+        # Only notify the user who created the activity
+        NotificationService._create_notification(
+            db=db,
+            user_id=creator_id,
+            company_id=company_id,
+            title=f"{activity_type.title()} Activity Created",
+            message=f"You created a new {activity_type}: {activity_subject}",
+            notification_type=NotificationType.SUCCESS,
+            link=f"/activities/{activity_id}"
+        )
         
         db.commit()
     
@@ -620,22 +612,19 @@ class NotificationService:
         company_id: uuid.UUID,
         priority: str = "medium"
     ):
-        """Notify ALL company users + super admins when a support ticket is created"""
-        # Get all company users + all super admins (no exclusion)
-        recipients = NotificationService._get_company_users_and_super_admins(db, company_id)
+        """Notify ONLY the creator when a support ticket is created"""
+        # Only notify the user who created the ticket
+        notification_type = NotificationType.WARNING if priority in ['high', 'urgent'] else NotificationType.SUCCESS
         
-        notification_type = NotificationType.WARNING if priority in ['high', 'urgent'] else NotificationType.INFO
-        
-        for recipient in recipients:
-            NotificationService._create_notification(
-                db=db,
-                user_id=recipient.id,
-                company_id=company_id,
-                title=f"New Support Ticket ({priority.upper()})",
-                message=f"{creator_name} created a support ticket: {ticket_title}",
-                notification_type=notification_type,
-                link=f"/support/tickets/{ticket_id}"
-            )
+        NotificationService._create_notification(
+            db=db,
+            user_id=creator_id,
+            company_id=company_id,
+            title=f"Support Ticket Created ({priority.upper()})",
+            message=f"You created a support ticket: {ticket_title}",
+            notification_type=notification_type,
+            link=f"/support/tickets/{ticket_id}"
+        )
         
         db.commit()
     
