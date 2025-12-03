@@ -604,8 +604,7 @@ async def delete_user(
     from app.models.notifications import Notification
     from app.models.quotes import Quote
     from app.models.support_tickets import SupportTicket
-    from app.models.audit_log import AuditLog
-    from app.models.security_log import SecurityLog
+    from app.models.security import AuditLog, SecurityLog
     
     try:
         # Delete activities (owner_id is NOT NULL, so must delete before user)
