@@ -12,7 +12,7 @@ import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../utils/errorHandler';
 
-type EntityType = 'deals' | 'companies' | 'leads';
+type EntityType = 'contacts' | 'deals' | 'activities';
 
 interface ImportResult {
   job_id: string;
@@ -28,7 +28,7 @@ interface ImportResult {
 export default function DataImport() {
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
-  const [selectedType, setSelectedType] = useState<EntityType>('deals');
+  const [selectedType, setSelectedType] = useState<EntityType>('contacts');
   const [file, setFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -37,9 +37,9 @@ export default function DataImport() {
   const canImportData = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   const entityTypes = [
-    { value: 'deals', label: 'Deals', description: 'Import sales deals' },
-    { value: 'companies', label: 'Companies', description: 'Import company records' },
-    { value: 'leads', label: 'Leads', description: 'Import sales leads' }
+    { value: 'contacts', label: 'Contacts & Leads', description: 'Import contacts and leads' },
+    { value: 'deals', label: 'Deals', description: 'Import sales deals and opportunities' },
+    { value: 'activities', label: 'Activities', description: 'Import tasks, calls, and meetings' }
   ];
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -89,9 +89,9 @@ export default function DataImport() {
 
   const downloadTemplate = (type: EntityType) => {
     const templates: Record<EntityType, string> = {
-      deals: 'title,value,stage,contact_id,expected_close_date,description,priority\nNew Deal,5000,Prospecting,,2024-12-31,Sample deal description,high\nFollow-up Deal,10000,Negotiation,,2024-12-25,Another sample deal,medium\n',
-      companies: 'name,domain,industry,size,phone,email,address,city,state,country,website\nAcme Corporation,acme.com,Technology,50,555-0100,contact@acme.com,123 Main St,New York,NY,USA,https://acme.com\nTech Solutions Inc,techsolutions.com,Software,100,555-0200,info@techsolutions.com,456 Tech Ave,San Francisco,CA,USA,https://techsolutions.com\n',
-      leads: 'first_name,last_name,email,phone,company,title,source,status,notes\nJohn,Doe,john.doe@example.com,555-0300,Example Corp,Sales Director,Website,new,Interested in enterprise plan\nJane,Smith,jane.smith@example.com,555-0400,Tech Startup,CEO,Referral,qualified,Ready for demo\n'
+      contacts: 'first_name,last_name,email,phone,mobile,company,title,status,source,lead_score,address_line1,city,state,postal_code,country,notes\nJohn,Doe,john.doe@example.com,555-0100,555-0101,Acme Corp,Sales Director,lead,website,75,123 Main St,New York,NY,10001,USA,Interested in enterprise plan\nJane,Smith,jane.smith@example.com,555-0200,555-0201,Tech Solutions,CEO,qualified,referral,90,456 Tech Ave,San Francisco,CA,94105,USA,Ready for demo call\n',
+      deals: 'title,value,currency,company,expected_close_date,description,probability\nNew Enterprise Deal,50000,USD,Acme Corp,2024-12-31,Enterprise software license,75\nConsulting Project,25000,USD,Tech Solutions,2024-12-25,6-month consulting engagement,60\n',
+      activities: 'type,title,description,due_date,priority,status\ncall,Follow-up Call,Call to discuss proposal,2024-12-15,high,pending\nmeeting,Product Demo,Schedule product demonstration,2024-12-20,high,pending\ntask,Send Proposal,Prepare and send proposal document,2024-12-18,medium,pending\n'
     };
 
     const blob = new Blob([templates[type]], { type: 'text/csv' });
@@ -146,7 +146,7 @@ export default function DataImport() {
         <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-6">
             <h1 className="text-2xl font-bold text-gray-900">Data Import</h1>
-            <p className="text-gray-600">Import deals, companies, and leads from CSV or Excel files</p>
+            <p className="text-gray-600">Import contacts, deals, and activities from CSV or Excel files</p>
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@ export default function DataImport() {
               <li>Review and confirm the import</li>
             </ol>
             <p className="text-xs bg-blue-100 rounded px-2 py-1 inline-block">
-              <strong>Note:</strong> For contact imports, use the Import button on the Contacts page.
+              <strong>Note:</strong> Download the template for your data type to see the required fields and format.
             </p>
           </div>
         </div>
