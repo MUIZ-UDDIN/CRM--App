@@ -163,6 +163,16 @@ function Sidebar() {
             </li>
           )}
           
+          {/* Data Import/Export - Super Admin, Company Admin, Sales Manager only */}
+          {(isSuperAdmin() || isCompanyAdmin() || isSalesManager()) && (
+            <li>
+              <Link to="/data-import" className={`flex items-center px-4 py-3 ${isActive('/data-import') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
+                <FaFileImport className="mr-3 text-lg" />
+                <span>Data Import/Export</span>
+              </Link>
+            </li>
+          )}
+          
           {/* Support - Available to all users */}
           <li>
             <Link to="/support" className={`flex items-center px-4 py-3 ${isActive('/support') ? 'bg-gray-700 text-white' : 'text-gray-300 hover:bg-gray-700'}`}>
