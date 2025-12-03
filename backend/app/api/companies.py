@@ -439,13 +439,49 @@ def delete_company(
         # Delete user-related data (with error handling for field name variations)
         try:
             db.query(Contact).filter(Contact.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        except Exception:
+            db.commit()
+        except Exception as e:
+            print(f"Error deleting contacts by owner_id: {e}")
             db.rollback()
         
         try:
             db.query(Deal).filter(Deal.owner_id.in_(user_ids)).delete(synchronize_session=False)
-        except Exception:
+            db.commit()
+        except Exception as e:
+            print(f"Error deleting deals by owner_id: {e}")
             db.rollback()
+    
+    # Delete contacts by company_id - CRITICAL
+    try:
+        company_contact_count = db.query(Contact).filter(Contact.company_id == company.id).count()
+        if company_contact_count > 0:
+            deleted_company_contacts = db.query(Contact).filter(Contact.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_company_contacts} contacts by company_id")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR deleting contacts by company_id: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete contacts by company_id: {str(e)}"
+        )
+    
+    # Delete deals by company_id - CRITICAL
+    try:
+        company_deal_count = db.query(Deal).filter(Deal.company_id == company.id).count()
+        if company_deal_count > 0:
+            deleted_company_deals = db.query(Deal).filter(Deal.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_company_deals} deals by company_id")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR deleting deals by company_id: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete deals by company_id: {str(e)}"
+        )
+    
+    if user_ids:
         
         # Delete activities (owner_id -> users.id) - CRITICAL
         try:
@@ -453,14 +489,31 @@ def delete_company(
             if activity_count > 0:
                 deleted_activities = db.query(Activity).filter(Activity.owner_id.in_(user_ids)).delete(synchronize_session=False)
                 db.commit()
-                print(f"✅ Successfully deleted {deleted_activities} activities")
+                print(f"✅ Successfully deleted {deleted_activities} activities by owner_id")
         except Exception as e:
-            print(f"❌ CRITICAL ERROR deleting activities: {e}")
+            print(f"❌ CRITICAL ERROR deleting activities by owner_id: {e}")
             db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to delete activities: {str(e)}"
+                detail=f"Failed to delete activities by owner_id: {str(e)}"
             )
+    
+    # Delete activities by company_id (in case some activities don't have owner_id) - CRITICAL
+    try:
+        company_activity_count = db.query(Activity).filter(Activity.company_id == company.id).count()
+        if company_activity_count > 0:
+            deleted_company_activities = db.query(Activity).filter(Activity.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_company_activities} activities by company_id")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR deleting activities by company_id: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete activities by company_id: {str(e)}"
+        )
+    
+    if user_ids:
         
         try:
             db.query(Email).filter(Email.owner_id.in_(user_ids)).delete(synchronize_session=False)
