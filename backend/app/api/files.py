@@ -92,17 +92,30 @@ async def get_files(
     db: Session = Depends(get_db)
 ):
     """Get all files for the current company"""
+    from app.middleware.tenant import get_tenant_context
+    
+    context = get_tenant_context(current_user)
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
     if not company_id:
         raise HTTPException(status_code=403, detail="No company associated with user")
     
+    # Base query with company filter
     query = db.query(File).filter(
         and_(
             File.company_id == company_id,
             File.is_deleted == False
         )
     )
+    
+    # Sales Reps (Regular Users) can only see their own files
+    # Admins and Managers can see all company files
+    user_role = current_user.get("role", "").lower()
+    is_sales_rep = user_role not in ['super_admin', 'company_admin', 'admin', 'sales_manager']
+    
+    if is_sales_rep:
+        query = query.filter(File.owner_id == user_id)
     
     if category:
         query = query.filter(File.category == category)
@@ -382,6 +395,10 @@ async def get_folders(
     db: Session = Depends(get_db)
 ):
     """Get all folders for company, optionally filtered by parent_id"""
+    from app.middleware.tenant import get_tenant_context
+    
+    context = get_tenant_context(current_user)
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
     
     if not company_id:
@@ -393,6 +410,14 @@ async def get_folders(
             Folder.is_deleted == False
         )
     )
+    
+    # Sales Reps (Regular Users) can only see their own folders
+    # Admins and Managers can see all company folders
+    user_role = current_user.get("role", "").lower()
+    is_sales_rep = user_role not in ['super_admin', 'company_admin', 'admin', 'sales_manager']
+    
+    if is_sales_rep:
+        query = query.filter(Folder.owner_id == user_id)
     
     # Filter by parent_id if provided, otherwise get root folders (parent_id is None)
     if parent_id:
