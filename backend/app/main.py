@@ -143,6 +143,13 @@ except Exception as e:
     logger.error(f"❌ Failed to import Global Defaults router: {e}")
     global_defaults_router = None
 
+try:
+    from app.api.data_import import router as data_import_router
+    logger.info("✅ Data Import router imported successfully")
+except Exception as e:
+    logger.error(f"❌ Failed to import Data Import router: {e}")
+    data_import_router = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -595,6 +602,16 @@ if global_defaults_router:
     logger.info("✅ Global Defaults routes registered at /api/global-defaults")
 else:
     logger.warning("⚠️ Global Defaults router not loaded - skipping registration")
+
+# Data Import System
+if data_import_router:
+    app.include_router(
+        data_import_router,
+        dependencies=[Depends(get_current_user)]
+    )
+    logger.info("✅ Data Import routes registered at /api/import")
+else:
+    logger.warning("⚠️ Data Import router not loaded - skipping registration")
 
 # Register custom error handlers to prevent database query exposure
 register_error_handlers(app)
