@@ -113,29 +113,28 @@ def get_company_users(
             detail="User not found"
         )
     
-    # Debug logging
-    import logging
-    logger = logging.getLogger(__name__)
-    logger.info(f"=== GET COMPANY USERS DEBUG ===")
-    logger.info(f"User: {user.email}")
-    logger.info(f"User role field: {user.user_role} (type: {type(user.user_role)})")
-    logger.info(f"User company_id: {user.company_id}")
-    logger.info(f"Requested company_id: {company_id}")
+    # Debug logging with print statements
+    print(f"\n{'='*60}")
+    print(f"=== GET COMPANY USERS DEBUG ===")
+    print(f"User: {user.email}")
+    print(f"User role field: {user.user_role} (type: {type(user.user_role)})")
+    print(f"User company_id: {user.company_id}")
+    print(f"Requested company_id: {company_id}")
     
     # Super Admin can access any company
     # Other users can only access their own company
     # Handle both string and enum comparison
     user_role_str = user.user_role if isinstance(user.user_role, str) else user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role)
-    logger.info(f"User role string: {user_role_str}")
+    print(f"User role string: {user_role_str}")
     
     if user_role_str != "super_admin" and str(user.company_id) != str(company_id):
-        logger.warning(f"Access denied: user_role={user_role_str}, user_company={user.company_id}, requested_company={company_id}")
+        print(f"❌ Access denied: user_role={user_role_str}, user_company={user.company_id}, requested_company={company_id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view team members from your own company"
         )
     
-    logger.info(f"Access granted for user {user.email}")
+    print(f"✅ Access granted for user {user.email}")
     
     # Verify company exists
     company = db.query(Company).filter(Company.id == company_id).first()
@@ -151,24 +150,23 @@ def get_company_users(
         User.is_deleted == False
     )
     
-    # Log the SQL query
-    logger.info(f"SQL Query: {query}")
-    logger.info(f"Query filters: company_id={company_id}, is_deleted=False")
+    print(f"Query filters: company_id={company_id}, is_deleted=False")
     
     users = query.all()
-    logger.info(f"Number of users returned from database: {len(users)}")
+    print(f"📊 Number of users returned from database: {len(users)}")
     
     # Debug logging
-    for user in users:
-        logger.info(f"DB User: {user.email}, role={user.user_role}, company={user.company_id}")
+    for u in users:
+        print(f"  - DB User: {u.email}, role={u.user_role}, company={u.company_id}")
     
-    result = [UserResponse.from_orm(user) for user in users]
-    logger.info(f"Number of users in result after serialization: {len(result)}")
+    result = [UserResponse.from_orm(u) for u in users]
+    print(f"📦 Number of users in result after serialization: {len(result)}")
     
     # Debug the serialized result
     for r in result:
-        logger.info(f"Serialized user: {r.email}, role='{r.role}'")
+        print(f"  - Serialized: {r.email}, role='{r.role}'")
     
+    print(f"{'='*60}\n")
     return result
 
 
