@@ -215,7 +215,7 @@ export default function Settings() {
         toast.error('Company not found. Please contact support.');
         return;
       }
-      const apiUrl = `${API_BASE_URL}/api/companies/${currentUser.company_id}/users`;
+      const apiUrl = `${API_BASE_URL}/api/admin/companies/${currentUser.company_id}/users`;
       
       const response = await fetch(apiUrl, {
         headers: {
