@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BuildingOfficeIcon, 
@@ -55,6 +55,8 @@ export default function SuperAdminDashboard() {
   const [companyToSuspend, setCompanyToSuspend] = useState<Company | null>(null);
   const [apiError, setApiError] = useState(false);
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
   const [newCompany, setNewCompany] = useState({
     name: '',
     admin_first_name: '',
@@ -623,28 +625,51 @@ export default function SuperAdminDashboard() {
                       {/* Dropdown Menu */}
                       <div className="relative">
                         <button
-                          onClick={() => setOpenDropdownId(openDropdownId === company.id ? null : company.id)}
+                          ref={(el) => (buttonRefs.current[company.id] = el)}
+                          onClick={(e) => {
+                            if (openDropdownId === company.id) {
+                              setOpenDropdownId(null);
+                              setDropdownPosition(null);
+                            } else {
+                              const rect = e.currentTarget.getBoundingClientRect();
+                              const shouldShowAbove = filteredCompanies.length === 1 || index >= filteredCompanies.length - 2;
+                              setDropdownPosition({
+                                top: shouldShowAbove ? rect.top - 10 : rect.bottom + 5,
+                                right: window.innerWidth - rect.right
+                              });
+                              setOpenDropdownId(company.id);
+                            }
+                          }}
                           className="p-1 rounded-full hover:bg-gray-100 transition-colors"
                           title="More actions"
                         >
                           <EllipsisVerticalIcon className="w-5 h-5 text-gray-600" />
                         </button>
                         
-                        {openDropdownId === company.id && (
+                        {openDropdownId === company.id && dropdownPosition && (
                           <>
                             {/* Backdrop to close dropdown */}
                             <div 
                               className="fixed inset-0 z-10" 
-                              onClick={() => setOpenDropdownId(null)}
+                              onClick={() => {
+                                setOpenDropdownId(null);
+                                setDropdownPosition(null);
+                              }}
                             />
                             
                             {/* Dropdown Menu */}
-                            <div className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20 ${
-                              index >= filteredCompanies.length - 2 ? 'bottom-full mb-2' : 'mt-2'
-                            }`}>
+                            <div 
+                              className="fixed w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-20"
+                              style={{
+                                top: dropdownPosition.top,
+                                right: dropdownPosition.right,
+                                transform: filteredCompanies.length === 1 || index >= filteredCompanies.length - 2 ? 'translateY(-100%)' : 'translateY(0)'
+                              }}
+                            >
                               <button
                                 onClick={() => {
                                   setOpenDropdownId(null);
+                                  setDropdownPosition(null);
                                   navigate(`/admin/billing`);
                                 }}
                                 className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
@@ -657,6 +682,7 @@ export default function SuperAdminDashboard() {
                                 <button
                                   onClick={() => {
                                     setOpenDropdownId(null);
+                                    setDropdownPosition(null);
                                     handleSuspendCompany(company);
                                   }}
                                   className="w-full px-4 py-2 text-left text-sm text-orange-600 hover:bg-orange-50 flex items-center gap-2"
@@ -668,6 +694,7 @@ export default function SuperAdminDashboard() {
                                 <button
                                   onClick={() => {
                                     setOpenDropdownId(null);
+                                    setDropdownPosition(null);
                                     handleActivateCompany(company.id);
                                   }}
                                   className="w-full px-4 py-2 text-left text-sm text-green-600 hover:bg-green-50 flex items-center gap-2"
@@ -680,7 +707,11 @@ export default function SuperAdminDashboard() {
                               <div className="border-t border-gray-200 my-1"></div>
                               
                               <button
-                                onClick={() => handleDeleteCompany(company)}
+                                onClick={() => {
+                                  setOpenDropdownId(null);
+                                  setDropdownPosition(null);
+                                  handleDeleteCompany(company);
+                                }}
                                 className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                               >
                                 <TrashIcon className="w-4 h-4" />
