@@ -382,14 +382,6 @@ async def add_team_member(
             detail="User not found"
         )
     
-    # Check if user is already in a team
-    # EXCEPTION: Super admin can be in multiple teams
-    if user.team_id and user.user_role != "super_admin":
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User is already in a team"
-        )
-    
     # Check if user is in the same company
     # EXCEPTION: Super admin can join any team from any company
     if user.user_role != "super_admin" and str(user.company_id) != str(team.company_id):
@@ -398,33 +390,40 @@ async def add_team_member(
             detail="User must be in the same company as the team"
         )
     
+    # Add user to team using user_teams table (many-to-many)
+    # This allows users to be in multiple teams within the same company
+    from app.models.users import user_teams
+    
+    # Check if already in this specific team
+    existing = db.execute(
+        user_teams.select().where(
+            user_teams.c.user_id == member.user_id,
+            user_teams.c.team_id == team_id
+        )
+    ).first()
+    
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User is already in this team"
+        )
+    
     # Add user to team
-    if user.user_role == "super_admin":
-        # Super admin: Add to user_teams table (many-to-many)
-        # Check if already in this team
-        from app.models.users import user_teams
-        existing = db.execute(
-            user_teams.select().where(
-                user_teams.c.user_id == member.user_id,
-                user_teams.c.team_id == team_id
-            )
-        ).first()
-        
-        if not existing:
-            db.execute(
-                user_teams.insert().values(
-                    user_id=member.user_id,
-                    team_id=team_id
-                )
-            )
-    else:
-        # Regular users: Use team_id field (single team)
+    db.execute(
+        user_teams.insert().values(
+            user_id=member.user_id,
+            team_id=team_id
+        )
+    )
+    
+    # Also set team_id for backward compatibility (primary team)
+    if not user.team_id:
         user.team_id = team_id
-        
-        # Set as regular_user if not already admin
-        # IMPORTANT: Never change super_admin or company_admin roles
-        if user.user_role not in ["super_admin", "company_admin"]:
-            user.user_role = "regular_user"
+    
+    # Set as regular_user if not already admin
+    # IMPORTANT: Never change super_admin or company_admin roles
+    if user.user_role not in ["super_admin", "company_admin"]:
+        user.user_role = "regular_user"
     
     db.commit()
     
@@ -488,21 +487,31 @@ async def remove_team_member(
     if str(team.team_lead_id) == str(user_id):
         team.team_lead_id = None
     
-    # Remove user from team
-    if user.user_role == "super_admin" and in_user_teams:
-        # Super admin: Remove from user_teams table
+    # Remove user from team (user_teams table)
+    if in_user_teams:
         db.execute(
             user_teams.delete().where(
                 user_teams.c.user_id == user_id,
                 user_teams.c.team_id == team_id
             )
         )
-    else:
-        # Regular user: Clear team_id field
-        user.team_id = None
+    
+    # If this was the user's primary team, clear team_id
+    if str(user.team_id) == str(team_id):
+        # Check if user is in other teams
+        remaining_teams = db.execute(
+            user_teams.select().where(user_teams.c.user_id == user_id)
+        ).fetchall()
         
-        # Keep as regular_user (no role change needed)
-        # User remains regular_user whether in team or not
+        if remaining_teams:
+            # Set first remaining team as primary
+            user.team_id = remaining_teams[0].team_id
+        else:
+            # No teams left, clear team_id
+            user.team_id = None
+    
+    # Keep as regular_user (no role change needed)
+    # User remains regular_user whether in team or not
     
     db.commit()
     
