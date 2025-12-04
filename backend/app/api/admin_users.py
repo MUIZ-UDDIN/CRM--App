@@ -105,6 +105,13 @@ def get_company_users(
     current_user: dict = Depends(get_current_user)
 ):
     """Get all users for a specific company"""
+    # IMMEDIATE TEST - Write to file first thing
+    try:
+        with open('/tmp/function_called.txt', 'w') as f:
+            f.write(f"FUNCTION CALLED: {current_user.get('email')}\n")
+    except Exception as e:
+        pass
+    
     # Get current user
     user = db.query(User).filter(User.id == current_user.get("id")).first()
     if not user:
