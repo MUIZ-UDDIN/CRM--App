@@ -344,7 +344,7 @@ export default function Register() {
                 />
               </div>
               <div className="mt-1 flex justify-between items-center">
-                <p className="text-xs text-gray-500">{formData.company_name.length}/100 characters</p>
+                <p className="text-xs text-gray-500">{formData.company_name.length}/100</p>
                 {validationErrors.company_name && (
                   <p className="text-xs text-red-600">{validationErrors.company_name}</p>
                 )}
@@ -379,7 +379,7 @@ export default function Register() {
                   />
                 </div>
                 <div className="mt-1 flex justify-between items-center">
-                  <p className="text-xs text-gray-500">{formData.admin_first_name.length}/50 characters</p>
+                  <p className="text-xs text-gray-500">{formData.admin_first_name.length}/50</p>
                   {validationErrors.admin_first_name && (
                     <p className="text-xs text-red-600">{validationErrors.admin_first_name}</p>
                   )}
@@ -411,7 +411,7 @@ export default function Register() {
                   />
                 </div>
                 <div className="mt-1 flex justify-between items-center">
-                  <p className="text-xs text-gray-500">{formData.admin_last_name.length}/50 characters</p>
+                  <p className="text-xs text-gray-500">{formData.admin_last_name.length}/50</p>
                   {validationErrors.admin_last_name && (
                     <p className="text-xs text-red-600">{validationErrors.admin_last_name}</p>
                   )}
@@ -472,7 +472,7 @@ export default function Register() {
                 />
               </div>
               <div className="mt-1 flex justify-between items-center">
-                <p className="text-xs text-gray-500">{formData.phone.length}/20 characters</p>
+                <p className="text-xs text-gray-500">{formData.phone.length}/20</p>
                 {validationErrors.phone && (
                   <p className="text-xs text-red-600">{validationErrors.phone}</p>
                 )}
