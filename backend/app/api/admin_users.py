@@ -145,15 +145,27 @@ def get_company_users(
         )
     
     # Get all users for this company (excluding deleted users)
+    # Enable SQL logging to see actual query
+    import sys
+    with open('/tmp/crm_debug.log', 'a') as f:
+        f.write(f"\n{'='*60}\n")
+        f.write(f"GET COMPANY USERS - {user.email}\n")
+        f.write(f"User role: {user.user_role}\n")
+        f.write(f"Company ID: {company_id}\n")
+        f.flush()
+    
     query = db.query(User).filter(
         User.company_id == company_id,
         User.is_deleted == False
     )
     
-    print(f"Query filters: company_id={company_id}, is_deleted=False")
-    
     users = query.all()
-    print(f"📊 Number of users returned from database: {len(users)}")
+    
+    with open('/tmp/crm_debug.log', 'a') as f:
+        f.write(f"Users returned: {len(users)}\n")
+        for u in users:
+            f.write(f"  - {u.email} ({u.user_role})\n")
+        f.flush()
     
     # Debug logging
     for u in users:
