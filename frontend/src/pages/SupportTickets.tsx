@@ -269,8 +269,8 @@ export default function SupportTickets() {
           <p className="text-gray-600">No tickets found</p>
         </div>
       ) : (
-        <div className="bg-white rounded-lg border">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-lg border overflow-hidden">
+          <div className="overflow-x-auto overflow-y-visible">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50"> 
               <tr>
@@ -342,7 +342,7 @@ export default function SupportTickets() {
                             onClick={() => setOpenDropdown(null)}
                           />
                           <div className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border z-20 ${
-                            index >= tickets.length - 2 ? 'bottom-full mb-2' : 'mt-2'
+                            tickets.length === 1 || index >= tickets.length - 2 ? 'bottom-full mb-2' : 'mt-2'
                           }`}>
                             <div className="py-1">
                               <button
