@@ -104,13 +104,21 @@ def get_company_users(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Get all users for a specific company (Super Admin only)"""
-    # Check if user is super admin
+    """Get all users for a specific company"""
+    # Get current user
     user = db.query(User).filter(User.id == current_user.get("id")).first()
-    if not user or user.role != UserRole.SUPER_ADMIN:
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    # Super Admin can access any company
+    # Other users can only access their own company
+    if user.role != UserRole.SUPER_ADMIN and str(user.company_id) != str(company_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only Super Admins can access this endpoint"
+            detail="You can only view team members from your own company"
         )
     
     # Verify company exists
@@ -121,8 +129,11 @@ def get_company_users(
             detail="Company not found"
         )
     
-    # Get all users for this company
-    users = db.query(User).filter(User.company_id == company_id).all()
+    # Get all users for this company (excluding deleted users)
+    users = db.query(User).filter(
+        User.company_id == company_id,
+        User.is_deleted == False
+    ).all()
     
     # Debug logging
     for user in users:
