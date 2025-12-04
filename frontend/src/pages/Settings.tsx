@@ -225,7 +225,12 @@ export default function Settings() {
       
       if (response.ok) {
         const data = await response.json();
-        setTeamMembers(data.map((user: any) => ({
+        console.log('=== TEAM MEMBERS DATA RECEIVED ===');
+        console.log('Raw data:', data);
+        console.log('Number of users:', data.length);
+        console.log('Current user company_id:', currentUser.company_id);
+        
+        const mappedData = data.map((user: any) => ({
           id: user.id,
           first_name: user.first_name || '',
           last_name: user.last_name || '',
@@ -235,7 +240,10 @@ export default function Settings() {
           user_role: user.user_role || user.role || 'User',
           status: user.status || (user.is_active ? 'active' : 'inactive'),
           joined_at: user.created_at?.split('T')[0] || 'N/A',
-        })));
+        }));
+        
+        console.log('Mapped team members:', mappedData);
+        setTeamMembers(mappedData);
       } else {
         // Handle error response
         const errorData = await response.json().catch(() => ({ detail: 'Failed to load team members' }));
