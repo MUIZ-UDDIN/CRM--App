@@ -146,23 +146,28 @@ def get_company_users(
         )
     
     # Get all users for this company (excluding deleted users)
-    users = db.query(User).filter(
+    query = db.query(User).filter(
         User.company_id == company_id,
         User.is_deleted == False
-    ).all()
+    )
+    
+    # Log the SQL query
+    logger.info(f"SQL Query: {query}")
+    logger.info(f"Query filters: company_id={company_id}, is_deleted=False")
+    
+    users = query.all()
+    logger.info(f"Number of users returned from database: {len(users)}")
     
     # Debug logging
     for user in users:
-        print(f"DEBUG - User: {user.email}")
-        print(f"  Legacy role field: {user.role}")
-        print(f"  Correct user_role field: {user.user_role}")
-        print(f"  user_role type: {type(user.user_role)}")
+        logger.info(f"DB User: {user.email}, role={user.user_role}, company={user.company_id}")
     
     result = [UserResponse.from_orm(user) for user in users]
+    logger.info(f"Number of users in result after serialization: {len(result)}")
     
     # Debug the serialized result
     for r in result:
-        print(f"DEBUG - Serialized user: {r.email}, role: '{r.role}'")
+        logger.info(f"Serialized user: {r.email}, role='{r.role}'")
     
     return result
 
