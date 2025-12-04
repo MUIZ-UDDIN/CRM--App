@@ -115,7 +115,7 @@ def get_company_users(
     
     # Super Admin can access any company
     # Other users can only access their own company
-    if user.role != UserRole.SUPER_ADMIN and str(user.company_id) != str(company_id):
+    if user.user_role != UserRole.SUPER_ADMIN and str(user.company_id) != str(company_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view team members from your own company"
@@ -160,7 +160,7 @@ def get_company_teams(
     """Get all teams for a specific company (Super Admin only)"""
     # Check if user is super admin
     user = db.query(User).filter(User.id == current_user.get("id")).first()
-    if not user or user.role != UserRole.SUPER_ADMIN:
+    if not user or user.user_role != UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Super Admins can access this endpoint"
@@ -190,7 +190,7 @@ def create_company_user(
     """Create a new user for a specific company (Super Admin only)"""
     # Check if user is super admin
     admin_user = db.query(User).filter(User.id == current_user.get("id")).first()
-    if not admin_user or admin_user.role != UserRole.SUPER_ADMIN:
+    if not admin_user or admin_user.user_role != UserRole.SUPER_ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only Super Admins can create users for companies"
