@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   PlusIcon, 
   TicketIcon, 
@@ -53,7 +53,9 @@ export default function SupportTickets() {
   const [assigneeId, setAssigneeId] = useState('');
   const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   const [newTicket, setNewTicket] = useState({
     subject: '',
@@ -329,27 +331,52 @@ export default function SupportTickets() {
                   <td className="px-6 py-4">
                     <div className="relative">
                       <button
-                        onClick={() => setOpenDropdown(openDropdown === ticket.id ? null : ticket.id)}
+                        ref={(el) => (buttonRefs.current[ticket.id] = el)}
+                        onClick={(e) => {
+                          if (openDropdown === ticket.id) {
+                            setOpenDropdown(null);
+                            setDropdownPosition(null);
+                          } else {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            const shouldShowAbove = tickets.length === 1 || index >= tickets.length - 2;
+                            setDropdownPosition({
+                              top: shouldShowAbove ? rect.top - 10 : rect.bottom + 5,
+                              right: window.innerWidth - rect.right
+                            });
+                            setOpenDropdown(ticket.id);
+                          }
+                        }}
                         className="p-1 hover:bg-gray-100 rounded-full"
                       >
                         <EllipsisVerticalIcon className="h-5 w-5 text-gray-600" />
                       </button>
                       
-                      {openDropdown === ticket.id && (
+                      {openDropdown === ticket.id && dropdownPosition && (
                         <>
                           <div 
                             className="fixed inset-0 z-10" 
-                            onClick={() => setOpenDropdown(null)}
+                            onClick={() => {
+                              setOpenDropdown(null);
+                              setDropdownPosition(null);
+                            }}
                           />
-                          <div className={`absolute right-0 w-48 bg-white rounded-lg shadow-lg border z-20 ${
-                            tickets.length === 1 || index >= tickets.length - 2 ? 'bottom-full mb-2' : 'mt-2'
-                          }`}>
+                          <div 
+                            className={`fixed w-48 bg-white rounded-lg shadow-lg border z-20 ${
+                              tickets.length === 1 || index >= tickets.length - 2 ? '' : ''
+                            }`}
+                            style={{
+                              top: dropdownPosition.top,
+                              right: dropdownPosition.right,
+                              transform: tickets.length === 1 || index >= tickets.length - 2 ? 'translateY(-100%)' : 'translateY(0)'
+                            }}
+                          >
                             <div className="py-1">
                               <button
                                 onClick={() => {
                                   setSelectedTicket(ticket);
                                   setShowViewModal(true);
                                   setOpenDropdown(null);
+                                  setDropdownPosition(null);
                                 }}
                                 className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                               >
@@ -363,6 +390,7 @@ export default function SupportTickets() {
                                     setSelectedTicket(ticket);
                                     setShowAssignModal(true);
                                     setOpenDropdown(null);
+                                    setDropdownPosition(null);
                                   }}
                                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 >
@@ -376,6 +404,7 @@ export default function SupportTickets() {
                                   onClick={() => {
                                     updateTicketStatus(ticket.id, 'in_progress');
                                     setOpenDropdown(null);
+                                    setDropdownPosition(null);
                                   }}
                                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-blue-600 hover:bg-gray-100"
                                 >
@@ -389,6 +418,7 @@ export default function SupportTickets() {
                                   onClick={() => {
                                     updateTicketStatus(ticket.id, 'resolved');
                                     setOpenDropdown(null);
+                                    setDropdownPosition(null);
                                   }}
                                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-green-600 hover:bg-gray-100"
                                 >
@@ -402,6 +432,7 @@ export default function SupportTickets() {
                                   onClick={() => {
                                     updateTicketStatus(ticket.id, 'closed');
                                     setOpenDropdown(null);
+                                    setDropdownPosition(null);
                                   }}
                                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
                                 >
@@ -417,11 +448,12 @@ export default function SupportTickets() {
                                     onClick={() => {
                                       deleteTicket(ticket.id);
                                       setOpenDropdown(null);
+                                      setDropdownPosition(null);
                                     }}
                                     className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
                                   >
                                     <TrashIcon className="h-4 w-4" />
-                                    Delete Ticket
+                                    Delete
                                   </button>
                                 </>
                               )}
