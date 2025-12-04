@@ -96,9 +96,6 @@ export default function Register() {
       return 'Script tags and HTML are not allowed';
     }
     if (/<[^>]+>/.test(value)) return 'HTML tags are not allowed';
-    if (!/^[a-zA-Z\s\-']+$/.test(value)) {
-      return 'Only letters, spaces, hyphens, and apostrophes allowed';
-    }
     return undefined;
   };
 
