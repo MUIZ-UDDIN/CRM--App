@@ -113,13 +113,29 @@ def get_company_users(
             detail="User not found"
         )
     
+    # Debug logging
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.info(f"=== GET COMPANY USERS DEBUG ===")
+    logger.info(f"User: {user.email}")
+    logger.info(f"User role field: {user.user_role} (type: {type(user.user_role)})")
+    logger.info(f"User company_id: {user.company_id}")
+    logger.info(f"Requested company_id: {company_id}")
+    
     # Super Admin can access any company
     # Other users can only access their own company
-    if user.user_role != UserRole.SUPER_ADMIN and str(user.company_id) != str(company_id):
+    # Handle both string and enum comparison
+    user_role_str = user.user_role if isinstance(user.user_role, str) else user.user_role.value if hasattr(user.user_role, 'value') else str(user.user_role)
+    logger.info(f"User role string: {user_role_str}")
+    
+    if user_role_str != "super_admin" and str(user.company_id) != str(company_id):
+        logger.warning(f"Access denied: user_role={user_role_str}, user_company={user.company_id}, requested_company={company_id}")
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only view team members from your own company"
         )
+    
+    logger.info(f"Access granted for user {user.email}")
     
     # Verify company exists
     company = db.query(Company).filter(Company.id == company_id).first()

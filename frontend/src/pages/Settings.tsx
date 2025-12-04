@@ -236,6 +236,11 @@ export default function Settings() {
           status: user.status || (user.is_active ? 'active' : 'inactive'),
           joined_at: user.created_at?.split('T')[0] || 'N/A',
         })));
+      } else {
+        // Handle error response
+        const errorData = await response.json().catch(() => ({ detail: 'Failed to load team members' }));
+        console.error('Failed to fetch team members:', errorData);
+        toast.error(errorData.detail || 'Failed to load team members');
       }
     } catch (error: any) {
       console.error('Error fetching team members:', error);
