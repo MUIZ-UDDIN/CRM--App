@@ -258,12 +258,33 @@ export default function Analytics() {
 
   // Revenue data from API - always show chart even with no data
   const revenueData = Array.isArray(revenueAnalytics?.monthly_revenue) && revenueAnalytics.monthly_revenue.length > 0
-    ? revenueAnalytics.monthly_revenue.map((item: any) => ({
-        month: new Date(item.month + '-01').toLocaleDateString('en-US', { month: 'short' }),
-        revenue: parseFloat(item.revenue) || 0,
-        deals: item.deal_count || 0,
-        target: (parseFloat(item.revenue) || 0) * 1.1 // 10% above actual as target
-      }))
+    ? revenueAnalytics.monthly_revenue.map((item: any) => {
+        // Backend sends "Nov 05" for weekly data (last7days, last30days) or "2025-11" for monthly data
+        let displayLabel = item.month;
+        
+        // Check if it's already in "Mon DD" format (e.g., "Nov 05")
+        if (item.month.match(/^[A-Z][a-z]{2} \d{1,2}$/)) {
+          // It's weekly data - use as is
+          displayLabel = item.month;
+        } else if (item.month.match(/^\d{4}-\d{2}$/)) {
+          // It's monthly data in "YYYY-MM" format - convert to "Mon" or "Mon YYYY"
+          const date = new Date(item.month + '-01');
+          if (dateRange === 'thisyear') {
+            // For "This Year", show just month name
+            displayLabel = date.toLocaleDateString('en-US', { month: 'short' });
+          } else {
+            // For longer ranges, show "Mon YYYY"
+            displayLabel = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+          }
+        }
+        
+        return {
+          month: displayLabel,
+          revenue: parseFloat(item.revenue) || 0,
+          deals: item.deal_count || 0,
+          target: (parseFloat(item.revenue) || 0) * 1.1 // 10% above actual as target
+        };
+      })
     : [
         { month: 'Jan', revenue: 0, deals: 0, target: 0 },
         { month: 'Feb', revenue: 0, deals: 0, target: 0 },

@@ -351,8 +351,64 @@ async def get_revenue_analytics(
     # Generate periods based on date range
     monthly_data = []
     
-    if days_in_range <= 31:
-        # For short ranges (<=31 days), show weekly data
+    if days_in_range <= 7:
+        # For very short ranges (<=7 days), show daily data
+        current = start_date
+        while current < end_date:
+            period_start = current
+            period_end = min(current + timedelta(days=1), end_date)
+            
+            # Build filters for this period
+            filters = [
+                Deal.is_deleted == False,
+                Deal.status == DealStatus.WON,
+                or_(
+                    and_(
+                        Deal.actual_close_date.isnot(None),
+                        Deal.actual_close_date >= period_start,
+                        Deal.actual_close_date < period_end
+                    ),
+                    and_(
+                        Deal.actual_close_date.is_(None),
+                        Deal.updated_at >= period_start,
+                        Deal.updated_at < period_end
+                    )
+                )
+            ]
+            
+            # Apply access level filters
+            if access_level == "company" and company_id:
+                filters.append(Deal.company_id == company_id)
+            elif access_level == "team" and current_user.get('team_id'):
+                team_member_ids = db.query(User.id).filter(
+                    User.team_id == uuid.UUID(current_user.get('team_id')),
+                    User.is_deleted == False
+                ).all()
+                if team_member_ids:
+                    filters.append(Deal.owner_id.in_([m[0] for m in team_member_ids]))
+                else:
+                    filters.append(Deal.owner_id == owner_id)
+            elif access_level == "own":
+                filters.append(Deal.owner_id == owner_id)
+            
+            if user_id:
+                filters.append(Deal.owner_id == uuid.UUID(user_id))
+            if pipeline_id:
+                filters.append(Deal.pipeline_id == uuid.UUID(pipeline_id))
+            
+            # Get revenue and deal count
+            revenue = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0.0
+            deal_count = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
+            
+            monthly_data.append({
+                "month": period_start.strftime("%b %d"),
+                "revenue": float(revenue),
+                "deal_count": deal_count
+            })
+            
+            current += timedelta(days=1)
+    elif days_in_range <= 31:
+        # For short ranges (8-31 days), show weekly data
         current = start_date
         while current < end_date:
             period_start = current
