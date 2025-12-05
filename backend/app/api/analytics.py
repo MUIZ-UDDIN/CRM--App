@@ -377,7 +377,10 @@ async def get_revenue_analytics(
             ]
             
             # Apply access level filters
-            if access_level == "company" and company_id:
+            if access_level == "all":
+                # Super Admin - no company filter, see all companies
+                pass
+            elif access_level == "company" and company_id:
                 filters.append(Deal.company_id == company_id)
             elif access_level == "team" and current_user.get('team_id'):
                 team_member_ids = db.query(User.id).filter(
@@ -433,7 +436,10 @@ async def get_revenue_analytics(
             ]
             
             # Apply access level filters
-            if access_level == "company" and company_id:
+            if access_level == "all":
+                # Super Admin - no company filter, see all companies
+                pass
+            elif access_level == "company" and company_id:
                 filters.append(Deal.company_id == company_id)
             elif access_level == "team" and current_user.get('team_id'):
                 team_member_ids = db.query(User.id).filter(
@@ -503,7 +509,10 @@ async def get_revenue_analytics(
             ]
             
             # Apply access level filters
-            if access_level == "company" and company_id:
+            if access_level == "all":
+                # Super Admin - no company filter, see all companies
+                pass
+            elif access_level == "company" and company_id:
                 filters.append(Deal.company_id == company_id)
             elif access_level == "team" and current_user.get('team_id'):
                 team_member_ids = db.query(User.id).filter(
