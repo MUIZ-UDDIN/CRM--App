@@ -57,6 +57,8 @@ const CompanyManagement: React.FC = () => {
   const [reassignmentImpact, setReassignmentImpact] = useState<any>(null);
   const [reassignData, setReassignData] = useState(false);
   const [newOwnerId, setNewOwnerId] = useState('');
+  const [showDeleteUserModal, setShowDeleteUserModal] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; name: string } | null>(null);
   
   // Add user form state
   const [newUser, setNewUser] = useState({
@@ -198,14 +200,18 @@ const CompanyManagement: React.FC = () => {
     }
   };
 
-  const handleDeleteUser = async (userId: string, userName: string) => {
-    if (!confirm(`Are you sure you want to permanently delete ${userName}? This action cannot be undone.`)) {
-      return;
-    }
+  const openDeleteUserModal = (userId: string, userName: string) => {
+    setUserToDelete({ id: userId, name: userName });
+    setShowDeleteUserModal(true);
+    setOpenDropdownId(null);
+  };
+
+  const confirmDeleteUser = async () => {
+    if (!userToDelete) return;
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${API_URL}/admin/users/${userId}`, {
+      const response = await fetch(`${API_URL}/admin/companies/${companyId}/users/${userToDelete.id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -214,6 +220,8 @@ const CompanyManagement: React.FC = () => {
 
       if (response.ok) {
         toast.success('User deleted successfully');
+        setShowDeleteUserModal(false);
+        setUserToDelete(null);
         fetchUsers();
       } else {
         const error = await response.json();
@@ -559,10 +567,7 @@ const CompanyManagement: React.FC = () => {
                                 
                                 {/* Delete User */}
                                 <button
-                                  onClick={() => {
-                                    handleDeleteUser(user.id, `${user.first_name} ${user.last_name}`);
-                                    setOpenDropdownId(null);
-                                  }}
+                                  onClick={() => openDeleteUserModal(user.id, `${user.first_name} ${user.last_name}`)}
                                   className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
                                 >
                                   <TrashIcon className="w-4 h-4" />
@@ -935,6 +940,45 @@ const CompanyManagement: React.FC = () => {
                   Reassign Team
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {showDeleteUserModal && userToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={() => setShowDeleteUserModal(false)}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm User Deletion</h3>
+              <button onClick={() => setShowDeleteUserModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to permanently delete <span className="font-semibold text-red-600">{userToDelete.name}</span>?
+              </p>
+              <p className="text-sm text-red-600 mt-2 font-semibold">
+                This action CANNOT be undone!
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteUserModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDeleteUser}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete User
+              </button>
             </div>
           </div>
         </div>

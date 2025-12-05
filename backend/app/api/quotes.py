@@ -643,10 +643,18 @@ async def download_quote(
     elements.append(quote_table)
     elements.append(Spacer(1, 30))
     
-    # Amount table
+    # Amount table with wrapped text
+    description_style = ParagraphStyle(
+        'DescriptionStyle',
+        parent=getSampleStyleSheet()['Normal'],
+        fontSize=10,
+        leading=12,
+        wordWrap='CJK'
+    )
+    
     amount_data = [
         ['Description', 'Amount'],
-        [quote.title, f'${quote.amount:,.2f}'],
+        [Paragraph(quote.title or '', description_style), f'${quote.amount:,.2f}'],
         ['', ''],
         ['Total Amount', f'${quote.amount:,.2f}'],
     ]

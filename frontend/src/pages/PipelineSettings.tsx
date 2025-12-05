@@ -45,6 +45,8 @@ export default function PipelineSettings() {
   const [newStageProbability, setNewStageProbability] = useState(50);
   const [loading, setLoading] = useState(false);
   const [isAddingStage, setIsAddingStage] = useState(false);
+  const [showDeleteStageModal, setShowDeleteStageModal] = useState(false);
+  const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
   
   // Check if user can customize CRM
   const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin();
@@ -291,18 +293,26 @@ export default function PipelineSettings() {
     }
   };
 
-  const handleDeleteStage = async (stageId: string) => {
-    if (!currentPipeline) return;
-    if (!confirm('Are you sure you want to delete this stage?')) return;
+  const openDeleteStageModal = (stage: Stage) => {
+    setStageToDelete(stage);
+    setShowDeleteStageModal(true);
+  };
+
+  const confirmDeleteStage = async () => {
+    if (!currentPipeline || !stageToDelete) return;
 
     try {
-      await pipelinesService.deleteStage(stageId);
+      await pipelinesService.deleteStage(stageToDelete.id);
       toast.success('Stage deleted successfully');
+      setShowDeleteStageModal(false);
+      setStageToDelete(null);
       fetchPipelineStages(selectedPipeline);
     } catch (error: any) {
       // Show specific error message from backend (e.g., "Cannot delete stage with X active deals")
       const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to delete stage';
       toast.error(errorMessage);
+      setShowDeleteStageModal(false);
+      setStageToDelete(null);
     }
   };
 
@@ -433,7 +443,7 @@ export default function PipelineSettings() {
                                   <PencilIcon className="h-5 w-5" />
                                 </button>
                                 <button
-                                  onClick={() => handleDeleteStage(stage.id)}
+                                  onClick={() => openDeleteStageModal(stage)}
                                   className="p-2 text-gray-400 hover:text-red-600 rounded"
                                 >
                                   <TrashIcon className="h-5 w-5" />
@@ -630,6 +640,45 @@ export default function PipelineSettings() {
                   Save Changes
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Stage Confirmation Modal */}
+      {showDeleteStageModal && stageToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={() => setShowDeleteStageModal(false)}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Stage Deletion</h3>
+              <button onClick={() => setShowDeleteStageModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete the stage <span className="font-semibold text-red-600">"{stageToDelete.name}"</span>?
+              </p>
+              <p className="text-sm text-red-600 mt-2 font-semibold">
+                This action CANNOT be undone! All deals in this stage will need to be moved.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setShowDeleteStageModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDeleteStage}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Yes, Delete Stage
+              </button>
             </div>
           </div>
         </div>
