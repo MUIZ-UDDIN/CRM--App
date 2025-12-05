@@ -1472,19 +1472,67 @@ async def get_dashboard_analytics(
         return query.filter(and_(*filters))
     
     # Total Revenue (Won Deals) - with date filters
-    # Use created_at for filtering since actual_close_date may be NULL
+    # Use actual_close_date or updated_at for WON deals (when they were actually won)
     revenue_filters = [
         DealModel.is_deleted == False,
         DealModel.status == DealStatus.WON
     ]
-    if date_from_obj:
-        revenue_filters.append(func.date(DealModel.created_at) >= date_from_obj)
-    if date_to_obj:
-        revenue_filters.append(func.date(DealModel.created_at) <= date_to_obj)
+    
+    # Date filtering for WON deals - use actual_close_date if available, otherwise updated_at
+    if date_from_obj or date_to_obj:
+        date_conditions = []
+        if date_from_obj and date_to_obj:
+            date_conditions.append(
+                or_(
+                    and_(
+                        DealModel.actual_close_date.isnot(None),
+                        func.date(DealModel.actual_close_date) >= date_from_obj,
+                        func.date(DealModel.actual_close_date) <= date_to_obj
+                    ),
+                    and_(
+                        DealModel.actual_close_date.is_(None),
+                        func.date(DealModel.updated_at) >= date_from_obj,
+                        func.date(DealModel.updated_at) <= date_to_obj
+                    )
+                )
+            )
+        elif date_from_obj:
+            date_conditions.append(
+                or_(
+                    and_(
+                        DealModel.actual_close_date.isnot(None),
+                        func.date(DealModel.actual_close_date) >= date_from_obj
+                    ),
+                    and_(
+                        DealModel.actual_close_date.is_(None),
+                        func.date(DealModel.updated_at) >= date_from_obj
+                    )
+                )
+            )
+        elif date_to_obj:
+            date_conditions.append(
+                or_(
+                    and_(
+                        DealModel.actual_close_date.isnot(None),
+                        func.date(DealModel.actual_close_date) <= date_to_obj
+                    ),
+                    and_(
+                        DealModel.actual_close_date.is_(None),
+                        func.date(DealModel.updated_at) <= date_to_obj
+                    )
+                )
+            )
+        if date_conditions:
+            revenue_filters.extend(date_conditions)
+    
+    # User/Company filtering - Super Admin sees all companies
     if filter_user_id:
         revenue_filters.append(DealModel.owner_id == filter_user_id)
-    elif company_id:
+    elif not is_superuser and company_id:
+        # Only filter by company if NOT super admin
         revenue_filters.append(DealModel.company_id == company_id)
+    # If is_superuser and no filter_user_id, don't add company filter (see all companies)
+    
     if pipeline_id:
         revenue_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
@@ -1499,12 +1547,22 @@ async def get_dashboard_analytics(
     prev_revenue_filters = [
         DealModel.is_deleted == False,
         DealModel.status == DealStatus.WON,
-        func.date(DealModel.created_at) >= prev_period_start,
-        func.date(DealModel.created_at) <= prev_period_end
+        or_(
+            and_(
+                DealModel.actual_close_date.isnot(None),
+                func.date(DealModel.actual_close_date) >= prev_period_start,
+                func.date(DealModel.actual_close_date) <= prev_period_end
+            ),
+            and_(
+                DealModel.actual_close_date.is_(None),
+                func.date(DealModel.updated_at) >= prev_period_start,
+                func.date(DealModel.updated_at) <= prev_period_end
+            )
+        )
     ]
     if filter_user_id:
         prev_revenue_filters.append(DealModel.owner_id == filter_user_id)
-    elif company_id:
+    elif not is_superuser and company_id:
         prev_revenue_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         prev_revenue_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
@@ -1547,7 +1605,7 @@ async def get_dashboard_analytics(
     ]
     if filter_user_id:
         pipeline_filters.append(DealModel.owner_id == filter_user_id)
-    elif company_id:
+    elif not is_superuser and company_id:
         pipeline_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         pipeline_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
@@ -1607,7 +1665,7 @@ async def get_dashboard_analytics(
     ]
     if filter_user_id:
         activity_filters.append(ActivityModel.owner_id == filter_user_id)
-    elif company_id:
+    elif not is_superuser and company_id:
         activity_filters.append(ActivityModel.company_id == company_id)
     
     activities_today = db.query(func.count(ActivityModel.id)).filter(and_(*activity_filters)).scalar() or 0
@@ -1618,13 +1676,13 @@ async def get_dashboard_analytics(
     stage_filters = [DealModel.is_deleted == False]
     if filter_user_id:
         stage_filters.append(DealModel.owner_id == filter_user_id)
-    elif company_id:
+    elif not is_superuser and company_id:
         stage_filters.append(DealModel.company_id == company_id)
     if pipeline_id:
         stage_filters.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
     
-    # Also filter pipeline by company_id
-    if company_id and not pipeline_id:
+    # Also filter pipeline by company_id (only if not super admin)
+    if not is_superuser and company_id and not pipeline_id:
         stage_filters.append(PipelineModel.company_id == company_id)
     
     stage_query = db.query(
