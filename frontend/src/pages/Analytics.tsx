@@ -200,17 +200,17 @@ export default function Analytics() {
     switch (range) {
       case 'last7days': {
         const date = new Date();
-        date.setDate(date.getDate() - 7);
+        date.setDate(date.getDate() - 6); // 6 days ago + today = 7 days
         return date.toISOString().split('T')[0];
       }
       case 'last30days': {
         const date = new Date();
-        date.setDate(date.getDate() - 30);
+        date.setDate(date.getDate() - 29); // 29 days ago + today = 30 days
         return date.toISOString().split('T')[0];
       }
       case 'last90days': {
         const date = new Date();
-        date.setDate(date.getDate() - 90);
+        date.setDate(date.getDate() - 89); // 89 days ago + today = 90 days
         return date.toISOString().split('T')[0];
       }
       case 'thisyear':
@@ -882,18 +882,19 @@ export default function Analytics() {
               <BarChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <YAxis yAxisId="left" stroke="#6B7280" tick={{ fontSize: 10 }} />
+                <YAxis yAxisId="right" orientation="right" stroke="#10B981" tick={{ fontSize: 10 }} />
                 <Tooltip 
                   contentStyle={{ fontSize: '11px' }}
                   formatter={(value: any, name: string) => {
-                    if (name === 'revenue') return [`$${value.toLocaleString()}`, 'Revenue'];
-                    if (name === 'deals') return [value, 'Deals'];
+                    if (name === 'Revenue') return [`$${value.toLocaleString()}`, 'Revenue'];
+                    if (name === 'Deals Won') return [value, 'Deals Won'];
                     return [value, name];
                   }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Bar dataKey="revenue" fill="#3B82F6" name="Revenue" />
-                <Bar dataKey="deals" fill="#10B981" name="Deals Won" />
+                <Bar yAxisId="left" dataKey="revenue" fill="#3B82F6" name="Revenue" />
+                <Bar yAxisId="right" dataKey="deals" fill="#10B981" name="Deals Won" />
               </BarChart>
             </ResponsiveContainer>
           </div>
