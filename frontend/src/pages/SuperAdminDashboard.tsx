@@ -140,12 +140,6 @@ export default function SuperAdminDashboard() {
       toast.error('Admin email is required');
       return;
     }
-    
-    // Check for HTML tags or script tags in name fields
-    if (/<[^>]+>/gi.test(newCompany.name) || /<[^>]+>/gi.test(newCompany.admin_first_name) || /<[^>]+>/gi.test(newCompany.admin_last_name)) {
-      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
-      return;
-    }
 
     try {
       const token = localStorage.getItem('token');
@@ -168,7 +162,7 @@ export default function SuperAdminDashboard() {
       
       // Show a styled success toast with credentials
       toast.success(
-        `Company created successfully!\n\nEmail: ${admin_email}\nPassword: ${admin_password}\n\nIMPORTANT: Save these credentials!`,
+        `Company created successfully!\n\nEmail: ${admin_email}\nPassword: ${admin_password}\n\n⚠️ IMPORTANT: Save these credentials!`,
         { 
           duration: 15000,
           style: {
@@ -181,6 +175,7 @@ export default function SuperAdminDashboard() {
             whiteSpace: 'pre-line',
             maxWidth: '500px'
           },
+          icon: '✅'
         }
       );
       
@@ -880,10 +875,8 @@ export default function SuperAdminDashboard() {
                   onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter company name"
-                  maxLength={100}
                   autoFocus
                 />
-                <p className="text-xs text-gray-500 mt-1">{newCompany.name.length}/100 characters</p>
               </div>
 
               <div className="border-t pt-4">
@@ -900,9 +893,7 @@ export default function SuperAdminDashboard() {
                       onChange={(e) => setNewCompany({ ...newCompany, admin_first_name: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="First name"
-                      maxLength={50}
                     />
-                    <p className="text-xs text-gray-500 mt-1">{newCompany.admin_first_name.length}/50</p>
                   </div>
                   
                   <div>
@@ -915,9 +906,7 @@ export default function SuperAdminDashboard() {
                       onChange={(e) => setNewCompany({ ...newCompany, admin_last_name: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Last name"
-                      maxLength={50}
                     />
-                    <p className="text-xs text-gray-500 mt-1">{newCompany.admin_last_name.length}/50</p>
                   </div>
                 </div>
 
@@ -931,9 +920,7 @@ export default function SuperAdminDashboard() {
                     onChange={(e) => setNewCompany({ ...newCompany, admin_email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="admin@company.com"
-                    maxLength={255}
                   />
-                  <p className="text-xs text-gray-500 mt-1">{newCompany.admin_email.length}/255 characters</p>
                   <p className="text-xs text-gray-500 mt-1">
                     Login credentials will be sent to this email
                   </p>
@@ -976,7 +963,7 @@ export default function SuperAdminDashboard() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Company Deletion</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">⚠️ Confirm Company Deletion</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -994,7 +981,7 @@ export default function SuperAdminDashboard() {
                 </ul>
               </div>
               <p className="text-sm font-semibold text-red-600">
-                This action CANNOT be undone!
+                ⚠️ This action CANNOT be undone!
               </p>
             </div>
             <div className="flex justify-end space-x-3">
@@ -1023,7 +1010,7 @@ export default function SuperAdminDashboard() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Company Suspension</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">⚠️ Confirm Company Suspension</h3>
               <button onClick={cancelSuspend} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -1042,7 +1029,7 @@ export default function SuperAdminDashboard() {
                 </ul>
               </div>
               <p className="text-sm text-gray-600">
-                You can reactivate the company at any time to restore access.
+                💡 You can reactivate the company at any time to restore access.
               </p>
             </div>
             <div className="flex justify-end space-x-3">
