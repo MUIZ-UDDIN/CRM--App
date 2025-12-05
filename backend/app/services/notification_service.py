@@ -363,6 +363,104 @@ class NotificationService:
         db.commit()
     
     @staticmethod
+    def notify_deal_reassigned(
+        db: Session,
+        deal_id: uuid.UUID,
+        deal_title: str,
+        reassigner_id: uuid.UUID,
+        reassigner_name: str,
+        old_owner_id: uuid.UUID,
+        old_owner_name: str,
+        new_owner_id: uuid.UUID,
+        new_owner_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify when a deal is reassigned to a new owner"""
+        from ..models.users import User
+        
+        reassigner = db.query(User).filter(User.id == reassigner_id).first()
+        reassigner_role = reassigner.user_role if reassigner else None
+        
+        recipients = []
+        
+        # NOTIFICATION RULES BASED ON REASSIGNER ROLE:
+        # 1. Super Admin reassigns: Notify all company users
+        # 2. Company Admin reassigns: Notify super admin + all company users
+        # 3. Sales Manager reassigns: Notify super admin + company admin + old owner + new owner + reassigner
+        
+        if reassigner_role == 'super_admin':
+            # Notify all company users
+            recipients = NotificationService._get_all_company_users(db, company_id)
+            
+        elif reassigner_role == 'company_admin':
+            # Notify all company users
+            recipients = NotificationService._get_all_company_users(db, company_id)
+            # Also notify super admin
+            super_admin = db.query(User).filter(
+                User.user_role == 'super_admin',
+                User.is_deleted == False,
+                User.status == 'active'
+            ).first()
+            if super_admin and super_admin.id not in [r.id for r in recipients]:
+                recipients.append(super_admin)
+                
+        else:  # sales_manager or other roles
+            # Notify company admin
+            company_admin = db.query(User).filter(
+                User.company_id == company_id,
+                User.user_role == 'company_admin',
+                User.is_deleted == False,
+                User.status == 'active'
+            ).first()
+            if company_admin:
+                recipients.append(company_admin)
+            
+            # Notify super admin
+            super_admin = db.query(User).filter(
+                User.user_role == 'super_admin',
+                User.is_deleted == False,
+                User.status == 'active'
+            ).first()
+            if super_admin:
+                recipients.append(super_admin)
+            
+            # Notify old owner
+            old_owner = db.query(User).filter(User.id == old_owner_id).first()
+            if old_owner and old_owner.id not in [r.id for r in recipients]:
+                recipients.append(old_owner)
+            
+            # Notify new owner
+            new_owner = db.query(User).filter(User.id == new_owner_id).first()
+            if new_owner and new_owner.id not in [r.id for r in recipients]:
+                recipients.append(new_owner)
+            
+            # Notify reassigner (for confirmation)
+            if reassigner and reassigner.id not in [r.id for r in recipients]:
+                recipients.append(reassigner)
+        
+        # Remove duplicates
+        unique_recipients = []
+        seen_ids = set()
+        for r in recipients:
+            if r.id not in seen_ids:
+                unique_recipients.append(r)
+                seen_ids.add(r.id)
+        
+        # Send notifications
+        for recipient in unique_recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Deal Reassigned",
+                message=f"{reassigner_name} reassigned deal '{deal_title}' from {old_owner_name} to {new_owner_name}",
+                notification_type=NotificationType.INFO,
+                link=f"/deals/{deal_id}"
+            )
+        
+        db.commit()
+    
+    @staticmethod
     def notify_contact_created(
         db: Session,
         contact_id: uuid.UUID,

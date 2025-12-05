@@ -469,6 +469,9 @@ async def update_deal(
     # Track status changes for workflow triggers
     old_status = deal.status
     old_stage_id = deal.stage_id
+    old_owner_id = deal.owner_id
+    old_owner = db.query(User).filter(User.id == old_owner_id).first() if old_owner_id else None
+    old_owner_name = f"{old_owner.first_name} {old_owner.last_name}" if old_owner else "Unassigned"
     
     # Check permission for deal assignment (owner_id change)
     if 'owner_id' in deal_data and deal_data['owner_id'] != str(deal.owner_id):
@@ -534,6 +537,30 @@ async def update_deal(
     
     db.commit()
     db.refresh(deal)
+    
+    # Send notification if deal was reassigned
+    if 'owner_id' in deal_data and deal_data['owner_id'] != str(old_owner_id):
+        try:
+            from app.services.notification_service import NotificationService
+            new_owner = db.query(User).filter(User.id == deal.owner_id).first()
+            new_owner_name = f"{new_owner.first_name} {new_owner.last_name}" if new_owner else "Unknown"
+            reassigner_name = f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}".strip() or current_user.get('email', 'Unknown')
+            
+            NotificationService.notify_deal_reassigned(
+                db=db,
+                deal_id=deal.id,
+                deal_title=deal.title,
+                reassigner_id=uuid.UUID(user_id),
+                reassigner_name=reassigner_name,
+                old_owner_id=old_owner_id,
+                old_owner_name=old_owner_name,
+                new_owner_id=deal.owner_id,
+                new_owner_name=new_owner_name,
+                company_id=uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+            )
+            logger.info(f"✅ Deal reassignment notification sent for deal {deal.id}")
+        except Exception as e:
+            logger.error(f"❌ Failed to send deal reassignment notification: {e}")
     
     # Broadcast update to all connected clients in the company
     try:
