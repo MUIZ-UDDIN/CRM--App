@@ -155,6 +155,12 @@ const CompanyManagement: React.FC = () => {
       toast.error('Please fill in all required fields');
       return;
     }
+    
+    // Check for HTML tags or script tags
+    if (/<[^>]+>/gi.test(newUser.first_name) || /<[^>]+>/gi.test(newUser.last_name)) {
+      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
+      return;
+    }
 
     try {
       const token = localStorage.getItem('token');
@@ -601,8 +607,10 @@ const CompanyManagement: React.FC = () => {
                   value={newUser.first_name}
                   onChange={(e) => setNewUser({ ...newUser, first_name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={50}
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">{newUser.first_name.length}/50 characters</p>
               </div>
               
               <div>
@@ -614,8 +622,10 @@ const CompanyManagement: React.FC = () => {
                   value={newUser.last_name}
                   onChange={(e) => setNewUser({ ...newUser, last_name: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={50}
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">{newUser.last_name.length}/50 characters</p>
               </div>
               
               <div>
@@ -627,8 +637,10 @@ const CompanyManagement: React.FC = () => {
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  maxLength={255}
                   required
                 />
+                <p className="text-xs text-gray-500 mt-1">{newUser.email.length}/255 characters</p>
               </div>
               
               <div>
