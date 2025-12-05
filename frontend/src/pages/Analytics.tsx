@@ -879,21 +879,22 @@ export default function Analytics() {
           </div>
           <div className="p-4 sm:p-6">
             <ResponsiveContainer width="100%" height={250} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-              <AreaChart data={revenueData}>
-                <defs>
-                  <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
+              <BarChart data={revenueData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                 <XAxis dataKey="month" stroke="#6B7280" tick={{ fontSize: 10 }} />
                 <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                <Tooltip contentStyle={{ fontSize: '11px' }} />
+                <Tooltip 
+                  contentStyle={{ fontSize: '11px' }}
+                  formatter={(value: any, name: string) => {
+                    if (name === 'revenue') return [`$${value.toLocaleString()}`, 'Revenue'];
+                    if (name === 'deals') return [value, 'Deals'];
+                    return [value, name];
+                  }}
+                />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
-                <Area type="monotone" dataKey="revenue" stroke="#3B82F6" fillOpacity={1} fill="url(#colorRevenue)" />
-                <Area type="monotone" dataKey="target" stroke="#10B981" fillOpacity={0} strokeDasharray="5 5" />
-              </AreaChart>
+                <Bar dataKey="revenue" fill="#3B82F6" name="Revenue" />
+                <Bar dataKey="deals" fill="#10B981" name="Deals Won" />
+              </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
