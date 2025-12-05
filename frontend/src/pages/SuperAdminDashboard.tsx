@@ -162,7 +162,7 @@ export default function SuperAdminDashboard() {
       
       // Show a styled success toast with credentials
       toast.success(
-        `Company created successfully!\n\nEmail: ${admin_email}\nPassword: ${admin_password}\n\n⚠️ IMPORTANT: Save these credentials!`,
+        `Company created successfully!\n\nEmail: ${admin_email}\nPassword: ${admin_password}\n\nIMPORTANT: Save these credentials!`,
         { 
           duration: 15000,
           style: {
@@ -175,7 +175,6 @@ export default function SuperAdminDashboard() {
             whiteSpace: 'pre-line',
             maxWidth: '500px'
           },
-          icon: '✅'
         }
       );
       
@@ -963,7 +962,7 @@ export default function SuperAdminDashboard() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">⚠️ Confirm Company Deletion</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Company Deletion</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -981,7 +980,7 @@ export default function SuperAdminDashboard() {
                 </ul>
               </div>
               <p className="text-sm font-semibold text-red-600">
-                ⚠️ This action CANNOT be undone!
+                This action CANNOT be undone!
               </p>
             </div>
             <div className="flex justify-end space-x-3">
@@ -1010,7 +1009,7 @@ export default function SuperAdminDashboard() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">⚠️ Confirm Company Suspension</h3>
+              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Company Suspension</h3>
               <button onClick={cancelSuspend} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -1029,7 +1028,7 @@ export default function SuperAdminDashboard() {
                 </ul>
               </div>
               <p className="text-sm text-gray-600">
-                💡 You can reactivate the company at any time to restore access.
+                You can reactivate the company at any time to restore access.
               </p>
             </div>
             <div className="flex justify-end space-x-3">
