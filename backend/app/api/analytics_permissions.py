@@ -27,12 +27,13 @@ def check_analytics_permissions(current_user, analytics_type, company_id=None, t
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
     
-    # Use is_superuser flag instead of role to match Dashboard logic
-    # This ensures consistency across all analytics endpoints
+    # Check if user is super admin - check both is_superuser flag and role
+    # Some JWT tokens may have role="super_admin" but is_superuser=None
     is_superuser = current_user.get("is_superuser", False)
+    user_role = current_user.get("role", "").lower()
     
-    # Super admin can access all analytics (use is_superuser flag for consistency with Dashboard)
-    if is_superuser:
+    # Super admin can access all analytics
+    if is_superuser or user_role == "super_admin":
         return True, "all"
     
     # Check company-level access
