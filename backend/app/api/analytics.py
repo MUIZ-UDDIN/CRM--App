@@ -1776,10 +1776,19 @@ async def export_analytics_pdf(
          .group_by(PipelineStage.name)\
          .all()
         
+        # Create style for wrapping text
+        wrap_style = ParagraphStyle(
+            'WrapStyle',
+            parent=styles['Normal'],
+            fontSize=10,
+            leading=12,
+            wordWrap='CJK'
+        )
+        
         summary_data = [['Stage', 'Deals', 'Total Value']]
         for stage in stages:
             summary_data.append([
-                stage.name,
+                Paragraph(stage.name or 'N/A', wrap_style),
                 str(stage.deal_count),
                 f'${stage.total_value:,.2f}' if stage.total_value else '$0.00'
             ])
