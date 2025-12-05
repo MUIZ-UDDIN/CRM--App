@@ -337,6 +337,7 @@ async def get_revenue_analytics(
     company_id = current_user.get('company_id')
     
     # Debug logging
+    print(f"[REVENUE] current_user role={current_user.get('role')}, is_superuser={current_user.get('is_superuser')}")
     print(f"[REVENUE] access_level={access_level}, user_id filter={user_id}, pipeline_id filter={pipeline_id}")
     
     # Determine date range based on filters
