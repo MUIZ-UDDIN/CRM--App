@@ -336,6 +336,9 @@ async def get_revenue_analytics(
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
+    # Debug logging
+    print(f"[REVENUE] access_level={access_level}, user_id filter={user_id}, pipeline_id filter={pipeline_id}")
+    
     # Determine date range based on filters
     if date_from and date_to:
         start_date = datetime.fromisoformat(date_from)
