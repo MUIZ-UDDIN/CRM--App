@@ -1858,7 +1858,24 @@ async def export_analytics_pdf(
             ['Won Value', f'${won_value:,.2f}']
         ]
     
-    summary_table = Table(summary_data, colWidths=[3*inch, 3*inch])
+    # Set column widths based on report type
+    if report_type == "pipeline":
+        # Pipeline has 3 columns: Stage, Deals, Total Value
+        col_widths = [2.5*inch, 1.5*inch, 2.5*inch]
+    elif report_type == "activity":
+        # Activity has 2 columns
+        col_widths = [3*inch, 3*inch]
+    elif report_type == "contacts":
+        # Contacts has 2 columns
+        col_widths = [3*inch, 3*inch]
+    elif report_type == "revenue":
+        # Revenue has 2 columns
+        col_widths = [3*inch, 3*inch]
+    else:
+        # Sales and default have 2 columns
+        col_widths = [3*inch, 3*inch]
+    
+    summary_table = Table(summary_data, colWidths=col_widths)
     summary_table.setStyle(TableStyle([
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#1e40af')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
