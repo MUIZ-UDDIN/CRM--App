@@ -124,20 +124,72 @@ export default function SuperAdminDashboard() {
   };
 
   const handleCreateCompany = async () => {
+    // Validate company name
     if (!newCompany.name.trim()) {
       toast.error('Company name is required');
       return;
     }
+    if (newCompany.name.length > 100) {
+      toast.error('Company name cannot exceed 100 characters');
+      return;
+    }
+    if (/<script|<iframe|javascript:|onerror=|onload=/i.test(newCompany.name)) {
+      toast.error('Script tags and HTML are not allowed in company name');
+      return;
+    }
+    if (/<[^>]+>/.test(newCompany.name)) {
+      toast.error('HTML tags are not allowed in company name');
+      return;
+    }
+    
+    // Validate first name
     if (!newCompany.admin_first_name.trim()) {
       toast.error('Admin first name is required');
       return;
     }
+    if (newCompany.admin_first_name.length > 50) {
+      toast.error('First name cannot exceed 50 characters');
+      return;
+    }
+    if (/<script|<iframe|javascript:|onerror=|onload=/i.test(newCompany.admin_first_name)) {
+      toast.error('Script tags and HTML are not allowed in first name');
+      return;
+    }
+    if (/<[^>]+>/.test(newCompany.admin_first_name)) {
+      toast.error('HTML tags are not allowed in first name');
+      return;
+    }
+    
+    // Validate last name
     if (!newCompany.admin_last_name.trim()) {
       toast.error('Admin last name is required');
       return;
     }
+    if (newCompany.admin_last_name.length > 50) {
+      toast.error('Last name cannot exceed 50 characters');
+      return;
+    }
+    if (/<script|<iframe|javascript:|onerror=|onload=/i.test(newCompany.admin_last_name)) {
+      toast.error('Script tags and HTML are not allowed in last name');
+      return;
+    }
+    if (/<[^>]+>/.test(newCompany.admin_last_name)) {
+      toast.error('HTML tags are not allowed in last name');
+      return;
+    }
+    
+    // Validate email
     if (!newCompany.admin_email.trim()) {
       toast.error('Admin email is required');
+      return;
+    }
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    if (!emailRegex.test(newCompany.admin_email)) {
+      toast.error('Please enter a valid email address (e.g., admin@company.com)');
+      return;
+    }
+    if (newCompany.admin_email.length > 255) {
+      toast.error('Email cannot exceed 255 characters');
       return;
     }
 
@@ -874,8 +926,10 @@ export default function SuperAdminDashboard() {
                   onChange={(e) => setNewCompany({ ...newCompany, name: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="Enter company name"
+                  maxLength={100}
                   autoFocus
                 />
+                <p className="text-xs text-gray-500 mt-1">{newCompany.name.length}/100 characters</p>
               </div>
 
               <div className="border-t pt-4">
@@ -892,7 +946,9 @@ export default function SuperAdminDashboard() {
                       onChange={(e) => setNewCompany({ ...newCompany, admin_first_name: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="First name"
+                      maxLength={50}
                     />
+                    <p className="text-xs text-gray-500 mt-1">{newCompany.admin_first_name.length}/50</p>
                   </div>
                   
                   <div>
@@ -905,7 +961,9 @@ export default function SuperAdminDashboard() {
                       onChange={(e) => setNewCompany({ ...newCompany, admin_last_name: e.target.value })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Last name"
+                      maxLength={50}
                     />
+                    <p className="text-xs text-gray-500 mt-1">{newCompany.admin_last_name.length}/50</p>
                   </div>
                 </div>
 
@@ -919,7 +977,9 @@ export default function SuperAdminDashboard() {
                     onChange={(e) => setNewCompany({ ...newCompany, admin_email: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="admin@company.com"
+                    maxLength={255}
                   />
+                  <p className="text-xs text-gray-500 mt-1">{newCompany.admin_email.length}/255 characters</p>
                   <p className="text-xs text-gray-500 mt-1">
                     Login credentials will be sent to this email
                   </p>
