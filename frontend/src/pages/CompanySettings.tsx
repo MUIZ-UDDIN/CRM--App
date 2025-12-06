@@ -29,7 +29,7 @@ import {
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields';
+type TabType = 'company' | 'security' | 'billing' | 'team' | 'integrations' | 'custom_fields';
 
 interface TeamMember {
   id: string;
@@ -178,8 +178,6 @@ export default function CompanySettings() {
       fetchCompanyDetails();
     } else if (activeTab === 'team') {
       fetchTeams();
-    } else if (activeTab === 'team_members') {
-      fetchTeamMembers();
     } else if (activeTab === 'billing') {
       fetchBillingData();
     } else if (activeTab === 'integrations') {
@@ -810,7 +808,6 @@ export default function CompanySettings() {
   const tabs = [
     { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
     { id: 'team' as TabType, name: 'Teams', icon: UserGroupIcon },
-    { id: 'team_members' as TabType, name: 'Team Members', icon: UserIcon },
     { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
     { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
@@ -1836,66 +1833,6 @@ export default function CompanySettings() {
                   </>
                 )}
               </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === 'team_members' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
-              {(isCompanyAdmin || isSuperAdmin) && (
-                <button
-                  onClick={handleOpenAddModal}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  <UserPlusIcon className="w-5 h-5" />
-                  Invite Team Member
-                </button>
-              )}
-            </div>
-
-            <div className="bg-white shadow rounded-lg overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    {(isCompanyAdmin || isSuperAdmin) && (
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {teamMembers.map((member) => (
-                    <tr key={member.id}>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                        {member.name || `${member.first_name} ${member.last_name}`}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{member.role || member.user_role}</td>
-                      <td className="px-6 py-4 text-sm">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          member.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {member.status}
-                        </span>
-                      </td>
-                      {(isCompanyAdmin || isSuperAdmin) && (
-                        <td className="px-6 py-4 text-right">
-                          <ActionButtons
-                            onEdit={() => handleEditTeamMember(member)}
-                            onDelete={() => openDeleteTeamMemberModal(member)}
-                            showView={false}
-                          />
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
