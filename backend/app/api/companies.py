@@ -451,22 +451,7 @@ def delete_company(
             print(f"Error deleting deals by owner_id: {e}")
             db.rollback()
     
-    # Delete contacts by company_id - CRITICAL
-    try:
-        company_contact_count = db.query(Contact).filter(Contact.company_id == company.id).count()
-        if company_contact_count > 0:
-            deleted_company_contacts = db.query(Contact).filter(Contact.company_id == company.id).delete(synchronize_session=False)
-            db.commit()
-            print(f"✅ Successfully deleted {deleted_company_contacts} contacts by company_id")
-    except Exception as e:
-        print(f"❌ CRITICAL ERROR deleting contacts by company_id: {e}")
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete contacts by company_id: {str(e)}"
-        )
-    
-    # Delete deals by company_id - CRITICAL
+    # Delete deals by company_id FIRST - CRITICAL (deals reference contacts via contact_id)
     try:
         company_deal_count = db.query(Deal).filter(Deal.company_id == company.id).count()
         if company_deal_count > 0:
@@ -479,6 +464,21 @@ def delete_company(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete deals by company_id: {str(e)}"
+        )
+    
+    # Delete contacts by company_id AFTER deals - CRITICAL
+    try:
+        company_contact_count = db.query(Contact).filter(Contact.company_id == company.id).count()
+        if company_contact_count > 0:
+            deleted_company_contacts = db.query(Contact).filter(Contact.company_id == company.id).delete(synchronize_session=False)
+            db.commit()
+            print(f"✅ Successfully deleted {deleted_company_contacts} contacts by company_id")
+    except Exception as e:
+        print(f"❌ CRITICAL ERROR deleting contacts by company_id: {e}")
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete contacts by company_id: {str(e)}"
         )
     
     if user_ids:
