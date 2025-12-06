@@ -7,10 +7,15 @@ interface CustomFieldsDisplayProps {
 }
 
 export default function CustomFieldsDisplay({ customFields, values }: CustomFieldsDisplayProps) {
+  console.log('CustomFieldsDisplay - All fields:', customFields);
+  console.log('CustomFieldsDisplay - Values:', values);
+  
   // Filter to only show fields that should be displayed in detail view
   const fieldsToShow = customFields.filter(field => field.show_in_detail);
+  console.log('CustomFieldsDisplay - Fields to show:', fieldsToShow);
 
   if (fieldsToShow.length === 0) {
+    console.log('CustomFieldsDisplay - No fields to show');
     return null;
   }
 
