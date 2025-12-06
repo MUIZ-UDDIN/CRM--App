@@ -276,8 +276,18 @@ export default function Contacts() {
   };
   
   // Handle view contact
-  const handleView = (contact: Contact) => {
+  const handleView = async (contact: Contact) => {
     setSelectedContact(contact);
+    
+    // Load custom field values
+    try {
+      const values = await customFieldsService.getCustomFieldValues('contact', contact.id);
+      setCustomFieldValues(values);
+    } catch (error) {
+      console.error('Failed to load custom field values:', error);
+      setCustomFieldValues({});
+    }
+    
     setShowViewModal(true);
   };
   
@@ -1309,6 +1319,12 @@ export default function Contacts() {
                 <label className="text-sm font-medium text-gray-500">Lead Score</label>
                 <p className="text-gray-900">{selectedContact.lead_score || 0}</p>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsDisplay
+                customFields={customFields}
+                values={customFieldValues}
+              />
             </div>
           </div>
         </div>

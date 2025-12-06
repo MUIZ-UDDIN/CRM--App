@@ -623,8 +623,18 @@ export default function Deals() {
     }
   });
 
-  const handleView = (deal: Deal) => {
+  const handleView = async (deal: Deal) => {
     setSelectedDeal(deal);
+    
+    // Load custom field values
+    try {
+      const values = await customFieldsService.getCustomFieldValues('deal', deal.id);
+      setCustomFieldValues(values);
+    } catch (error) {
+      console.error('Failed to load custom field values:', error);
+      setCustomFieldValues({});
+    }
+    
     setShowViewModal(true);
   };
 
@@ -1350,6 +1360,12 @@ export default function Deals() {
                 <label className="text-sm font-medium text-gray-500">Stage</label>
                 <p className="text-gray-900">{stages.find(s => s.id === selectedDeal.stage_id)?.name || 'Unknown Stage'}</p>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsDisplay
+                customFields={customFields}
+                values={customFieldValues}
+              />
             </div>
           </div>
         </div>
