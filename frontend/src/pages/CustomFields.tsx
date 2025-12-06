@@ -26,23 +26,22 @@ interface CustomField {
 }
 
 const FIELD_TYPES = [
-  { value: 'text', label: 'Text', icon: '📝' },
-  { value: 'number', label: 'Number', icon: '🔢' },
-  { value: 'date', label: 'Date', icon: '📅' },
-  { value: 'boolean', label: 'Yes/No', icon: '✓' },
-  { value: 'select', label: 'Dropdown', icon: '📋' },
-  { value: 'multi_select', label: 'Multi-Select', icon: '☑️' },
-  { value: 'email', label: 'Email', icon: '📧' },
-  { value: 'phone', label: 'Phone', icon: '📞' },
-  { value: 'url', label: 'URL', icon: '🔗' },
-  { value: 'textarea', label: 'Long Text', icon: '📄' }
+  { value: 'text', label: 'Text' },
+  { value: 'number', label: 'Number' },
+  { value: 'date', label: 'Date' },
+  { value: 'boolean', label: 'Yes/No' },
+  { value: 'select', label: 'Dropdown' },
+  { value: 'multi_select', label: 'Multi-Select' },
+  { value: 'email', label: 'Email' },
+  { value: 'phone', label: 'Phone' },
+  { value: 'url', label: 'URL' },
+  { value: 'textarea', label: 'Long Text' }
 ];
 
 const ENTITY_TYPES = [
-  { value: 'contact', label: 'Contacts', icon: '👤' },
-  { value: 'deal', label: 'Deals', icon: '💼' },
-  { value: 'company', label: 'Companies', icon: '🏢' },
-  { value: 'activity', label: 'Activities', icon: '📌' }
+  { value: 'contact', label: 'Contacts' },
+  { value: 'deal', label: 'Deals' },
+  { value: 'activity', label: 'Activities' }
 ];
 
 export default function CustomFields() {
@@ -256,7 +255,7 @@ export default function CustomFields() {
           <option value="all">All Entities</option>
           {ENTITY_TYPES.map(type => (
             <option key={type.value} value={type.value}>
-              {type.icon} {type.label}
+              {type.label}
             </option>
           ))}
         </select>
@@ -290,9 +289,6 @@ export default function CustomFields() {
               <div className="flex justify-between items-start mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-2xl">
-                      {FIELD_TYPES.find(t => t.value === field.field_type)?.icon}
-                    </span>
                     <h3 className="font-semibold text-gray-900">{field.name}</h3>
                     {field.is_required && (
                       <span className="text-red-500 text-sm">*</span>
@@ -413,7 +409,7 @@ export default function CustomFields() {
                   >
                     {FIELD_TYPES.map(type => (
                       <option key={type.value} value={type.value}>
-                        {type.icon} {type.label}
+                        {type.label}
                       </option>
                     ))}
                   </select>
@@ -431,7 +427,7 @@ export default function CustomFields() {
                   >
                     {ENTITY_TYPES.map(type => (
                       <option key={type.value} value={type.value}>
-                        {type.icon} {type.label}
+                        {type.label}
                       </option>
                     ))}
                   </select>
