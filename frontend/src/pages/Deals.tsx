@@ -3,8 +3,11 @@ import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
 import * as dealsService from '../services/dealsService';
+import * as customFieldsService from '../services/customFieldsService';
 import ActionButtons from '../components/common/ActionButtons';
 import SearchableContactSelect from '../components/common/SearchableContactSelect';
+import CustomFieldsForm from '../components/CustomFieldsForm';
+import CustomFieldsDisplay from '../components/CustomFieldsDisplay';
 import { useSubmitOnce } from '../hooks/useSubmitOnce';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -82,6 +85,10 @@ export default function Deals() {
     expectedCloseDate: '',
     status: 'open'
   });
+  
+  // Custom fields state
+  const [customFields, setCustomFields] = useState<customFieldsService.CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   
   // Check if user can assign deals
   const canAssignDeals = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
@@ -327,6 +334,19 @@ export default function Deals() {
     };
   }, [showAddDealModal, showEditModal, showViewModal, showDeleteModal]);
 
+  // Fetch custom fields for deals
+  useEffect(() => {
+    const fetchCustomFields = async () => {
+      try {
+        const fields = await customFieldsService.getCustomFieldsForEntity('deal');
+        setCustomFields(fields);
+      } catch (error) {
+        console.error('Failed to fetch custom fields:', error);
+      }
+    };
+    fetchCustomFields();
+  }, []);
+
   const fetchDeals = async () => {
     setLoading(true);
     try {
@@ -509,6 +529,7 @@ export default function Deals() {
   const handleCloseAddModal = () => {
     setShowAddDealModal(false);
     resetDealForm();
+    setCustomFieldValues({});
     // Re-enable body scroll
     document.body.style.overflow = 'unset';
   };
@@ -516,6 +537,7 @@ export default function Deals() {
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     resetDealForm();
+    setCustomFieldValues({});
     // Re-enable body scroll
     document.body.style.overflow = 'unset';
   };
@@ -561,7 +583,7 @@ export default function Deals() {
     }
 
     try {
-      await dealsService.createDeal({
+      const newDeal = await dealsService.createDeal({
         title: dealFormData.title,
         value: dealValue || 0,
         company: dealFormData.company,
@@ -571,6 +593,15 @@ export default function Deals() {
         expected_close_date: dealFormData.expectedCloseDate ? dealFormData.expectedCloseDate + "T00:00:00" : undefined,
         status: dealFormData.status
       });
+      
+      // Save custom field values if any
+      if (customFields.length > 0) {
+        const customFieldValuesToSave = customFieldsService.prepareCustomFieldValues(customFields, customFieldValues);
+        if (customFieldValuesToSave.length > 0) {
+          await customFieldsService.setCustomFieldValues('deal', newDeal.id, customFieldValuesToSave);
+        }
+      }
+      
       toast.success('Deal created successfully!');
       setShowAddDealModal(false);
       setDealFormData({
@@ -583,6 +614,7 @@ export default function Deals() {
         expectedCloseDate: '',
         status: 'open'
       });
+      setCustomFieldValues({});
       fetchDeals();
     } catch (error: any) {
       // Display user-friendly error message from backend
@@ -596,18 +628,28 @@ export default function Deals() {
     setShowViewModal(true);
   };
 
-  const handleEdit = (deal: Deal) => {
+  const handleEdit = async (deal: Deal) => {
     setSelectedDeal(deal);
     setDealFormData({
       title: deal.title,
       value: deal.value.toString(),
       company: deal.company || '',
-      contact: deal.contact_id || '',
+      contact: deal.contact || '',
       stage_id: deal.stage_id,
       pipeline_id: deal.pipeline_id,
       expectedCloseDate: deal.expected_close_date ? new Date(deal.expected_close_date).toISOString().split('T')[0] : '',
       status: deal.status || 'open'
     });
+    
+    // Load custom field values
+    try {
+      const values = await customFieldsService.getCustomFieldValues('deal', deal.id);
+      setCustomFieldValues(values);
+    } catch (error) {
+      console.error('Failed to load custom field values:', error);
+      setCustomFieldValues({});
+    }
+    
     setShowEditModal(true);
   };
 
@@ -627,9 +669,19 @@ export default function Deals() {
         contact: dealFormData.contact,
         status: dealFormData.status
       });
+      
+      // Save custom field values if any
+      if (customFields.length > 0) {
+        const customFieldValuesToSave = customFieldsService.prepareCustomFieldValues(customFields, customFieldValues);
+        if (customFieldValuesToSave.length > 0) {
+          await customFieldsService.setCustomFieldValues('deal', selectedDeal.id, customFieldValuesToSave);
+        }
+      }
+      
       toast.success('Deal updated');
       setShowEditModal(false);
       resetDealForm();
+      setCustomFieldValues({});
       setSelectedDeal(null);
       fetchDeals();
     } catch (error) {
@@ -1140,6 +1192,14 @@ export default function Deals() {
                   {dealFormData.status === 'abandoned' && 'This deal has been abandoned'}
                 </p>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsForm
+                customFields={customFields}
+                values={customFieldValues}
+                onChange={(fieldKey, value) => setCustomFieldValues({...customFieldValues, [fieldKey]: value})}
+              />
+              
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
@@ -1227,6 +1287,14 @@ export default function Deals() {
                   {dealFormData.status === 'abandoned' && 'This deal has been abandoned'}
                 </p>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsForm
+                customFields={customFields}
+                values={customFieldValues}
+                onChange={(fieldKey, value) => setCustomFieldValues({...customFieldValues, [fieldKey]: value})}
+              />
+              
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseEditModal}
