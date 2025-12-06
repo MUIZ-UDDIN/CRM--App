@@ -327,6 +327,25 @@ async def update_custom_field(
     db.commit()
     db.refresh(field)
     
+    # Send notifications
+    try:
+        from app.services.notification_service import NotificationService
+        from app.models.users import User
+        
+        updater = db.query(User).filter(User.id == uuid.UUID(current_user.get('id'))).first()
+        updater_name = f"{updater.first_name} {updater.last_name}" if updater else "Unknown User"
+        
+        NotificationService.notify_custom_field_updated(
+            db=db,
+            field_name=field.name,
+            entity_type=field.entity_type.value,
+            updater_id=uuid.UUID(current_user.get('id')),
+            updater_name=updater_name,
+            company_id=field.company_id
+        )
+    except Exception as notification_error:
+        print(f"Notification error: {notification_error}")
+    
     return CustomFieldResponse(
         id=str(field.id),
         name=field.name,

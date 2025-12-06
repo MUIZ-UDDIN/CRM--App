@@ -773,8 +773,8 @@ class NotificationService:
         creator_name: str,
         company_id: uuid.UUID
     ):
-        """Notify admins when a custom field is added"""
-        recipients = NotificationService._get_company_admins(db, company_id, exclude_user_id=creator_id)
+        """Notify all company users when a custom field is added"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id, exclude_user_id=creator_id)
         
         for recipient in recipients:
             NotificationService._create_notification(
@@ -782,7 +782,32 @@ class NotificationService:
                 user_id=recipient.id,
                 company_id=company_id,
                 title="Custom Field Added",
-                message=f"{creator_name} added a custom field '{field_name}' to {entity_type}",
+                message=f"{creator_name} added a custom field '{field_name}' for {entity_type}",
+                notification_type=NotificationType.INFO,
+                link=f"/settings?tab=custom-fields"
+            )
+        
+        db.commit()
+    
+    @staticmethod
+    def notify_custom_field_updated(
+        db: Session,
+        field_name: str,
+        entity_type: str,
+        updater_id: uuid.UUID,
+        updater_name: str,
+        company_id: uuid.UUID
+    ):
+        """Notify all company users when a custom field is updated"""
+        recipients = NotificationService._get_company_users_and_super_admins(db, company_id, exclude_user_id=updater_id)
+        
+        for recipient in recipients:
+            NotificationService._create_notification(
+                db=db,
+                user_id=recipient.id,
+                company_id=company_id,
+                title="Custom Field Updated",
+                message=f"{updater_name} updated the custom field '{field_name}' for {entity_type}",
                 notification_type=NotificationType.INFO,
                 link=f"/settings?tab=custom-fields"
             )
