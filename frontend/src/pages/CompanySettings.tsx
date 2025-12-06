@@ -559,7 +559,8 @@ export default function CompanySettings() {
 
   const checkTwilioConnection = async () => {
     try {
-      const data = await twilioService.getTwilioSettings();
+      // Pass companyId to get specific company's Twilio settings
+      const data = await twilioService.getTwilioSettings(companyId);
       
       if (data && data.account_sid) {
         setTwilioDetails(data);
@@ -588,7 +589,8 @@ export default function CompanySettings() {
 
   const checkEmailIntegrations = async () => {
     try {
-      const data = await emailService.getEmailSettings();
+      // Pass companyId to get specific company's email settings
+      const data = await emailService.getEmailSettings(companyId);
       
       // Update SendGrid status
       if (data.sendgrid_enabled && data.sendgrid_from_email) {
@@ -3360,7 +3362,7 @@ export default function CompanySettings() {
               <p className="text-gray-600 mt-1">Manage custom fields for contacts, deals, and companies</p>
             </div>
             <button
-              onClick={() => navigate('/settings/custom-fields')}
+              onClick={() => navigate(`/settings/custom-fields?companyId=${companyId}`)}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
             >
               <AdjustmentsHorizontalIcon className="w-5 h-5" />

@@ -3,7 +3,7 @@ Email Settings API endpoints
 Allows companies to configure SendGrid and Gmail integrations
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status, Request
+from fastapi import APIRouter, Depends, HTTPException, status, Request, Query
 from fastapi.responses import RedirectResponse, HTMLResponse
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -54,11 +54,18 @@ class EmailSettingsResponse(BaseModel):
 # Get email settings
 @router.get("/", response_model=EmailSettingsResponse)
 async def get_email_settings(
+    company_id_filter: Optional[str] = Query(None, description="Filter by company ID (Super Admin only)"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get email settings for current company"""
-    company_id = current_user.get("company_id")
+    # Super Admin can view specific company's settings
+    user_role = current_user.get("role") or current_user.get("user_role")
+    if company_id_filter and user_role and user_role.lower() == "super_admin":
+        company_id = company_id_filter
+    else:
+        company_id = current_user.get("company_id")
+    
     if not company_id:
         raise HTTPException(status_code=400, detail="User must belong to a company")
     

@@ -2,7 +2,7 @@
 Custom Fields API - Company Admin can create custom fields
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from typing import List, Optional, Dict, Any
@@ -206,13 +206,19 @@ async def create_custom_field(
 async def get_custom_fields(
     entity_type: Optional[str] = None,
     active_only: bool = True,
+    company_id_filter: Optional[str] = Query(None, description="Filter by company ID (Super Admin only)"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get custom fields for the company"""
     try:
         context = get_tenant_context(current_user)
-        company_id = current_user.get('company_id')
+        
+        # Super Admin can view specific company's custom fields
+        if company_id_filter and context.is_super_admin():
+            company_id = company_id_filter
+        else:
+            company_id = current_user.get('company_id')
         
         if not company_id and not context.is_super_admin():
             raise HTTPException(
@@ -223,7 +229,8 @@ async def get_custom_fields(
         # Build query
         query = db.query(CustomField)
         
-        if not context.is_super_admin():
+        # Filter by company_id if provided (for Super Admin managing specific company)
+        if company_id:
             query = query.filter(CustomField.company_id == uuid.UUID(company_id))
         
         if entity_type:

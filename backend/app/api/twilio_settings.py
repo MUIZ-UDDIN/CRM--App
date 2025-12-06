@@ -3,7 +3,7 @@ Twilio Settings API endpoints
 Allows users to configure their own Twilio accounts for SMS and voice calls
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import Optional
 from pydantic import BaseModel, Field
@@ -90,12 +90,19 @@ def verify_twilio_credentials(account_sid: str, auth_token: str) -> bool:
 
 @router.get("/")
 async def get_twilio_settings(
+    company_id_filter: Optional[str] = Query(None, description="Filter by company ID (Super Admin only)"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
     """Get current company's Twilio settings"""
     try:
-        company_id = current_user.get("company_id")
+        # Super Admin can view specific company's settings
+        user_role = current_user.get("role") or current_user.get("user_role")
+        if company_id_filter and user_role and user_role.lower() == "super_admin":
+            company_id = company_id_filter
+        else:
+            company_id = current_user.get("company_id")
+        
         if not company_id:
             return None
         

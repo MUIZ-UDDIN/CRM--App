@@ -65,7 +65,8 @@ export const updateGmailSettings = async (settings: Partial<GmailSettings>) => {
 };
 
 // Get all email settings
-export const getEmailSettings = async (): Promise<EmailSettingsResponse> => {
-  const response = await apiClient.get('/email-settings');
+export const getEmailSettings = async (companyId?: string): Promise<EmailSettingsResponse> => {
+  const params = companyId ? { company_id_filter: companyId } : {};
+  const response = await apiClient.get('/email-settings', { params });
   return response.data;
 };

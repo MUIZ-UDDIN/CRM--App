@@ -25,9 +25,10 @@ export interface TwilioSettingsResponse {
 /**
  * Get current company's Twilio settings
  */
-export const getTwilioSettings = async (): Promise<TwilioSettingsResponse | null> => {
+export const getTwilioSettings = async (companyId?: string): Promise<TwilioSettingsResponse | null> => {
   try {
-    const response = await apiClient.get('/twilio-settings/');
+    const params = companyId ? { company_id_filter: companyId } : {};
+    const response = await apiClient.get('/twilio-settings/', { params });
     return response.data;
   } catch (error: any) {
     // Return null if no settings found (404)

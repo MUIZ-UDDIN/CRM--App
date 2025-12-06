@@ -369,18 +369,18 @@ const CompanyManagement: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate(`/admin/companies/${companyId}/manage/settings`)}
-                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                <Cog6ToothIcon className="w-5 h-5" />
-                Settings
-              </button>
-              <button
                 onClick={() => setShowAddUserModal(true)}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
                 <UserPlusIcon className="w-5 h-5" />
                 Add User
+              </button>
+              <button
+                onClick={() => navigate(`/admin/companies/${companyId}/manage/settings`)}
+                className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                <Cog6ToothIcon className="w-5 h-5" />
+                Settings
               </button>
             </div>
           </div>

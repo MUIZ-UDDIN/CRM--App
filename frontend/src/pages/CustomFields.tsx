@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import { useSearchParams } from 'react-router-dom';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../utils/errorHandler';
@@ -47,6 +48,8 @@ const ENTITY_TYPES = [
 export default function CustomFields() {
   const { user } = useAuth();
   const { hasPermission, isCompanyAdmin, isSuperAdmin } = usePermissions();
+  const [searchParams] = useSearchParams();
+  const companyIdFromUrl = searchParams.get('companyId'); // For Super Admin managing specific company
   const [fields, setFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -81,6 +84,8 @@ export default function CustomFields() {
       setLoading(true);
       const params: any = {};
       if (filterEntity !== 'all') params.entity_type = filterEntity;
+      // Pass company_id_filter for Super Admin managing specific company
+      if (companyIdFromUrl) params.company_id_filter = companyIdFromUrl;
       
       const response = await apiClient.get('/custom-fields/', { params });
       setFields(response.data);
