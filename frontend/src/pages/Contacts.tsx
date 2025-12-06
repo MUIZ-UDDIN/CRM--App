@@ -281,9 +281,7 @@ export default function Contacts() {
     
     // Load custom field values
     try {
-      console.log('Loading custom field values for contact:', contact.id);
       const values = await customFieldsService.getCustomFieldValues('contact', contact.id);
-      console.log('Loaded custom field values:', values);
       setCustomFieldValues(values);
     } catch (error) {
       console.error('Failed to load custom field values:', error);
@@ -475,15 +473,9 @@ export default function Contacts() {
       
       // Save custom field values if any
       if (customFields.length > 0) {
-        console.log('Custom Fields:', customFields);
-        console.log('Custom Field Values:', customFieldValues);
         const customFieldValuesToSave = customFieldsService.prepareCustomFieldValues(customFields, customFieldValues);
-        console.log('Values to Save:', customFieldValuesToSave);
         if (customFieldValuesToSave.length > 0) {
           await customFieldsService.setCustomFieldValues('contact', newContact.id, customFieldValuesToSave);
-          console.log('Custom field values saved successfully');
-        } else {
-          console.log('No custom field values to save');
         }
       }
       
