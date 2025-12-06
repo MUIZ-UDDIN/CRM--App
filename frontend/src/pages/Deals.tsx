@@ -1239,7 +1239,7 @@ export default function Deals() {
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
         >
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base sm:text-lg font-medium text-gray-900">Edit Deal</h3>
               <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
