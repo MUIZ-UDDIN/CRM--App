@@ -2,11 +2,14 @@ import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as contactsService from '../services/contactsService';
+import * as customFieldsService from '../services/customFieldsService';
 import ActionButtons from '../components/common/ActionButtons';
 import ContactUpload from '../components/contacts/ContactUpload';
 import Pagination from '../components/common/Pagination';
 import CompanyCombobox from '../components/common/CompanyCombobox';
 import StatusCombobox from '../components/common/StatusCombobox';
+import CustomFieldsForm from '../components/CustomFieldsForm';
+import CustomFieldsDisplay from '../components/CustomFieldsDisplay';
 import { usePermissions } from '../hooks/usePermissions';
 import { 
   UserGroupIcon, 
@@ -70,6 +73,10 @@ export default function Contacts() {
     owner_id: ''
   });
   
+  // Custom fields state
+  const [customFields, setCustomFields] = useState<customFieldsService.CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
+  
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Prevent background scroll when modals are open
@@ -84,6 +91,19 @@ export default function Contacts() {
       document.body.style.overflow = 'unset';
     };
   }, [showAddModal, showEditModal, showViewModal, showUploadModal, showAddTypeModal]);
+
+  // Fetch custom fields for contacts
+  useEffect(() => {
+    const fetchCustomFields = async () => {
+      try {
+        const fields = await customFieldsService.getCustomFieldsForEntity('contact');
+        setCustomFields(fields);
+      } catch (error) {
+        console.error('Failed to fetch custom fields:', error);
+      }
+    };
+    fetchCustomFields();
+  }, []);
 
   const resetContactForm = async () => {
     // Get current user ID for default owner
@@ -126,11 +146,13 @@ export default function Contacts() {
   const handleCloseAddModal = () => {
     setShowAddModal(false);
     resetContactForm();
+    setCustomFieldValues({});
   };
 
   const handleCloseEditModal = () => {
     setShowEditModal(false);
     resetContactForm();
+    setCustomFieldValues({});
   };
   
   // Fetch current user and users for owner dropdown
@@ -260,7 +282,7 @@ export default function Contacts() {
   };
   
   // Handle edit contact
-  const handleEdit = (contact: Contact) => {
+  const handleEdit = async (contact: Contact) => {
     setSelectedContact(contact);
     setContactForm({
       first_name: contact.first_name,
@@ -269,11 +291,21 @@ export default function Contacts() {
       phone: contact.phone || '',
       company: contact.company || '',
       title: contact.title || '',
-      type: contact.type || 'Lead',
+      type: contact.type || '',
       status: contact.status || 'new',
       source: contact.source || '',
       owner_id: contact.owner_id || ''
     });
+    
+    // Load custom field values
+    try {
+      const values = await customFieldsService.getCustomFieldValues('contact', contact.id);
+      setCustomFieldValues(values);
+    } catch (error) {
+      console.error('Failed to load custom field values:', error);
+      setCustomFieldValues({});
+    }
+    
     setShowEditModal(true);
   };
   
@@ -426,11 +458,21 @@ export default function Contacts() {
     
     setSubmitting(true);
     try {
+      // Create contact
+      const newContact = await contactsService.createContact(contactForm);
       
-      await contactsService.createContact(contactForm);
+      // Save custom field values if any
+      if (customFields.length > 0) {
+        const customFieldValuesToSave = customFieldsService.prepareCustomFieldValues(customFields, customFieldValues);
+        if (customFieldValuesToSave.length > 0) {
+          await customFieldsService.setCustomFieldValues('contact', newContact.id, customFieldValuesToSave);
+        }
+      }
+      
       toast.success('Contact created');
       setShowAddModal(false);
       await resetContactForm();
+      setCustomFieldValues({});
       fetchContacts();
     } catch (error: any) {
       const errorDetail = error?.response?.data?.detail;
@@ -508,8 +550,18 @@ export default function Contacts() {
       // Remove empty source field to avoid enum validation errors
       const { source, ...updateData } = contactForm;
       await contactsService.updateContact(selectedContact.id, updateData);
+      
+      // Save custom field values if any
+      if (customFields.length > 0) {
+        const customFieldValuesToSave = customFieldsService.prepareCustomFieldValues(customFields, customFieldValues);
+        if (customFieldValuesToSave.length > 0) {
+          await customFieldsService.setCustomFieldValues('contact', selectedContact.id, customFieldValuesToSave);
+        }
+      }
+      
       toast.success('Contact updated');
       setShowEditModal(false);
+      setCustomFieldValues({});
       fetchContacts();
     } catch (error: any) {
       const errorDetail = error?.response?.data?.detail;
@@ -1013,6 +1065,14 @@ export default function Contacts() {
                   </button>
                 </div>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsForm
+                customFields={customFields}
+                values={customFieldValues}
+                onChange={(fieldKey, value) => setCustomFieldValues({...customFieldValues, [fieldKey]: value})}
+              />
+              
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseAddModal}
@@ -1186,6 +1246,14 @@ export default function Contacts() {
                     </button>
                   </div>
                 </div>
+                
+                {/* Custom Fields */}
+                <CustomFieldsForm
+                  customFields={customFields}
+                  values={customFieldValues}
+                  onChange={(fieldKey, value) => setCustomFieldValues({...customFieldValues, [fieldKey]: value})}
+                />
+                
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={handleCloseEditModal}
