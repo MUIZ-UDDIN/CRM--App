@@ -52,6 +52,8 @@ export default function CustomFields() {
   const [fields, setFields] = useState<CustomField[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [fieldToDelete, setFieldToDelete] = useState<CustomField | null>(null);
   const [editingField, setEditingField] = useState<CustomField | null>(null);
   const [filterEntity, setFilterEntity] = useState<string>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -146,16 +148,30 @@ export default function CustomFields() {
     setShowCreateModal(true);
   };
 
-  const handleDelete = async (fieldId: string) => {
-    if (!confirm('Are you sure? This will delete all values for this field.')) return;
+  const handleDelete = (field: CustomField) => {
+    setFieldToDelete(field);
+    setShowDeleteModal(true);
+  };
+  
+  const confirmDelete = async () => {
+    if (!fieldToDelete) return;
     
     try {
-      await apiClient.delete(`/custom-fields/${fieldId}`);
+      await apiClient.delete(`/custom-fields/${fieldToDelete.id}`);
       toast.success('Field deleted successfully');
+      setShowDeleteModal(false);
+      setFieldToDelete(null);
       fetchFields();
     } catch (error) {
       toast.error('Failed to delete field');
+      setShowDeleteModal(false);
+      setFieldToDelete(null);
     }
+  };
+  
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setFieldToDelete(null);
   };
 
   const toggleActive = async (field: CustomField) => {
@@ -304,7 +320,7 @@ export default function CustomFields() {
                     <PencilIcon className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleDelete(field.id)}
+                    onClick={() => handleDelete(field)}
                     className="p-1 text-gray-400 hover:text-red-600"
                   >
                     <TrashIcon className="h-4 w-4" />
@@ -556,6 +572,45 @@ export default function CustomFields() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && fieldToDelete && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Delete Custom Field</h3>
+              <button 
+                onClick={cancelDelete}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to delete the custom field <span className="font-semibold">"{fieldToDelete.name}"</span>?
+              </p>
+              <p className="text-sm text-red-600 mt-2">
+                This will permanently delete all values for this field across all {fieldToDelete.entity_type}s. This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cancelDelete}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Delete Field
+              </button>
+            </div>
           </div>
         </div>
       )}
