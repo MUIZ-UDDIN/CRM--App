@@ -47,11 +47,16 @@ export const getCustomFieldsForEntity = async (entityType: string, companyId?: s
 export const getCustomFieldValues = async (entityType: string, entityId: string): Promise<Record<string, any>> => {
   try {
     const response = await apiClient.get(`/custom-fields/values/${entityType}/${entityId}`);
-    // Convert array of values to a key-value object
+    // Backend returns a dictionary like: { field_key: { field_id, field_name, field_type, value }, ... }
+    // We need to extract just the values
     const valuesMap: Record<string, any> = {};
-    response.data.forEach((item: CustomFieldValue) => {
-      valuesMap[item.field_key] = item.value;
-    });
+    
+    if (response.data && typeof response.data === 'object') {
+      Object.keys(response.data).forEach((fieldKey) => {
+        valuesMap[fieldKey] = response.data[fieldKey].value;
+      });
+    }
+    
     return valuesMap;
   } catch (error: any) {
     if (error.response?.status === 404) {
