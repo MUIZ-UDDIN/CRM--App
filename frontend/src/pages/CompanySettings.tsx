@@ -29,7 +29,7 @@ import {
   ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 
-type TabType = 'company' | 'security' | 'billing' | 'team' | 'integrations' | 'custom_fields';
+type TabType = 'company' | 'security' | 'billing' | 'integrations' | 'custom_fields';
 
 interface TeamMember {
   id: string;
@@ -176,8 +176,6 @@ export default function CompanySettings() {
     if (activeTab === 'company') {
       // Fetch company details from backend
       fetchCompanyDetails();
-    } else if (activeTab === 'team') {
-      fetchTeams();
     } else if (activeTab === 'billing') {
       fetchBillingData();
     } else if (activeTab === 'integrations') {
@@ -807,7 +805,6 @@ export default function CompanySettings() {
 
   const tabs = [
     { id: 'company' as TabType, name: 'Company', icon: BuildingOfficeIcon },
-    { id: 'team' as TabType, name: 'Teams', icon: UserGroupIcon },
     { id: 'security' as TabType, name: 'Security', icon: ShieldCheckIcon },
     { id: 'integrations' as TabType, name: 'Integrations', icon: PuzzlePieceIcon },
     { id: 'custom_fields' as TabType, name: 'Custom Fields', icon: AdjustmentsHorizontalIcon },
@@ -986,23 +983,9 @@ export default function CompanySettings() {
 
     // Save to backend
     try {
-      // Fetch current user to get company_id
-      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!userResponse.ok) {
-        toast.error('Failed to get user info');
-        return;
-      }
-
-      const userData = await userResponse.json();
-      const companyId = userData.company_id;
-
+      // Use companyId from URL params (for Super Admin managing specific company)
       if (!companyId) {
-        toast.error('No company found for user');
+        toast.error('No company found');
         return;
       }
 
@@ -1651,189 +1634,6 @@ export default function CompanySettings() {
                 </button>
               </div>
             )}
-          </div>
-        )}
-
-        {activeTab === 'team' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Teams</h2>
-                <p className="text-gray-600 mt-1">Manage your teams and team members</p>
-              </div>
-              {(isCompanyAdmin || isSuperAdmin) && (
-                <button
-                  onClick={() => setShowCreateTeamModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  <PlusCircleIcon className="w-5 h-5" />
-                  Create Team
-                </button>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              {/* Teams List */}
-              <div className="lg:col-span-1 bg-white rounded-lg shadow overflow-hidden">
-                <div className="p-4 border-b border-gray-200">
-                  <h3 className="font-semibold text-gray-800">Teams</h3>
-                </div>
-                <div className="divide-y divide-gray-200">
-                  {teams.length === 0 ? (
-                    <div className="p-4 text-center text-gray-500">
-                      <UserGroupIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                      <p>No teams yet</p>
-                      {(isCompanyAdmin || isSuperAdmin) && (
-                        <p className="text-sm mt-1">Create your first team to get started</p>
-                      )}
-                    </div>
-                  ) : (
-                    teams.map((team) => (
-                      <div
-                        key={team.id}
-                        onClick={() => setSelectedTeam(team)}
-                        className={`p-4 cursor-pointer hover:bg-gray-50 ${
-                          selectedTeam?.id === team.id ? 'bg-blue-50' : ''
-                        }`}
-                      >
-                        <div className="font-medium text-gray-900">{team.name}</div>
-                        {team.description && (
-                          <div className="text-sm text-gray-500 truncate">{team.description}</div>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Team Details */}
-              <div className="lg:col-span-3 bg-white rounded-lg shadow overflow-hidden">
-                {!selectedTeam ? (
-                  <div className="p-6 text-center text-gray-500">
-                    <UserGroupIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                    <p className="text-lg">Select a team to view details</p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="p-6 border-b border-gray-200">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="text-xl font-bold text-gray-900">{selectedTeam.name}</h3>
-                          {selectedTeam.description && (
-                            <p className="text-gray-600 mt-1">{selectedTeam.description}</p>
-                          )}
-                        </div>
-                        {(isCompanyAdmin || isSuperAdmin) && (
-                          <button
-                            onClick={() => openDeleteTeamModal(selectedTeam)}
-                            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-                            title="Delete team"
-                          >
-                            <TrashIcon className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Team Members */}
-                    <div className="p-6">
-                      <div className="flex justify-between items-center mb-4">
-                        <h4 className="text-lg font-semibold text-gray-900">Team Members</h4>
-                        {(isCompanyAdmin || isSuperAdmin) && (
-                          <button
-                            onClick={() => {
-                              fetchAvailableUsers();
-                              setShowAddMemberModal(true);
-                            }}
-                            className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                          >
-                            <UserPlusIcon className="w-4 h-4" />
-                            Add Member
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="overflow-x-auto">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Member</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
-                              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
-                              {(isCompanyAdmin || isSuperAdmin) && (
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                              )}
-                            </tr>
-                          </thead>
-                          <tbody className="bg-white divide-y divide-gray-200">
-                            {teamMembers.length === 0 ? (
-                              <tr>
-                                <td colSpan={(isCompanyAdmin || isSuperAdmin) ? 4 : 3} className="px-6 py-12 text-center text-gray-500">
-                                  <UserIcon className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-                                  <p>No team members yet</p>
-                                </td>
-                              </tr>
-                            ) : (
-                              teamMembers.map((member) => (
-                                <tr key={member.id} className="hover:bg-gray-50">
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center">
-                                      <div className="flex-shrink-0 h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <span className="text-blue-600 font-semibold">
-                                          {member.first_name?.[0]}{member.last_name?.[0]}
-                                        </span>
-                                      </div>
-                                      <div className="ml-4">
-                                        <div className="text-sm font-medium text-gray-900">
-                                          {member.first_name} {member.last_name}
-                                          {selectedTeam.team_lead_id === member.id && (
-                                            <span className="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
-                                              Team Lead
-                                            </span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{member.email}</td>
-                                  <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
-                                      {member.user_role || member.role}
-                                    </span>
-                                  </td>
-                                  {(isCompanyAdmin || isSuperAdmin) && (
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                      <div className="flex items-center gap-2">
-                                        {selectedTeam.team_lead_id !== member.id && (
-                                          <button
-                                            onClick={() => handleSetTeamLead(member.id)}
-                                            className="p-1 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded"
-                                            title="Set as Team Lead"
-                                          >
-                                            <CheckCircleIcon className="w-5 h-5" />
-                                          </button>
-                                        )}
-                                        <button
-                                          onClick={() => openRemoveMemberModal(member)}
-                                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
-                                          title="Remove from team"
-                                        >
-                                          <TrashIcon className="w-5 h-5" />
-                                        </button>
-                                      </div>
-                                    </td>
-                                  )}
-                                </tr>
-                              ))
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
         )}
 

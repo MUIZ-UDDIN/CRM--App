@@ -85,8 +85,8 @@ export default function TrialBanner() {
     return null;
   }
 
-  // ONLY show trial banner to Company Admin and Super Admin
-  // Regular users (sales_rep, regular_user, company_user) should NOT see trial messages
+  // ONLY show trial banner to Company Admin
+  // Regular users (sales_rep, regular_user, company_user) and Super Admin should NOT see trial messages
   const isCompanyAdmin = userRole === 'company_admin' || 
                          userRole === 'admin' || 
                          userRole === 'Admin';
@@ -94,8 +94,8 @@ export default function TrialBanner() {
   const isSuperAdmin = userRole === 'super_admin' || 
                        userEmail === 'admin@sunstonecrm.com';
   
-  // Hide banner completely for regular users
-  if (!isCompanyAdmin && !isSuperAdmin) {
+  // Hide banner completely for Super Admin (they manage billing globally) and regular users
+  if (isSuperAdmin || !isCompanyAdmin) {
     return null;
   }
 
