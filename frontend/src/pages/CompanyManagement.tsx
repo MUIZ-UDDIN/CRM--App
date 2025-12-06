@@ -369,7 +369,7 @@ const CompanyManagement: React.FC = () => {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate(`/settings?companyId=${companyId}`)}
+                onClick={() => navigate(`/admin/companies/${companyId}/manage/settings`)}
                 className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
               >
                 <Cog6ToothIcon className="w-5 h-5" />
