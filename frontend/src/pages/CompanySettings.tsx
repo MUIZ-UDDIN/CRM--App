@@ -197,27 +197,13 @@ export default function CompanySettings() {
 
   const fetchTeamMembers = async () => {
     try {
-      // First, get current user info to determine role and company
-      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (!userResponse.ok) {
-        toast.error('Failed to load user information');
+      // Use companyId from URL params (Super Admin managing specific company)
+      if (!companyId) {
+        toast.error('Company not found.');
         return;
       }
       
-      const currentUser = await userResponse.json();
-      
-      // All users (including Super Admin) see only their company's users
-      // Super Admin manages their own company (e.g., Sunstone)
-      if (!currentUser.company_id) {
-        toast.error('Company not found. Please contact support.');
-        return;
-      }
-      const apiUrl = `${API_BASE_URL}/api/admin/companies/${currentUser.company_id}/users`;
+      const apiUrl = `${API_BASE_URL}/api/admin/companies/${companyId}/users`;
       
       const response = await fetch(apiUrl, {
         headers: {
@@ -227,10 +213,6 @@ export default function CompanySettings() {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('=== TEAM MEMBERS DATA RECEIVED ===');
-        console.log('Raw data:', data);
-        console.log('Number of users:', data.length);
-        console.log('Current user company_id:', currentUser.company_id);
         
         const mappedData = data.map((user: any) => ({
           id: user.id,
@@ -244,7 +226,6 @@ export default function CompanySettings() {
           joined_at: user.created_at?.split('T')[0] || 'N/A',
         }));
         
-        console.log('Mapped team members:', mappedData);
         setTeamMembers(mappedData);
       } else {
         // Handle error response
@@ -340,7 +321,10 @@ export default function CompanySettings() {
 
   const fetchTeams = async () => {
     try {
-      const response = await apiClient.get('/teams');
+      // Pass company_id_filter for Super Admin to get specific company's teams
+      const response = await apiClient.get('/teams', {
+        params: { company_id_filter: companyId }
+      });
       setTeams(response.data);
       
       // If teams exist, select the first one by default
@@ -368,10 +352,8 @@ export default function CompanySettings() {
 
   const fetchAvailableUsers = async () => {
     try {
-      // Use /users/ endpoint which handles role-based permissions
-      // For super admin: returns ALL users from ALL companies
-      // For company admin: returns only their company users
-      const response = await apiClient.get('/users');
+      // For Super Admin managing specific company, use company-specific endpoint
+      const response = await apiClient.get(`/admin/companies/${companyId}/users`);
       setAvailableUsers(response.data);
     } catch (error: any) {
       console.error('Failed to load available users:', error);

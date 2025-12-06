@@ -2,7 +2,7 @@
 Teams API for managing teams and team members
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from pydantic import BaseModel, UUID4
@@ -95,12 +95,13 @@ async def create_team(
 
 @router.get("/", response_model=List[TeamResponse])
 async def get_teams(
+    company_id_filter: Optional[str] = Query(None, description="Filter teams by company ID (Super Admin only)"),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
     """
     Get teams based on user role:
-    - Super Admin: all teams
+    - Super Admin: all teams (or filtered by company_id if provided)
     - Company Admin: all company teams
     - Sales Manager/Rep: only their own team
     """
@@ -108,9 +109,14 @@ async def get_teams(
     company_id = current_user.get("company_id")
     user_team_id = current_user.get("team_id")
     
-    # Super admin can see all teams
+    # Super admin can see all teams or filter by specific company
     if user_role and user_role.lower() == "super_admin":
-        teams = db.query(Team).all()
+        if company_id_filter:
+            # Filter by specific company when managing company settings
+            teams = db.query(Team).filter(Team.company_id == company_id_filter).all()
+        else:
+            # Show all teams
+            teams = db.query(Team).all()
         return teams
     
     # Company users must have a company
