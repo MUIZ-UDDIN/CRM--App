@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as activitiesService from '../services/activitiesService';
+import * as customFieldsService from '../services/customFieldsService';
+import { CustomField } from '../services/customFieldsService';
+import CustomFieldsForm from '../components/CustomFieldsForm';
+import CustomFieldsDisplay from '../components/CustomFieldsDisplay';
 import ActionButtons from '../components/common/ActionButtons';
 import Pagination from '../components/common/Pagination';
 import { 
@@ -62,6 +66,10 @@ export default function Activities() {
     priority: 1,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Custom Fields state
+  const [customFields, setCustomFields] = useState<CustomField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({});
   
   // Prevent background scroll when modals are open
   useEffect(() => {
@@ -124,6 +132,19 @@ export default function Activities() {
     }
   };
 
+  // Fetch custom fields for activities
+  useEffect(() => {
+    const fetchCustomFields = async () => {
+      try {
+        const fields = await customFieldsService.getCustomFieldsForEntity('activity');
+        setCustomFields(fields);
+      } catch (error) {
+        console.error('Failed to load custom fields:', error);
+      }
+    };
+    fetchCustomFields();
+  }, []);
+
   // Fetch activities
   useEffect(() => {
     fetchActivities();
@@ -144,13 +165,23 @@ export default function Activities() {
     return () => window.removeEventListener('entity_change', handleEntityChange);
   }, [filterType, filterStatus]);
 
-  const handleView = (activity: Activity) => {
+  const handleView = async (activity: Activity) => {
     setSelectedActivity(activity);
+    
+    // Load custom field values
+    try {
+      const values = await customFieldsService.getCustomFieldValues('activity', activity.id);
+      setCustomFieldValues(values);
+    } catch (error) {
+      console.error('Failed to load custom field values:', error);
+      setCustomFieldValues({});
+    }
+    
     setShowViewModal(true);
   };
   
   // Handle edit activity
-  const handleEdit = (activity: Activity) => {
+  const handleEdit = async (activity: Activity) => {
     // Prevent editing completed activities
     if (activity.status === 'completed') {
       toast.error('Cannot edit completed activities');
@@ -174,6 +205,16 @@ export default function Activities() {
       duration_minutes: activity.duration_minutes || 30,
       priority: activity.priority || 1,
     });
+    
+    // Load custom field values
+    try {
+      const values = await customFieldsService.getCustomFieldValues('activity', activity.id);
+      setCustomFieldValues(values);
+    } catch (error) {
+      console.error('Failed to load custom field values:', error);
+      setCustomFieldValues({});
+    }
+    
     setShowEditModal(true);
   };
   
@@ -261,7 +302,16 @@ export default function Activities() {
 
     setIsSubmitting(true);
     try {
-      await activitiesService.createActivity(activityForm);
+      const newActivity = await activitiesService.createActivity(activityForm);
+      
+      // Save custom field values if any
+      if (customFields.length > 0) {
+        const customFieldValuesToSave = customFieldsService.prepareCustomFieldValues(customFields, customFieldValues);
+        if (customFieldValuesToSave.length > 0) {
+          await customFieldsService.setCustomFieldValues('activity', newActivity.id, customFieldValuesToSave);
+        }
+      }
+      
       toast.success('Activity created');
       setShowAddModal(false);
       setActivityForm({
@@ -273,6 +323,7 @@ export default function Activities() {
         duration_minutes: 30,
         priority: 1,
       });
+      setCustomFieldValues({});
       fetchActivities();
     } catch (error: any) {
       console.error('Create error:', error);
@@ -352,8 +403,18 @@ export default function Activities() {
     setIsSubmitting(true);
     try {
       await activitiesService.updateActivity(selectedActivity.id, activityForm);
+      
+      // Save custom field values if any
+      if (customFields.length > 0) {
+        const customFieldValuesToSave = customFieldsService.prepareCustomFieldValues(customFields, customFieldValues);
+        if (customFieldValuesToSave.length > 0) {
+          await customFieldsService.setCustomFieldValues('activity', selectedActivity.id, customFieldValuesToSave);
+        }
+      }
+      
       toast.success('Activity updated');
       setShowEditModal(false);
+      setCustomFieldValues({});
       fetchActivities();
     } catch (error: any) {
       console.error('Update error:', error);
@@ -843,6 +904,14 @@ export default function Activities() {
                   <option value={2}>High Priority</option>
                 </select>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsForm
+                customFields={customFields}
+                values={customFieldValues}
+                onChange={(fieldKey, value) => setCustomFieldValues({...customFieldValues, [fieldKey]: value})}
+              />
+              
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowAddModal(false)}
@@ -964,6 +1033,14 @@ export default function Activities() {
                 />
                 <p className="text-xs text-gray-500 mt-1">Select future date and time (past dates not allowed)</p>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsForm
+                customFields={customFields}
+                values={customFieldValues}
+                onChange={(fieldKey, value) => setCustomFieldValues({...customFieldValues, [fieldKey]: value})}
+              />
+              
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   onClick={() => setShowEditModal(false)}
@@ -1019,6 +1096,12 @@ export default function Activities() {
                 <label className="text-sm font-medium text-gray-500">Duration</label>
                 <p className="text-gray-900">{selectedActivity.duration_minutes ? `${selectedActivity.duration_minutes} minutes` : 'N/A'}</p>
               </div>
+              
+              {/* Custom Fields */}
+              <CustomFieldsDisplay
+                customFields={customFields}
+                values={customFieldValues}
+              />
             </div>
           </div>
         </div>
