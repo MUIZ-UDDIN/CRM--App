@@ -486,8 +486,9 @@ async def update_activity(
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
     
-    # Check if user owns this activity
-    if str(activity.owner_id) != current_user["id"]:
+    # Check if user owns this activity or is Super Admin
+    is_super_admin = current_user.get("role") == "super_admin"
+    if not is_super_admin and str(activity.owner_id) != current_user["id"]:
         raise HTTPException(status_code=403, detail="Not authorized to update this activity")
     
     # Handle enum fields and field mapping
