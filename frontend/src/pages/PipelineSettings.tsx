@@ -35,7 +35,7 @@ interface Pipeline {
 
 export default function PipelineSettings() {
   const { user } = useAuth();
-  const { isCompanyAdmin, isSuperAdmin } = usePermissions();
+  const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState('');
   const [showAddStageModal, setShowAddStageModal] = useState(false);
@@ -48,8 +48,8 @@ export default function PipelineSettings() {
   const [showDeleteStageModal, setShowDeleteStageModal] = useState(false);
   const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
   
-  // Check if user can customize CRM
-  const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin();
+  // Check if user can customize CRM (Company Admin = Admin = Sales Manager)
+  const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   const resetStageForm = () => {
     setNewStageName('');

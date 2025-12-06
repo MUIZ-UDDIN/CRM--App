@@ -47,7 +47,7 @@ const ENTITY_TYPES = [
 
 export default function CustomFields() {
   const { user } = useAuth();
-  const { hasPermission, isCompanyAdmin, isSuperAdmin } = usePermissions();
+  const { hasPermission, isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
   const [searchParams] = useSearchParams();
   const companyIdFromUrl = searchParams.get('companyId'); // For Super Admin managing specific company
   const [fields, setFields] = useState<CustomField[]>([]);
@@ -57,8 +57,8 @@ export default function CustomFields() {
   const [filterEntity, setFilterEntity] = useState<string>('all');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  // Check if user can customize CRM
-  const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin();
+  // Check if user can customize CRM (Company Admin = Admin = Sales Manager)
+  const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
   const [formData, setFormData] = useState({
     name: '',
