@@ -26,6 +26,7 @@ import {
   PlusCircleIcon,
   PhoneIcon,
   ArrowPathIcon,
+  ArrowLeftIcon,
 } from '@heroicons/react/24/outline';
 
 type TabType = 'company' | 'security' | 'billing' | 'team' | 'team_members' | 'integrations' | 'custom_fields';
@@ -90,6 +91,7 @@ export default function Settings() {
   const navigate = useNavigate();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
   const subPageFromUrl = searchParams.get('subpage');
+  const companyIdFromUrl = searchParams.get('companyId'); // For Super Admin managing specific company
   const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'company');
   const [integrationsSubPage, setIntegrationsSubPage] = useState<string | null>(subPageFromUrl);
   
@@ -107,14 +109,20 @@ export default function Settings() {
   const changeTab = (tab: TabType) => {
     setActiveTab(tab);
     setIntegrationsSubPage(null);
-    navigate(`/settings?tab=${tab}`, { replace: true });
+    const url = companyIdFromUrl 
+      ? `/settings?tab=${tab}&companyId=${companyIdFromUrl}` 
+      : `/settings?tab=${tab}`;
+    navigate(url, { replace: true });
   };
   
   // Helper function to navigate to integrations subpage
   const navigateToIntegrationsSubPage = (subpage: string) => {
     setActiveTab('integrations');
     setIntegrationsSubPage(subpage);
-    navigate(`/settings?tab=integrations&subpage=${subpage}`, { replace: true });
+    const url = companyIdFromUrl 
+      ? `/settings?tab=integrations&subpage=${subpage}&companyId=${companyIdFromUrl}` 
+      : `/settings?tab=integrations&subpage=${subpage}`;
+    navigate(url, { replace: true });
   };
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showEditTeamModal, setShowEditTeamModal] = useState(false);
@@ -259,23 +267,27 @@ export default function Settings() {
 
   const fetchCompanyDetails = async () => {
     try {
-      // First fetch current user to get company_id
-      const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+      let companyId = companyIdFromUrl; // Use URL param if Super Admin is managing specific company
+      
+      // If no companyId in URL, fetch current user's company_id
+      if (!companyId) {
+        const userResponse = await fetch(`${API_BASE_URL}/api/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
 
-      if (!userResponse.ok) {
-        console.error('Failed to fetch user info');
-        return;
+        if (!userResponse.ok) {
+          console.error('Failed to fetch user info');
+          return;
+        }
+
+        const userData = await userResponse.json();
+        companyId = userData.company_id;
       }
 
-      const userData = await userResponse.json();
-      const companyId = userData.company_id;
-
       if (!companyId) {
-        console.error('No company_id found for user');
+        console.error('No company_id found');
         return;
       }
 
@@ -1499,8 +1511,28 @@ export default function Settings() {
       <div className="bg-white shadow">
         <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8">
           <div className="py-6">
-            <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-            <p className="mt-1 text-sm text-gray-500">Manage your account and application settings</p>
+            {companyIdFromUrl && isSuperAdmin && (
+              <button
+                onClick={() => navigate(`/companies/${companyIdFromUrl}`)}
+                className="flex items-center text-gray-600 hover:text-gray-900 mb-4 transition-colors"
+              >
+                <ArrowLeftIcon className="w-5 h-5 mr-2" />
+                Back to Company Management
+              </button>
+            )}
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {companyIdFromUrl && isSuperAdmin ? 'Company Settings' : 'Settings'}
+                </h1>
+                <p className="mt-1 text-sm text-gray-500">
+                  {companyIdFromUrl && isSuperAdmin 
+                    ? `Managing settings for ${companyForm.name || 'this company'}`
+                    : 'Manage your account and application settings'
+                  }
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
