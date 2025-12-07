@@ -383,7 +383,7 @@ export default function CustomFields() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Field Name *
+                    Field Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -397,7 +397,7 @@ export default function CustomFields() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Field Key *
+                    Field Key <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -415,7 +415,7 @@ export default function CustomFields() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Field Type *
+                    Field Type <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.field_type}
@@ -433,7 +433,7 @@ export default function CustomFields() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Apply To *
+                    Apply To <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={formData.entity_type}

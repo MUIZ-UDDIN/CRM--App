@@ -199,7 +199,7 @@ export default function AcceptInvitation() {
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Create Password *
+              Create Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -247,7 +247,7 @@ export default function AcceptInvitation() {
           {/* Confirm Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Confirm Password *
+              Confirm Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />

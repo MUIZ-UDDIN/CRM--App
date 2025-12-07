@@ -2156,7 +2156,7 @@ export default function CompanySettings() {
             <form onSubmit={handleCreateTeam} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Team Name *
+                  Team Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -2238,7 +2238,7 @@ export default function CompanySettings() {
                 {/* Combined Search + Dropdown */}
                 <div className="relative">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Select User *
+                    Select User <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
                     <input

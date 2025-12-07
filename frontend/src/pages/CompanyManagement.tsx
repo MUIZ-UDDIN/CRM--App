@@ -615,7 +615,7 @@ const CompanyManagement: React.FC = () => {
             <form onSubmit={handleAddUser} className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  First Name *
+                  First Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -630,7 +630,7 @@ const CompanyManagement: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Last Name *
+                  Last Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -645,7 +645,7 @@ const CompanyManagement: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="email"
@@ -660,7 +660,7 @@ const CompanyManagement: React.FC = () => {
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Role *
+                  Role <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={newUser.role}
@@ -868,7 +868,7 @@ const CompanyManagement: React.FC = () => {
                   {reassignData && (
                     <div className="mt-4">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
-                        New Owner *
+                        New Owner <span className="text-red-500">*</span>
                       </label>
                       <select
                         value={newOwnerId}

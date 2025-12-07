@@ -318,7 +318,7 @@ export default function Register() {
           {/* Company Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Company Name *
+              Company Name <span className="text-red-500">*</span>
             </label>
             <div>
               <div className="relative">
@@ -353,7 +353,7 @@ export default function Register() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                First Name *
+                First Name <span className="text-red-500">*</span>
               </label>
               <div>
                 <div className="relative">
@@ -385,7 +385,7 @@ export default function Register() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Last Name *
+                Last Name <span className="text-red-500">*</span>
               </label>
               <div>
                 <div className="relative">
@@ -420,7 +420,7 @@ export default function Register() {
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Work Email *
+              Work Email <span className="text-red-500">*</span>
             </label>
             <div>
               <div className="relative">
@@ -480,7 +480,7 @@ export default function Register() {
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password *
+              Password <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <LockClosedIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
