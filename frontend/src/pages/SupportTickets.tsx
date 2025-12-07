@@ -399,7 +399,7 @@ export default function SupportTickets() {
                                 </button>
                               )}
                               
-                              {ticket.status === 'open' && (
+                              {ticket.status === 'open' && (ticket.assigned_to_id === user?.id || user?.role === 'super_admin' || user?.role === 'company_admin') && (
                                 <button
                                   onClick={() => {
                                     updateTicketStatus(ticket.id, 'in_progress');
@@ -413,7 +413,7 @@ export default function SupportTickets() {
                                 </button>
                               )}
                               
-                              {ticket.status === 'in_progress' && (
+                              {ticket.status === 'in_progress' && (ticket.assigned_to_id === user?.id || user?.role === 'super_admin' || user?.role === 'company_admin') && (
                                 <button
                                   onClick={() => {
                                     updateTicketStatus(ticket.id, 'resolved');
@@ -427,7 +427,7 @@ export default function SupportTickets() {
                                 </button>
                               )}
                               
-                              {ticket.status === 'resolved' && (
+                              {ticket.status === 'resolved' && (ticket.assigned_to_id === user?.id || user?.role === 'super_admin' || user?.role === 'company_admin') && (
                                 <button
                                   onClick={() => {
                                     updateTicketStatus(ticket.id, 'closed');
@@ -480,7 +480,7 @@ export default function SupportTickets() {
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Subject *
+                    Subject <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -494,7 +494,7 @@ export default function SupportTickets() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description *
+                    Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     required
