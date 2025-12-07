@@ -2231,19 +2231,31 @@ export default function Settings() {
                               value={billingForm.cardholderName}
                               onChange={(e) => {
                                 const value = e.target.value;
+                                
+                                // Enforce 50 character limit
+                                if (value.length > 50) {
+                                  toast.error('Cardholder name cannot exceed 50 characters');
+                                  return;
+                                }
+                                
                                 // Prevent script tags and HTML
                                 if (/<[^>]*>/g.test(value)) {
+                                  toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                                   setBillingErrors({...billingErrors, cardholderName: 'Script tags and HTML are not allowed'});
-                                } else if (value.length > 50) {
-                                  setBillingErrors({...billingErrors, cardholderName: 'Name must be 50 characters or less'});
-                                } else if (value && !/^[a-zA-Z\s'-]*$/.test(value)) {
-                                  setBillingErrors({...billingErrors, cardholderName: 'Only letters, spaces, hyphens, and apostrophes allowed'});
-                                } else {
-                                  const newErrors = {...billingErrors};
-                                  delete newErrors.cardholderName;
-                                  setBillingErrors(newErrors);
+                                  return;
                                 }
-                                setBillingForm({...billingForm, cardholderName: value.slice(0, 50)});
+                                
+                                // Only allow letters, spaces, hyphens, apostrophes
+                                if (value && !/^[a-zA-Z\s'-]*$/.test(value)) {
+                                  toast.error('Cardholder name can only contain letters, spaces, hyphens, and apostrophes');
+                                  return;
+                                }
+                                
+                                // Clear errors if valid
+                                const newErrors = {...billingErrors};
+                                delete newErrors.cardholderName;
+                                setBillingErrors(newErrors);
+                                setBillingForm({...billingForm, cardholderName: value});
                               }}
                               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
                                 billingErrors.cardholderName ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
@@ -2266,16 +2278,29 @@ export default function Settings() {
                               placeholder="1234 5678 9012 3456"
                               value={billingForm.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
                               onChange={(e) => {
-                                const value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
-                                if (value.length <= 16) {
-                                  setBillingForm({...billingForm, cardNumber: value});
-                                  if (value.length > 0 && value.length !== 16) {
-                                    setBillingErrors({...billingErrors, cardNumber: 'Card number must be 16 digits'});
-                                  } else {
-                                    const newErrors = {...billingErrors};
-                                    delete newErrors.cardNumber;
-                                    setBillingErrors(newErrors);
-                                  }
+                                const value = e.target.value.replace(/\s/g, '');
+                                
+                                // Only allow digits
+                                if (!/^\d*$/.test(value)) {
+                                  toast.error('Card number can only contain digits (0-9)');
+                                  return;
+                                }
+                                
+                                // Enforce 16 digit limit
+                                if (value.length > 16) {
+                                  toast.error('Card number cannot exceed 16 digits');
+                                  return;
+                                }
+                                
+                                setBillingForm({...billingForm, cardNumber: value});
+                                
+                                // Update error state
+                                if (value.length > 0 && value.length !== 16) {
+                                  setBillingErrors({...billingErrors, cardNumber: 'Card number must be 16 digits'});
+                                } else {
+                                  const newErrors = {...billingErrors};
+                                  delete newErrors.cardNumber;
+                                  setBillingErrors(newErrors);
                                 }
                               }}
                               maxLength={19}
@@ -2302,9 +2327,12 @@ export default function Settings() {
                                 value={billingForm.cardExpiry}
                                 onChange={(e) => {
                                   let value = e.target.value.replace(/\D/g, '');
+                                  
+                                  // Auto-format as MM/YY
                                   if (value.length >= 2) {
                                     value = value.slice(0, 2) + '/' + value.slice(2, 4);
                                   }
+                                  
                                   setBillingForm({...billingForm, cardExpiry: value});
                                   
                                   // Validate expiry
@@ -2317,15 +2345,17 @@ export default function Settings() {
                                     const currentYear = currentDate.getFullYear();
                                     
                                     if (monthNum < 1 || monthNum > 12) {
+                                      toast.error('Expiry month must be between 01 and 12');
                                       setBillingErrors({...billingErrors, cardExpiry: 'Month must be between 01 and 12'});
                                     } else if (yearNum < currentYear || (yearNum === currentYear && monthNum < currentMonth)) {
+                                      toast.error('Card has expired. Please enter a valid expiry date');
                                       setBillingErrors({...billingErrors, cardExpiry: 'Card has expired'});
                                     } else {
                                       const newErrors = {...billingErrors};
                                       delete newErrors.cardExpiry;
                                       setBillingErrors(newErrors);
                                     }
-                                  } else if (value.length > 0) {
+                                  } else if (value.length > 0 && value.length < 5) {
                                     setBillingErrors({...billingErrors, cardExpiry: 'Invalid format. Use MM/YY'});
                                   } else {
                                     const newErrors = {...billingErrors};
@@ -2352,16 +2382,29 @@ export default function Settings() {
                                 placeholder="123"
                                 value={billingForm.cardCVC}
                                 onChange={(e) => {
-                                  const value = e.target.value.replace(/\D/g, '');
-                                  if (value.length <= 4) {
-                                    setBillingForm({...billingForm, cardCVC: value});
-                                    if (value.length > 0 && value.length < 3) {
-                                      setBillingErrors({...billingErrors, cardCVC: 'CVC must be 3 or 4 digits'});
-                                    } else {
-                                      const newErrors = {...billingErrors};
-                                      delete newErrors.cardCVC;
-                                      setBillingErrors(newErrors);
-                                    }
+                                  const value = e.target.value;
+                                  
+                                  // Only allow digits
+                                  if (!/^\d*$/.test(value)) {
+                                    toast.error('CVC can only contain digits (0-9)');
+                                    return;
+                                  }
+                                  
+                                  // Enforce 4 digit limit
+                                  if (value.length > 4) {
+                                    toast.error('CVC cannot exceed 4 digits');
+                                    return;
+                                  }
+                                  
+                                  setBillingForm({...billingForm, cardCVC: value});
+                                  
+                                  // Update error state
+                                  if (value.length > 0 && value.length < 3) {
+                                    setBillingErrors({...billingErrors, cardCVC: 'CVC must be 3 or 4 digits'});
+                                  } else {
+                                    const newErrors = {...billingErrors};
+                                    delete newErrors.cardCVC;
+                                    setBillingErrors(newErrors);
                                   }
                                 }}
                                 maxLength={4}
@@ -3437,19 +3480,31 @@ export default function Settings() {
                   value={billingForm.cardholderName}
                   onChange={(e) => {
                     const value = e.target.value;
+                    
+                    // Enforce 50 character limit
+                    if (value.length > 50) {
+                      toast.error('Cardholder name cannot exceed 50 characters');
+                      return;
+                    }
+                    
                     // Prevent script tags and HTML
                     if (/<[^>]*>/g.test(value)) {
+                      toast.error('HTML tags and scripts are not allowed. Please enter plain text only.');
                       setBillingErrors({...billingErrors, cardholderName: 'Script tags and HTML are not allowed'});
-                    } else if (value.length > 50) {
-                      setBillingErrors({...billingErrors, cardholderName: 'Name must be 50 characters or less'});
-                    } else if (value && !/^[a-zA-Z\s'-]*$/.test(value)) {
-                      setBillingErrors({...billingErrors, cardholderName: 'Only letters, spaces, hyphens, and apostrophes allowed'});
-                    } else {
-                      const newErrors = {...billingErrors};
-                      delete newErrors.cardholderName;
-                      setBillingErrors(newErrors);
+                      return;
                     }
-                    setBillingForm({...billingForm, cardholderName: value.slice(0, 50)});
+                    
+                    // Only allow letters, spaces, hyphens, apostrophes
+                    if (value && !/^[a-zA-Z\s'-]*$/.test(value)) {
+                      toast.error('Cardholder name can only contain letters, spaces, hyphens, and apostrophes');
+                      return;
+                    }
+                    
+                    // Clear errors if valid
+                    const newErrors = {...billingErrors};
+                    delete newErrors.cardholderName;
+                    setBillingErrors(newErrors);
+                    setBillingForm({...billingForm, cardholderName: value});
                   }}
                   className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
                     billingErrors.cardholderName ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
@@ -3472,16 +3527,29 @@ export default function Settings() {
                   placeholder="1234 5678 9012 3456"
                   value={billingForm.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
                   onChange={(e) => {
-                    const value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
-                    if (value.length <= 16) {
-                      setBillingForm({...billingForm, cardNumber: value});
-                      if (value.length > 0 && value.length !== 16) {
-                        setBillingErrors({...billingErrors, cardNumber: 'Card number must be 16 digits'});
-                      } else {
-                        const newErrors = {...billingErrors};
-                        delete newErrors.cardNumber;
-                        setBillingErrors(newErrors);
-                      }
+                    const value = e.target.value.replace(/\s/g, '');
+                    
+                    // Only allow digits
+                    if (!/^\d*$/.test(value)) {
+                      toast.error('Card number can only contain digits (0-9)');
+                      return;
+                    }
+                    
+                    // Enforce 16 digit limit
+                    if (value.length > 16) {
+                      toast.error('Card number cannot exceed 16 digits');
+                      return;
+                    }
+                    
+                    setBillingForm({...billingForm, cardNumber: value});
+                    
+                    // Update error state
+                    if (value.length > 0 && value.length !== 16) {
+                      setBillingErrors({...billingErrors, cardNumber: 'Card number must be 16 digits'});
+                    } else {
+                      const newErrors = {...billingErrors};
+                      delete newErrors.cardNumber;
+                      setBillingErrors(newErrors);
                     }
                   }}
                   maxLength={19}
@@ -3508,9 +3576,12 @@ export default function Settings() {
                     value={billingForm.cardExpiry}
                     onChange={(e) => {
                       let value = e.target.value.replace(/\D/g, '');
+                      
+                      // Auto-format as MM/YY
                       if (value.length >= 2) {
                         value = value.slice(0, 2) + '/' + value.slice(2, 4);
                       }
+                      
                       setBillingForm({...billingForm, cardExpiry: value});
                       
                       // Validate expiry
@@ -3523,15 +3594,17 @@ export default function Settings() {
                         const currentYear = currentDate.getFullYear();
                         
                         if (monthNum < 1 || monthNum > 12) {
+                          toast.error('Expiry month must be between 01 and 12');
                           setBillingErrors({...billingErrors, cardExpiry: 'Month must be between 01 and 12'});
                         } else if (yearNum < currentYear || (yearNum === currentYear && monthNum < currentMonth)) {
+                          toast.error('Card has expired. Please enter a valid expiry date');
                           setBillingErrors({...billingErrors, cardExpiry: 'Card has expired'});
                         } else {
                           const newErrors = {...billingErrors};
                           delete newErrors.cardExpiry;
                           setBillingErrors(newErrors);
                         }
-                      } else if (value.length > 0) {
+                      } else if (value.length > 0 && value.length < 5) {
                         setBillingErrors({...billingErrors, cardExpiry: 'Invalid format. Use MM/YY'});
                       } else {
                         const newErrors = {...billingErrors};
@@ -3558,16 +3631,29 @@ export default function Settings() {
                     placeholder="123"
                     value={billingForm.cardCVC}
                     onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      if (value.length <= 4) {
-                        setBillingForm({...billingForm, cardCVC: value});
-                        if (value.length > 0 && value.length < 3) {
-                          setBillingErrors({...billingErrors, cardCVC: 'CVC must be 3 or 4 digits'});
-                        } else {
-                          const newErrors = {...billingErrors};
-                          delete newErrors.cardCVC;
-                          setBillingErrors(newErrors);
-                        }
+                      const value = e.target.value;
+                      
+                      // Only allow digits
+                      if (!/^\d*$/.test(value)) {
+                        toast.error('CVC can only contain digits (0-9)');
+                        return;
+                      }
+                      
+                      // Enforce 4 digit limit
+                      if (value.length > 4) {
+                        toast.error('CVC cannot exceed 4 digits');
+                        return;
+                      }
+                      
+                      setBillingForm({...billingForm, cardCVC: value});
+                      
+                      // Update error state
+                      if (value.length > 0 && value.length < 3) {
+                        setBillingErrors({...billingErrors, cardCVC: 'CVC must be 3 or 4 digits'});
+                      } else {
+                        const newErrors = {...billingErrors};
+                        delete newErrors.cardCVC;
+                        setBillingErrors(newErrors);
                       }
                     }}
                     maxLength={4}
