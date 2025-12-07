@@ -2222,57 +2222,174 @@ export default function Settings() {
                         
                         <div className="space-y-4 mb-6">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Card Number
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="1234 5678 9012 3456"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Expiry Date
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="MM/YY"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-2">
-                                CVV
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="123"
-                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              Cardholder Name
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Cardholder Name <span className="text-red-500">*</span>
                             </label>
                             <input
                               type="text"
                               placeholder="John Doe"
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              value={billingForm.cardholderName}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                // Prevent script tags and HTML
+                                if (/<[^>]*>/g.test(value)) {
+                                  setBillingErrors({...billingErrors, cardholderName: 'Script tags and HTML are not allowed'});
+                                } else if (value.length > 50) {
+                                  setBillingErrors({...billingErrors, cardholderName: 'Name must be 50 characters or less'});
+                                } else if (value && !/^[a-zA-Z\s'-]*$/.test(value)) {
+                                  setBillingErrors({...billingErrors, cardholderName: 'Only letters, spaces, hyphens, and apostrophes allowed'});
+                                } else {
+                                  const newErrors = {...billingErrors};
+                                  delete newErrors.cardholderName;
+                                  setBillingErrors(newErrors);
+                                }
+                                setBillingForm({...billingForm, cardholderName: value.slice(0, 50)});
+                              }}
+                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
+                                billingErrors.cardholderName ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                              }`}
+                              required
                             />
+                            <div className="flex justify-between items-center mt-1">
+                              <p className="text-xs text-gray-500">{billingForm.cardholderName.length}/50 characters</p>
+                              {billingErrors.cardholderName && (
+                                <p className="text-xs text-red-600">{billingErrors.cardholderName}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Card Number <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                              type="text"
+                              placeholder="1234 5678 9012 3456"
+                              value={billingForm.cardNumber.replace(/(\d{4})(?=\d)/g, '$1 ')}
+                              onChange={(e) => {
+                                const value = e.target.value.replace(/\s/g, '').replace(/\D/g, '');
+                                if (value.length <= 16) {
+                                  setBillingForm({...billingForm, cardNumber: value});
+                                  if (value.length > 0 && value.length !== 16) {
+                                    setBillingErrors({...billingErrors, cardNumber: 'Card number must be 16 digits'});
+                                  } else {
+                                    const newErrors = {...billingErrors};
+                                    delete newErrors.cardNumber;
+                                    setBillingErrors(newErrors);
+                                  }
+                                }
+                              }}
+                              maxLength={19}
+                              className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
+                                billingErrors.cardNumber ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                              }`}
+                              required
+                            />
+                            <div className="flex justify-between items-center mt-1">
+                              <p className="text-xs text-gray-500">{billingForm.cardNumber.length}/16 digits</p>
+                              {billingErrors.cardNumber && (
+                                <p className="text-xs text-red-600">{billingErrors.cardNumber}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Expiry (MM/YY) <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="12/25"
+                                value={billingForm.cardExpiry}
+                                onChange={(e) => {
+                                  let value = e.target.value.replace(/\D/g, '');
+                                  if (value.length >= 2) {
+                                    value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                                  }
+                                  setBillingForm({...billingForm, cardExpiry: value});
+                                  
+                                  // Validate expiry
+                                  if (value.length === 5) {
+                                    const [month, year] = value.split('/');
+                                    const monthNum = parseInt(month, 10);
+                                    const yearNum = parseInt('20' + year, 10);
+                                    const currentDate = new Date();
+                                    const currentMonth = currentDate.getMonth() + 1;
+                                    const currentYear = currentDate.getFullYear();
+                                    
+                                    if (monthNum < 1 || monthNum > 12) {
+                                      setBillingErrors({...billingErrors, cardExpiry: 'Month must be between 01 and 12'});
+                                    } else if (yearNum < currentYear || (yearNum === currentYear && monthNum < currentMonth)) {
+                                      setBillingErrors({...billingErrors, cardExpiry: 'Card has expired'});
+                                    } else {
+                                      const newErrors = {...billingErrors};
+                                      delete newErrors.cardExpiry;
+                                      setBillingErrors(newErrors);
+                                    }
+                                  } else if (value.length > 0) {
+                                    setBillingErrors({...billingErrors, cardExpiry: 'Invalid format. Use MM/YY'});
+                                  } else {
+                                    const newErrors = {...billingErrors};
+                                    delete newErrors.cardExpiry;
+                                    setBillingErrors(newErrors);
+                                  }
+                                }}
+                                maxLength={5}
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
+                                  billingErrors.cardExpiry ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                                }`}
+                                required
+                              />
+                              {billingErrors.cardExpiry && (
+                                <p className="text-xs text-red-600 mt-1">{billingErrors.cardExpiry}</p>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                                CVC <span className="text-red-500">*</span>
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="123"
+                                value={billingForm.cardCVC}
+                                onChange={(e) => {
+                                  const value = e.target.value.replace(/\D/g, '');
+                                  if (value.length <= 4) {
+                                    setBillingForm({...billingForm, cardCVC: value});
+                                    if (value.length > 0 && value.length < 3) {
+                                      setBillingErrors({...billingErrors, cardCVC: 'CVC must be 3 or 4 digits'});
+                                    } else {
+                                      const newErrors = {...billingErrors};
+                                      delete newErrors.cardCVC;
+                                      setBillingErrors(newErrors);
+                                    }
+                                  }
+                                }}
+                                maxLength={4}
+                                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 ${
+                                  billingErrors.cardCVC ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-primary-500'
+                                }`}
+                                required
+                              />
+                              {billingErrors.cardCVC && (
+                                <p className="text-xs text-red-600 mt-1">{billingErrors.cardCVC}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
 
                         <div className="flex gap-3">
                           <button
                             onClick={async () => {
+                              if (!validateBillingForm()) {
+                                toast.error('Please fix the validation errors');
+                                return;
+                              }
                               try {
                                 // TODO: Integrate with Square payment gateway
                                 // For now, show message that Square needs to be configured
                                 toast.error('Payment processing is not yet configured. Please contact support to set up Square payment gateway.');
                                 setShowPaymentModal(false);
+                                setBillingErrors({});
                               } catch (error: any) {
                                 toast.error(error?.response?.data?.detail || 'Failed to process payment');
                               }
@@ -2282,7 +2399,10 @@ export default function Settings() {
                             Add Payment Method
                           </button>
                           <button
-                            onClick={() => setShowPaymentModal(false)}
+                            onClick={() => {
+                              setShowPaymentModal(false);
+                              setBillingErrors({});
+                            }}
                             className="px-6 py-3 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                           >
                             Cancel
