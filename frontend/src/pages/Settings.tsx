@@ -839,6 +839,24 @@ export default function Settings() {
     cardCVC?: string;
   }>({});
 
+  // Get status badge color based on status
+  const getStatusBadge = (status: string) => {
+    const normalizedStatus = status?.toLowerCase();
+    const badges = {
+      active: 'bg-green-100 text-green-800',
+      paid: 'bg-green-100 text-green-800',
+      pending: 'bg-yellow-100 text-yellow-800',
+      trialing: 'bg-blue-100 text-blue-800',
+      canceled: 'bg-red-100 text-red-800',
+      cancelled: 'bg-red-100 text-red-800',
+      unpaid: 'bg-red-100 text-red-800',
+      overdue: 'bg-red-100 text-red-800',
+      open: 'bg-yellow-100 text-yellow-800',
+      void: 'bg-gray-100 text-gray-800'
+    };
+    return badges[normalizedStatus as keyof typeof badges] || badges.void;
+  };
+
   // Calculate next billing date (30 days from now)
   const getNextBillingDate = () => {
     const saved = localStorage.getItem('billingSettings');
