@@ -1542,130 +1542,158 @@ export default function Settings() {
                 </p>
               </div>
             )}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Company Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={companyForm.name}
-                  onChange={(e) => setCompanyForm({...companyForm, name: e.target.value})}
-                  maxLength={255}
-                  disabled={!isAdmin}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  required
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {companyForm.name.length}/255 characters
+            {isAdmin ? (
+              // Edit mode for admins
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Company Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={companyForm.name}
+                    onChange={(e) => setCompanyForm({...companyForm, name: e.target.value})}
+                    maxLength={255}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    required
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {companyForm.name.length}/255 characters
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={companyForm.email}
+                    onChange={(e) => setCompanyForm({...companyForm, email: e.target.value})}
+                    maxLength={255}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {companyForm.email.length}/255 characters
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                  <input
+                    type="tel"
+                    placeholder="+1234567890"
+                    value={companyForm.phone}
+                    onChange={(e) => {
+                      // Only allow numbers, +, -, (, ), and spaces
+                      const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                      setCompanyForm({...companyForm, phone: value});
+                    }}
+                    pattern="[+]?[0-9\-() ]+"
+                    maxLength={50}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {companyForm.phone.length}/50 characters
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                  <input
+                    type="text"
+                    value={companyForm.address}
+                    onChange={(e) => setCompanyForm({...companyForm, address: e.target.value})}
+                    maxLength={255}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {companyForm.address.length}/255 characters
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
+                  <input
+                    type="text"
+                    value={companyForm.city}
+                    onChange={(e) => {
+                      // Only allow letters, spaces, hyphens, and apostrophes
+                      const value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
+                      setCompanyForm({...companyForm, city: value});
+                    }}
+                    maxLength={100}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="Enter city name (letters only)"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {companyForm.city.length}/100 characters
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
+                  <input
+                    type="text"
+                    value={companyForm.state}
+                    onChange={(e) => {
+                      // Only allow letters, spaces, hyphens, and apostrophes
+                      const value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
+                      setCompanyForm({...companyForm, state: value});
+                    }}
+                    maxLength={100}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="Enter state name (letters only)"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {companyForm.state.length}/100 characters
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
+                  <input
+                    type="text"
+                    value={companyForm.zip}
+                    onChange={(e) => {
+                      // Only allow numbers, hyphens, and spaces
+                      const value = e.target.value.replace(/[^0-9\-\s]/g, '');
+                      setCompanyForm({...companyForm, zip: value});
+                    }}
+                    maxLength={20}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                    placeholder="Enter ZIP code (numbers only)"
+                  />
+                  <div className="text-xs text-gray-500 mt-1">
+                    {companyForm.zip.length}/20 characters
+                  </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                <input
-                  type="email"
-                  value={companyForm.email}
-                  onChange={(e) => setCompanyForm({...companyForm, email: e.target.value})}
-                  maxLength={255}
-                  disabled={!isAdmin}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {companyForm.email.length}/255 characters
+            ) : (
+              // Read-only view for non-admins (Sales Reps)
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Company Name</label>
+                  <p className="text-base text-gray-900">{companyForm.name || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Email</label>
+                  <p className="text-base text-gray-900">{companyForm.email || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Phone</label>
+                  <p className="text-base text-gray-900">{companyForm.phone || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">Address</label>
+                  <p className="text-base text-gray-900">{companyForm.address || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">City</label>
+                  <p className="text-base text-gray-900">{companyForm.city || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">State</label>
+                  <p className="text-base text-gray-900">{companyForm.state || '-'}</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-500 mb-1">ZIP Code</label>
+                  <p className="text-base text-gray-900">{companyForm.zip || '-'}</p>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
-                <input
-                  type="tel"
-                  placeholder="+1234567890"
-                  value={companyForm.phone}
-                  onChange={(e) => {
-                    // Only allow numbers, +, -, (, ), and spaces
-                    const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
-                    setCompanyForm({...companyForm, phone: value});
-                  }}
-                  pattern="[+]?[0-9\-() ]+"
-                  maxLength={50}
-                  disabled={!isAdmin}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {companyForm.phone.length}/50 characters
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                <input
-                  type="text"
-                  value={companyForm.address}
-                  onChange={(e) => setCompanyForm({...companyForm, address: e.target.value})}
-                  maxLength={255}
-                  disabled={!isAdmin}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {companyForm.address.length}/255 characters
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
-                <input
-                  type="text"
-                  value={companyForm.city}
-                  onChange={(e) => {
-                    // Only allow letters, spaces, hyphens, and apostrophes
-                    const value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
-                    setCompanyForm({...companyForm, city: value});
-                  }}
-                  maxLength={100}
-                  disabled={!isAdmin}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="Enter city name (letters only)"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {companyForm.city.length}/100 characters
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
-                <input
-                  type="text"
-                  value={companyForm.state}
-                  onChange={(e) => {
-                    // Only allow letters, spaces, hyphens, and apostrophes
-                    const value = e.target.value.replace(/[^a-zA-Z\s\-']/g, '');
-                    setCompanyForm({...companyForm, state: value});
-                  }}
-                  maxLength={100}
-                  disabled={!isAdmin}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="Enter state name (letters only)"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {companyForm.state.length}/100 characters
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">ZIP Code</label>
-                <input
-                  type="text"
-                  value={companyForm.zip}
-                  onChange={(e) => {
-                    // Only allow numbers, hyphens, and spaces
-                    const value = e.target.value.replace(/[^0-9\-\s]/g, '');
-                    setCompanyForm({...companyForm, zip: value});
-                  }}
-                  maxLength={20}
-                  disabled={!isAdmin}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="Enter ZIP code (numbers only)"
-                />
-                <div className="text-xs text-gray-500 mt-1">
-                  {companyForm.zip.length}/20 characters
-                </div>
-              </div>
-            </div>
+            )}
             {isAdmin && (
               <div className="mt-6 flex justify-end">
                 <button
