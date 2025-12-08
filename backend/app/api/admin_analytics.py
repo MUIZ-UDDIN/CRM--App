@@ -234,27 +234,28 @@ async def get_admin_dashboard_analytics(
             )
         
         # Apply role-based filtering for pipeline stages (only for non-super_admin roles)
-        if user_role == 'company_admin' and company_id:
-            # Company Admin sees only their company's stages
-            stages_query = stages_query.join(
-                Pipeline, PipelineStage.pipeline_id == Pipeline.id
-            ).filter(Pipeline.company_id == company_id)
-        elif user_role == 'sales_manager' and user_team_id:
-            # Sales Manager sees only their team's deals (team_user_ids already defined above)
-            stages_query = stages_query.join(
-                Pipeline, PipelineStage.pipeline_id == Pipeline.id
-            ).filter(
-                Pipeline.company_id == company_id,
-                Deal.owner_id.in_(team_user_ids)
-            )
-        else:
-            # Sales Rep and other users see only their own deals
-            stages_query = stages_query.join(
-                Pipeline, PipelineStage.pipeline_id == Pipeline.id
-            ).filter(
-                Pipeline.company_id == company_id,
-                Deal.owner_id == user_id
-            )
+        if user_role != 'super_admin':
+            if user_role == 'company_admin' and company_id:
+                # Company Admin sees only their company's stages
+                stages_query = stages_query.join(
+                    Pipeline, PipelineStage.pipeline_id == Pipeline.id
+                ).filter(Pipeline.company_id == company_id)
+            elif user_role == 'sales_manager' and user_team_id:
+                # Sales Manager sees only their team's deals (team_user_ids already defined above)
+                stages_query = stages_query.join(
+                    Pipeline, PipelineStage.pipeline_id == Pipeline.id
+                ).filter(
+                    Pipeline.company_id == company_id,
+                    Deal.owner_id.in_(team_user_ids)
+                )
+            else:
+                # Sales Rep and other users see only their own deals
+                stages_query = stages_query.join(
+                    Pipeline, PipelineStage.pipeline_id == Pipeline.id
+                ).filter(
+                    Pipeline.company_id == company_id,
+                    Deal.owner_id == user_id
+                )
         
         # Add group_by and order_by for non-super_admin roles (super_admin already has it)
         if user_role != 'super_admin':
