@@ -335,9 +335,7 @@ export default function Register() {
                     handleFieldChange('company_name', value);
                   }}
                   onBlur={() => handleFieldBlur('company_name')}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.company_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Acme Corporation"
                 />
               </div>
@@ -365,9 +363,7 @@ export default function Register() {
                       handleFieldChange('admin_first_name', value);
                     }}
                     onBlur={() => handleFieldBlur('admin_first_name')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      validationErrors.admin_first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="John"
                   />
                 </div>
@@ -392,9 +388,7 @@ export default function Register() {
                       handleFieldChange('admin_last_name', value);
                     }}
                     onBlur={() => handleFieldBlur('admin_last_name')}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                      validationErrors.admin_last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                    }`}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="Doe"
                   />
                 </div>
@@ -418,9 +412,7 @@ export default function Register() {
                   value={formData.admin_email}
                   onChange={(e) => handleFieldChange('admin_email', e.target.value.trim())}
                   onBlur={() => handleFieldBlur('admin_email')}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.admin_email ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="john@company.com"
                 />
               </div>
@@ -445,9 +437,7 @@ export default function Register() {
                     handleFieldChange('phone', value);
                   }}
                   onBlur={() => handleFieldBlur('phone')}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                    validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="+1 (555) 000-0000"
                 />
               </div>
@@ -468,7 +458,7 @@ export default function Register() {
                 maxLength={128}
                 value={formData.admin_password}
                 onChange={(e) => handlePasswordChange(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="Create a strong password"
               />
             </div>
