@@ -64,13 +64,21 @@ async def get_pipelines(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get all pipelines for current user's company"""
+    """Get all pipelines - Super Admin sees ALL companies, others see only their company"""
     from sqlalchemy.orm import joinedload
     
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
     
-    # All users (including super admin) see only their company's pipelines
-    if company_id:
+    # Super Admin sees ALL pipelines from ALL companies
+    if context.is_super_admin():
+        pipelines = db.query(Pipeline).options(
+            joinedload(Pipeline.stages)
+        ).filter(
+            Pipeline.is_deleted == False
+        ).all()
+    # Other users see only their company's pipelines
+    elif company_id:
         pipelines = db.query(Pipeline).options(
             joinedload(Pipeline.stages)
         ).filter(
