@@ -154,6 +154,7 @@ export default function Register() {
     
     if (error) {
       setValidationErrors({ ...validationErrors, [field]: error });
+      showToast(error, 'error');
     }
   };
 
@@ -340,12 +341,7 @@ export default function Register() {
                   placeholder="Acme Corporation"
                 />
               </div>
-              <div className="mt-1 flex justify-between items-center">
-                <p className="text-xs text-gray-500">{formData.company_name.length}/100 characters</p>
-                {validationErrors.company_name && (
-                  <p className="text-xs text-red-600">{validationErrors.company_name}</p>
-                )}
-              </div>
+              <p className="mt-1 text-xs text-gray-500">{formData.company_name.length}/100 characters</p>
             </div>
           </div>
 
@@ -375,12 +371,7 @@ export default function Register() {
                     placeholder="John"
                   />
                 </div>
-                <div className="mt-1 flex justify-between items-center">
-                  <p className="text-xs text-gray-500">{formData.admin_first_name.length}/50 characters</p>
-                  {validationErrors.admin_first_name && (
-                    <p className="text-xs text-red-600">{validationErrors.admin_first_name}</p>
-                  )}
-                </div>
+                <p className="mt-1 text-xs text-gray-500">{formData.admin_first_name.length}/50 characters</p>
               </div>
             </div>
             <div>
@@ -407,12 +398,7 @@ export default function Register() {
                     placeholder="Doe"
                   />
                 </div>
-                <div className="mt-1 flex justify-between items-center">
-                  <p className="text-xs text-gray-500">{formData.admin_last_name.length}/50 characters</p>
-                  {validationErrors.admin_last_name && (
-                    <p className="text-xs text-red-600">{validationErrors.admin_last_name}</p>
-                  )}
-                </div>
+                <p className="mt-1 text-xs text-gray-500">{formData.admin_last_name.length}/50 characters</p>
               </div>
             </div>
           </div>
@@ -438,9 +424,6 @@ export default function Register() {
                   placeholder="john@company.com"
                 />
               </div>
-              {validationErrors.admin_email && (
-                <p className="mt-1 text-xs text-red-600">{validationErrors.admin_email}</p>
-              )}
             </div>
           </div>
 
@@ -468,12 +451,7 @@ export default function Register() {
                   placeholder="+1 (555) 000-0000"
                 />
               </div>
-              <div className="mt-1 flex justify-between items-center">
-                <p className="text-xs text-gray-500">{formData.phone.length}/20 characters</p>
-                {validationErrors.phone && (
-                  <p className="text-xs text-red-600">{validationErrors.phone}</p>
-                )}
-              </div>
+              <p className="mt-1 text-xs text-gray-500">{formData.phone.length}/20 characters</p>
             </div>
           </div>
 
