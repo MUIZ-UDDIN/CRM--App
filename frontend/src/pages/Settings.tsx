@@ -966,13 +966,15 @@ export default function Settings() {
       return;
     }
     
-    // CRITICAL: Prevent Company Admin from inviting new Company Admins
-    // Only Super Admin can assign Company Admin role
+    // Company Admins can now invite other Company Admins within their own company
+    // Super Admin can invite Company Admins to any company
+    // The backend will enforce company-level restrictions
     const inviteRole = teamMemberForm.role.toLowerCase();
     const isInvitingCompanyAdmin = inviteRole === 'company_admin' || inviteRole === 'company admin';
     
-    if (!isSuperAdmin && isInvitingCompanyAdmin) {
-      toast.error('Only Super Admin can invite Company Admins');
+    // Only check if user has permission to invite at all (both Super Admin and Company Admin can invite Company Admins)
+    if (isInvitingCompanyAdmin && !isSuperAdmin && !isCompanyAdmin) {
+      toast.error('You do not have permission to invite Company Admins');
       return;
     }
     
@@ -1166,22 +1168,18 @@ export default function Settings() {
       return;
     }
     
-    // CRITICAL: Prevent Company Admin from changing Company Admin roles (including their own)
-    // Only Super Admin can change Company Admin roles
+    // Company Admins can now manage Company Admin roles within their own company
+    // Super Admin can manage Company Admin roles across all companies
+    // The backend will enforce company-level restrictions
     const originalRole = (selectedMember.role || selectedMember.user_role || '').toLowerCase();
     const newRole = teamMemberForm.role.toLowerCase();
     const isTargetCompanyAdmin = originalRole === 'company_admin' || originalRole === 'company admin';
     const isChangingToCompanyAdmin = newRole === 'company_admin' || newRole === 'company admin';
     
-    if (!isSuperAdmin) {
-      // Company Admin cannot change any Company Admin's role (including their own)
-      if (isTargetCompanyAdmin && originalRole !== newRole) {
-        toast.error('Only Super Admin can change Company Admin roles');
-        return;
-      }
-      // Company Admin cannot promote anyone to Company Admin
-      if (isChangingToCompanyAdmin && !isTargetCompanyAdmin) {
-        toast.error('Only Super Admin can assign Company Admin role');
+    // Only Sales Managers and Regular Users cannot manage Company Admin roles
+    if (!isSuperAdmin && !isCompanyAdmin) {
+      if (isTargetCompanyAdmin || isChangingToCompanyAdmin) {
+        toast.error('You do not have permission to manage Company Admin roles');
         return;
       }
     }
@@ -3178,11 +3176,11 @@ export default function Settings() {
                 </div>
                 <div className="relative">
                   <div className="relative">
-                    {/* Check if editing a Company Admin - only Super Admin can change their role */}
-                    {!isSuperAdmin && selectedMember && (selectedMember.role?.toLowerCase() === 'company_admin' || selectedMember.role?.toLowerCase() === 'company admin' || selectedMember.user_role?.toLowerCase() === 'company_admin' || selectedMember.user_role?.toLowerCase() === 'company admin') ? (
+                    {/* Company Admins can now edit Company Admin roles within their own company */}
+                    {!isSuperAdmin && !isCompanyAdmin && selectedMember && (selectedMember.role?.toLowerCase() === 'company_admin' || selectedMember.role?.toLowerCase() === 'company admin' || selectedMember.user_role?.toLowerCase() === 'company_admin' || selectedMember.user_role?.toLowerCase() === 'company admin') ? (
                       <div className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed">
                         {teamMemberForm.role}
-                        <p className="text-xs text-gray-500 mt-1">Only Super Admin can change Company Admin roles</p>
+                        <p className="text-xs text-gray-500 mt-1">You do not have permission to change Company Admin roles</p>
                       </div>
                     ) : (
                       <input
