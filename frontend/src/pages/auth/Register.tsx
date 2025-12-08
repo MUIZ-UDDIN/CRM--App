@@ -6,11 +6,10 @@ import {
   LockClosedIcon, 
   UserIcon, 
   PhoneIcon, 
-  CheckCircleIcon, 
-  ExclamationCircleIcon,
-  XMarkIcon 
+  CheckCircleIcon
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const API_URL = 'https://sunstonecrm.com/api';
 
@@ -21,12 +20,6 @@ interface RegistrationForm {
   admin_first_name: string;
   admin_last_name: string;
   phone: string;
-}
-
-interface ToastMessage {
-  id: number;
-  type: 'success' | 'error' | 'info';
-  message: string;
 }
 
 interface ValidationErrors {
@@ -42,7 +35,6 @@ export default function Register() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [validationErrors, setValidationErrors] = useState<ValidationErrors>({});
   
   const [formData, setFormData] = useState<RegistrationForm>({
@@ -60,19 +52,6 @@ export default function Register() {
     hasNumber: false,
     hasLength: false
   });
-
-  // Toast notification functions
-  const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast.id !== id));
-    }, 5000);
-  };
-
-  const removeToast = (id: number) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  };
 
   // Real-time validation functions
   const validateCompanyName = (value: string): string | undefined => {
@@ -154,7 +133,7 @@ export default function Register() {
     
     if (error) {
       setValidationErrors({ ...validationErrors, [field]: error });
-      showToast(error, 'error');
+      toast.error(error);
     }
   };
 
@@ -197,7 +176,7 @@ export default function Register() {
 
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
-      showToast('Please correct the errors in the form', 'error');
+      toast.error('Please correct the errors in the form');
       setLoading(false);
       return;
     }
@@ -214,7 +193,7 @@ export default function Register() {
         }));
         
         setSuccess(true);
-        showToast('Account created successfully! Redirecting...', 'success');
+        toast.success('Account created successfully! Redirecting...');
         
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
@@ -237,7 +216,7 @@ export default function Register() {
         }
       }
       
-      showToast(errorMessage, 'error');
+      toast.error(errorMessage);
       console.error('Registration error:', err);
     } finally {
       setLoading(false);
@@ -264,45 +243,7 @@ export default function Register() {
   }
 
   return (
-    <>
-      {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {toasts.map(toast => (
-          <div
-            key={toast.id}
-            className={`flex items-start gap-3 p-4 rounded-lg shadow-lg min-w-[300px] max-w-md animate-slide-in ${
-              toast.type === 'success' ? 'bg-green-50 border border-green-200' :
-              toast.type === 'error' ? 'bg-red-50 border border-red-200' :
-              'bg-blue-50 border border-blue-200'
-            }`}
-          >
-            {toast.type === 'success' && (
-              <CheckCircleIcon className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-            )}
-            {toast.type === 'error' && (
-              <ExclamationCircleIcon className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-            )}
-            {toast.type === 'info' && (
-              <ExclamationCircleIcon className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            )}
-            <p className={`text-sm flex-1 ${
-              toast.type === 'success' ? 'text-green-800' :
-              toast.type === 'error' ? 'text-red-800' :
-              'text-blue-800'
-            }`}>
-              {toast.message}
-            </p>
-            <button
-              onClick={() => removeToast(toast.id)}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <XMarkIcon className="w-4 h-4" />
-            </button>
-          </div>
-        ))}
-      </div>
-
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-xl p-8 max-w-2xl w-full">
         {/* Header */}
         <div className="text-center mb-8">
@@ -335,7 +276,9 @@ export default function Register() {
                     handleFieldChange('company_name', value);
                   }}
                   onBlur={() => handleFieldBlur('company_name')}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.company_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                   placeholder="Acme Corporation"
                 />
               </div>
@@ -363,7 +306,9 @@ export default function Register() {
                       handleFieldChange('admin_first_name', value);
                     }}
                     onBlur={() => handleFieldBlur('admin_first_name')}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      validationErrors.admin_first_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                     placeholder="John"
                   />
                 </div>
@@ -388,7 +333,9 @@ export default function Register() {
                       handleFieldChange('admin_last_name', value);
                     }}
                     onBlur={() => handleFieldBlur('admin_last_name')}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      validationErrors.admin_last_name ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                    }`}
                     placeholder="Doe"
                   />
                 </div>
@@ -412,7 +359,9 @@ export default function Register() {
                   value={formData.admin_email}
                   onChange={(e) => handleFieldChange('admin_email', e.target.value.trim())}
                   onBlur={() => handleFieldBlur('admin_email')}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.admin_email ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                   placeholder="john@company.com"
                 />
               </div>
@@ -437,7 +386,9 @@ export default function Register() {
                     handleFieldChange('phone', value);
                   }}
                   onBlur={() => handleFieldBlur('phone')}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                    validationErrors.phone ? 'border-red-300 bg-red-50' : 'border-gray-300'
+                  }`}
                   placeholder="+1 (555) 000-0000"
                 />
               </div>
@@ -523,6 +474,5 @@ export default function Register() {
         </form>
       </div>
     </div>
-    </>
   );
 }
