@@ -266,8 +266,28 @@ async def delete_company(
     db: Session = Depends(get_db)
 ):
     """
-    Delete a company (soft delete)
+    PERMANENTLY delete a company and ALL related data
     Only accessible by Super Admin
+    
+    This will delete:
+    - Company record
+    - All users
+    - All deals
+    - All contacts
+    - All activities
+    - All pipelines and stages
+    - All documents
+    - All files
+    - All teams
+    - All email settings
+    - All notifications
+    - All support tickets
+    - All workflows
+    - All quotes
+    - All SMS messages
+    - All calls
+    - All email campaigns
+    - And ALL other related data
     """
     # Verify super_admin role
     if current_user.get('role') != 'super_admin':
@@ -283,38 +303,133 @@ async def delete_company(
             detail="Company not found"
         )
     
-    # Soft delete: mark as deleted instead of actually deleting
-    company.status = 'deleted'
-    company.subscription_status = 'cancelled'
+    company_name = company.name
     
-    # Also mark all users as deleted
-    db.query(User).filter(User.company_id == company_id).update({
-        "is_deleted": True,
-        "is_active": False
-    })
-    
-    db.commit()
-    
-    # Log the action
-    audit_log = AuditLog(
-        user_id=current_user.get('id'),
-        user_email=current_user.get('email'),
-        action=AuditAction.DELETE,
-        resource_type='company',
-        resource_id=company.id,
-        details=f"Company '{company.name}' deleted by Super Admin",
-        metadata={'company_name': company.name, 'company_id': str(company.id)}
-    )
-    db.add(audit_log)
-    db.commit()
-    
-    # Invalidate cache
-    _platform_cache['data'] = None
-    
-    return {
-        "message": f"Company '{company.name}' has been deleted successfully",
-        "company_id": str(company.id)
-    }
+    try:
+        # Import all models that need to be deleted
+        from ..models.deals import Deal, Pipeline, PipelineStage
+        from ..models.contacts import Contact
+        from ..models.activities import Activity
+        from ..models.documents import Document
+        from ..models.files import File
+        from ..models.teams import Team
+        from ..models.email_settings import EmailSettings
+        from ..models.notifications import Notification
+        from ..models.support_tickets import SupportTicket
+        from ..models.workflows import Workflow
+        from ..models.workflow_templates import WorkflowTemplate
+        from ..models.quotes import Quote
+        from ..models.sms import SMS
+        from ..models.calls import Call
+        from ..models.email_campaigns import EmailCampaign
+        from ..models.scheduled_sms import ScheduledSMS
+        from ..models.sms_templates import SMSTemplate
+        from ..models.twilio_settings import TwilioSettings
+        from ..models.phone_numbers import PhoneNumber
+        from ..models.performance_alerts import PerformanceAlert
+        from ..models.custom_fields import CustomField
+        from ..models.payment_history import PaymentHistory
+        
+        # Log the action BEFORE deletion
+        audit_log = AuditLog(
+            user_id=current_user.get('id'),
+            user_email=current_user.get('email'),
+            action=AuditAction.DELETE,
+            resource_type='company',
+            resource_id=company.id,
+            details=f"Company '{company_name}' and ALL related data permanently deleted by Super Admin",
+            metadata={'company_name': company_name, 'company_id': str(company_id)}
+        )
+        db.add(audit_log)
+        db.flush()  # Flush to save audit log before deletions
+        
+        # PERMANENT CASCADE DELETION - Delete all related data
+        # Order matters: delete child records before parent records
+        
+        # 1. Delete activities (references deals, contacts, users)
+        db.query(Activity).filter(Activity.company_id == company_id).delete(synchronize_session=False)
+        
+        # 2. Delete documents and files (references deals, contacts)
+        db.query(Document).filter(Document.company_id == company_id).delete(synchronize_session=False)
+        db.query(File).filter(File.company_id == company_id).delete(synchronize_session=False)
+        
+        # 3. Delete deals (references pipelines, stages, contacts, users)
+        db.query(Deal).filter(Deal.company_id == company_id).delete(synchronize_session=False)
+        
+        # 4. Delete pipeline stages (references pipelines)
+        pipeline_ids = [p.id for p in db.query(Pipeline.id).filter(Pipeline.company_id == company_id).all()]
+        if pipeline_ids:
+            db.query(PipelineStage).filter(PipelineStage.pipeline_id.in_(pipeline_ids)).delete(synchronize_session=False)
+        
+        # 5. Delete pipelines
+        db.query(Pipeline).filter(Pipeline.company_id == company_id).delete(synchronize_session=False)
+        
+        # 6. Delete contacts
+        db.query(Contact).filter(Contact.company_id == company_id).delete(synchronize_session=False)
+        
+        # 7. Delete quotes
+        db.query(Quote).filter(Quote.company_id == company_id).delete(synchronize_session=False)
+        
+        # 8. Delete workflows and templates
+        db.query(Workflow).filter(Workflow.company_id == company_id).delete(synchronize_session=False)
+        db.query(WorkflowTemplate).filter(WorkflowTemplate.company_id == company_id).delete(synchronize_session=False)
+        
+        # 9. Delete communication records
+        db.query(SMS).filter(SMS.company_id == company_id).delete(synchronize_session=False)
+        db.query(ScheduledSMS).filter(ScheduledSMS.company_id == company_id).delete(synchronize_session=False)
+        db.query(SMSTemplate).filter(SMSTemplate.company_id == company_id).delete(synchronize_session=False)
+        db.query(Call).filter(Call.company_id == company_id).delete(synchronize_session=False)
+        db.query(EmailCampaign).filter(EmailCampaign.company_id == company_id).delete(synchronize_session=False)
+        
+        # 10. Delete support tickets
+        db.query(SupportTicket).filter(SupportTicket.company_id == company_id).delete(synchronize_session=False)
+        
+        # 11. Delete notifications
+        db.query(Notification).filter(Notification.company_id == company_id).delete(synchronize_session=False)
+        
+        # 12. Delete performance alerts
+        db.query(PerformanceAlert).filter(PerformanceAlert.company_id == company_id).delete(synchronize_session=False)
+        
+        # 13. Delete custom fields
+        db.query(CustomField).filter(CustomField.company_id == company_id).delete(synchronize_session=False)
+        
+        # 14. Delete payment history
+        db.query(PaymentHistory).filter(PaymentHistory.company_id == company_id).delete(synchronize_session=False)
+        
+        # 15. Delete settings
+        db.query(TwilioSettings).filter(TwilioSettings.company_id == company_id).delete(synchronize_session=False)
+        db.query(PhoneNumber).filter(PhoneNumber.company_id == company_id).delete(synchronize_session=False)
+        db.query(EmailSettings).filter(EmailSettings.company_id == company_id).delete(synchronize_session=False)
+        
+        # 16. Delete teams
+        db.query(Team).filter(Team.company_id == company_id).delete(synchronize_session=False)
+        
+        # 17. Delete users
+        db.query(User).filter(User.company_id == company_id).delete(synchronize_session=False)
+        
+        # 18. Finally, delete the company itself
+        db.delete(company)
+        
+        # Commit all deletions
+        db.commit()
+        
+        # Invalidate cache
+        _platform_cache['data'] = None
+        
+        return {
+            "message": f"Company '{company_name}' and all related data have been permanently deleted",
+            "company_id": str(company_id)
+        }
+        
+    except Exception as e:
+        db.rollback()
+        import traceback
+        print(f"Error deleting company: {str(e)}")
+        print(traceback.format_exc())
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to delete company: {str(e)}"
+        )
 
 
 @router.get("/audit-logs")
