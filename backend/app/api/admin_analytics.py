@@ -197,27 +197,44 @@ async def get_admin_dashboard_analytics(
         
         # Get pipeline stage progress (deal value and counts per stage)
         pipeline_stages = []
-        stages_query = db.query(
-            PipelineStage.id,
-            PipelineStage.name,
-            PipelineStage.order_index,
-            func.count(Deal.id).label('deal_count'),
-            func.coalesce(func.sum(Deal.value), 0).label('total_value')
-        ).outerjoin(
-            Deal, and_(
-                Deal.stage_id == PipelineStage.id,
-                Deal.is_deleted == False
-            )
-        )
         
-        # Apply role-based filtering for pipeline stages
+        # For Super Admin: Query deals directly grouped by stage to get accurate counts
         if user_role == 'super_admin':
-            # Super Admin sees all stages from ALL companies
-            # No company_id filter - show everything across all companies
-            stages_query = stages_query.join(
+            stages_query = db.query(
+                PipelineStage.id,
+                PipelineStage.name,
+                PipelineStage.order_index,
+                func.count(Deal.id).label('deal_count'),
+                func.coalesce(func.sum(Deal.value), 0).label('total_value')
+            ).join(
                 Pipeline, PipelineStage.pipeline_id == Pipeline.id
+            ).outerjoin(
+                Deal, and_(
+                    Deal.stage_id == PipelineStage.id,
+                    Deal.is_deleted == False
+                )
+            ).group_by(
+                PipelineStage.id,
+                PipelineStage.name,
+                PipelineStage.order_index
+            ).order_by(PipelineStage.order_index)
+        else:
+            # For other roles: Use existing query structure
+            stages_query = db.query(
+                PipelineStage.id,
+                PipelineStage.name,
+                PipelineStage.order_index,
+                func.count(Deal.id).label('deal_count'),
+                func.coalesce(func.sum(Deal.value), 0).label('total_value')
+            ).outerjoin(
+                Deal, and_(
+                    Deal.stage_id == PipelineStage.id,
+                    Deal.is_deleted == False
+                )
             )
-        elif user_role == 'company_admin' and company_id:
+        
+        # Apply role-based filtering for pipeline stages (only for non-super_admin roles)
+        if user_role == 'company_admin' and company_id:
             # Company Admin sees only their company's stages
             stages_query = stages_query.join(
                 Pipeline, PipelineStage.pipeline_id == Pipeline.id
@@ -239,11 +256,13 @@ async def get_admin_dashboard_analytics(
                 Deal.owner_id == user_id
             )
         
-        stages_query = stages_query.group_by(
-            PipelineStage.id,
-            PipelineStage.name,
-            PipelineStage.order_index
-        ).order_by(PipelineStage.order_index)
+        # Add group_by and order_by for non-super_admin roles (super_admin already has it)
+        if user_role != 'super_admin':
+            stages_query = stages_query.group_by(
+                PipelineStage.id,
+                PipelineStage.name,
+                PipelineStage.order_index
+            ).order_by(PipelineStage.order_index)
         
         total_value_in_stages = 0
         for stage in stages_query.all():
