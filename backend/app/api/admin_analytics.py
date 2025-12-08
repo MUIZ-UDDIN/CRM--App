@@ -201,6 +201,19 @@ async def get_admin_dashboard_analytics(
         # For Super Admin: Aggregate by stage NAME across all pipelines
         # This matches how the deals page counts deals - by grouping all stages with the same name
         if user_role == 'super_admin':
+            # First, let's check what deals exist for "Closed Won Updates"
+            print("\n" + "="*80)
+            print("🔍 DEBUG: Checking 'Closed Won Updates' deals...")
+            closed_won_stages = db.query(PipelineStage).filter(PipelineStage.name == 'Closed Won Updates').all()
+            print(f"Found {len(closed_won_stages)} stages named 'Closed Won Updates'")
+            for stage in closed_won_stages:
+                deals_in_stage = db.query(Deal).filter(
+                    Deal.stage_id == stage.id,
+                    Deal.is_deleted == False
+                ).all()
+                print(f"  Stage ID: {stage.id} | Pipeline ID: {stage.pipeline_id} | Deals: {len(deals_in_stage)} | Total: ${sum(d.value for d in deals_in_stage)}")
+            print("="*80 + "\n")
+            
             stages_query = db.query(
                 PipelineStage.name,
                 func.count(Deal.id).label('deal_count'),
