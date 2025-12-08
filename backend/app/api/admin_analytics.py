@@ -198,14 +198,14 @@ async def get_admin_dashboard_analytics(
         # Get pipeline stage progress (deal value and counts per stage)
         pipeline_stages = []
         
-        # For Super Admin: Query deals directly grouped by stage to get accurate counts
+        # For Super Admin: Aggregate by stage NAME across all pipelines
+        # This matches how the deals page counts deals - by grouping all stages with the same name
         if user_role == 'super_admin':
             stages_query = db.query(
-                PipelineStage.id,
                 PipelineStage.name,
-                PipelineStage.order_index,
                 func.count(Deal.id).label('deal_count'),
-                func.coalesce(func.sum(Deal.value), 0).label('total_value')
+                func.coalesce(func.sum(Deal.value), 0).label('total_value'),
+                func.min(PipelineStage.order_index).label('order_index')
             ).join(
                 Pipeline, PipelineStage.pipeline_id == Pipeline.id
             ).outerjoin(
@@ -214,10 +214,8 @@ async def get_admin_dashboard_analytics(
                     Deal.is_deleted == False
                 )
             ).group_by(
-                PipelineStage.id,
-                PipelineStage.name,
-                PipelineStage.order_index
-            ).order_by(PipelineStage.order_index)
+                PipelineStage.name
+            ).order_by(func.min(PipelineStage.order_index))
         else:
             # For other roles: Use existing query structure
             stages_query = db.query(
@@ -276,13 +274,16 @@ async def get_admin_dashboard_analytics(
             deal_count = stage.deal_count or 0
             stage_value = float(stage.total_value or 0)
             
-            print(f"📊 Stage: {stage.name} | ID: {stage.id} | Deals: {deal_count} | Value: ${stage_value}")
+            # For super_admin, we don't have stage.id (grouped by name)
+            stage_id_str = str(stage.id) if hasattr(stage, 'id') else stage.name
+            
+            print(f"📊 Stage: {stage.name} | Deals: {deal_count} | Value: ${stage_value}")
             
             # Only include stages that have deals
             if deal_count > 0:
                 total_value_in_stages += stage_value
                 pipeline_stages.append({
-                    "stage_id": str(stage.id),
+                    "stage_id": stage_id_str,
                     "stage_name": stage.name,
                     "deal_count": deal_count,
                     "total_value": stage_value,
