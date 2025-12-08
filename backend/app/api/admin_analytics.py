@@ -267,13 +267,16 @@ async def get_admin_dashboard_analytics(
         
         total_value_in_stages = 0
         all_stages_data = stages_query.all()
-        logger.info(f"🔍 Total stages found: {len(all_stages_data)}")
+        print(f"\n{'='*80}")
+        print(f"🔍 DEBUG: Total stages found: {len(all_stages_data)}")
+        print(f"🔍 DEBUG: User role: {user_role}")
+        print(f"{'='*80}\n")
         
         for stage in all_stages_data:
             deal_count = stage.deal_count or 0
             stage_value = float(stage.total_value or 0)
             
-            logger.info(f"📊 Stage: {stage.name} | ID: {stage.id} | Deals: {deal_count} | Value: ${stage_value}")
+            print(f"📊 Stage: {stage.name} | ID: {stage.id} | Deals: {deal_count} | Value: ${stage_value}")
             
             # Only include stages that have deals
             if deal_count > 0:
@@ -286,7 +289,10 @@ async def get_admin_dashboard_analytics(
                     "order_index": stage.order_index
                 })
         
-        logger.info(f"✅ Pipeline stages with deals: {len(pipeline_stages)}")
+        print(f"\n{'='*80}")
+        print(f"✅ Pipeline stages with deals: {len(pipeline_stages)}")
+        print(f"✅ Total value in stages: ${total_value_in_stages}")
+        print(f"{'='*80}\n")
         
         # Calculate percentages based on value
         for stage in pipeline_stages:
