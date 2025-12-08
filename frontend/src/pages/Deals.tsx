@@ -183,40 +183,49 @@ export default function Deals() {
         setPipelineId(defaultPipelineId); // Store for later use
         setDealFormData(prev => ({ ...prev, pipeline_id: defaultPipelineId }));
         
-        // Fetch stages from the default pipeline using its UUID
-        const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+        const colors = [
+          { color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
+          { color: 'bg-yellow-50 border-yellow-200', textColor: 'text-yellow-700' },
+          { color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
+          { color: 'bg-green-50 border-green-200', textColor: 'text-green-700' },
+          { color: 'bg-purple-50 border-purple-200', textColor: 'text-purple-700' },
+          { color: 'bg-pink-50 border-pink-200', textColor: 'text-pink-700' },
+        ];
         
-        if (stagesResponse.ok) {
-          const stages = await stagesResponse.json();
+        // For Super Admin: Fetch stages from ALL pipelines
+        // For other roles: Fetch stages from default pipeline only
+        if (isSuperAdmin()) {
+          console.log('🔍 Super Admin: Fetching stages from ALL pipelines');
+          const allStages: any[] = [];
           
-          if (stages.length === 0) {
-            console.warn('No stages found in pipeline. Please create stages in Pipeline Settings.');
+          // Fetch stages from each pipeline
+          for (const pipeline of pipelines) {
+            const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${pipeline.id}/stages`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (stagesResponse.ok) {
+              const stages = await stagesResponse.json();
+              allStages.push(...stages);
+            }
+          }
+          
+          if (allStages.length === 0) {
+            console.warn('No stages found in any pipeline.');
             toast.error('No stages found. Please create stages in Pipeline Settings first.');
             return;
           }
           
-          // Create mapping from stage names to UUIDs
+          // Create mapping and dynamic stages array
           const mapping: Record<string, string> = {};
           const dynamicStagesArray: Stage[] = [];
-          const colors = [
-            { color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
-            { color: 'bg-yellow-50 border-yellow-200', textColor: 'text-yellow-700' },
-            { color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
-            { color: 'bg-green-50 border-green-200', textColor: 'text-green-700' },
-            { color: 'bg-purple-50 border-purple-200', textColor: 'text-purple-700' },
-            { color: 'bg-pink-50 border-pink-200', textColor: 'text-pink-700' },
-          ];
           
-          stages.forEach((stage: any, index: number) => {
-            // Map stage ID to stage ID (use actual UUID)
+          allStages.forEach((stage: any, index: number) => {
             mapping[stage.id] = stage.id;
             
-            // Create dynamic stage object
             const colorScheme = colors[index % colors.length];
             dynamicStagesArray.push({
-              id: stage.id, // Use actual stage UUID
+              id: stage.id,
               name: stage.name,
               color: colorScheme.color,
               textColor: colorScheme.textColor
@@ -226,24 +235,76 @@ export default function Deals() {
           setStageMapping(mapping);
           setDynamicStages(dynamicStagesArray);
           
-          // Initialize deals state with dynamic stages
+          // Initialize deals state
           const initialDeals: Record<string, Deal[]> = {};
           dynamicStagesArray.forEach(stage => {
             initialDeals[stage.id] = [];
           });
           setDeals(initialDeals);
           
-          // Set default stage_id to the first stage if not already set
           if (dynamicStagesArray.length > 0 && !dealFormData.stage_id) {
             setDealFormData(prev => ({ ...prev, stage_id: dynamicStagesArray[0].id }));
           }
           
-          // Expand first stage by default on mobile
           if (dynamicStagesArray.length > 0) {
             setExpandedStages([dynamicStagesArray[0].id]);
           }
+          
         } else {
-          console.error('Failed to fetch stages:', stagesResponse.status, stagesResponse.statusText);
+          // For non-Super Admin: Fetch stages from default pipeline only
+          const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${defaultPipelineId}/stages`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (stagesResponse.ok) {
+            const stages = await stagesResponse.json();
+            
+            if (stages.length === 0) {
+              console.warn('No stages found in pipeline. Please create stages in Pipeline Settings.');
+              toast.error('No stages found. Please create stages in Pipeline Settings first.');
+              return;
+            }
+            
+            // Create mapping from stage names to UUIDs
+            const mapping: Record<string, string> = {};
+            const dynamicStagesArray: Stage[] = [];
+            
+            stages.forEach((stage: any, index: number) => {
+              // Map stage ID to stage ID (use actual UUID)
+              mapping[stage.id] = stage.id;
+              
+              // Create dynamic stage object
+              const colorScheme = colors[index % colors.length];
+              dynamicStagesArray.push({
+                id: stage.id, // Use actual stage UUID
+                name: stage.name,
+                color: colorScheme.color,
+                textColor: colorScheme.textColor
+              });
+            });
+            
+            setStageMapping(mapping);
+            setDynamicStages(dynamicStagesArray);
+            
+            // Initialize deals state with dynamic stages
+            const initialDeals: Record<string, Deal[]> = {};
+            dynamicStagesArray.forEach(stage => {
+              initialDeals[stage.id] = [];
+            });
+            setDeals(initialDeals);
+            
+            // Set default stage_id to the first stage if not already set
+            if (dynamicStagesArray.length > 0 && !dealFormData.stage_id) {
+              setDealFormData(prev => ({ ...prev, stage_id: dynamicStagesArray[0].id }));
+            }
+            
+            // Expand first stage by default on mobile
+            if (dynamicStagesArray.length > 0) {
+              setExpandedStages([dynamicStagesArray[0].id]);
+            }
+          } else {
+            console.error('Failed to fetch stages:', stagesResponse.status, stagesResponse.statusText);
+          }
         }
       } catch (error) {
         console.error('Error fetching pipeline stages:', error);
@@ -363,11 +424,9 @@ export default function Deals() {
         if (grouped[deal.stage_id]) {
           grouped[deal.stage_id].push(deal);
         } else {
-          // Silently add to first stage as fallback if stage not found
-          const firstStageId = Object.keys(grouped)[0];
-          if (firstStageId) {
-            grouped[firstStageId].push(deal);
-          }
+          // For deals whose stage is not in the current pipeline,
+          // create a new entry for that stage
+          grouped[deal.stage_id] = [deal];
         }
       });
       
