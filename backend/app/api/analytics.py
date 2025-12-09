@@ -101,13 +101,53 @@ async def get_pipeline_analytics(
         # Regular user can see own data
         filters.append(Deal.owner_id == owner_id)
     
-    # Apply date filters - use func.date() to match Dashboard KPI logic
-    if date_from:
-        date_from_obj = datetime.fromisoformat(date_from).date()
-        filters.append(func.date(Deal.created_at) >= date_from_obj)
-    if date_to:
-        date_to_obj = datetime.fromisoformat(date_to).date()
-        filters.append(func.date(Deal.created_at) <= date_to_obj)
+    # Apply date filters - use actual_close_date or updated_at for WON deals (when they were actually won)
+    # This matches the Dashboard KPI and Revenue analytics logic
+    if date_from or date_to:
+        date_from_obj = datetime.fromisoformat(date_from).date() if date_from else None
+        date_to_obj = datetime.fromisoformat(date_to).date() if date_to else None
+        
+        if date_from_obj and date_to_obj:
+            filters.append(
+                or_(
+                    and_(
+                        Deal.actual_close_date.isnot(None),
+                        func.date(Deal.actual_close_date) >= date_from_obj,
+                        func.date(Deal.actual_close_date) <= date_to_obj
+                    ),
+                    and_(
+                        Deal.actual_close_date.is_(None),
+                        func.date(Deal.updated_at) >= date_from_obj,
+                        func.date(Deal.updated_at) <= date_to_obj
+                    )
+                )
+            )
+        elif date_from_obj:
+            filters.append(
+                or_(
+                    and_(
+                        Deal.actual_close_date.isnot(None),
+                        func.date(Deal.actual_close_date) >= date_from_obj
+                    ),
+                    and_(
+                        Deal.actual_close_date.is_(None),
+                        func.date(Deal.updated_at) >= date_from_obj
+                    )
+                )
+            )
+        elif date_to_obj:
+            filters.append(
+                or_(
+                    and_(
+                        Deal.actual_close_date.isnot(None),
+                        func.date(Deal.actual_close_date) <= date_to_obj
+                    ),
+                    and_(
+                        Deal.actual_close_date.is_(None),
+                        func.date(Deal.updated_at) <= date_to_obj
+                    )
+                )
+            )
     if user_id:
         filters.append(Deal.owner_id == uuid.UUID(user_id))
     if pipeline_id:
@@ -1446,8 +1486,13 @@ async def get_dashboard_analytics(
     from ..models.activities import Activity as ActivityModel, ActivityStatus
     
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
-    is_superuser = current_user.get("is_superuser", False)
+    # Check both is_superuser flag AND role for Super Admin (some JWT tokens may have role="super_admin" but is_superuser=None)
+    is_superuser = current_user.get("is_superuser", False) or current_user.get("role", "").lower() == "super_admin"
     company_id = current_user.get('company_id')
+    
+    # Debug logging
+    print(f"[DASHBOARD] role={current_user.get('role')}, is_superuser_flag={current_user.get('is_superuser')}, computed_is_superuser={is_superuser}")
+    print(f"[DASHBOARD] date_from={date_from}, date_to={date_to}, user_id={user_id}, pipeline_id={pipeline_id}")
     
     # Parse dates
     today = datetime.utcnow().date()
@@ -1555,6 +1600,10 @@ async def get_dashboard_analytics(
     # Won deals count with filters
     won_deals_query = db.query(func.count(DealModel.id)).filter(and_(*revenue_filters))
     won_deals = won_deals_query.scalar() or 0
+    
+    # Debug: Log query results
+    print(f"[DASHBOARD] total_revenue={total_revenue}, won_deals={won_deals}")
+    print(f"[DASHBOARD] date_from_obj={date_from_obj}, date_to_obj={date_to_obj}")
     
     # Previous period revenue for growth calculation
     prev_revenue_filters = [
