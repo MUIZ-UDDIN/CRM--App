@@ -1097,6 +1097,39 @@ async def get_contact_analytics(
             "conversion_rate": round(conversion_rate, 1)
         })
     
+    # Simple lead scoring distribution based on contact status
+    # Status-based scoring: Customer=100, Qualified=80, Prospect=60, Contacted=40, Lead=20, New=10
+    from ..models.contacts import ContactStatus
+    
+    status_scores = {
+        ContactStatus.CUSTOMER: "Customer (100)",
+        ContactStatus.QUALIFIED: "Qualified (80)",
+        ContactStatus.PROSPECT: "Prospect (60)",
+        ContactStatus.CONTACTED: "Contacted (40)",
+        ContactStatus.LEAD: "Lead (20)",
+        ContactStatus.NEW: "New (10)",
+        ContactStatus.UNQUALIFIED: "Unqualified (0)",
+        ContactStatus.INACTIVE: "Inactive (0)"
+    }
+    
+    lead_scoring_query = db.query(
+        Contact.status,
+        func.count(Contact.id).label('count')
+    ).filter(and_(*filters)).group_by(Contact.status).all()
+    
+    lead_scoring_data = []
+    for row in lead_scoring_query:
+        status = row.status
+        score_label = status_scores.get(status, f"{status} (0)") if status else "Unknown (0)"
+        lead_scoring_data.append({
+            "score": score_label,
+            "count": row.count or 0
+        })
+    
+    # Sort by score (highest first)
+    score_order = ["Customer (100)", "Qualified (80)", "Prospect (60)", "Contacted (40)", "Lead (20)", "New (10)", "Unqualified (0)", "Inactive (0)"]
+    lead_scoring_data.sort(key=lambda x: score_order.index(x["score"]) if x["score"] in score_order else 999)
+    
     return {
         "filters": {
             "date_from": date_from,
@@ -1106,7 +1139,7 @@ async def get_contact_analytics(
         },
         "contacts_by_source": source_data,
         "conversion_by_source": conversion_data,
-        "lead_scoring": [],  # Placeholder for AI scoring
+        "lead_scoring": lead_scoring_data,
         "summary": {
             "total_contacts": total_contacts,
             "avg_time_to_convert_days": 0

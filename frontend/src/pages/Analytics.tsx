@@ -995,18 +995,24 @@ export default function Analytics() {
 
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">Lead Scoring Distribution (AI)</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Lead Status Distribution</h3>
             </div>
             <div className="p-4 sm:p-6">
-              <ResponsiveContainer width="100%" height={250} key={`leadscoring-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                <BarChart data={leadScoringData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                  <XAxis dataKey="score" stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
-                  <Tooltip contentStyle={{ fontSize: '11px' }} />
-                  <Bar dataKey="count" fill="#8B5CF6" />
-                </BarChart>
-              </ResponsiveContainer>
+              {leadScoringData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={250} key={`leadscoring-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+                  <BarChart data={leadScoringData}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis dataKey="score" stroke="#6B7280" tick={{ fontSize: 9 }} angle={-15} textAnchor="end" height={60} />
+                    <YAxis stroke="#6B7280" tick={{ fontSize: 10 }} />
+                    <Tooltip contentStyle={{ fontSize: '11px' }} />
+                    <Bar dataKey="count" fill="#8B5CF6" name="Contacts" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex items-center justify-center h-[250px] text-gray-500">
+                  No contact data available
+                </div>
+              )}
             </div>
           </div>
         </div>
