@@ -71,10 +71,6 @@ async def get_pipeline_analytics(
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
-    # Debug logging
-    print(f"[PIPELINE] role={current_user.get('role')}, access_level={access_level}")
-    print(f"[PIPELINE] date_from={date_from}, date_to={date_to}, pipeline_id={pipeline_id}")
-    
     # Build query filters based on access level
     # Show ALL deals by stage (not just WON) - Pipeline by Stage should show deal distribution
     filters = [Deal.is_deleted == False]
@@ -152,11 +148,6 @@ async def get_pipeline_analytics(
     total_deals = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
     total_value = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0
     avg_deal_size = (total_value / total_deals) if total_deals > 0 else 0
-    
-    # Debug logging
-    print(f"[PIPELINE] Found {len(pipeline_analytics)} stages with {total_deals} total deals, value=${total_value}")
-    for stage in pipeline_analytics:
-        print(f"  - {stage['stage_name']}: {stage['deal_count']} deals, ${stage['total_value']}")
     
     data = {
         "filters": {
@@ -345,10 +336,6 @@ async def get_revenue_analytics(
     
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
-    
-    # Debug logging
-    print(f"[REVENUE] current_user role={current_user.get('role')}, is_superuser={current_user.get('is_superuser')}")
-    print(f"[REVENUE] access_level={access_level}, user_id filter={user_id}, pipeline_id filter={pipeline_id}")
     
     # Determine date range based on filters
     if date_from and date_to:
@@ -1460,10 +1447,6 @@ async def get_dashboard_analytics(
     is_superuser = current_user.get("is_superuser", False) or current_user.get("role", "").lower() == "super_admin"
     company_id = current_user.get('company_id')
     
-    # Debug logging
-    print(f"[DASHBOARD] role={current_user.get('role')}, is_superuser_flag={current_user.get('is_superuser')}, computed_is_superuser={is_superuser}")
-    print(f"[DASHBOARD] date_from={date_from}, date_to={date_to}, user_id={user_id}, pipeline_id={pipeline_id}")
-    
     # Parse dates
     today = datetime.utcnow().date()
     date_from_obj = datetime.fromisoformat(date_from).date() if date_from else None
@@ -1570,19 +1553,6 @@ async def get_dashboard_analytics(
     # Won deals count with filters
     won_deals_query = db.query(func.count(DealModel.id)).filter(and_(*revenue_filters))
     won_deals = won_deals_query.scalar() or 0
-    
-    # Debug: Log query results
-    print(f"[DASHBOARD] total_revenue={total_revenue}, won_deals={won_deals}")
-    print(f"[DASHBOARD] date_from_obj={date_from_obj}, date_to_obj={date_to_obj}")
-    
-    # Debug: Get ALL won deals to see what's in the database
-    all_won_deals = db.query(DealModel.id, DealModel.value, DealModel.actual_close_date, DealModel.updated_at, DealModel.company_id).filter(
-        DealModel.is_deleted == False,
-        DealModel.status == DealStatus.WON
-    ).all()
-    print(f"[DASHBOARD] ALL won deals in DB (no date filter): {len(all_won_deals)}")
-    for d in all_won_deals[:10]:  # Show first 10
-        print(f"  - Deal {d.id}: value={d.value}, actual_close={d.actual_close_date}, updated={d.updated_at}, company={d.company_id}")
     
     # Previous period revenue for growth calculation
     prev_revenue_filters = [
