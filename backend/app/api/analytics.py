@@ -1644,7 +1644,7 @@ async def get_dashboard_analytics(
     ]
     if filter_user_id:
         prev_pipeline_filters_open.append(DealModel.owner_id == filter_user_id)
-    elif company_id:
+    elif not is_superuser and company_id:
         prev_pipeline_filters_open.append(DealModel.company_id == company_id)
     if pipeline_id:
         prev_pipeline_filters_open.append(DealModel.pipeline_id == uuid.UUID(pipeline_id))
