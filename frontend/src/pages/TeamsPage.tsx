@@ -553,7 +553,7 @@ export default function TeamsPage() {
             <form onSubmit={handleCreateTeam} className="space-y-4">
               {/* Team Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Team Name *
                 </label>
                 <input
@@ -579,7 +579,7 @@ export default function TeamsPage() {
 
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
@@ -635,7 +635,7 @@ export default function TeamsPage() {
             ) : (
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select User *
                   </label>
                   <select
@@ -683,7 +683,7 @@ export default function TeamsPage() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
               <button onClick={closeDeleteTeamModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -722,7 +722,7 @@ export default function TeamsPage() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Removal</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Removal</h3>
               <button onClick={closeRemoveMemberModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>

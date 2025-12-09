@@ -367,7 +367,7 @@ export default function Profile() {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       First Name <span className="text-red-500">*</span>
                     </label>
                     {isEditing ? (
@@ -395,7 +395,7 @@ export default function Profile() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Last Name <span className="text-red-500">*</span>
                     </label>
                     {isEditing ? (
@@ -423,7 +423,7 @@ export default function Profile() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Email Address
                     </label>
                     {isEditing ? (
@@ -443,7 +443,7 @@ export default function Profile() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Phone Number
                     </label>
                     {isEditing ? (
@@ -477,7 +477,7 @@ export default function Profile() {
                 <h3 className="text-lg font-medium text-gray-900 mb-4">Work Information</h3>
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Job Title
                     </label>
                     {isEditing ? (
@@ -505,7 +505,7 @@ export default function Profile() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Department
                     </label>
                     {isEditing ? (
@@ -533,7 +533,7 @@ export default function Profile() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Location
                     </label>
                     {isEditing ? (
@@ -561,7 +561,7 @@ export default function Profile() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Join Date
                     </label>
                     <p className="text-gray-900">

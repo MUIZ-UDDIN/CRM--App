@@ -382,7 +382,7 @@ export default function CustomFields() {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Field Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -396,7 +396,7 @@ export default function CustomFields() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Field Key <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -414,7 +414,7 @@ export default function CustomFields() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Field Type <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -432,7 +432,7 @@ export default function CustomFields() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Apply To <span className="text-red-500">*</span>
                   </label>
                   <select
@@ -451,7 +451,7 @@ export default function CustomFields() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
@@ -465,7 +465,7 @@ export default function CustomFields() {
 
               {needsOptions && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Options *
                   </label>
                   <div className="flex gap-2 mb-2">
@@ -507,7 +507,7 @@ export default function CustomFields() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Default Value
                   </label>
                   <input

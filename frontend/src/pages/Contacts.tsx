@@ -962,7 +962,7 @@ export default function Contacts() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -975,7 +975,7 @@ export default function Contacts() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -992,7 +992,7 @@ export default function Contacts() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company
                 </label>
                 <CompanyCombobox
@@ -1011,7 +1011,7 @@ export default function Contacts() {
               
               {/* Type Field */}
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Type <span className="text-red-500">*</span>
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
@@ -1036,7 +1036,7 @@ export default function Contacts() {
               
               {/* Status Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Status <span className="text-red-500">*</span>
                 </label>
                 <StatusCombobox
@@ -1049,7 +1049,7 @@ export default function Contacts() {
               
               {/* Owner Field */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Owner <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-2">
@@ -1143,7 +1143,7 @@ export default function Contacts() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1156,7 +1156,7 @@ export default function Contacts() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Phone <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -1173,7 +1173,7 @@ export default function Contacts() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company
                 </label>
                 <CompanyCombobox
@@ -1352,7 +1352,7 @@ export default function Contacts() {
       {/* Add New Type Modal */}
       {showAddTypeModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add New Contact Type</h3>
               <button onClick={() => setShowAddTypeModal(false)} className="text-gray-400 hover:text-gray-600">

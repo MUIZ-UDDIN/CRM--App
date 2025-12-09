@@ -235,7 +235,7 @@ export default function SMSNew() {
       {/* Compose Modal */}
       {showComposeModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Send SMS</h3>
               <button onClick={() => setShowComposeModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -252,7 +252,7 @@ export default function SMSNew() {
                 allowCustom={true}
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact or Phone Number)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">To (Contact or Phone Number)</label>
                 <input
                   type="text"
                   value={smsForm.to}
@@ -282,7 +282,7 @@ export default function SMSNew() {
                 )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
                 <textarea
                   value={smsForm.message}
                   onChange={(e) => setSmsForm({...smsForm, message: e.target.value})}

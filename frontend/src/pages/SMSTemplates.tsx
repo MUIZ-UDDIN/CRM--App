@@ -303,7 +303,7 @@ export default function SMSTemplates() {
 
             <form onSubmit={handleSubmit} className="px-6 py-4 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Template Name *
                 </label>
                 <input
@@ -317,7 +317,7 @@ export default function SMSTemplates() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Category
                 </label>
                 <select
@@ -335,7 +335,7 @@ export default function SMSTemplates() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Message Body *
                 </label>
                 <textarea
@@ -388,7 +388,7 @@ export default function SMSTemplates() {
 
               {formData.use_ai_enhancement && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     AI Tone
                   </label>
                   <select
@@ -405,7 +405,7 @@ export default function SMSTemplates() {
 
               {!formData.is_static && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Variables (comma-separated)
                   </label>
                   <input

@@ -973,7 +973,7 @@ export default function SMSEnhanced() {
 
               {/* Contact Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact) *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">To (Contact) *</label>
                 <select
                   value={smsForm.contact_id}
                   onChange={(e) => {
@@ -994,7 +994,7 @@ export default function SMSEnhanced() {
 
               {/* Phone Number Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   From Number (Leave empty for rotation)
                 </label>
                 <select
@@ -1013,7 +1013,7 @@ export default function SMSEnhanced() {
 
               {/* Message Body */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
                 <textarea
                   value={smsForm.body}
                   onChange={(e) => setSmsForm({...smsForm, body: e.target.value})}
@@ -1060,7 +1060,7 @@ export default function SMSEnhanced() {
             <div className="space-y-4">
               {/* Template Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Use Template (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Use Template (Optional)</label>
                 <select
                   value={bulkForm.template_id}
                   onChange={(e) => handleBulkTemplateSelect(e.target.value)}
@@ -1077,7 +1077,7 @@ export default function SMSEnhanced() {
 
               {/* From Number Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Number *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">From Number *</label>
                 <select
                   value={bulkForm.from_number}
                   onChange={(e) => setBulkForm({...bulkForm, from_number: e.target.value})}
@@ -1136,7 +1136,7 @@ export default function SMSEnhanced() {
 
               {/* Message Body */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
                 <textarea
                   value={bulkForm.body}
                   onChange={(e) => setBulkForm({...bulkForm, body: e.target.value})}
@@ -1169,7 +1169,7 @@ export default function SMSEnhanced() {
       {/* Call Modal */}
       {showCallModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">
                 Call {getContactName(callToNumber) || callToNumber}
@@ -1180,7 +1180,7 @@ export default function SMSEnhanced() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Calling To:</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Calling To:</label>
                 <input
                   type="text"
                   value={callToNumber}
@@ -1189,7 +1189,7 @@ export default function SMSEnhanced() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Number *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Number *</label>
                 <select
                   value={callFromNumber}
                   onChange={(e) => setCallFromNumber(e.target.value)}

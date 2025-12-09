@@ -298,7 +298,7 @@ export default function Inbox() {
       {/* Compose Modal */}
       {showComposeModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-2 sm:p-4">
-          <div className="relative mx-auto p-4 sm:p-5 border w-full max-w-full sm:max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
+          <div className="relative mx-auto p-6 border w-full max-w-full sm:max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Compose New Message</h3>
               <button 
@@ -322,7 +322,7 @@ export default function Inbox() {
               />
               
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">To</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">To</label>
                 <input 
                   type="text" 
                   placeholder="Email address"
@@ -359,7 +359,7 @@ export default function Inbox() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject (Email only)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Subject (Email only)</label>
                 <input 
                   type="text" 
                   placeholder="Subject line"
@@ -368,7 +368,7 @@ export default function Inbox() {
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message</label>
                 <textarea 
                   rows={4}
                   placeholder="Type your message here..."

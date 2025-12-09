@@ -917,7 +917,7 @@ export default function SuperAdminDashboard() {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Company Name *
                 </label>
                 <input
@@ -937,7 +937,7 @@ export default function SuperAdminDashboard() {
                 
                 <div className="grid grid-cols-2 gap-3 mb-3">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       First Name *
                     </label>
                     <input
@@ -952,7 +952,7 @@ export default function SuperAdminDashboard() {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Last Name *
                     </label>
                     <input
@@ -968,7 +968,7 @@ export default function SuperAdminDashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email *
                   </label>
                   <input
@@ -1022,7 +1022,7 @@ export default function SuperAdminDashboard() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Company Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Company Deletion</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -1069,7 +1069,7 @@ export default function SuperAdminDashboard() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Company Suspension</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Company Suspension</h3>
               <button onClick={cancelSuspend} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>

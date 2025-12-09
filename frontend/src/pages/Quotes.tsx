@@ -702,7 +702,7 @@ export default function Quotes() {
       {/* Add Quote Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Create Quote</h3>
               <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
@@ -711,7 +711,7 @@ export default function Quotes() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Quote Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -736,7 +736,7 @@ export default function Quotes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Amount <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -757,7 +757,7 @@ export default function Quotes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Client
                 </label>
                 <select
@@ -775,7 +775,7 @@ export default function Quotes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Valid Until <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -811,7 +811,7 @@ export default function Quotes() {
       {/* Edit Quote Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Quote</h3>
               <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
@@ -820,7 +820,7 @@ export default function Quotes() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Quote Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -845,7 +845,7 @@ export default function Quotes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Amount <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -866,7 +866,7 @@ export default function Quotes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Client
                 </label>
                 <select
@@ -884,7 +884,7 @@ export default function Quotes() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Valid Until <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -919,7 +919,7 @@ export default function Quotes() {
       {/* View Quote Modal */}
       {showViewModal && selectedQuote && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Quote Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -966,7 +966,7 @@ export default function Quotes() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>

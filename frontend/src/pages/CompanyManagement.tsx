@@ -963,7 +963,7 @@ const CompanyManagement: React.FC = () => {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm User Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm User Deletion</h3>
               <button onClick={() => setShowDeleteUserModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>

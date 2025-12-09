@@ -479,7 +479,7 @@ export default function SupportTickets() {
             <form onSubmit={createTicket}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Subject <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -493,7 +493,7 @@ export default function SupportTickets() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
@@ -508,7 +508,7 @@ export default function SupportTickets() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Priority
                     </label>
                     <select
@@ -524,7 +524,7 @@ export default function SupportTickets() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
                       Category
                     </label>
                     <input
@@ -635,7 +635,7 @@ export default function SupportTickets() {
             </p>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Assign To *
                 </label>
                 <select

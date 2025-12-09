@@ -629,7 +629,7 @@ export default function Analytics() {
                   <div className="absolute z-50 mt-2 p-4 bg-white border border-gray-300 rounded-lg shadow-lg">
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">From Date</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">From Date</label>
                         <div className="relative">
                           <input
                             type="date"
@@ -641,7 +641,7 @@ export default function Analytics() {
                         </div>
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">To Date</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">To Date</label>
                         <div className="relative">
                           <input
                             type="date"
@@ -875,7 +875,7 @@ export default function Analytics() {
         {/* Revenue Trend */}
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900">Revenue Trend</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Revenue Trend</h3>
           </div>
           <div className="p-4 sm:p-6">
             <ResponsiveContainer width="100%" height={250} key={`revenue-${dateRange}-${selectedUser}-${selectedPipeline}`}>
@@ -905,7 +905,7 @@ export default function Analytics() {
           {/* Pipeline Distribution */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Pipeline by Stage</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Pipeline by Stage</h3>
             </div>
             <div className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={250} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
@@ -943,7 +943,7 @@ export default function Analytics() {
           {/* Activity Metrics */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Weekly Activities</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Weekly Activities</h3>
             </div>
             <div className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={250} key={`activity-${dateRange}-${selectedUser}-${selectedPipeline}`}>
@@ -967,7 +967,7 @@ export default function Analytics() {
           {/* Lead Sources */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Lead Sources</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Lead Sources</h3>
             </div>
             <div className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={250} key={`leadsource-${dateRange}-${selectedUser}-${selectedPipeline}-${JSON.stringify(leadSourceData)}`}>
@@ -995,7 +995,7 @@ export default function Analytics() {
 
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Lead Scoring Distribution (AI)</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Lead Scoring Distribution (AI)</h3>
             </div>
             <div className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={250} key={`leadscoring-${dateRange}-${selectedUser}-${selectedPipeline}`}>
@@ -1014,7 +1014,7 @@ export default function Analytics() {
         {/* Conversion by Source */}
         <div className="bg-white rounded-lg shadow mb-8">
           <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-            <h3 className="text-base sm:text-lg font-medium text-gray-900">Conversion Rates by Lead Source</h3>
+            <h3 className="text-lg font-semibold text-gray-900">Conversion Rates by Lead Source</h3>
           </div>
           <div className="p-4 sm:p-6">
             <ResponsiveContainer width="100%" height={250} key={`conversion-${chartKey}`}>
@@ -1036,7 +1036,7 @@ export default function Analytics() {
         {/* <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Document Status</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Document Status</h3>
             </div>
             <div className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={250} key={`docstats-${dateRange}-${selectedUser}-${selectedPipeline}`}>
@@ -1063,7 +1063,7 @@ export default function Analytics() {
 
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Time to Signature</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Time to Signature</h3>
             </div>
             <div className="p-4 sm:p-6">
               <ResponsiveContainer width="100%" height={250} key={`timetosig-${dateRange}-${selectedUser}-${selectedPipeline}`}>
@@ -1156,7 +1156,7 @@ export default function Analytics() {
       {/* Create Report Modal */}
       {showReportModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-4 sm:p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Create Custom Report</h3>
               <button

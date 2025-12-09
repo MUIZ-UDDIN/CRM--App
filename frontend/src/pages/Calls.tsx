@@ -499,7 +499,7 @@ export default function CallsNew() {
       {/* Make Call Modal */}
       {showCallFormModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Make a Call</h3>
               <button onClick={() => setShowCallFormModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -508,7 +508,7 @@ export default function CallsNew() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From (Your Twilio Number)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">From (Your Twilio Number)</label>
                 <select
                   value={callForm.from}
                   onChange={(e) => setCallForm({...callForm, from: e.target.value})}
@@ -523,7 +523,7 @@ export default function CallsNew() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact or Phone Number)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">To (Contact or Phone Number)</label>
                 <div className="relative">
                   <input
                     type="text"
@@ -590,7 +590,7 @@ export default function CallsNew() {
       {/* Redial Modal */}
       {showRedialModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-lg shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Redial {redialNumber}</h3>
               <button onClick={() => setShowRedialModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -599,7 +599,7 @@ export default function CallsNew() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Select Your Number</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Select Your Number</label>
                 <select
                   value={callForm.from}
                   onChange={(e) => setCallForm({...callForm, from: e.target.value})}

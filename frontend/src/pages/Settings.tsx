@@ -2220,7 +2220,7 @@ export default function Settings() {
                         
                         <div className="space-y-4 mb-6">
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                               Cardholder Name <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -2268,7 +2268,7 @@ export default function Settings() {
                             </div>
                           </div>
                           <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
                               Card Number <span className="text-red-500">*</span>
                             </label>
                             <input
@@ -2316,7 +2316,7 @@ export default function Settings() {
                           </div>
                           <div className="grid grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
                                 Expiry (MM/YY) <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -2372,7 +2372,7 @@ export default function Settings() {
                               )}
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
                                 CVC <span className="text-red-500">*</span>
                               </label>
                               <input
@@ -2704,7 +2704,7 @@ export default function Settings() {
             
             <form onSubmit={handleCreateTeam} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Team Name *
                 </label>
                 <input
@@ -2729,7 +2729,7 @@ export default function Settings() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Description
                 </label>
                 <textarea
@@ -2786,7 +2786,7 @@ export default function Settings() {
               <div className="space-y-4">
                 {/* Combined Search + Dropdown */}
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Select User *
                   </label>
                   <div className="relative">
@@ -2917,7 +2917,7 @@ export default function Settings() {
       {/* Invite Team Member Modal */}
       {showAddTeamModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Invite Team Member</h3>
               <button onClick={() => setShowAddTeamModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -2927,7 +2927,7 @@ export default function Settings() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -2948,7 +2948,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -2970,7 +2970,7 @@ export default function Settings() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3094,7 +3094,7 @@ export default function Settings() {
       {/* Edit Team Member Modal */}
       {showEditTeamModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Edit Team Member</h3>
               <button onClick={() => setShowEditTeamModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -3104,7 +3104,7 @@ export default function Settings() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -3125,7 +3125,7 @@ export default function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -3147,7 +3147,7 @@ export default function Settings() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Email <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3287,7 +3287,7 @@ export default function Settings() {
       {/* Add Custom Role Modal */}
       {showAddRoleModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Add Custom Role</h3>
               <button onClick={() => { setShowAddRoleModal(false); setNewRoleName(''); }} className="text-gray-400 hover:text-gray-600">
@@ -3296,7 +3296,7 @@ export default function Settings() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Role Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3330,7 +3330,7 @@ export default function Settings() {
       {/* Twilio Configuration Modal */}
       {showTwilioModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Configure Twilio</h3>
               <button onClick={() => setShowTwilioModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -3339,7 +3339,7 @@ export default function Settings() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Account SID</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Account SID</label>
                 <input
                   type="text"
                   placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -3349,7 +3349,7 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Auth Token</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Auth Token</label>
                 <input
                   type="password"
                   placeholder="Your Twilio Auth Token"
@@ -3390,7 +3390,7 @@ export default function Settings() {
       {/* SendGrid Configuration Modal */}
       {showSendGridModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Configure SendGrid</h3>
               <button onClick={() => setShowSendGridModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -3399,7 +3399,7 @@ export default function Settings() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">API Key</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">API Key</label>
                 <input
                   type="password"
                   placeholder="SG.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
@@ -3409,7 +3409,7 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">From Email</label>
                 <input
                   type="email"
                   placeholder="noreply@yourcompany.com"
@@ -3419,7 +3419,7 @@ export default function Settings() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">From Name</label>
                 <input
                   type="text"
                   placeholder="Your Company"
@@ -3460,7 +3460,7 @@ export default function Settings() {
       {/* Update Payment Method Modal */}
       {showUpdatePaymentModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">Update Payment Method</h3>
               <button onClick={() => setShowUpdatePaymentModal(false)} className="text-gray-400 hover:text-gray-600">
@@ -3469,7 +3469,7 @@ export default function Settings() {
             </div>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Cardholder Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3517,7 +3517,7 @@ export default function Settings() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Card Number <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -3565,7 +3565,7 @@ export default function Settings() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Expiry (MM/YY) <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -3621,7 +3621,7 @@ export default function Settings() {
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     CVC <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -3687,7 +3687,7 @@ export default function Settings() {
       {/* Delete Account Modal */}
       {showDeleteAccountModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-red-900">Delete Account</h3>
               <button onClick={() => {
@@ -3869,7 +3869,7 @@ export default function Settings() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
               <button onClick={closeDeleteTeamModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -3908,7 +3908,7 @@ export default function Settings() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Removal</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Removal</h3>
               <button onClick={closeRemoveMemberModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -3947,7 +3947,7 @@ export default function Settings() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
               <button onClick={() => setShowDeleteMemberModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>

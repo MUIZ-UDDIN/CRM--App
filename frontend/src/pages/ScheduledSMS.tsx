@@ -380,7 +380,7 @@ export default function ScheduledSMS() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* From Number Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">From Number *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">From Number *</label>
                 <select
                   value={formData.from_number}
                   onChange={(e) => setFormData({...formData, from_number: e.target.value})}
@@ -417,7 +417,7 @@ export default function ScheduledSMS() {
 
               {/* Contact Selection */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">To (Contact) *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">To (Contact) *</label>
                 <select
                   value={formData.contact_id}
                   onChange={(e) => handleContactSelect(e.target.value)}
@@ -436,7 +436,7 @@ export default function ScheduledSMS() {
               {/* Date and Time */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date *</label>
                   <input
                     type="date"
                     value={formData.scheduled_date}
@@ -449,7 +449,7 @@ export default function ScheduledSMS() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Time *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Time *</label>
                   <input
                     type="time"
                     value={formData.scheduled_time}
@@ -464,7 +464,7 @@ export default function ScheduledSMS() {
 
               {/* Message Body */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
                 <textarea
                   value={formData.body}
                   onChange={(e) => setFormData({ ...formData, body: e.target.value })}
