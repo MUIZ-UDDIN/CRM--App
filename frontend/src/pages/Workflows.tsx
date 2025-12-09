@@ -566,16 +566,16 @@ export default function Workflows() {
       {/* Add Workflow Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Create Workflow</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Create Workflow</h3>
               <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Workflow Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -682,16 +682,16 @@ export default function Workflows() {
       {/* Edit Workflow Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-gray-900">Edit Workflow</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Edit Workflow</h3>
               <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Workflow Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -798,13 +798,13 @@ export default function Workflows() {
       {showViewModal && selectedWorkflow && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
           <div className="relative mx-auto border w-full max-w-2xl shadow-lg rounded-md bg-white max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between p-5 bg-white border-b sticky top-0 z-10">
-              <h3 className="text-lg font-medium text-gray-900">Workflow Details</h3>
+            <div className="flex items-center justify-between p-6 bg-white border-b sticky top-0 z-10">
+              <h3 className="text-lg font-semibold text-gray-900">Workflow Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-5 overflow-y-auto space-y-4">
+            <div className="p-6 overflow-y-auto space-y-6">
               <div>
                 <label className="text-sm font-medium text-gray-500">Name</label>
                 <p className="text-gray-900 break-words overflow-wrap-anywhere">{selectedWorkflow.name}</p>
@@ -859,7 +859,7 @@ export default function Workflows() {
       {/* Delete Confirmation Modal */}
       {showDeleteModal && workflowToDelete && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-red-900">Delete Workflow</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
