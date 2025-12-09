@@ -925,17 +925,17 @@ export default function Contacts() {
       {/* Add Contact Modal */}
       {showAddModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-4 sm:p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Add New Contact</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Add New Contact</h3>
               <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -948,7 +948,7 @@ export default function Contacts() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -1106,17 +1106,17 @@ export default function Contacts() {
       {/* Edit Contact Modal */}
       {showEditModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-4 sm:p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Edit Contact</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Edit Contact</h3>
               <button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     First Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -1129,7 +1129,7 @@ export default function Contacts() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Last Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -1192,7 +1192,7 @@ export default function Contacts() {
                 
                 {/* Type Field */}
                 <div className="relative">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Type <span className="text-red-500">*</span>
                   </label>
                   <div className="flex flex-col sm:flex-row gap-2">
@@ -1217,7 +1217,7 @@ export default function Contacts() {
                 
                 {/* Status Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Status <span className="text-red-500">*</span>
                   </label>
                   <StatusCombobox
@@ -1230,7 +1230,7 @@ export default function Contacts() {
                 
                 {/* Owner Field */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
                     Owner <span className="text-red-500">*</span>
                   </label>
                   <div className="flex gap-2">
@@ -1287,9 +1287,9 @@ export default function Contacts() {
       {/* View Contact Modal */}
       {showViewModal && selectedContact && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Contact Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Contact Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -1410,7 +1410,7 @@ export default function Contacts() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
