@@ -1141,14 +1141,14 @@ export default function Deals() {
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
         >
-          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="relative mx-auto p-6 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Add New Deal</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Add New Deal</h3>
               <button onClick={handleCloseAddModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <form onSubmit={handleAddDeal} className="space-y-4">
+            <form onSubmit={handleAddDeal} className="space-y-6">
               <div className="relative">
                 <input
                   type="text"
@@ -1197,7 +1197,7 @@ export default function Deals() {
                 placeholder="Search and select contact..."
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Pipeline</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Pipeline</label>
                 <select
                   name="pipeline_id"
                   value={dealFormData.pipeline_id}
@@ -1210,7 +1210,7 @@ export default function Deals() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Stage</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Stage</label>
                 <select
                   name="stage_id"
                   value={dealFormData.stage_id}
@@ -1225,7 +1225,7 @@ export default function Deals() {
                 </select>
               </div>
               <div className="relative">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expected Close Date (Optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Expected Close Date (Optional)</label>
                 <input
                   type="date"
                   name="expectedCloseDate"
@@ -1236,7 +1236,7 @@ export default function Deals() {
                   onClick={(e) => e.currentTarget.showPicker && e.currentTarget.showPicker()}
                 />
                 {dealFormData.expectedCloseDate && (
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500 mt-2">
                     Deal will be active until {new Date(dealFormData.expectedCloseDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                   </p>
                 )}
@@ -1254,7 +1254,7 @@ export default function Deals() {
                   <option value="lost">Lost</option>
                   <option value="abandoned">Abandoned</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-2">
                   {dealFormData.status === 'won' && 'This deal will count towards revenue'}
                   {dealFormData.status === 'lost' && 'This deal will be marked as lost'}
                   {dealFormData.status === 'open' && 'This deal is active in the pipeline'}
@@ -1298,14 +1298,14 @@ export default function Deals() {
           onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
           style={{ isolation: 'isolate' }}
         >
-          <div className="relative mx-auto p-5 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="relative mx-auto p-6 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Edit Deal</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Edit Deal</h3>
               <button onClick={handleCloseEditModal} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-6">
               <input
                 type="text"
                 name="title"
@@ -1349,7 +1349,7 @@ export default function Deals() {
                   <option value="lost">Lost</option>
                   <option value="abandoned">Abandoned</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 mt-2">
                   {dealFormData.status === 'won' && 'This deal will count towards revenue'}
                   {dealFormData.status === 'lost' && 'This deal will be marked as lost'}
                   {dealFormData.status === 'open' && 'This deal is active in the pipeline'}
@@ -1393,7 +1393,7 @@ export default function Deals() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Deal Details</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Deal Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
@@ -1440,7 +1440,7 @@ export default function Deals() {
         >
           <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base sm:text-lg font-medium text-gray-900">Confirm Deletion</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Deletion</h3>
               <button onClick={cancelDelete} className="text-gray-400 hover:text-gray-600">
                 <XMarkIcon className="h-5 w-5" />
               </button>
