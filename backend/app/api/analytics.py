@@ -1098,18 +1098,16 @@ async def get_contact_analytics(
         })
     
     # Simple lead scoring distribution based on contact status
-    # Status-based scoring: Customer=100, Qualified=80, Prospect=60, Contacted=40, Lead=20, New=10
-    from ..models.contacts import ContactStatus
-    
+    # Status is stored as lowercase string in DB (e.g., "new", "customer", "qualified")
     status_scores = {
-        ContactStatus.CUSTOMER: "Customer (100)",
-        ContactStatus.QUALIFIED: "Qualified (80)",
-        ContactStatus.PROSPECT: "Prospect (60)",
-        ContactStatus.CONTACTED: "Contacted (40)",
-        ContactStatus.LEAD: "Lead (20)",
-        ContactStatus.NEW: "New (10)",
-        ContactStatus.UNQUALIFIED: "Unqualified (0)",
-        ContactStatus.INACTIVE: "Inactive (0)"
+        "customer": "Customer (100)",
+        "qualified": "Qualified (80)",
+        "prospect": "Prospect (60)",
+        "contacted": "Contacted (40)",
+        "lead": "Lead (20)",
+        "new": "New (10)",
+        "unqualified": "Unqualified (0)",
+        "inactive": "Inactive (0)"
     }
     
     lead_scoring_query = db.query(
@@ -1119,8 +1117,8 @@ async def get_contact_analytics(
     
     lead_scoring_data = []
     for row in lead_scoring_query:
-        status = row.status
-        score_label = status_scores.get(status, f"{status} (0)") if status else "Unknown (0)"
+        status = (row.status or "").lower().strip()
+        score_label = status_scores.get(status, f"{status.title()} (0)") if status else "Unknown (0)"
         lead_scoring_data.append({
             "score": score_label,
             "count": row.count or 0
