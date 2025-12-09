@@ -14,17 +14,18 @@ import {
   FolderIcon,
   CogIcon,
   BellIcon,
-  ClockIcon
+  ClockIcon,
+  DocumentTextIcon
 } from '@heroicons/react/24/solid';
 import * as searchService from '../services/searchService';
-import type { NavigationSearchResponse, NavigationResult } from '../services/searchService';
+import type { GlobalSearchResponse, GlobalSearchResult, NavigationResult } from '../services/searchService';
 import toast from 'react-hot-toast';
 
 export default function SearchResults() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
-  const [results, setResults] = useState<NavigationSearchResponse | null>(null);
+  const [results, setResults] = useState<GlobalSearchResponse | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function SearchResults() {
 
     setLoading(true);
     try {
-      const data = await searchService.navigationSearch(query);
+      const data = await searchService.globalSearch(query);
       setResults(data);
     } catch (error: any) {
       console.error('Search error:', error);
@@ -57,44 +58,60 @@ export default function SearchResults() {
     }
   };
 
-  const handleResultClick = (result: NavigationResult) => {
-    navigate(result.path);
+  const handleResultClick = (path: string) => {
+    navigate(path);
   };
 
-  const getIcon = (iconName: string) => {
-    const iconClass = "h-6 w-6";
+  const getIcon = (iconName: string, size: string = "h-6 w-6") => {
     switch (iconName) {
       case 'home':
-        return <HomeIcon className={iconClass} />;
+        return <HomeIcon className={size} />;
       case 'currency':
-        return <CurrencyDollarIcon className={iconClass} />;
+        return <CurrencyDollarIcon className={size} />;
       case 'users':
-        return <UserGroupIcon className={iconClass} />;
+        return <UserGroupIcon className={size} />;
       case 'calendar':
-        return <CalendarIcon className={iconClass} />;
+        return <CalendarIcon className={size} />;
       case 'document':
-        return <DocumentIcon className={iconClass} />;
+        return <DocumentTextIcon className={size} />;
       case 'chart':
       case 'chart-bar':
-        return <ChartBarIcon className={iconClass} />;
+        return <ChartBarIcon className={size} />;
       case 'envelope':
-        return <EnvelopeIcon className={iconClass} />;
+        return <EnvelopeIcon className={size} />;
       case 'chat':
-        return <ChatBubbleLeftIcon className={iconClass} />;
+        return <ChatBubbleLeftIcon className={size} />;
       case 'phone':
-        return <PhoneIcon className={iconClass} />;
+        return <PhoneIcon className={size} />;
       case 'folder':
-        return <FolderIcon className={iconClass} />;
+        return <FolderIcon className={size} />;
       case 'cog':
-        return <CogIcon className={iconClass} />;
+        return <CogIcon className={size} />;
       case 'bell':
-        return <BellIcon className={iconClass} />;
+        return <BellIcon className={size} />;
       case 'clock':
-        return <ClockIcon className={iconClass} />;
+        return <ClockIcon className={size} />;
       case 'user':
-        return <UserGroupIcon className={iconClass} />;
+        return <UserGroupIcon className={size} />;
       default:
-        return <DocumentIcon className={iconClass} />;
+        return <DocumentIcon className={size} />;
+    }
+  };
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'contact':
+        return 'bg-blue-100 text-blue-700';
+      case 'deal':
+        return 'bg-green-100 text-green-700';
+      case 'quote':
+        return 'bg-purple-100 text-purple-700';
+      case 'file':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'activity':
+        return 'bg-orange-100 text-orange-700';
+      default:
+        return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -117,9 +134,72 @@ export default function SearchResults() {
     }
   };
 
+  const renderResultCard = (result: GlobalSearchResult) => (
+    <div
+      key={result.id}
+      onClick={() => handleResultClick(result.path)}
+      className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary-500 hover:shadow-md transition-all cursor-pointer group"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="flex-shrink-0 w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 group-hover:bg-primary-100 transition-colors">
+            {getIcon(result.icon, "h-5 w-5")}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors truncate">
+              {result.title}
+            </h4>
+            {result.subtitle && (
+              <p className="text-xs text-gray-500 truncate">{result.subtitle}</p>
+            )}
+            {result.description && (
+              <p className="text-xs text-gray-400 truncate">{result.description}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium capitalize ${getTypeColor(result.type)}`}>
+            {result.type}
+          </span>
+          <ArrowRightIcon className="h-4 w-4 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderPageCard = (result: NavigationResult, index: number) => (
+    <div
+      key={index}
+      onClick={() => handleResultClick(result.path)}
+      className="bg-white p-4 rounded-lg border border-gray-200 hover:border-primary-500 hover:shadow-md transition-all cursor-pointer group"
+    >
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="flex-shrink-0 w-10 h-10 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 group-hover:bg-primary-100 transition-colors">
+            {getIcon(result.icon, "h-5 w-5")}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-sm font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
+              {result.name}
+            </h4>
+            <p className="text-xs text-gray-500">{result.description}</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(result.category)}`}>
+            {result.category}
+          </span>
+          <ArrowRightIcon className="h-4 w-4 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const hasResults = results && results.total_count > 0;
+
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Search Bar */}
         <div className="mb-8">
           <form onSubmit={handleSearch} className="relative">
@@ -130,7 +210,7 @@ export default function SearchResults() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search for pages: Contacts, Deals, SMS, Settings..."
+              placeholder="Search contacts, deals, quotes, files, activities..."
               className="block w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg text-base placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
             />
           </form>
@@ -145,58 +225,106 @@ export default function SearchResults() {
         )}
 
         {/* No Results */}
-        {!loading && results && results.results.length === 0 && (
+        {!loading && results && results.total_count === 0 && (
           <div className="text-center py-12">
             <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">No pages found</h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">No results found</h3>
             <p className="mt-2 text-sm text-gray-500">
-              Try searching for: Contacts, Deals, SMS, Settings, Activities, etc.
+              Try searching for contacts, deals, quotes, files, or activities
             </p>
           </div>
         )}
 
         {/* Results */}
-        {!loading && results && results.results.length > 0 && (
+        {!loading && hasResults && (
           <div>
             <div className="mb-6">
               <h1 className="text-2xl font-bold text-gray-900">
-                Pages & Sections
+                Search Results
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Found {results.results.length} pages matching "{results.query}"
+                Found {results.total_count} results for "{results.query}"
               </p>
             </div>
 
-            <div className="space-y-3">
-              {results.results.map((result, index) => (
-                <div
-                  key={index}
-                  onClick={() => handleResultClick(result)}
-                  className="bg-white p-5 rounded-lg border border-gray-200 hover:border-primary-500 hover:shadow-lg transition-all cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 flex-1 min-w-0">
-                      <div className="flex-shrink-0 w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center text-primary-600 group-hover:bg-primary-100 transition-colors">
-                        {getIcon(result.icon)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
-                          {result.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-0.5">
-                          {result.description}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-3 flex-shrink-0">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(result.category)}`}>
-                        {result.category}
-                      </span>
-                      <ArrowRightIcon className="h-5 w-5 text-gray-400 group-hover:text-primary-600 group-hover:translate-x-1 transition-all" />
-                    </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Contacts */}
+              {results.contacts.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <UserGroupIcon className="h-5 w-5 text-blue-600" />
+                    Contacts ({results.contacts.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.contacts.map(renderResultCard)}
                   </div>
                 </div>
-              ))}
+              )}
+
+              {/* Deals */}
+              {results.deals.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <CurrencyDollarIcon className="h-5 w-5 text-green-600" />
+                    Deals ({results.deals.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.deals.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Quotes */}
+              {results.quotes.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <DocumentTextIcon className="h-5 w-5 text-purple-600" />
+                    Quotes ({results.quotes.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.quotes.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Files */}
+              {results.files.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <FolderIcon className="h-5 w-5 text-yellow-600" />
+                    Files ({results.files.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.files.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Activities */}
+              {results.activities.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <CalendarIcon className="h-5 w-5 text-orange-600" />
+                    Activities ({results.activities.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.activities.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Pages */}
+              {results.pages.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <HomeIcon className="h-5 w-5 text-indigo-600" />
+                    Pages ({results.pages.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.pages.map((page, index) => renderPageCard(page, index))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -205,16 +333,16 @@ export default function SearchResults() {
         {!loading && !results && (
           <div className="text-center py-12">
             <MagnifyingGlassIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-4 text-lg font-medium text-gray-900">Quick Navigation</h3>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">Global Search</h3>
             <p className="mt-2 text-sm text-gray-500">
-              Search for pages and sections to quickly navigate
+              Search across all your data - contacts, deals, quotes, files, and activities
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-2">
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Contacts</span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Deals</span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">SMS</span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Settings</span>
-              <span className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">Activities</span>
+              <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">Contacts</span>
+              <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm">Deals</span>
+              <span className="px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">Quotes</span>
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm">Files</span>
+              <span className="px-3 py-1 bg-orange-100 text-orange-700 rounded-full text-sm">Activities</span>
             </div>
           </div>
         )}

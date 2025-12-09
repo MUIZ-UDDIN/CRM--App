@@ -439,9 +439,7 @@ export default function MainLayout() {
     };
   }, []);
 
-  // unreadCount is now fetched from API
-
-  // Fetch navigation suggestions from API
+  // Fetch global search suggestions from API
   useEffect(() => {
     const fetchSearchSuggestions = async () => {
       if (searchQuery.length < 1) {
@@ -454,7 +452,7 @@ export default function MainLayout() {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
         const response = await fetch(
-          `${API_BASE_URL}/api/search/?q=${encodeURIComponent(searchQuery)}`,
+          `${API_BASE_URL}/api/search/global?q=${encodeURIComponent(searchQuery)}`,
           {
             headers: {
               'Authorization': `Bearer ${token}`,
@@ -464,7 +462,15 @@ export default function MainLayout() {
         
         if (response.ok) {
           const data = await response.json();
-          setSearchSuggestions(data.results || []);
+          // Combine all results into a flat list for dropdown
+          const allResults: any[] = [];
+          data.contacts?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Contact' }));
+          data.deals?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Deal' }));
+          data.quotes?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Quote' }));
+          data.files?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'File' }));
+          data.activities?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Activity' }));
+          data.pages?.forEach((item: any) => allResults.push({ ...item, name: item.name, description: item.description, category: item.category }));
+          setSearchSuggestions(allResults.slice(0, 8));
         }
       } catch (error) {
         console.error('Error fetching search suggestions:', error);
@@ -774,7 +780,7 @@ export default function MainLayout() {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search pages..."
+                  placeholder="Search everything..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -808,7 +814,7 @@ export default function MainLayout() {
                     ) : searchSuggestions.length > 0 ? (
                       <>
                         <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
-                          <p className="text-xs font-semibold text-gray-600 uppercase">Pages & Sections</p>
+                          <p className="text-xs font-semibold text-gray-600 uppercase">Search Results</p>
                         </div>
                         {searchSuggestions.map((suggestion, index) => (
                           <div
@@ -838,8 +844,8 @@ export default function MainLayout() {
                       </>
                     ) : searchQuery.length > 0 ? (
                       <div className="px-4 py-8 text-center text-sm text-gray-500">
-                        <p>No pages found</p>
-                        <p className="text-xs mt-1">Try: Contacts, Deals, SMS, Settings</p>
+                        <p>No results found</p>
+                        <p className="text-xs mt-1">Try searching for contacts, deals, quotes...</p>
                       </div>
                     ) : null}
                   </div>
