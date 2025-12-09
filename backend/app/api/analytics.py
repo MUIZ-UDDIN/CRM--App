@@ -1605,6 +1605,15 @@ async def get_dashboard_analytics(
     print(f"[DASHBOARD] total_revenue={total_revenue}, won_deals={won_deals}")
     print(f"[DASHBOARD] date_from_obj={date_from_obj}, date_to_obj={date_to_obj}")
     
+    # Debug: Get ALL won deals to see what's in the database
+    all_won_deals = db.query(DealModel.id, DealModel.value, DealModel.actual_close_date, DealModel.updated_at, DealModel.company_id).filter(
+        DealModel.is_deleted == False,
+        DealModel.status == DealStatus.WON
+    ).all()
+    print(f"[DASHBOARD] ALL won deals in DB (no date filter): {len(all_won_deals)}")
+    for d in all_won_deals[:10]:  # Show first 10
+        print(f"  - Deal {d.id}: value={d.value}, actual_close={d.actual_close_date}, updated={d.updated_at}, company={d.company_id}")
+    
     # Previous period revenue for growth calculation
     prev_revenue_filters = [
         DealModel.is_deleted == False,
