@@ -82,10 +82,26 @@ export const deleteQuote = async (id: string) => {
   return response.data;
 };
 
+// Send quote to client via email
+export const sendQuote = async (id: string) => {
+  const response = await apiClient.post(`/quotes/${id}/send`);
+  return response.data;
+};
+
+// Download quote PDF
+export const downloadQuotePdf = async (id: string) => {
+  const response = await apiClient.get(`/quotes/${id}/pdf`, {
+    responseType: 'blob'
+  });
+  return response.data;
+};
+
 export default {
   getQuotes,
   getQuote,
   createQuote,
   updateQuote,
   deleteQuote,
+  sendQuote,
+  downloadQuotePdf,
 };

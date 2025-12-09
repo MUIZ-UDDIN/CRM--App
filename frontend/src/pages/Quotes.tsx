@@ -460,6 +460,21 @@ export default function Quotes() {
     }
   };
 
+  const handleSendQuote = async (quote: Quote) => {
+    try {
+      const result = await quotesService.sendQuote(quote.id);
+      if (result.success) {
+        toast.success(result.message || 'Quote sent successfully!');
+        fetchQuotes();
+      } else {
+        toast.error('Failed to send quote');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || 'Failed to send quote';
+      toast.error(errorMessage);
+    }
+  };
+
   const filteredQuotes = quotes.filter(quote => {
     const matchesSearch = 
       quote.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -643,27 +658,33 @@ export default function Quotes() {
                     {quote.status === 'draft' && (
                       <div className="flex gap-2 mb-2">
                         <button
-                          onClick={() => handleStatusChange(quote, 'sent')}
+                          onClick={() => handleSendQuote(quote)}
                           className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                          title="Send quote to client via email"
                         >
-                          Send
+                          Send to Client
                         </button>
                       </div>
                     )}
                     {quote.status === 'sent' && (
-                      <div className="flex gap-2 mb-2">
-                        <button
-                          onClick={() => handleStatusChange(quote, 'accepted')}
-                          className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700"
-                        >
-                          Accept
-                        </button>
-                        <button
-                          onClick={() => handleStatusChange(quote, 'rejected')}
-                          className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700"
-                        >
-                          Reject
-                        </button>
+                      <div className="flex flex-col gap-1 mb-2">
+                        <span className="text-xs text-gray-500 text-center">Awaiting client response</span>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleStatusChange(quote, 'accepted')}
+                            className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                            title="Manually mark as accepted"
+                          >
+                            Mark Accepted
+                          </button>
+                          <button
+                            onClick={() => handleStatusChange(quote, 'rejected')}
+                            className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700"
+                            title="Manually mark as rejected"
+                          >
+                            Mark Rejected
+                          </button>
+                        </div>
                       </div>
                     )}
                     <div className="flex items-center gap-2">

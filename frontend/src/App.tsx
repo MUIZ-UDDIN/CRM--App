@@ -46,6 +46,7 @@ import AcceptInvitation from './pages/auth/AcceptInvitation';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import TermsOfService from './pages/TermsOfService';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import PublicQuote from './pages/PublicQuote';
 
 // Providers
 import { AuthProvider } from './contexts/AuthContext';
@@ -121,6 +122,7 @@ function App() {
               <Route path="/login" element={<Navigate to="/auth/login" replace />} />
               <Route path="/terms" element={<TermsOfService />} />
               <Route path="/privacy" element={<PrivacyPolicy />} />
+              <Route path="/quote/:token" element={<PublicQuote />} />
 
               {/* Protected Routes */}
               <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>

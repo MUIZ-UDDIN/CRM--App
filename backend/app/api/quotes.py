@@ -463,6 +463,141 @@ async def update_quote(
     )
 
 
+@router.post("/{quote_id}/send")
+async def send_quote_to_client(
+    quote_id: str,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Send quote to client via email.
+    This generates a public link and emails it to the client.
+    """
+    from app.models.contacts import Contact
+    from app.models.users import User
+    from app.models.companies import Company
+    from app.models.email_settings import EmailSettings
+    from app.services.email_service import send_quote_email
+    from app.models.quotes import generate_public_token
+    
+    context = get_tenant_context(current_user)
+    company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
+    
+    # Get quote
+    if context.is_super_admin():
+        quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.id == uuid.UUID(quote_id),
+                QuoteModel.is_deleted == False
+            )
+        ).first()
+    else:
+        if not company_id:
+            raise HTTPException(status_code=403, detail="No company associated with user")
+        
+        quote = db.query(QuoteModel).filter(
+            and_(
+                QuoteModel.id == uuid.UUID(quote_id),
+                QuoteModel.company_id == company_id,
+                QuoteModel.is_deleted == False
+            )
+        ).first()
+    
+    if not quote:
+        raise HTTPException(status_code=404, detail="Quote not found")
+    
+    # Check if quote is in draft status
+    if quote.status != QuoteStatus.DRAFT:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Quote has already been {quote.status.value}. Only draft quotes can be sent."
+        )
+    
+    # Get client info
+    if not quote.client_id:
+        raise HTTPException(status_code=400, detail="Quote must have a client assigned before sending")
+    
+    client = db.query(Contact).filter(Contact.id == quote.client_id).first()
+    if not client:
+        raise HTTPException(status_code=400, detail="Client not found")
+    
+    if not client.email:
+        raise HTTPException(status_code=400, detail="Client does not have an email address")
+    
+    # Get sender info
+    sender = db.query(User).filter(User.id == user_id).first()
+    sender_name = f"{sender.first_name} {sender.last_name}" if sender else "Your Sales Representative"
+    
+    # Get company info
+    company = db.query(Company).filter(Company.id == quote.company_id).first()
+    company_name = company.name if company else "Our Company"
+    
+    # Generate public token if not exists
+    if not quote.public_token:
+        quote.public_token = generate_public_token()
+    
+    # Build public quote link
+    quote_link = f"https://sunstonecrm.com/quote/{quote.public_token}"
+    
+    # Get SendGrid API key from company email settings
+    sendgrid_api_key = None
+    if quote.company_id:
+        email_settings = db.query(EmailSettings).filter(
+            EmailSettings.company_id == quote.company_id
+        ).first()
+        if email_settings and email_settings.sendgrid_api_key:
+            sendgrid_api_key = email_settings.sendgrid_api_key
+    
+    # Format valid_until date
+    valid_until_str = quote.valid_until.strftime('%B %d, %Y') if quote.valid_until else "No expiration"
+    
+    # Send email
+    client_name = f"{client.first_name} {client.last_name}" if client.first_name else client.email
+    
+    email_sent = send_quote_email(
+        to_email=client.email,
+        client_name=client_name,
+        quote_number=quote.quote_number,
+        quote_title=quote.title,
+        quote_amount=float(quote.amount),
+        valid_until=valid_until_str,
+        company_name=company_name,
+        sender_name=sender_name,
+        quote_link=quote_link,
+        sendgrid_api_key=sendgrid_api_key
+    )
+    
+    # Update quote status to sent
+    quote.status = QuoteStatus.SENT
+    quote.sent_at = datetime.utcnow()
+    db.commit()
+    
+    # Create activity log
+    try:
+        from app.models.activities import Activity
+        activity = Activity(
+            type="quote_sent",
+            title=f"Quote {quote.quote_number} sent",
+            description=f"Quote '{quote.title}' for ${float(quote.amount):,.2f} was sent to {client_name} ({client.email})",
+            contact_id=quote.client_id,
+            deal_id=quote.deal_id,
+            owner_id=user_id,
+            company_id=quote.company_id
+        )
+        db.add(activity)
+        db.commit()
+    except Exception as e:
+        print(f"Failed to create activity: {e}")
+    
+    return {
+        "success": True,
+        "message": f"Quote sent successfully to {client.email}",
+        "quote_link": quote_link,
+        "email_sent": email_sent
+    }
+
+
 @router.delete("/{quote_id}")
 async def delete_quote(
     quote_id: str,

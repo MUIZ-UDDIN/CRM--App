@@ -39,6 +39,7 @@ from app.api.inbox import router as inbox_router
 from app.api.twilio_settings import router as twilio_settings_router
 from app.api.email_settings import router as email_settings_router
 from app.api.quotes import router as quotes_router
+from app.api.quotes_public import router as quotes_public_router
 from app.api.calls import router as calls_router
 from app.api.conversations import router as conversations_router
 from app.api.analytics_enhanced import router as analytics_enhanced_router
@@ -430,6 +431,14 @@ app.include_router(
     tags=["Quotes"],
     dependencies=[Depends(get_current_user)]
 )
+
+# Public Quote endpoints (NO AUTH - clients access via token)
+app.include_router(
+    quotes_public_router,
+    prefix="/api/public/quote",
+    tags=["Public Quotes"]
+)
+logger.info("✅ Public Quote routes registered at /api/public/quote")
 
 if sms_enhanced_router:
     app.include_router(

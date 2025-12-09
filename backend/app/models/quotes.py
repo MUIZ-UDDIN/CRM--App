@@ -2,11 +2,12 @@
 Quote models
 """
 
-from sqlalchemy import Column, String, ForeignKey, Numeric, Date, Text, Enum as SQLEnum
+from sqlalchemy import Column, String, ForeignKey, Numeric, Date, Text, Enum as SQLEnum, DateTime
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from .base import BaseModel
 import enum
+import secrets
 
 
 class QuoteStatus(str, enum.Enum):
@@ -16,6 +17,11 @@ class QuoteStatus(str, enum.Enum):
     ACCEPTED = "accepted"
     REJECTED = "rejected"
     EXPIRED = "expired"
+
+
+def generate_public_token():
+    """Generate a secure random token for public quote access"""
+    return secrets.token_urlsafe(32)
 
 
 class Quote(BaseModel):
@@ -30,6 +36,9 @@ class Quote(BaseModel):
     # Status
     status = Column(SQLEnum(QuoteStatus), default=QuoteStatus.DRAFT, nullable=False, index=True)
     
+    # Public Access Token - for client to view/respond without login
+    public_token = Column(String(64), unique=True, index=True, default=generate_public_token)
+    
     # Relations
     client_id = Column(UUID(as_uuid=True), ForeignKey('contacts.id'), index=True)
     deal_id = Column(UUID(as_uuid=True), ForeignKey('deals.id'), index=True)
@@ -38,13 +47,18 @@ class Quote(BaseModel):
     
     # Dates
     valid_until = Column(Date)
-    sent_at = Column(Date)
-    accepted_at = Column(Date)
+    sent_at = Column(DateTime)  # Changed to DateTime for more precision
+    accepted_at = Column(DateTime)  # Changed to DateTime for more precision
+    rejected_at = Column(DateTime)  # Added for tracking rejection time
     
     # Content
     description = Column(Text)
     terms = Column(Text)
     notes = Column(Text)
+    
+    # Client Response
+    client_response_note = Column(Text)  # Optional note from client when accepting/rejecting
+    client_ip = Column(String(50))  # IP address when client responded (for audit)
     
     # Metadata
     custom_fields = Column(JSONB)
