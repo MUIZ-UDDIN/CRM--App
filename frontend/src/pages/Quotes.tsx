@@ -779,20 +779,22 @@ export default function Quotes() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client
+                  Client <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={quoteForm.client_id}
                   onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
                 >
-                  <option value="">Select Client (Optional)</option>
+                  <option value="">Select Client</option>
                   {contacts.map((contact) => (
                     <option key={contact.id} value={contact.id}>
                       {contact.first_name} {contact.last_name} ({contact.email})
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">Quote will be sent to client's email</p>
               </div>
 
               <div>
@@ -818,7 +820,7 @@ export default function Quotes() {
                 </button>
                 <button
                   onClick={handleCreate}
-                  disabled={isCreating}
+                  disabled={isCreating || !quoteForm.client_id}
                   className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isCreating ? 'Creating...' : 'Create Quote'}
@@ -888,20 +890,22 @@ export default function Quotes() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Client
+                  Client <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={quoteForm.client_id}
                   onChange={(e) => setQuoteForm({...quoteForm, client_id: e.target.value})}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  required
                 >
-                  <option value="">Select Client (Optional)</option>
+                  <option value="">Select Client</option>
                   {contacts.map((contact) => (
                     <option key={contact.id} value={contact.id}>
                       {contact.first_name} {contact.last_name} ({contact.email})
                     </option>
                   ))}
                 </select>
+                <p className="text-xs text-gray-500 mt-1">Quote will be sent to client's email</p>
               </div>
 
               <div>
@@ -927,7 +931,8 @@ export default function Quotes() {
                 </button>
                 <button
                   onClick={handleUpdate}
-                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+                  disabled={!quoteForm.client_id}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save Changes
                 </button>
