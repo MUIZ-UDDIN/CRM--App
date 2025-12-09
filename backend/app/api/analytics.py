@@ -63,7 +63,7 @@ async def get_pipeline_analytics(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get pipeline analytics with real database queries - shows WON deals only"""
+    """Get pipeline analytics with real database queries - shows ALL deals by stage"""
     
     # Check analytics permissions
     access_level = enforce_analytics_permissions(current_user, "pipeline")
@@ -71,9 +71,13 @@ async def get_pipeline_analytics(
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
+    # Debug logging
+    print(f"[PIPELINE] role={current_user.get('role')}, access_level={access_level}")
+    print(f"[PIPELINE] date_from={date_from}, date_to={date_to}, pipeline_id={pipeline_id}")
+    
     # Build query filters based on access level
-    # Filter for WON deals only to match KPIs and Revenue analytics
-    filters = [Deal.is_deleted == False, Deal.status == DealStatus.WON]
+    # Show ALL deals by stage (not just WON) - Pipeline by Stage should show deal distribution
+    filters = [Deal.is_deleted == False]
     
     # Apply access level filters
     if access_level == "all":
@@ -101,53 +105,14 @@ async def get_pipeline_analytics(
         # Regular user can see own data
         filters.append(Deal.owner_id == owner_id)
     
-    # Apply date filters - use actual_close_date or updated_at for WON deals (when they were actually won)
-    # This matches the Dashboard KPI and Revenue analytics logic
-    if date_from or date_to:
-        date_from_obj = datetime.fromisoformat(date_from).date() if date_from else None
-        date_to_obj = datetime.fromisoformat(date_to).date() if date_to else None
-        
-        if date_from_obj and date_to_obj:
-            filters.append(
-                or_(
-                    and_(
-                        Deal.actual_close_date.isnot(None),
-                        func.date(Deal.actual_close_date) >= date_from_obj,
-                        func.date(Deal.actual_close_date) <= date_to_obj
-                    ),
-                    and_(
-                        Deal.actual_close_date.is_(None),
-                        func.date(Deal.updated_at) >= date_from_obj,
-                        func.date(Deal.updated_at) <= date_to_obj
-                    )
-                )
-            )
-        elif date_from_obj:
-            filters.append(
-                or_(
-                    and_(
-                        Deal.actual_close_date.isnot(None),
-                        func.date(Deal.actual_close_date) >= date_from_obj
-                    ),
-                    and_(
-                        Deal.actual_close_date.is_(None),
-                        func.date(Deal.updated_at) >= date_from_obj
-                    )
-                )
-            )
-        elif date_to_obj:
-            filters.append(
-                or_(
-                    and_(
-                        Deal.actual_close_date.isnot(None),
-                        func.date(Deal.actual_close_date) <= date_to_obj
-                    ),
-                    and_(
-                        Deal.actual_close_date.is_(None),
-                        func.date(Deal.updated_at) <= date_to_obj
-                    )
-                )
-            )
+    # Apply date filters - use created_at for pipeline distribution (when deals were created)
+    # This shows deals created within the date range
+    if date_from:
+        date_from_obj = datetime.fromisoformat(date_from).date()
+        filters.append(func.date(Deal.created_at) >= date_from_obj)
+    if date_to:
+        date_to_obj = datetime.fromisoformat(date_to).date()
+        filters.append(func.date(Deal.created_at) <= date_to_obj)
     if user_id:
         filters.append(Deal.owner_id == uuid.UUID(user_id))
     if pipeline_id:
@@ -187,6 +152,11 @@ async def get_pipeline_analytics(
     total_deals = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
     total_value = db.query(func.sum(Deal.value)).filter(and_(*filters)).scalar() or 0
     avg_deal_size = (total_value / total_deals) if total_deals > 0 else 0
+    
+    # Debug logging
+    print(f"[PIPELINE] Found {len(pipeline_analytics)} stages with {total_deals} total deals, value=${total_value}")
+    for stage in pipeline_analytics:
+        print(f"  - {stage['stage_name']}: {stage['deal_count']} deals, ${stage['total_value']}")
     
     data = {
         "filters": {
