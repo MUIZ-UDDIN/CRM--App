@@ -10,13 +10,13 @@ from sqlalchemy import or_, and_
 import uuid
 
 from app.core.security import get_current_active_user
-from app.db.session import get_db
+from app.core.database import get_db
 from app.models.contacts import Contact
 from app.models.deals import Deal
 from app.models.quotes import Quote
 from app.models.activities import Activity
 from app.models.documents import Document
-from app.api.tenant_context import get_tenant_context
+from app.middleware.tenant import get_tenant_context
 
 router = APIRouter(tags=["Search"])
 
