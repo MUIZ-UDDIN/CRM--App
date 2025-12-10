@@ -54,18 +54,19 @@ export default function PipelineSettings() {
   // Check if user can customize CRM (Company Admin = Admin = Sales Manager)
   const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
 
-  // Check for highlight query parameter
+  // Check for highlight query parameter - runs when URL params change
   useEffect(() => {
-    const highlightId = searchParams.get('highlight');
+    const highlightValue = searchParams.get('highlight');
     
     // If highlight parameter exists, set it as search filter
-    if (highlightId) {
-      setSearchQuery(highlightId);
-      // Clear the highlight param after setting
-      searchParams.delete('highlight');
-      setSearchParams(searchParams, { replace: true });
+    if (highlightValue) {
+      setSearchQuery(highlightValue);
+      // Remove highlight param from URL after setting search
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlight');
+      setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams]);
+  }, [searchParams]); // Run when searchParams change
 
   const resetStageForm = () => {
     setNewStageName('');

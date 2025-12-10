@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PhoneIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,16 +28,12 @@ interface Call {
 
 export default function CallsNew() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const highlightProcessed = useRef(false);
   const [calls, setCalls] = useState<Call[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCallFormModal, setShowCallFormModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'all' | 'incoming' | 'outgoing'>('all');
-  
-  // Initialize searchQuery from URL highlight parameter
-  const initialHighlight = searchParams.get('highlight') || '';
-  const [searchQuery, setSearchQuery] = useState(initialHighlight);
+  const [searchQuery, setSearchQuery] = useState('');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -57,18 +53,19 @@ export default function CallsNew() {
   const [currentCallName, setCurrentCallName] = useState('');
   const [isIncomingCall, setIsIncomingCall] = useState(false);
 
-  // Check for highlight query parameter - clean up URL after initial load
+  // Check for highlight query parameter - runs when URL params change
   useEffect(() => {
-    const highlightId = searchParams.get('highlight');
+    const highlightValue = searchParams.get('highlight');
     
-    // Clean up URL params (remove highlight) without affecting state
-    if (highlightId && !highlightProcessed.current) {
-      highlightProcessed.current = true;
+    // If highlight parameter exists, set it as search filter
+    if (highlightValue) {
+      setSearchQuery(highlightValue);
+      // Remove highlight param from URL after setting search
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Run only on mount
+  }, [searchParams]); // Run when searchParams change
 
   useEffect(() => {
     fetchCalls();

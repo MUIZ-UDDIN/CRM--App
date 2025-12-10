@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EnvelopeIcon, PlusIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,14 +19,10 @@ interface Email {
 
 export default function Inbox() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const highlightProcessed = useRef(false);
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
-  
-  // Initialize searchQuery from URL highlight parameter
-  const initialHighlight = searchParams.get('highlight') || '';
-  const [searchQuery, setSearchQuery] = useState(initialHighlight);
+  const [searchQuery, setSearchQuery] = useState('');
   const [composeForm, setComposeForm] = useState({
     to: '',
     subject: '',
@@ -44,18 +40,19 @@ export default function Inbox() {
     loadTwilioEmails();
   }, []);
 
-  // Check for highlight query parameter - clean up URL after initial load
+  // Check for highlight query parameter - runs when URL params change
   useEffect(() => {
-    const highlightId = searchParams.get('highlight');
+    const highlightValue = searchParams.get('highlight');
     
-    // Clean up URL params (remove highlight) without affecting state
-    if (highlightId && !highlightProcessed.current) {
-      highlightProcessed.current = true;
+    // If highlight parameter exists, set it as search filter
+    if (highlightValue) {
+      setSearchQuery(highlightValue);
+      // Remove highlight param from URL after setting search
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Run only on mount
+  }, [searchParams]); // Run when searchParams change
 
   const loadTwilioEmails = () => {
     // Load Twilio emails from localStorage (configured in settings)

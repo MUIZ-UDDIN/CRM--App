@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as filesService from '../services/filesService';
 import ActionButtons from '../components/common/ActionButtons';
@@ -37,17 +37,13 @@ interface FileItem {
 
 export default function Files() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const highlightProcessed = useRef(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
-  
-  // Initialize searchQuery from URL highlight parameter
-  const initialHighlight = searchParams.get('highlight') || '';
-  const [searchQuery, setSearchQuery] = useState(initialHighlight);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(true);
@@ -84,24 +80,28 @@ export default function Files() {
     };
   }, [showUploadModal, showCreateFolderModal, showViewModal, showEditModal]);
 
-  // Check for action and highlight query parameters - clean up URL after initial load
+  // Check for action and highlight query parameters - runs when URL params change
   useEffect(() => {
     const action = searchParams.get('action');
-    const highlightId = searchParams.get('highlight');
+    const highlightValue = searchParams.get('highlight');
     
     if (action === 'upload') {
       setShowUploadModal(true);
-    }
-    
-    // Clean up URL params (remove action and highlight) without affecting state
-    if ((action || highlightId) && !highlightProcessed.current) {
-      highlightProcessed.current = true;
+      // Remove action param from URL
       const newParams = new URLSearchParams(searchParams);
-      if (action) newParams.delete('action');
-      if (highlightId) newParams.delete('highlight');
+      newParams.delete('action');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Run only on mount
+    
+    // If highlight parameter exists, set it as search filter
+    if (highlightValue) {
+      setSearchQuery(highlightValue);
+      // Remove highlight param from URL after setting search
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlight');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams]); // Run when searchParams change
 
   const fetchFiles = async () => {
     setLoading(true);

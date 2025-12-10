@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import * as workflowsService from '../services/workflowsService';
@@ -41,17 +41,13 @@ export default function Workflows() {
   const { user } = useAuth();
   const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
-  const highlightProcessed = useRef(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [workflowToDelete, setWorkflowToDelete] = useState<Workflow | null>(null);
-  
-  // Initialize searchQuery from URL highlight parameter
-  const initialHighlight = searchParams.get('highlight') || '';
-  const [searchQuery, setSearchQuery] = useState(initialHighlight);
+  const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showFilters, setShowFilters] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -102,18 +98,19 @@ export default function Workflows() {
     fetchWorkflows();
   }, []);
 
-  // Check for highlight query parameter - clean up URL after initial load
+  // Check for highlight query parameter - runs when URL params change
   useEffect(() => {
-    const highlightId = searchParams.get('highlight');
+    const highlightValue = searchParams.get('highlight');
     
-    // Clean up URL params (remove highlight) without affecting state
-    if (highlightId && !highlightProcessed.current) {
-      highlightProcessed.current = true;
+    // If highlight parameter exists, set it as search filter
+    if (highlightValue) {
+      setSearchQuery(highlightValue);
+      // Remove highlight param from URL after setting search
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Run only on mount
+  }, [searchParams]); // Run when searchParams change
 
   useEffect(() => {
     const handleEntityChange = (event: any) => {

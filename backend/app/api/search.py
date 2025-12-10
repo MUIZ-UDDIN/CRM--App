@@ -194,13 +194,16 @@ async def global_search(
         ).limit(5)
         
         for contact in contacts_query.all():
+            # Use full name for highlight so the search bar shows the name, not the ID
+            full_name = f"{contact.first_name} {contact.last_name}"
+            highlight_value = urllib.parse.quote(full_name, safe='')
             contacts_results.append(GlobalSearchResult(
                 id=str(contact.id),
                 type="contact",
-                title=f"{contact.first_name} {contact.last_name}",
+                title=full_name,
                 subtitle=contact.email,
                 description=contact.company,
-                path=f"/contacts?highlight={contact.id}",
+                path=f"/contacts?highlight={highlight_value}",
                 icon="users"
             ))
     except Exception as e:
@@ -249,13 +252,15 @@ async def global_search(
         ).limit(5)
         
         for quote in quotes_query.all():
+            # Use title for highlight so the search bar shows the name, not the ID
+            highlight_value = urllib.parse.quote(quote.title or '', safe='')
             quotes_results.append(GlobalSearchResult(
                 id=str(quote.id),
                 type="quote",
                 title=quote.title,
                 subtitle=f"${float(quote.amount):,.2f}" if quote.amount else None,
                 description=f"#{quote.quote_number} - {quote.status.value if hasattr(quote.status, 'value') else quote.status}",
-                path=f"/quotes?highlight={quote.id}",
+                path=f"/quotes?highlight={highlight_value}",
                 icon="document"
             ))
     except Exception as e:
@@ -276,13 +281,15 @@ async def global_search(
         ).limit(5)
         
         for file in files_query.all():
+            # Use name for highlight so the search bar shows the name, not the ID
+            highlight_value = urllib.parse.quote(file.name or '', safe='')
             files_results.append(GlobalSearchResult(
                 id=str(file.id),
                 type="file",
                 title=file.name,
                 subtitle=file.file_type if file.file_type else None,
                 description=file.description,
-                path=f"/files?highlight={file.id}",
+                path=f"/files?highlight={highlight_value}",
                 icon="folder"
             ))
     except Exception as e:
@@ -331,13 +338,15 @@ async def global_search(
         ).limit(3)
         
         for pipeline in pipelines_query.all():
+            # Use name for highlight so the search bar shows the name, not the ID
+            highlight_value = urllib.parse.quote(pipeline.name or '', safe='')
             pipelines_results.append(GlobalSearchResult(
                 id=str(pipeline.id),
                 type="pipeline",
                 title=pipeline.name,
                 subtitle="Pipeline",
                 description=pipeline.description,
-                path=f"/pipeline-settings?highlight={pipeline.id}",
+                path=f"/pipeline-settings?highlight={highlight_value}",
                 icon="chart"
             ))
         
@@ -351,13 +360,15 @@ async def global_search(
         ).limit(3)
         
         for stage in stages_query.all():
+            # Use name for highlight so the search bar shows the name, not the ID
+            highlight_value = urllib.parse.quote(stage.name or '', safe='')
             pipelines_results.append(GlobalSearchResult(
                 id=str(stage.id),
                 type="pipeline_stage",
                 title=stage.name,
                 subtitle=f"Stage - {stage.probability}% probability",
                 description=stage.description,
-                path=f"/pipeline-settings?highlight={stage.id}",
+                path=f"/pipeline-settings?highlight={highlight_value}",
                 icon="chart"
             ))
     except Exception as e:
@@ -393,13 +404,15 @@ async def global_search(
         
         for workflow in workflows_found:
             trigger_display = workflow.trigger_type.value if hasattr(workflow.trigger_type, 'value') else str(workflow.trigger_type)
+            # Use name for highlight so the search bar shows the name, not the ID
+            highlight_value = urllib.parse.quote(workflow.name or '', safe='')
             workflows_results.append(GlobalSearchResult(
                 id=str(workflow.id),
                 type="workflow",
                 title=workflow.name,
                 subtitle=f"{workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status)} - {trigger_display}",
                 description=workflow.description[:100] if workflow.description else None,
-                path=f"/workflows?highlight={workflow.id}",
+                path=f"/workflows?highlight={highlight_value}",
                 icon="cog"
             ))
     except Exception as e:
@@ -422,13 +435,15 @@ async def global_search(
         ).limit(5)
         
         for email in emails_query.all():
+            # Use subject for highlight so the search bar shows the subject, not the ID
+            highlight_value = urllib.parse.quote(email.subject or '', safe='')
             emails_results.append(GlobalSearchResult(
                 id=str(email.id),
                 type="email",
                 title=email.subject,
                 subtitle=f"To: {email.to_email}",
                 description=f"From: {email.from_email}",
-                path=f"/inbox?highlight={email.id}",
+                path=f"/inbox?highlight={highlight_value}",
                 icon="envelope"
             ))
     except Exception as e:
@@ -449,13 +464,15 @@ async def global_search(
         ).limit(5)
         
         for sms in sms_query.all():
+            # Use to_address for highlight so the search bar shows the number, not the ID
+            highlight_value = urllib.parse.quote(sms.to_address or '', safe='')
             sms_results.append(GlobalSearchResult(
                 id=str(sms.id),
                 type="sms",
                 title=sms.body[:50] + "..." if len(sms.body) > 50 else sms.body,
                 subtitle=f"To: {sms.to_address}",
                 description=f"{sms.direction.value} - {sms.status.value}" if hasattr(sms.direction, 'value') else str(sms.direction),
-                path=f"/sms?highlight={sms.id}",
+                path=f"/sms?highlight={highlight_value}",
                 icon="chat"
             ))
     except Exception as e:
@@ -476,13 +493,15 @@ async def global_search(
         
         for call in calls_query.all():
             duration_str = f"{call.duration // 60}m {call.duration % 60}s" if call.duration else "0s"
+            # Use phone number for highlight so the search bar shows the number, not the ID
+            highlight_value = urllib.parse.quote(call.to_address or call.from_address or '', safe='')
             calls_results.append(GlobalSearchResult(
                 id=str(call.id),
                 type="call",
                 title=f"Call to {call.to_address}" if call.direction.value == "OUTBOUND" else f"Call from {call.from_address}",
                 subtitle=f"Duration: {duration_str}",
                 description=f"{call.direction.value} - {call.status.value}" if hasattr(call.direction, 'value') else str(call.direction),
-                path=f"/calls?highlight={call.id}",
+                path=f"/calls?highlight={highlight_value}",
                 icon="phone"
             ))
     except Exception as e:
