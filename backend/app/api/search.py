@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 import uuid
+import urllib.parse
 
 from app.core.security import get_current_active_user
 from app.core.database import get_db
@@ -299,13 +300,15 @@ async def global_search(
         ).limit(5)
         
         for activity in activities_query.all():
+            # Use subject for highlight so the search bar shows the name, not the ID
+            highlight_value = urllib.parse.quote(activity.subject or '', safe='')
             activities_results.append(GlobalSearchResult(
                 id=str(activity.id),
                 type="activity",
                 title=activity.subject,
                 subtitle=activity.type.value if hasattr(activity.type, 'value') else str(activity.type),
                 description=activity.description[:100] if activity.description else None,
-                path=f"/activities?highlight={activity.id}",
+                path=f"/activities?highlight={highlight_value}",
                 icon="calendar"
             ))
     except Exception as e:
