@@ -362,14 +362,17 @@ async def global_search(
     try:
         workflows_query = db.query(Workflow).filter(Workflow.is_deleted == False)
         
-        # Apply company filter for non-super admins
+        # Apply company filter - include company workflows AND global workflows (company_id is NULL)
         if not context.is_super_admin() and company_id:
-            workflows_query = workflows_query.filter(Workflow.company_id == company_id)
-        elif context.is_super_admin():
-            # Super admin can see all workflows, no company filter needed
-            pass
+            workflows_query = workflows_query.filter(
+                or_(
+                    Workflow.company_id == company_id,
+                    Workflow.company_id.is_(None)  # Include global workflows
+                )
+            )
+        # Super admin sees all workflows, no filter needed
         
-        # Search by name only first (description can be NULL which causes issues with ilike)
+        # Search by name (and description if not NULL)
         workflows_query = workflows_query.filter(
             or_(
                 Workflow.name.ilike(search_pattern),
@@ -381,7 +384,7 @@ async def global_search(
         ).limit(5)
         
         workflows_found = workflows_query.all()
-        print(f"Workflows search for '{query_lower}': found {len(workflows_found)} results")
+        print(f"Workflows search for '{query_lower}': found {len(workflows_found)} workflows, company_id={company_id}")
         
         for workflow in workflows_found:
             trigger_display = workflow.trigger_type.value if hasattr(workflow.trigger_type, 'value') else str(workflow.trigger_type)
