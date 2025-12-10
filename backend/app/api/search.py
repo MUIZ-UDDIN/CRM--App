@@ -17,6 +17,7 @@ from app.models.deals import Deal, Pipeline, PipelineStage
 from app.models.quotes import Quote
 from app.models.activities import Activity
 from app.models.documents import Document
+from app.models.files import File
 from app.models.workflows import Workflow
 from app.models.emails import Email, EmailTemplate
 from app.models.sms import SMSMessage
@@ -257,27 +258,28 @@ async def global_search(
     except Exception as e:
         print(f"Error searching quotes: {e}")
     
-    # Search Files/Documents
+    # Search Files
     try:
-        files_query = db.query(Document).filter(Document.is_deleted == False)
+        files_query = db.query(File).filter(File.is_deleted == False)
         if not context.is_super_admin() and company_id:
-            files_query = files_query.filter(Document.company_id == company_id)
+            files_query = files_query.filter(File.company_id == company_id)
         
         files_query = files_query.filter(
             or_(
-                Document.name.ilike(search_pattern),
-                Document.description.ilike(search_pattern)
+                File.name.ilike(search_pattern),
+                File.original_name.ilike(search_pattern),
+                File.description.ilike(search_pattern)
             )
         ).limit(5)
         
-        for doc in files_query.all():
+        for file in files_query.all():
             files_results.append(GlobalSearchResult(
-                id=str(doc.id),
+                id=str(file.id),
                 type="file",
-                title=doc.name,
-                subtitle=doc.file_type if hasattr(doc, 'file_type') else None,
-                description=doc.description,
-                path=f"/files?highlight={doc.id}",
+                title=file.name,
+                subtitle=file.file_type if file.file_type else None,
+                description=file.description,
+                path=f"/files?highlight={file.id}",
                 icon="folder"
             ))
     except Exception as e:
