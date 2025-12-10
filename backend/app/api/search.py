@@ -220,13 +220,15 @@ async def global_search(
         ).limit(5)
         
         for deal in deals_query.all():
+            # Use title for highlight so the search bar shows the name, not the ID
+            highlight_value = urllib.parse.quote(deal.title or '', safe='')
             deals_results.append(GlobalSearchResult(
                 id=str(deal.id),
                 type="deal",
                 title=deal.title,
                 subtitle=f"${deal.value:,.2f}" if deal.value else None,
                 description=deal.status.value if hasattr(deal.status, 'value') else str(deal.status),
-                path=f"/deals?highlight={deal.id}",
+                path=f"/deals?highlight={highlight_value}",
                 icon="currency"
             ))
     except Exception as e:

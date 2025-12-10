@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import toast from 'react-hot-toast';
@@ -61,7 +61,6 @@ export default function Deals() {
   const { user } = useAuth();
   const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
-  const highlightProcessed = useRef(false);
   const [showAddDealModal, setShowAddDealModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
@@ -69,10 +68,7 @@ export default function Deals() {
   const [loading, setLoading] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [dealToDelete, setDealToDelete] = useState<Deal | null>(null);
-  
-  // Initialize searchQuery from URL highlight parameter
-  const initialHighlight = searchParams.get('highlight') || '';
-  const [searchQuery, setSearchQuery] = useState(initialHighlight);
+  const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(true);
   const [filterStage, setFilterStage] = useState('all');
   const [expandedStages, setExpandedStages] = useState<string[]>([]);
@@ -341,24 +337,28 @@ export default function Deals() {
     fetchContacts();
   }, []);
 
-  // Check for action and highlight query parameters - clean up URL after initial load
+  // Check for action and highlight query parameters - runs when URL params change
   useEffect(() => {
     const action = searchParams.get('action');
-    const highlightId = searchParams.get('highlight');
+    const highlightValue = searchParams.get('highlight');
     
     if (action === 'add') {
       setShowAddDealModal(true);
-    }
-    
-    // Clean up URL params (remove action and highlight) without affecting state
-    if ((action || highlightId) && !highlightProcessed.current) {
-      highlightProcessed.current = true;
+      // Remove action param from URL
       const newParams = new URLSearchParams(searchParams);
-      if (action) newParams.delete('action');
-      if (highlightId) newParams.delete('highlight');
+      newParams.delete('action');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Run only on mount
+    
+    // If highlight parameter exists, set it as search filter
+    if (highlightValue) {
+      setSearchQuery(highlightValue);
+      // Remove highlight param from URL after setting search
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlight');
+      setSearchParams(newParams, { replace: true });
+    }
+  }, [searchParams]); // Run when searchParams change
 
   useEffect(() => {
     // Only fetch deals after stage mapping is loaded
