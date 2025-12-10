@@ -361,18 +361,29 @@ async def global_search(
     # Search Workflows
     try:
         workflows_query = db.query(Workflow).filter(Workflow.is_deleted == False)
+        
+        # Apply company filter for non-super admins
         if not context.is_super_admin() and company_id:
             workflows_query = workflows_query.filter(Workflow.company_id == company_id)
+        elif context.is_super_admin():
+            # Super admin can see all workflows, no company filter needed
+            pass
         
-        # Search by name or description (trigger_type is an enum, can't use ilike)
+        # Search by name only first (description can be NULL which causes issues with ilike)
         workflows_query = workflows_query.filter(
             or_(
                 Workflow.name.ilike(search_pattern),
-                Workflow.description.ilike(search_pattern)
+                and_(
+                    Workflow.description.isnot(None),
+                    Workflow.description.ilike(search_pattern)
+                )
             )
         ).limit(5)
         
-        for workflow in workflows_query.all():
+        workflows_found = workflows_query.all()
+        print(f"Workflows search for '{query_lower}': found {len(workflows_found)} results")
+        
+        for workflow in workflows_found:
             trigger_display = workflow.trigger_type.value if hasattr(workflow.trigger_type, 'value') else str(workflow.trigger_type)
             workflows_results.append(GlobalSearchResult(
                 id=str(workflow.id),
@@ -385,6 +396,8 @@ async def global_search(
             ))
     except Exception as e:
         print(f"Error searching workflows: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Search Emails
     try:
