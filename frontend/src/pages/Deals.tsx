@@ -371,6 +371,15 @@ export default function Deals() {
     }
   }, [stageMapping]);
 
+  // Auto-expand all stages when searching
+  useEffect(() => {
+    if (searchQuery.trim() && stages.length > 0) {
+      // Expand all stages when user is searching
+      const allStageIds = stages.map(s => s.id);
+      setExpandedStages(allStageIds);
+    }
+  }, [searchQuery, stages]);
+
   // Auto-refresh when user returns to the page (cross-platform sync)
   useEffect(() => {
     const handleVisibilityChange = () => {
