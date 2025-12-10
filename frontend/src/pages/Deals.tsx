@@ -337,13 +337,23 @@ export default function Deals() {
     fetchContacts();
   }, []);
 
-  // Check for action query parameter
+  // Check for action and highlight query parameters
   useEffect(() => {
     const action = searchParams.get('action');
+    const highlightId = searchParams.get('highlight');
+    
     if (action === 'add') {
       setShowAddDealModal(true);
       searchParams.delete('action');
       setSearchParams(searchParams);
+    }
+    
+    // If highlight parameter exists, set it as search filter to show only that deal
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
 
@@ -995,10 +1005,11 @@ export default function Deals() {
                           .filter(deal => {
                             if (!searchQuery.trim()) return true;
                             const query = searchQuery.toLowerCase().trim();
+                            const id = deal.id?.toLowerCase() || '';
                             const title = deal.title?.toLowerCase() || '';
                             const company = deal.company?.toLowerCase() || '';
                             const contact = deal.contact?.toLowerCase() || '';
-                            return title.includes(query) || company.includes(query) || contact.includes(query);
+                            return id.includes(query) || title.includes(query) || company.includes(query) || contact.includes(query);
                           })
                           .map((deal, index) => (
                           <Draggable key={deal.id} draggableId={deal.id} index={index}>

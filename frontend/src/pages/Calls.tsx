@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PhoneIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -26,11 +27,13 @@ interface Call {
 }
 
 export default function CallsNew() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [calls, setCalls] = useState<Call[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCallFormModal, setShowCallFormModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'all' | 'incoming' | 'outgoing'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -49,6 +52,19 @@ export default function CallsNew() {
   const [currentCallNumber, setCurrentCallNumber] = useState('');
   const [currentCallName, setCurrentCallName] = useState('');
   const [isIncomingCall, setIsIncomingCall] = useState(false);
+
+  // Check for highlight query parameter
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    
+    // If highlight parameter exists, set it as search filter to show only that call
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     fetchCalls();
@@ -227,6 +243,15 @@ export default function CallsNew() {
     `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchTo.toLowerCase())
   );
 
+  // Filter calls by search query (for global search highlight)
+  const filteredCalls = calls.filter(call => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    return call.id.toLowerCase().includes(query) ||
+           call.from_address.toLowerCase().includes(query) ||
+           call.to_address.toLowerCase().includes(query);
+  });
+
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -400,7 +425,7 @@ export default function CallsNew() {
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           </div>
-        ) : calls.length === 0 ? (
+        ) : filteredCalls.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <PhoneIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No calls</h3>
@@ -436,7 +461,7 @@ export default function CallsNew() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {calls.map((call) => {
+                  {filteredCalls.map((call) => {
                     // Determine which number to redial (handle both uppercase and lowercase)
                     const redialTo = call.direction?.toUpperCase() === 'OUTBOUND' ? call.to_address : call.from_address;
                     

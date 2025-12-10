@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ChatBubbleLeftRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -23,11 +24,13 @@ interface SMSMessage {
 }
 
 export default function SMSNew() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [messages, setMessages] = useState<SMSMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'inbox' | 'sent'>('inbox');
+  const [searchQuery, setSearchQuery] = useState('');
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -45,6 +48,19 @@ export default function SMSNew() {
     fetchContacts();
     loadTwilioConfig();
   }, [selectedTab]);
+
+  // Check for highlight query parameter
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    
+    // If highlight parameter exists, set it as search filter to show only that SMS
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   // Listen for real-time WebSocket updates
   useEffect(() => {
@@ -138,6 +154,16 @@ export default function SMSNew() {
     `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchTo.toLowerCase())
   );
 
+  // Filter messages by search query (for global search highlight)
+  const filteredMessages = messages.filter(msg => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    return msg.id.toLowerCase().includes(query) ||
+           msg.from.toLowerCase().includes(query) ||
+           msg.to.toLowerCase().includes(query) ||
+           msg.message.toLowerCase().includes(query);
+  });
+
   return (
     <div className="min-h-full">
       {/* Header */}
@@ -193,7 +219,7 @@ export default function SMSNew() {
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
           </div>
-        ) : messages.length === 0 ? (
+        ) : filteredMessages.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow">
             <ChatBubbleLeftRightIcon className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No messages</h3>
@@ -201,7 +227,7 @@ export default function SMSNew() {
           </div>
         ) : (
           <div className="bg-white shadow rounded-lg divide-y divide-gray-200">
-            {messages.map((msg) => (
+            {filteredMessages.map((msg) => (
               <div key={msg.id} className="p-4 hover:bg-gray-50">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">

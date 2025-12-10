@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import * as pipelinesService from '../services/pipelinesService';
 import { useAuth } from '../contexts/AuthContext';
@@ -34,6 +35,7 @@ interface Pipeline {
 }
 
 export default function PipelineSettings() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
@@ -47,9 +49,23 @@ export default function PipelineSettings() {
   const [isAddingStage, setIsAddingStage] = useState(false);
   const [showDeleteStageModal, setShowDeleteStageModal] = useState(false);
   const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   
   // Check if user can customize CRM (Company Admin = Admin = Sales Manager)
   const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
+
+  // Check for highlight query parameter
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    
+    // If highlight parameter exists, set it as search filter
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const resetStageForm = () => {
     setNewStageName('');

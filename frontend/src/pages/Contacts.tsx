@@ -197,10 +197,11 @@ export default function Contacts() {
     fetchUsers();
   }, []);
   
-  // Check for action and search query parameters
+  // Check for action, search, and highlight query parameters
   useEffect(() => {
     const action = searchParams.get('action');
     const search = searchParams.get('search');
+    const highlightId = searchParams.get('highlight');
     
     if (action === 'add') {
       setShowAddModal(true);
@@ -214,6 +215,14 @@ export default function Contacts() {
       // Remove the search parameter from URL after setting it
       searchParams.delete('search');
       setSearchParams(searchParams);
+    }
+    
+    // If highlight parameter exists, set it as search filter to show only that contact
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
 
@@ -612,17 +621,19 @@ export default function Contacts() {
     }
   };
   
-  // Filter contacts - search in full name, company, email, and phone
+  // Filter contacts - search in ID, full name, company, email, and phone
   const filteredContacts = contacts.filter(contact => {
     if (!searchQuery.trim()) return true;
     
     const query = searchQuery.toLowerCase().trim();
+    const id = contact.id?.toLowerCase() || '';
     const fullName = `${contact.first_name} ${contact.last_name}`.toLowerCase();
     const company = contact.company?.toLowerCase() || '';
     const email = contact.email?.toLowerCase() || '';
     const phone = contact.phone?.toLowerCase() || '';
     
-    return fullName.includes(query) || 
+    return id.includes(query) ||
+           fullName.includes(query) || 
            company.includes(query) || 
            email.includes(query) || 
            phone.includes(query);

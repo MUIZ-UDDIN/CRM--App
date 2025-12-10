@@ -84,13 +84,23 @@ export default function Activities() {
     };
   }, [showAddModal, showEditModal, showViewModal, showDeleteModal]);
   
-  // Check for action query parameter
+  // Check for action and highlight query parameters
   useEffect(() => {
     const action = searchParams.get('action');
+    const highlightId = searchParams.get('highlight');
+    
     if (action === 'add') {
       setShowAddModal(true);
       searchParams.delete('action');
       setSearchParams(searchParams);
+    }
+    
+    // If highlight parameter exists, set it as search filter to show only that activity
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
 
@@ -447,11 +457,12 @@ export default function Activities() {
       if (!searchQuery.trim()) return true;
       
       const query = searchQuery.toLowerCase().trim();
+      const id = activity.id?.toLowerCase() || '';
       const subject = activity.subject?.toLowerCase() || '';
       const description = activity.description?.toLowerCase() || '';
       const type = activity.type?.toLowerCase() || '';
       
-      return subject.includes(query) || description.includes(query) || type.includes(query);
+      return id.includes(query) || subject.includes(query) || description.includes(query) || type.includes(query);
     });
 
   // Pagination

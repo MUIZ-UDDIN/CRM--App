@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { EnvelopeIcon, PlusIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import toast from 'react-hot-toast';
@@ -17,9 +18,11 @@ interface Email {
 }
 
 export default function Inbox() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [composeForm, setComposeForm] = useState({
     to: '',
     subject: '',
@@ -36,6 +39,19 @@ export default function Inbox() {
     fetchContactEmails();
     loadTwilioEmails();
   }, []);
+
+  // Check for highlight query parameter
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    
+    // If highlight parameter exists, set it as search filter to show only that email
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
 
   const loadTwilioEmails = () => {
     // Load Twilio emails from localStorage (configured in settings)
@@ -174,6 +190,16 @@ export default function Inbox() {
     return new Date(dateString).toLocaleString();
   };
 
+  // Filter emails by search query (for global search highlight)
+  const filteredEmails = emails.filter(email => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase().trim();
+    return email.id.toLowerCase().includes(query) ||
+           email.subject.toLowerCase().includes(query) ||
+           email.from_address.toLowerCase().includes(query) ||
+           email.to_address.toLowerCase().includes(query);
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -212,7 +238,7 @@ export default function Inbox() {
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-4 sm:py-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           <div className="divide-y divide-gray-200">
-            {emails.length === 0 ? (
+            {filteredEmails.length === 0 ? (
               <div className="p-12 text-center text-gray-500">
                 <div className="w-12 h-12 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
                   <EnvelopeIcon className="w-6 h-6 text-gray-400" />
@@ -220,7 +246,7 @@ export default function Inbox() {
                 <p>No emails found</p>
               </div>
             ) : (
-              emails.map((email) => (
+              filteredEmails.map((email) => (
                 <div
                   key={email.id}
                   className={`p-3 sm:p-4 md:p-6 hover:bg-gray-50 ${

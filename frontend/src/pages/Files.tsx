@@ -80,13 +80,23 @@ export default function Files() {
     };
   }, [showUploadModal, showCreateFolderModal, showViewModal, showEditModal]);
 
-  // Check for action query parameter
+  // Check for action and highlight query parameters
   useEffect(() => {
     const action = searchParams.get('action');
+    const highlightId = searchParams.get('highlight');
+    
     if (action === 'upload') {
       setShowUploadModal(true);
       searchParams.delete('action');
       setSearchParams(searchParams);
+    }
+    
+    // If highlight parameter exists, set it as search filter to show only that file
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
 
@@ -623,6 +633,7 @@ export default function Files() {
     }
     
     const matchesSearch = 
+      file.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (file.tags && file.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
     

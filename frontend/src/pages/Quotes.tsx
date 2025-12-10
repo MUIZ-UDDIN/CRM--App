@@ -86,14 +86,24 @@ export default function Quotes() {
     resetQuoteForm();
   };
 
-  // Check for action query parameter
+  // Check for action and highlight query parameters
   useEffect(() => {
     const action = searchParams.get('action');
+    const highlightId = searchParams.get('highlight');
+    
     if (action === 'add') {
       resetQuoteForm();
       setShowAddModal(true);
       searchParams.delete('action');
       setSearchParams(searchParams);
+    }
+    
+    // If highlight parameter exists, set it as search filter to show only that quote
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
     }
   }, [searchParams]);
 
@@ -477,6 +487,7 @@ export default function Quotes() {
 
   const filteredQuotes = quotes.filter(quote => {
     const matchesSearch = 
+      quote.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       quote.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       quote.quote_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       getClientName(quote.client_id).toLowerCase().includes(searchQuery.toLowerCase());

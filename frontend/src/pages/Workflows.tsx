@@ -98,6 +98,19 @@ export default function Workflows() {
     fetchWorkflows();
   }, []);
 
+  // Check for highlight query parameter
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    
+    // If highlight parameter exists, set it as search filter to show only that workflow
+    if (highlightId) {
+      setSearchQuery(highlightId);
+      // Clear the highlight param after setting
+      searchParams.delete('highlight');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     const handleEntityChange = (event: any) => {
       const { entity_type, action } = event.detail;
@@ -336,6 +349,7 @@ export default function Workflows() {
   const filteredWorkflows = workflows.filter(workflow => {
     // Search filter
     const matchesSearch = searchQuery.trim() === '' || 
+      workflow.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
       workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       workflow.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       workflow.trigger.toLowerCase().includes(searchQuery.toLowerCase());
