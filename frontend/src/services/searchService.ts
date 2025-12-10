@@ -31,6 +31,11 @@ export interface GlobalSearchResponse {
   quotes: GlobalSearchResult[];
   files: GlobalSearchResult[];
   activities: GlobalSearchResult[];
+  pipelines: GlobalSearchResult[];
+  workflows: GlobalSearchResult[];
+  emails: GlobalSearchResult[];
+  sms: GlobalSearchResult[];
+  calls: GlobalSearchResult[];
   pages: NavigationResult[];
 }
 

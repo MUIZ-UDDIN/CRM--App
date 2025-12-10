@@ -1,5 +1,6 @@
 """
-Global Search API - Search across all entities (contacts, deals, quotes, files, activities, etc.)
+Global Search API - Search across all entities (contacts, deals, quotes, files, activities, 
+pipelines, workflows, emails, SMS, calls, etc.)
 """
 
 from fastapi import APIRouter, Depends, Query
@@ -12,10 +13,14 @@ import uuid
 from app.core.security import get_current_active_user
 from app.core.database import get_db
 from app.models.contacts import Contact
-from app.models.deals import Deal
+from app.models.deals import Deal, Pipeline, PipelineStage
 from app.models.quotes import Quote
 from app.models.activities import Activity
 from app.models.documents import Document
+from app.models.workflows import Workflow
+from app.models.emails import Email, EmailTemplate
+from app.models.sms import SMSMessage
+from app.models.calls import Call
 from app.middleware.tenant import get_tenant_context
 
 router = APIRouter(tags=["Search"])
@@ -53,6 +58,11 @@ class GlobalSearchResponse(BaseModel):
     quotes: List[GlobalSearchResult]
     files: List[GlobalSearchResult]
     activities: List[GlobalSearchResult]
+    pipelines: List[GlobalSearchResult]
+    workflows: List[GlobalSearchResult]
+    emails: List[GlobalSearchResult]
+    sms: List[GlobalSearchResult]
+    calls: List[GlobalSearchResult]
     pages: List[NavigationResult]
 
 
@@ -143,19 +153,26 @@ async def global_search(
     db: Session = Depends(get_db)
 ):
     """
-    Global search across all entities - contacts, deals, quotes, files, activities
+    Global search across all entities - contacts, deals, quotes, files, activities,
+    pipelines, workflows, emails, SMS, calls
     """
     query_lower = q.lower().strip()
     search_pattern = f"%{query_lower}%"
     
     context = get_tenant_context(current_user)
     company_id = uuid.UUID(current_user["company_id"]) if current_user.get("company_id") else None
+    user_id = uuid.UUID(current_user["id"]) if current_user.get("id") else None
     
     contacts_results = []
     deals_results = []
     quotes_results = []
     files_results = []
     activities_results = []
+    pipelines_results = []
+    workflows_results = []
+    emails_results = []
+    sms_results = []
+    calls_results = []
     pages_results = []
     
     # Search Contacts
@@ -206,7 +223,7 @@ async def global_search(
                 type="deal",
                 title=deal.title,
                 subtitle=f"${deal.value:,.2f}" if deal.value else None,
-                description=deal.stage if hasattr(deal, 'stage') else None,
+                description=deal.status.value if hasattr(deal.status, 'value') else str(deal.status),
                 path=f"/deals?highlight={deal.id}",
                 icon="currency"
             ))
@@ -292,6 +309,160 @@ async def global_search(
     except Exception as e:
         print(f"Error searching activities: {e}")
     
+    # Search Pipelines & Pipeline Stages
+    try:
+        # Search Pipelines
+        pipelines_query = db.query(Pipeline).filter(Pipeline.is_deleted == False)
+        if not context.is_super_admin() and company_id:
+            pipelines_query = pipelines_query.filter(Pipeline.company_id == company_id)
+        
+        pipelines_query = pipelines_query.filter(
+            or_(
+                Pipeline.name.ilike(search_pattern),
+                Pipeline.description.ilike(search_pattern)
+            )
+        ).limit(3)
+        
+        for pipeline in pipelines_query.all():
+            pipelines_results.append(GlobalSearchResult(
+                id=str(pipeline.id),
+                type="pipeline",
+                title=pipeline.name,
+                subtitle="Pipeline",
+                description=pipeline.description,
+                path=f"/pipeline-settings?highlight={pipeline.id}",
+                icon="chart"
+            ))
+        
+        # Search Pipeline Stages
+        stages_query = db.query(PipelineStage).filter(PipelineStage.is_deleted == False)
+        stages_query = stages_query.filter(
+            or_(
+                PipelineStage.name.ilike(search_pattern),
+                PipelineStage.description.ilike(search_pattern)
+            )
+        ).limit(3)
+        
+        for stage in stages_query.all():
+            pipelines_results.append(GlobalSearchResult(
+                id=str(stage.id),
+                type="pipeline_stage",
+                title=stage.name,
+                subtitle=f"Stage - {stage.probability}% probability",
+                description=stage.description,
+                path=f"/pipeline-settings?highlight={stage.id}",
+                icon="chart"
+            ))
+    except Exception as e:
+        print(f"Error searching pipelines: {e}")
+    
+    # Search Workflows
+    try:
+        workflows_query = db.query(Workflow).filter(Workflow.is_deleted == False)
+        if not context.is_super_admin() and company_id:
+            workflows_query = workflows_query.filter(Workflow.company_id == company_id)
+        
+        workflows_query = workflows_query.filter(
+            or_(
+                Workflow.name.ilike(search_pattern),
+                Workflow.description.ilike(search_pattern)
+            )
+        ).limit(5)
+        
+        for workflow in workflows_query.all():
+            workflows_results.append(GlobalSearchResult(
+                id=str(workflow.id),
+                type="workflow",
+                title=workflow.name,
+                subtitle=workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status),
+                description=workflow.description[:100] if workflow.description else None,
+                path=f"/workflows?highlight={workflow.id}",
+                icon="cog"
+            ))
+    except Exception as e:
+        print(f"Error searching workflows: {e}")
+    
+    # Search Emails
+    try:
+        emails_query = db.query(Email).filter(Email.is_deleted == False)
+        if not context.is_super_admin() and company_id:
+            emails_query = emails_query.filter(Email.company_id == company_id)
+        
+        emails_query = emails_query.filter(
+            or_(
+                Email.subject.ilike(search_pattern),
+                Email.to_email.ilike(search_pattern),
+                Email.from_email.ilike(search_pattern)
+            )
+        ).limit(5)
+        
+        for email in emails_query.all():
+            emails_results.append(GlobalSearchResult(
+                id=str(email.id),
+                type="email",
+                title=email.subject,
+                subtitle=f"To: {email.to_email}",
+                description=f"From: {email.from_email}",
+                path=f"/inbox?highlight={email.id}",
+                icon="envelope"
+            ))
+    except Exception as e:
+        print(f"Error searching emails: {e}")
+    
+    # Search SMS Messages
+    try:
+        sms_query = db.query(SMSMessage).filter(SMSMessage.is_deleted == False)
+        if not context.is_super_admin() and company_id:
+            sms_query = sms_query.filter(SMSMessage.company_id == company_id)
+        
+        sms_query = sms_query.filter(
+            or_(
+                SMSMessage.body.ilike(search_pattern),
+                SMSMessage.to_address.ilike(search_pattern),
+                SMSMessage.from_address.ilike(search_pattern)
+            )
+        ).limit(5)
+        
+        for sms in sms_query.all():
+            sms_results.append(GlobalSearchResult(
+                id=str(sms.id),
+                type="sms",
+                title=sms.body[:50] + "..." if len(sms.body) > 50 else sms.body,
+                subtitle=f"To: {sms.to_address}",
+                description=f"{sms.direction.value} - {sms.status.value}" if hasattr(sms.direction, 'value') else str(sms.direction),
+                path=f"/sms?highlight={sms.id}",
+                icon="chat"
+            ))
+    except Exception as e:
+        print(f"Error searching SMS: {e}")
+    
+    # Search Calls
+    try:
+        calls_query = db.query(Call).filter(Call.is_deleted == False)
+        if not context.is_super_admin() and company_id:
+            calls_query = calls_query.filter(Call.company_id == company_id)
+        
+        calls_query = calls_query.filter(
+            or_(
+                Call.to_address.ilike(search_pattern),
+                Call.from_address.ilike(search_pattern)
+            )
+        ).limit(5)
+        
+        for call in calls_query.all():
+            duration_str = f"{call.duration // 60}m {call.duration % 60}s" if call.duration else "0s"
+            calls_results.append(GlobalSearchResult(
+                id=str(call.id),
+                type="call",
+                title=f"Call to {call.to_address}" if call.direction.value == "OUTBOUND" else f"Call from {call.from_address}",
+                subtitle=f"Duration: {duration_str}",
+                description=f"{call.direction.value} - {call.status.value}" if hasattr(call.direction, 'value') else str(call.direction),
+                path=f"/calls?highlight={call.id}",
+                icon="phone"
+            ))
+    except Exception as e:
+        print(f"Error searching calls: {e}")
+    
     # Search Pages (navigation)
     for item in NAVIGATION_ITEMS:
         if (query_lower in item["name"].lower() or 
@@ -310,7 +481,12 @@ async def global_search(
         len(deals_results) + 
         len(quotes_results) + 
         len(files_results) + 
-        len(activities_results) + 
+        len(activities_results) +
+        len(pipelines_results) +
+        len(workflows_results) +
+        len(emails_results) +
+        len(sms_results) +
+        len(calls_results) +
         len(pages_results)
     )
     
@@ -322,5 +498,10 @@ async def global_search(
         quotes=quotes_results,
         files=files_results,
         activities=activities_results,
+        pipelines=pipelines_results,
+        workflows=workflows_results,
+        emails=emails_results,
+        sms=sms_results,
+        calls=calls_results,
         pages=pages_results
     )

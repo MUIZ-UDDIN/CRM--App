@@ -469,8 +469,13 @@ export default function MainLayout() {
           data.quotes?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Quote' }));
           data.files?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'File' }));
           data.activities?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Activity' }));
+          data.pipelines?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Pipeline' }));
+          data.workflows?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Workflow' }));
+          data.emails?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Email' }));
+          data.sms?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'SMS' }));
+          data.calls?.forEach((item: any) => allResults.push({ ...item, name: item.title, description: item.subtitle || item.description, category: 'Call' }));
           data.pages?.forEach((item: any) => allResults.push({ ...item, name: item.name, description: item.description, category: item.category }));
-          setSearchSuggestions(allResults.slice(0, 8));
+          setSearchSuggestions(allResults.slice(0, 10));
         }
       } catch (error) {
         console.error('Error fetching search suggestions:', error);
