@@ -621,15 +621,21 @@ export default function Files() {
   };
 
   const filteredFiles = files.filter(file => {
-    // Filter by current folder - folders use parent_id, files use folder_id
-    if (file.type === 'folder') {
-      // For folders, check parent_id
-      if (currentFolderId && file.parent_id !== currentFolderId) return false;
-      if (!currentFolderId && file.parent_id) return false;
-    } else {
-      // For files, check folder_id
-      if (currentFolderId && file.folder_id !== currentFolderId) return false;
-      if (!currentFolderId && file.folder_id) return false;
+    // Check if searching by ID (from global search highlight)
+    const isSearchingById = searchQuery && file.id.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    // If searching by ID, bypass folder filter to show the file regardless of folder
+    if (!isSearchingById) {
+      // Filter by current folder - folders use parent_id, files use folder_id
+      if (file.type === 'folder') {
+        // For folders, check parent_id
+        if (currentFolderId && file.parent_id !== currentFolderId) return false;
+        if (!currentFolderId && file.parent_id) return false;
+      } else {
+        // For files, check folder_id
+        if (currentFolderId && file.folder_id !== currentFolderId) return false;
+        if (!currentFolderId && file.folder_id) return false;
+      }
     }
     
     const matchesSearch = 

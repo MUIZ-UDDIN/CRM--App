@@ -187,7 +187,7 @@ async def global_search(
                 Contact.last_name.ilike(search_pattern),
                 Contact.email.ilike(search_pattern),
                 Contact.phone.ilike(search_pattern),
-                Contact.company_name.ilike(search_pattern)
+                Contact.company.ilike(search_pattern)
             )
         ).limit(5)
         
@@ -197,7 +197,7 @@ async def global_search(
                 type="contact",
                 title=f"{contact.first_name} {contact.last_name}",
                 subtitle=contact.email,
-                description=contact.company_name,
+                description=contact.company,
                 path=f"/contacts?highlight={contact.id}",
                 icon="users"
             ))
@@ -291,7 +291,7 @@ async def global_search(
         
         activities_query = activities_query.filter(
             or_(
-                Activity.title.ilike(search_pattern),
+                Activity.subject.ilike(search_pattern),
                 Activity.description.ilike(search_pattern)
             )
         ).limit(5)
@@ -300,8 +300,8 @@ async def global_search(
             activities_results.append(GlobalSearchResult(
                 id=str(activity.id),
                 type="activity",
-                title=activity.title,
-                subtitle=activity.activity_type.value if hasattr(activity.activity_type, 'value') else str(activity.activity_type),
+                title=activity.subject,
+                subtitle=activity.type.value if hasattr(activity.type, 'value') else str(activity.type),
                 description=activity.description[:100] if activity.description else None,
                 path=f"/activities?highlight={activity.id}",
                 icon="calendar"
