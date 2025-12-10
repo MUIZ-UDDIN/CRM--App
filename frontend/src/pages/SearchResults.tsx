@@ -110,6 +110,17 @@ export default function SearchResults() {
         return 'bg-yellow-100 text-yellow-700';
       case 'activity':
         return 'bg-orange-100 text-orange-700';
+      case 'pipeline':
+      case 'stage':
+        return 'bg-indigo-100 text-indigo-700';
+      case 'workflow':
+        return 'bg-gray-100 text-gray-700';
+      case 'email':
+        return 'bg-red-100 text-red-700';
+      case 'sms':
+        return 'bg-teal-100 text-teal-700';
+      case 'call':
+        return 'bg-cyan-100 text-cyan-700';
       default:
         return 'bg-gray-100 text-gray-700';
     }
@@ -309,6 +320,71 @@ export default function SearchResults() {
                   </h2>
                   <div className="space-y-2">
                     {results.activities.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Pipelines */}
+              {results.pipelines && results.pipelines.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <ChartBarIcon className="h-5 w-5 text-indigo-600" />
+                    Pipelines ({results.pipelines.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.pipelines.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Workflows */}
+              {results.workflows && results.workflows.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <CogIcon className="h-5 w-5 text-gray-600" />
+                    Workflows ({results.workflows.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.workflows.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Emails */}
+              {results.emails && results.emails.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <EnvelopeIcon className="h-5 w-5 text-red-600" />
+                    Emails ({results.emails.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.emails.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* SMS */}
+              {results.sms && results.sms.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <ChatBubbleLeftIcon className="h-5 w-5 text-teal-600" />
+                    SMS ({results.sms.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.sms.map(renderResultCard)}
+                  </div>
+                </div>
+              )}
+
+              {/* Calls */}
+              {results.calls && results.calls.length > 0 && (
+                <div>
+                  <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                    <PhoneIcon className="h-5 w-5 text-cyan-600" />
+                    Calls ({results.calls.length})
+                  </h2>
+                  <div className="space-y-2">
+                    {results.calls.map(renderResultCard)}
                   </div>
                 </div>
               )}
