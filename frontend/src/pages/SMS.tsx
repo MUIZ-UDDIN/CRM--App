@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChatBubbleLeftRightIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,12 +25,16 @@ interface SMSMessage {
 
 export default function SMSNew() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const highlightProcessed = useRef(false);
   const [messages, setMessages] = useState<SMSMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'inbox' | 'sent'>('inbox');
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Initialize searchQuery from URL highlight parameter
+  const initialHighlight = searchParams.get('highlight') || '';
+  const [searchQuery, setSearchQuery] = useState(initialHighlight);
   const { token } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
@@ -49,19 +53,18 @@ export default function SMSNew() {
     loadTwilioConfig();
   }, [selectedTab]);
 
-  // Check for highlight query parameter - run only once on mount
+  // Check for highlight query parameter - clean up URL after initial load
   useEffect(() => {
     const highlightId = searchParams.get('highlight');
     
-    // If highlight parameter exists, set it as search filter to show only that SMS
-    if (highlightId) {
-      setSearchQuery(highlightId);
-      // Clear the highlight param from URL
+    // Clean up URL params (remove highlight) without affecting state
+    if (highlightId && !highlightProcessed.current) {
+      highlightProcessed.current = true;
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Empty dependency - run only on mount
+  }, []); // Run only on mount
 
   // Listen for real-time WebSocket updates
   useEffect(() => {

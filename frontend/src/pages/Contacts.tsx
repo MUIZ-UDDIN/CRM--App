@@ -42,13 +42,17 @@ export default function Contacts() {
   const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
   const canImport = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
   const [searchParams, setSearchParams] = useSearchParams();
+  const highlightProcessed = useRef(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Initialize searchQuery from URL highlight parameter
+  const initialHighlight = searchParams.get('highlight') || '';
+  const [searchQuery, setSearchQuery] = useState(initialHighlight);
   const [filterType, setFilterType] = useState('all');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -197,38 +201,30 @@ export default function Contacts() {
     fetchUsers();
   }, []);
   
-  // Check for action, search, and highlight query parameters - run only once on mount
+  // Check for action, search, and highlight query parameters - clean up URL after initial load
   useEffect(() => {
     const action = searchParams.get('action');
     const search = searchParams.get('search');
     const highlightId = searchParams.get('highlight');
     
-    const newParams = new URLSearchParams(searchParams);
-    let paramsChanged = false;
-    
     if (action === 'add') {
       setShowAddModal(true);
-      newParams.delete('action');
-      paramsChanged = true;
     }
     
     if (search) {
       setSearchQuery(search);
-      newParams.delete('search');
-      paramsChanged = true;
     }
     
-    // If highlight parameter exists, set it as search filter to show only that contact
-    if (highlightId) {
-      setSearchQuery(highlightId);
-      newParams.delete('highlight');
-      paramsChanged = true;
-    }
-    
-    if (paramsChanged) {
+    // Clean up URL params (remove action, search, and highlight) without affecting state
+    if ((action || search || highlightId) && !highlightProcessed.current) {
+      highlightProcessed.current = true;
+      const newParams = new URLSearchParams(searchParams);
+      if (action) newParams.delete('action');
+      if (search) newParams.delete('search');
+      if (highlightId) newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Empty dependency - run only on mount
+  }, []); // Run only on mount
 
   // Fetch all contact types (called on mount and after changes)
   const fetchAllTypes = async () => {

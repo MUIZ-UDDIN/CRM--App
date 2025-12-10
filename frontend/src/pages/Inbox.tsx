@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { EnvelopeIcon, PlusIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
@@ -19,10 +19,14 @@ interface Email {
 
 export default function Inbox() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const highlightProcessed = useRef(false);
   const [emails, setEmails] = useState<Email[]>([]);
   const [loading, setLoading] = useState(true);
   const [showComposeModal, setShowComposeModal] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  
+  // Initialize searchQuery from URL highlight parameter
+  const initialHighlight = searchParams.get('highlight') || '';
+  const [searchQuery, setSearchQuery] = useState(initialHighlight);
   const [composeForm, setComposeForm] = useState({
     to: '',
     subject: '',
@@ -40,19 +44,18 @@ export default function Inbox() {
     loadTwilioEmails();
   }, []);
 
-  // Check for highlight query parameter - run only once on mount
+  // Check for highlight query parameter - clean up URL after initial load
   useEffect(() => {
     const highlightId = searchParams.get('highlight');
     
-    // If highlight parameter exists, set it as search filter to show only that email
-    if (highlightId) {
-      setSearchQuery(highlightId);
-      // Clear the highlight param from URL
+    // Clean up URL params (remove highlight) without affecting state
+    if (highlightId && !highlightProcessed.current) {
+      highlightProcessed.current = true;
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, []); // Empty dependency - run only on mount
+  }, []); // Run only on mount
 
   const loadTwilioEmails = () => {
     // Load Twilio emails from localStorage (configured in settings)
