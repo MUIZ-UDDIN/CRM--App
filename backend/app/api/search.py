@@ -364,6 +364,7 @@ async def global_search(
         if not context.is_super_admin() and company_id:
             workflows_query = workflows_query.filter(Workflow.company_id == company_id)
         
+        # Search by name or description (trigger_type is an enum, can't use ilike)
         workflows_query = workflows_query.filter(
             or_(
                 Workflow.name.ilike(search_pattern),
@@ -372,11 +373,12 @@ async def global_search(
         ).limit(5)
         
         for workflow in workflows_query.all():
+            trigger_display = workflow.trigger_type.value if hasattr(workflow.trigger_type, 'value') else str(workflow.trigger_type)
             workflows_results.append(GlobalSearchResult(
                 id=str(workflow.id),
                 type="workflow",
                 title=workflow.name,
-                subtitle=workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status),
+                subtitle=f"{workflow.status.value if hasattr(workflow.status, 'value') else str(workflow.status)} - {trigger_display}",
                 description=workflow.description[:100] if workflow.description else None,
                 path=f"/workflows?highlight={workflow.id}",
                 icon="cog"
