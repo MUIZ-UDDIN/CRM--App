@@ -197,34 +197,38 @@ export default function Contacts() {
     fetchUsers();
   }, []);
   
-  // Check for action, search, and highlight query parameters
+  // Check for action, search, and highlight query parameters - run only once on mount
   useEffect(() => {
     const action = searchParams.get('action');
     const search = searchParams.get('search');
     const highlightId = searchParams.get('highlight');
     
+    const newParams = new URLSearchParams(searchParams);
+    let paramsChanged = false;
+    
     if (action === 'add') {
       setShowAddModal(true);
-      // Remove the action parameter from URL
-      searchParams.delete('action');
-      setSearchParams(searchParams);
+      newParams.delete('action');
+      paramsChanged = true;
     }
     
     if (search) {
       setSearchQuery(search);
-      // Remove the search parameter from URL after setting it
-      searchParams.delete('search');
-      setSearchParams(searchParams);
+      newParams.delete('search');
+      paramsChanged = true;
     }
     
     // If highlight parameter exists, set it as search filter to show only that contact
     if (highlightId) {
       setSearchQuery(highlightId);
-      // Clear the highlight param after setting
-      searchParams.delete('highlight');
-      setSearchParams(searchParams, { replace: true });
+      newParams.delete('highlight');
+      paramsChanged = true;
     }
-  }, [searchParams]);
+    
+    if (paramsChanged) {
+      setSearchParams(newParams, { replace: true });
+    }
+  }, []); // Empty dependency - run only on mount
 
   // Fetch all contact types (called on mount and after changes)
   const fetchAllTypes = async () => {

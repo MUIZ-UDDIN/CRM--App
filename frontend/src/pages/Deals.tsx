@@ -337,25 +337,32 @@ export default function Deals() {
     fetchContacts();
   }, []);
 
-  // Check for action and highlight query parameters
+  // Check for action and highlight query parameters - run only once on mount
   useEffect(() => {
     const action = searchParams.get('action');
     const highlightId = searchParams.get('highlight');
     
     if (action === 'add') {
       setShowAddDealModal(true);
-      searchParams.delete('action');
-      setSearchParams(searchParams);
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('action');
+      setSearchParams(newParams);
     }
     
     // If highlight parameter exists, set it as search filter to show only that deal
     if (highlightId) {
       setSearchQuery(highlightId);
-      // Clear the highlight param after setting
-      searchParams.delete('highlight');
-      setSearchParams(searchParams, { replace: true });
+      // Expand all stages so the deal is visible regardless of which stage it's in
+      if (stages.length > 0) {
+        const allStageIds = stages.map(s => s.id);
+        setExpandedStages(allStageIds);
+      }
+      // Clear the highlight param from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlight');
+      setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams]);
+  }, [stages]); // Run when stages are loaded
 
   useEffect(() => {
     // Only fetch deals after stage mapping is loaded

@@ -84,25 +84,31 @@ export default function Activities() {
     };
   }, [showAddModal, showEditModal, showViewModal, showDeleteModal]);
   
-  // Check for action and highlight query parameters
+  // Check for action and highlight query parameters - run only once on mount
   useEffect(() => {
     const action = searchParams.get('action');
     const highlightId = searchParams.get('highlight');
     
+    const newParams = new URLSearchParams(searchParams);
+    let paramsChanged = false;
+    
     if (action === 'add') {
       setShowAddModal(true);
-      searchParams.delete('action');
-      setSearchParams(searchParams);
+      newParams.delete('action');
+      paramsChanged = true;
     }
     
     // If highlight parameter exists, set it as search filter to show only that activity
     if (highlightId) {
       setSearchQuery(highlightId);
-      // Clear the highlight param after setting
-      searchParams.delete('highlight');
-      setSearchParams(searchParams, { replace: true });
+      newParams.delete('highlight');
+      paramsChanged = true;
     }
-  }, [searchParams]);
+    
+    if (paramsChanged) {
+      setSearchParams(newParams, { replace: true });
+    }
+  }, []); // Empty dependency - run only on mount
 
   const fetchActivities = async () => {
     setLoading(true);

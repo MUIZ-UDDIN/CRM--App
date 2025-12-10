@@ -40,18 +40,19 @@ export default function Inbox() {
     loadTwilioEmails();
   }, []);
 
-  // Check for highlight query parameter
+  // Check for highlight query parameter - run only once on mount
   useEffect(() => {
     const highlightId = searchParams.get('highlight');
     
     // If highlight parameter exists, set it as search filter to show only that email
     if (highlightId) {
       setSearchQuery(highlightId);
-      // Clear the highlight param after setting
-      searchParams.delete('highlight');
-      setSearchParams(searchParams, { replace: true });
+      // Clear the highlight param from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlight');
+      setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams]);
+  }, []); // Empty dependency - run only on mount
 
   const loadTwilioEmails = () => {
     // Load Twilio emails from localStorage (configured in settings)

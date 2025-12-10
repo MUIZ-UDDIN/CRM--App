@@ -53,18 +53,19 @@ export default function CallsNew() {
   const [currentCallName, setCurrentCallName] = useState('');
   const [isIncomingCall, setIsIncomingCall] = useState(false);
 
-  // Check for highlight query parameter
+  // Check for highlight query parameter - run only once on mount
   useEffect(() => {
     const highlightId = searchParams.get('highlight');
     
     // If highlight parameter exists, set it as search filter to show only that call
     if (highlightId) {
       setSearchQuery(highlightId);
-      // Clear the highlight param after setting
-      searchParams.delete('highlight');
-      setSearchParams(searchParams, { replace: true });
+      // Clear the highlight param from URL
+      const newParams = new URLSearchParams(searchParams);
+      newParams.delete('highlight');
+      setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams]);
+  }, []); // Empty dependency - run only on mount
 
   useEffect(() => {
     fetchCalls();
