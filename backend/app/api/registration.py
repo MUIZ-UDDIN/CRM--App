@@ -74,9 +74,9 @@ class CompanyRegistrationRequest(BaseModel):
         if len(v) > 50:
             raise ValueError('First name is too long. Maximum 50 characters allowed.')
         
-        # Only allow letters, spaces, hyphens, and apostrophes
-        if not re.match(r'^[a-zA-Z\s\-\']+$', v):
-            raise ValueError('First name can only contain letters, spaces, hyphens, and apostrophes.')
+        # Block angle brackets (HTML tags) but allow most other characters
+        if '<' in v or '>' in v:
+            raise ValueError('First name cannot contain < or > characters.')
         
         # Don't use html.escape() as it increases string length (' becomes &#x27;)
         # The regex above already validates safe characters
@@ -100,9 +100,9 @@ class CompanyRegistrationRequest(BaseModel):
         if len(v) > 50:
             raise ValueError('Last name is too long. Maximum 50 characters allowed.')
         
-        # Only allow letters, spaces, hyphens, and apostrophes
-        if not re.match(r'^[a-zA-Z\s\-\']+$', v):
-            raise ValueError('Last name can only contain letters, spaces, hyphens, and apostrophes.')
+        # Block angle brackets (HTML tags) but allow most other characters
+        if '<' in v or '>' in v:
+            raise ValueError('Last name cannot contain < or > characters.')
         
         # Don't use html.escape() as it increases string length (' becomes &#x27;)
         # The regex above already validates safe characters
