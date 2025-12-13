@@ -984,7 +984,7 @@ export default function MainLayout() {
                   ) : (
                     <UserCircleIcon className="h-5 w-5 sm:h-6 sm:w-6" />
                   )}
-                  <span className="text-sm font-medium hidden md:block">{user?.firstName} {user?.lastName}</span>
+                  <span className="text-sm font-medium hidden md:block truncate max-w-[150px]" title={`${user?.firstName || ''} ${user?.lastName || ''}`}>{user?.firstName} {user?.lastName}</span>
                   <ChevronDownIcon className={clsx(
                     'h-4 w-4 transition-transform duration-200 hidden sm:block',
                     showProfile && 'rotate-180'

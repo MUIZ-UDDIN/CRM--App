@@ -195,9 +195,10 @@ export default function Register() {
         setSuccess(true);
         toast.success('Account created successfully! Redirecting...');
         
-        // Redirect to dashboard after 2 seconds
+        // Redirect to dashboard after 2 seconds with full page reload
+        // This ensures AuthContext re-initializes and fetches fresh user data
         setTimeout(() => {
-          navigate('/dashboard');
+          window.location.href = '/dashboard';
         }, 2000);
       }
     } catch (err: any) {
