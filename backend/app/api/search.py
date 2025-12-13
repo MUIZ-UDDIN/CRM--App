@@ -183,15 +183,30 @@ async def global_search(
         if not context.is_super_admin() and company_id:
             contacts_query = contacts_query.filter(Contact.company_id == company_id)
         
-        contacts_query = contacts_query.filter(
-            or_(
-                Contact.first_name.ilike(search_pattern),
-                Contact.last_name.ilike(search_pattern),
-                Contact.email.ilike(search_pattern),
-                Contact.phone.ilike(search_pattern),
-                Contact.company.ilike(search_pattern)
-            )
-        ).limit(5)
+        # Try to parse as UUID for ID search
+        try:
+            search_uuid = uuid.UUID(query_lower)
+            contacts_query = contacts_query.filter(
+                or_(
+                    Contact.id == search_uuid,
+                    Contact.first_name.ilike(search_pattern),
+                    Contact.last_name.ilike(search_pattern),
+                    Contact.email.ilike(search_pattern),
+                    Contact.phone.ilike(search_pattern),
+                    Contact.company.ilike(search_pattern)
+                )
+            ).limit(5)
+        except ValueError:
+            # Not a valid UUID, search by text fields only
+            contacts_query = contacts_query.filter(
+                or_(
+                    Contact.first_name.ilike(search_pattern),
+                    Contact.last_name.ilike(search_pattern),
+                    Contact.email.ilike(search_pattern),
+                    Contact.phone.ilike(search_pattern),
+                    Contact.company.ilike(search_pattern)
+                )
+            ).limit(5)
         
         for contact in contacts_query.all():
             # Use full name for highlight so the search bar shows the name, not the ID
@@ -215,12 +230,24 @@ async def global_search(
         if not context.is_super_admin() and company_id:
             deals_query = deals_query.filter(Deal.company_id == company_id)
         
-        deals_query = deals_query.filter(
-            or_(
-                Deal.title.ilike(search_pattern),
-                Deal.description.ilike(search_pattern)
-            )
-        ).limit(5)
+        # Try to parse as UUID for ID search
+        try:
+            search_uuid = uuid.UUID(query_lower)
+            deals_query = deals_query.filter(
+                or_(
+                    Deal.id == search_uuid,
+                    Deal.title.ilike(search_pattern),
+                    Deal.description.ilike(search_pattern)
+                )
+            ).limit(5)
+        except ValueError:
+            # Not a valid UUID, search by text fields only
+            deals_query = deals_query.filter(
+                or_(
+                    Deal.title.ilike(search_pattern),
+                    Deal.description.ilike(search_pattern)
+                )
+            ).limit(5)
         
         for deal in deals_query.all():
             # Use title for highlight so the search bar shows the name, not the ID
