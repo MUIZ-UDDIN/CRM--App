@@ -79,6 +79,23 @@ async def data_error_handler(request: Request, exc: DataError):
     )
 
 
+def sanitize_errors(errors: list) -> list:
+    """
+    Sanitize validation errors to ensure they are JSON serializable.
+    Converts any non-serializable objects (like ValueError) to strings.
+    """
+    sanitized = []
+    for error in errors:
+        sanitized_error = {
+            "loc": error.get("loc", []),
+            "msg": str(error.get("msg", "Validation error")),
+            "type": error.get("type", "value_error")
+        }
+        # Don't include 'ctx' as it may contain non-serializable objects
+        sanitized.append(sanitized_error)
+    return sanitized
+
+
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
     """
     Handle Pydantic validation errors
@@ -86,12 +103,15 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     # Log validation errors
     logger.warning(f"Validation error on {request.url.path}: {exc.errors()}")
     
+    # Sanitize errors to ensure JSON serialization works
+    sanitized_errors = sanitize_errors(exc.errors())
+    
     # Return validation errors (these are safe - no database info)
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
         content={
             "detail": "Validation error",
-            "errors": exc.errors(),
+            "errors": sanitized_errors,
             "error_code": "VALIDATION_ERROR"
         }
     )
