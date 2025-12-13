@@ -361,11 +361,11 @@ export default function Deals() {
   }, [searchParams]); // Run when searchParams change
 
   useEffect(() => {
-    // Only fetch deals after stage mapping is loaded
-    if (Object.keys(stageMapping).length > 0) {
+    // Only fetch deals after dynamic stages are loaded
+    if (dynamicStages.length > 0) {
       fetchDeals();
     }
-  }, [stageMapping]);
+  }, [dynamicStages]);
 
   // Auto-expand all stages when searching
   useEffect(() => {
@@ -379,14 +379,14 @@ export default function Deals() {
   // Auto-refresh when user returns to the page (cross-platform sync)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (!document.hidden && Object.keys(stageMapping).length > 0) {
+      if (!document.hidden && dynamicStages.length > 0) {
         fetchDeals();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [stageMapping]);
+  }, [dynamicStages]);
 
   // Listen for real-time WebSocket updates
   useEffect(() => {
