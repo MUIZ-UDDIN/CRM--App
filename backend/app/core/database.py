@@ -86,12 +86,13 @@ def get_sync_session():
     Get sync database session for migrations and admin tasks
     """
     from fastapi import HTTPException
+    from fastapi.exceptions import RequestValidationError
     session = SessionLocal()
     try:
         yield session
         session.commit()
-    except HTTPException:
-        # Don't log HTTPExceptions as errors - they're expected validation errors
+    except (HTTPException, RequestValidationError):
+        # Don't log HTTPExceptions or validation errors - they're expected
         session.rollback()
         raise
     except Exception as e:
