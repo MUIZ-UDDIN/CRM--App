@@ -2323,12 +2323,23 @@ export default function Settings() {
                                 type="text"
                                 placeholder="12/25"
                                 value={billingForm.cardExpiry}
+                                onKeyDown={(e) => {
+                                  // Handle backspace when cursor is after the slash (e.g., "12/")
+                                  if (e.key === 'Backspace' && billingForm.cardExpiry.endsWith('/')) {
+                                    e.preventDefault();
+                                    setBillingForm({...billingForm, cardExpiry: billingForm.cardExpiry.slice(0, -1)});
+                                  }
+                                }}
                                 onChange={(e) => {
-                                  let value = e.target.value.replace(/\D/g, '');
+                                  const rawValue = e.target.value;
+                                  let value = rawValue.replace(/\D/g, '');
                                   
-                                  // Auto-format as MM/YY
-                                  if (value.length >= 2) {
+                                  // Auto-format as MM/YY (only add slash if we have more than 2 digits)
+                                  if (value.length > 2) {
                                     value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                                  } else if (value.length === 2 && rawValue.length > billingForm.cardExpiry.length) {
+                                    // Only add slash when typing forward, not when deleting
+                                    value = value + '/';
                                   }
                                   
                                   setBillingForm({...billingForm, cardExpiry: value});
@@ -3572,12 +3583,23 @@ export default function Settings() {
                     type="text"
                     placeholder="12/25"
                     value={billingForm.cardExpiry}
+                    onKeyDown={(e) => {
+                      // Handle backspace when cursor is after the slash (e.g., "12/")
+                      if (e.key === 'Backspace' && billingForm.cardExpiry.endsWith('/')) {
+                        e.preventDefault();
+                        setBillingForm({...billingForm, cardExpiry: billingForm.cardExpiry.slice(0, -1)});
+                      }
+                    }}
                     onChange={(e) => {
-                      let value = e.target.value.replace(/\D/g, '');
+                      const rawValue = e.target.value;
+                      let value = rawValue.replace(/\D/g, '');
                       
-                      // Auto-format as MM/YY
-                      if (value.length >= 2) {
+                      // Auto-format as MM/YY (only add slash if we have more than 2 digits)
+                      if (value.length > 2) {
                         value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                      } else if (value.length === 2 && rawValue.length > billingForm.cardExpiry.length) {
+                        // Only add slash when typing forward, not when deleting
+                        value = value + '/';
                       }
                       
                       setBillingForm({...billingForm, cardExpiry: value});

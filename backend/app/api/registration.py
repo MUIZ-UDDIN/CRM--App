@@ -52,7 +52,9 @@ class CompanyRegistrationRequest(BaseModel):
         if not re.match(r'^[a-zA-Z0-9\s\-\.&,\'"()]+$', v):
             raise ValueError('Company name can only contain letters, numbers, spaces, and basic punctuation (- . & , \' " ( )).')
         
-        return html.escape(v)  # Sanitize output
+        # Don't use html.escape() as it increases string length (& becomes &amp;)
+        # The regex above already validates safe characters
+        return v
     
     @validator('admin_first_name')
     def validate_first_name(cls, v):
@@ -76,7 +78,9 @@ class CompanyRegistrationRequest(BaseModel):
         if not re.match(r'^[a-zA-Z\s\-\']+$', v):
             raise ValueError('First name can only contain letters, spaces, hyphens, and apostrophes.')
         
-        return html.escape(v)
+        # Don't use html.escape() as it increases string length (' becomes &#x27;)
+        # The regex above already validates safe characters
+        return v
     
     @validator('admin_last_name')
     def validate_last_name(cls, v):
@@ -100,7 +104,9 @@ class CompanyRegistrationRequest(BaseModel):
         if not re.match(r'^[a-zA-Z\s\-\']+$', v):
             raise ValueError('Last name can only contain letters, spaces, hyphens, and apostrophes.')
         
-        return html.escape(v)
+        # Don't use html.escape() as it increases string length (' becomes &#x27;)
+        # The regex above already validates safe characters
+        return v
     
     @validator('phone')
     def validate_phone(cls, v):
