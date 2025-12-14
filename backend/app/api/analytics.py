@@ -21,6 +21,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 from ..core.security import get_current_active_user
 from ..core.database import get_db
 from ..models.deals import Deal, Pipeline, PipelineStage, DealStatus
+from ..models.companies import Company
 from ..models.activities import Activity
 from ..models.emails import Email
 from ..models.calls import Call

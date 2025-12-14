@@ -315,6 +315,7 @@ export default function Analytics() {
   };
 
   // Pipeline data from API - show empty state if no data
+  // Use deal_count for pie chart value so all deals are visible regardless of dollar amount
   const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0
     ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => {
         // Truncate long stage names to max 20 characters
@@ -323,12 +324,13 @@ export default function Analytics() {
         return {
           name: truncatedName,
           fullName: stageName,
-          value: stage.total_value,
+          value: stage.deal_count,  // Use deal count instead of total_value for equal representation
+          totalValue: stage.total_value,  // Keep total value for tooltip
           deals: stage.deal_count,
           color: generateColorFromString(stageName, index)
         };
       })
-    : [{ name: 'No Data', fullName: 'No Data', value: 0, deals: 0, color: '#E5E7EB' }];
+    : [{ name: 'No Data', fullName: 'No Data', value: 0, totalValue: 0, deals: 0, color: '#E5E7EB' }];
   
 
   // Activity data from API - show zeros if no data
@@ -946,7 +948,9 @@ export default function Analytics() {
                   </Pie>
                   <Tooltip 
                     formatter={(value: any, name: any, props: any) => {
-                      return [`$${value.toLocaleString()}`, props.payload.fullName || name];
+                      // Show deals count and total value in tooltip
+                      const totalValue = props.payload.totalValue || 0;
+                      return [`${value} deals ($${totalValue.toLocaleString()})`, props.payload.fullName || name];
                     }}
                   />
                   <Legend 
