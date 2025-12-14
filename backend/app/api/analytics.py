@@ -1916,10 +1916,42 @@ async def export_analytics_pdf(
         stage_filters = [Deal.is_deleted == False, Deal.status == DealStatus.WON]
         if company_id:
             stage_filters.append(Deal.company_id == company_id)
-        if date_from:
-            stage_filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
-        if date_to:
-            stage_filters.append(Deal.created_at <= datetime.fromisoformat(date_to))
+        
+        # Use actual_close_date or updated_at for date filtering (same as dashboard)
+        if date_from and date_to:
+            date_from_obj = datetime.fromisoformat(date_from).date()
+            date_to_obj = datetime.fromisoformat(date_to).date()
+            stage_filters.append(
+                or_(
+                    and_(
+                        Deal.actual_close_date.isnot(None),
+                        func.date(Deal.actual_close_date) >= date_from_obj,
+                        func.date(Deal.actual_close_date) <= date_to_obj
+                    ),
+                    and_(
+                        Deal.actual_close_date.is_(None),
+                        func.date(Deal.updated_at) >= date_from_obj,
+                        func.date(Deal.updated_at) <= date_to_obj
+                    )
+                )
+            )
+        elif date_from:
+            date_from_obj = datetime.fromisoformat(date_from).date()
+            stage_filters.append(
+                or_(
+                    and_(Deal.actual_close_date.isnot(None), func.date(Deal.actual_close_date) >= date_from_obj),
+                    and_(Deal.actual_close_date.is_(None), func.date(Deal.updated_at) >= date_from_obj)
+                )
+            )
+        elif date_to:
+            date_to_obj = datetime.fromisoformat(date_to).date()
+            stage_filters.append(
+                or_(
+                    and_(Deal.actual_close_date.isnot(None), func.date(Deal.actual_close_date) <= date_to_obj),
+                    and_(Deal.actual_close_date.is_(None), func.date(Deal.updated_at) <= date_to_obj)
+                )
+            )
+        
         if pipeline_id:
             stage_filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
         
