@@ -141,31 +141,59 @@ async def get_pipeline_analytics(
     if pipeline_id:
         filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
     
-    # Get pipeline analytics - group WON deals by Pipeline (not stage) for better distribution
-    # When deals are won, they often move to "Closed Won" stage, so grouping by pipeline is more meaningful
-    pipeline_stats = db.query(
-        Pipeline.id,
-        Pipeline.name,
-        func.count(Deal.id).label('deal_count'),
-        func.sum(Deal.value).label('total_value'),
-        func.avg(Deal.value).label('avg_value')
-    ).join(Deal, Deal.pipeline_id == Pipeline.id)\
-     .filter(and_(*filters))\
-     .group_by(Pipeline.id, Pipeline.name)\
-     .all()
-    
+    # Get pipeline analytics based on user role:
+    # - Super Admin: Group by Company name (sees all companies)
+    # - Others: Group by Stage name (sees their company/team data)
     pipeline_analytics = []
-    for pipeline in pipeline_stats:
-        pipeline_analytics.append({
-            "stage_id": str(pipeline.id),
-            "stage_name": pipeline.name,  # Using pipeline name instead of stage name
-            "deal_count": pipeline.deal_count or 0,
-            "total_value": float(pipeline.total_value or 0),
-            "avg_value": float(pipeline.avg_value or 0),
-            "deals_won": pipeline.deal_count or 0,  # All are won deals
-            "deals_lost": 0,
-            "win_rate": 100.0  # All are won
-        })
+    
+    if access_level == "all":
+        # Super Admin: Group WON deals by Company
+        company_stats = db.query(
+            Company.id,
+            Company.name,
+            func.count(Deal.id).label('deal_count'),
+            func.sum(Deal.value).label('total_value'),
+            func.avg(Deal.value).label('avg_value')
+        ).join(Deal, Deal.company_id == Company.id)\
+         .filter(and_(*filters))\
+         .group_by(Company.id, Company.name)\
+         .all()
+        
+        for company in company_stats:
+            pipeline_analytics.append({
+                "stage_id": str(company.id),
+                "stage_name": company.name,  # Company name for super admin
+                "deal_count": company.deal_count or 0,
+                "total_value": float(company.total_value or 0),
+                "avg_value": float(company.avg_value or 0),
+                "deals_won": company.deal_count or 0,
+                "deals_lost": 0,
+                "win_rate": 100.0
+            })
+    else:
+        # Other users: Group WON deals by Stage
+        stage_stats = db.query(
+            PipelineStage.id,
+            PipelineStage.name,
+            func.count(Deal.id).label('deal_count'),
+            func.sum(Deal.value).label('total_value'),
+            func.avg(Deal.value).label('avg_value')
+        ).join(Deal, Deal.stage_id == PipelineStage.id)\
+         .filter(and_(*filters))\
+         .group_by(PipelineStage.id, PipelineStage.name)\
+         .all()
+        
+        for stage in stage_stats:
+            pipeline_analytics.append({
+                "stage_id": str(stage.id),
+                "stage_name": stage.name,  # Stage name for company users
+                "deal_count": stage.deal_count or 0,
+                "total_value": float(stage.total_value or 0),
+                "avg_value": float(stage.avg_value or 0),
+                "deals_won": stage.deal_count or 0,
+                "deals_lost": 0,
+                "win_rate": 100.0
+            })
     
     # Get summary
     total_deals = db.query(func.count(Deal.id)).filter(and_(*filters)).scalar() or 0
