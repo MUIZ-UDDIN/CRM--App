@@ -294,24 +294,25 @@ export default function Analytics() {
         { month: 'Jun', revenue: 0, deals: 0, target: 0 },
       ];
 
-  // Extended color palette for pipeline stages - 15 distinct colors to avoid repetition
-  const PIPELINE_COLORS = [
-    '#3B82F6', // Blue
-    '#EAB308', // Yellow
-    '#F97316', // Orange
-    '#10B981', // Green
-    '#8B5CF6', // Purple
-    '#EC4899', // Pink
-    '#06B6D4', // Cyan
-    '#EF4444', // Red
-    '#14B8A6', // Teal
-    '#F59E0B', // Amber
-    '#6366F1', // Indigo
-    '#84CC16', // Lime
-    '#A855F7', // Violet
-    '#0EA5E9', // Sky
-    '#F43F5E', // Rose
-  ];
+  // Generate a unique color based on string hash - ensures each stage gets a unique color
+  const generateColorFromString = (str: string, index: number): string => {
+    // Create a hash from the string
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      hash = hash & hash;
+    }
+    
+    // Use golden ratio to spread hues evenly, combined with index for additional spread
+    const goldenRatio = 0.618033988749895;
+    const hue = ((hash * goldenRatio + index * 0.137) % 1) * 360;
+    
+    // Keep saturation and lightness in good visible ranges
+    const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
+    const lightness = 45 + (Math.abs(hash >> 8) % 15); // 45-60%
+    
+    return `hsl(${Math.abs(hue)}, ${saturation}%, ${lightness}%)`;
+  };
 
   // Pipeline data from API - show empty state if no data
   const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0
@@ -324,7 +325,7 @@ export default function Analytics() {
           fullName: stageName,
           value: stage.total_value,
           deals: stage.deal_count,
-          color: PIPELINE_COLORS[index % PIPELINE_COLORS.length]
+          color: generateColorFromString(stageName, index)
         };
       })
     : [{ name: 'No Data', fullName: 'No Data', value: 0, deals: 0, color: '#E5E7EB' }];
