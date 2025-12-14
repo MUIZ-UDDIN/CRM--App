@@ -140,34 +140,30 @@ async def get_pipeline_analytics(
     if pipeline_id:
         filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
     
-    # Get stage analytics
-    stage_stats = db.query(
-        PipelineStage.id,
-        PipelineStage.name,
+    # Get pipeline analytics - group WON deals by Pipeline (not stage) for better distribution
+    # When deals are won, they often move to "Closed Won" stage, so grouping by pipeline is more meaningful
+    pipeline_stats = db.query(
+        Pipeline.id,
+        Pipeline.name,
         func.count(Deal.id).label('deal_count'),
         func.sum(Deal.value).label('total_value'),
-        func.avg(Deal.value).label('avg_value'),
-        func.sum(case((Deal.status == DealStatus.WON, 1), else_=0)).label('deals_won'),
-        func.sum(case((Deal.status == DealStatus.LOST, 1), else_=0)).label('deals_lost')
-    ).join(Deal, Deal.stage_id == PipelineStage.id)\
+        func.avg(Deal.value).label('avg_value')
+    ).join(Deal, Deal.pipeline_id == Pipeline.id)\
      .filter(and_(*filters))\
-     .group_by(PipelineStage.id, PipelineStage.name)\
+     .group_by(Pipeline.id, Pipeline.name)\
      .all()
     
     pipeline_analytics = []
-    for stage in stage_stats:
-        total_closed = (stage.deals_won or 0) + (stage.deals_lost or 0)
-        win_rate = (stage.deals_won / total_closed * 100) if total_closed > 0 else 0
-        
+    for pipeline in pipeline_stats:
         pipeline_analytics.append({
-            "stage_id": str(stage.id),
-            "stage_name": stage.name,
-            "deal_count": stage.deal_count or 0,
-            "total_value": float(stage.total_value or 0),
-            "avg_value": float(stage.avg_value or 0),
-            "deals_won": stage.deals_won or 0,
-            "deals_lost": stage.deals_lost or 0,
-            "win_rate": round(win_rate, 2)
+            "stage_id": str(pipeline.id),
+            "stage_name": pipeline.name,  # Using pipeline name instead of stage name
+            "deal_count": pipeline.deal_count or 0,
+            "total_value": float(pipeline.total_value or 0),
+            "avg_value": float(pipeline.avg_value or 0),
+            "deals_won": pipeline.deal_count or 0,  # All are won deals
+            "deals_lost": 0,
+            "win_rate": 100.0  # All are won
         })
     
     # Get summary
