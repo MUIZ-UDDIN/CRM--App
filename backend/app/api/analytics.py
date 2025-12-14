@@ -63,7 +63,7 @@ async def get_pipeline_analytics(
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
-    """Get pipeline analytics with real database queries - shows ALL deals by stage"""
+    """Get pipeline analytics with real database queries - shows only WON deals by stage to match dashboard"""
     
     # Check analytics permissions
     access_level = enforce_analytics_permissions(current_user, "pipeline")
@@ -72,8 +72,8 @@ async def get_pipeline_analytics(
     company_id = current_user.get('company_id')
     
     # Build query filters based on access level
-    # Show ALL deals by stage (not just WON) - Pipeline by Stage should show deal distribution
-    filters = [Deal.is_deleted == False]
+    # Show only WON deals by stage to match dashboard metrics
+    filters = [Deal.is_deleted == False, Deal.status == DealStatus.WON]
     
     # Apply access level filters
     if access_level == "all":
@@ -101,14 +101,40 @@ async def get_pipeline_analytics(
         # Regular user can see own data
         filters.append(Deal.owner_id == owner_id)
     
-    # Apply date filters - use created_at for pipeline distribution (when deals were created)
-    # This shows deals created within the date range
-    if date_from:
-        date_from_obj = datetime.fromisoformat(date_from).date()
-        filters.append(func.date(Deal.created_at) >= date_from_obj)
-    if date_to:
-        date_to_obj = datetime.fromisoformat(date_to).date()
-        filters.append(func.date(Deal.created_at) <= date_to_obj)
+    # Parse dates for filtering
+    date_from_obj = datetime.fromisoformat(date_from).date() if date_from else None
+    date_to_obj = datetime.fromisoformat(date_to).date() if date_to else None
+    
+    # Apply date filters - use actual_close_date or updated_at for WON deals (same as dashboard)
+    if date_from_obj and date_to_obj:
+        filters.append(
+            or_(
+                and_(
+                    Deal.actual_close_date.isnot(None),
+                    func.date(Deal.actual_close_date) >= date_from_obj,
+                    func.date(Deal.actual_close_date) <= date_to_obj
+                ),
+                and_(
+                    Deal.actual_close_date.is_(None),
+                    func.date(Deal.updated_at) >= date_from_obj,
+                    func.date(Deal.updated_at) <= date_to_obj
+                )
+            )
+        )
+    elif date_from_obj:
+        filters.append(
+            or_(
+                and_(Deal.actual_close_date.isnot(None), func.date(Deal.actual_close_date) >= date_from_obj),
+                and_(Deal.actual_close_date.is_(None), func.date(Deal.updated_at) >= date_from_obj)
+            )
+        )
+    elif date_to_obj:
+        filters.append(
+            or_(
+                and_(Deal.actual_close_date.isnot(None), func.date(Deal.actual_close_date) <= date_to_obj),
+                and_(Deal.actual_close_date.is_(None), func.date(Deal.updated_at) <= date_to_obj)
+            )
+        )
     if user_id:
         filters.append(Deal.owner_id == uuid.UUID(user_id))
     if pipeline_id:
