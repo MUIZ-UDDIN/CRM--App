@@ -1909,11 +1909,11 @@ async def export_analytics_pdf(
         ]
     
     elif report_type == "pipeline":
-        # Pipeline Analysis Report
+        # Pipeline Analysis Report - Only show WON deals to match analytics dashboard
         from ..models.deals import Pipeline as PipelineModel, PipelineStage
         
-        # Get pipeline stages data
-        stage_filters = [Deal.is_deleted == False]
+        # Get pipeline stages data - ONLY WON DEALS
+        stage_filters = [Deal.is_deleted == False, Deal.status == DealStatus.WON]
         if company_id:
             stage_filters.append(Deal.company_id == company_id)
         if date_from:
