@@ -294,25 +294,29 @@ export default function Analytics() {
         { month: 'Jun', revenue: 0, deals: 0, target: 0 },
       ];
 
-  // Generate a unique color based on string hash - ensures each stage gets a unique color
-  const generateColorFromString = (str: string, index: number): string => {
-    // Create a hash from the string
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      hash = str.charCodeAt(i) + ((hash << 5) - hash);
-      hash = hash & hash;
-    }
-    
-    // Use golden ratio to spread hues evenly, combined with index for additional spread
-    const goldenRatio = 0.618033988749895;
-    const hue = ((hash * goldenRatio + index * 0.137) % 1) * 360;
-    
-    // Keep saturation and lightness in good visible ranges
-    const saturation = 65 + (Math.abs(hash) % 20); // 65-85%
-    const lightness = 45 + (Math.abs(hash >> 8) % 15); // 45-60%
-    
-    return `hsl(${Math.abs(hue)}, ${saturation}%, ${lightness}%)`;
-  };
+  // Predefined distinct colors for pie chart - ensures maximum visual distinction
+  const DISTINCT_COLORS = [
+    '#3B82F6', // Blue
+    '#EF4444', // Red
+    '#10B981', // Green
+    '#F59E0B', // Amber
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink
+    '#06B6D4', // Cyan
+    '#F97316', // Orange
+    '#14B8A6', // Teal
+    '#6366F1', // Indigo
+    '#84CC16', // Lime
+    '#A855F7', // Violet
+    '#0EA5E9', // Sky
+    '#F43F5E', // Rose
+    '#22C55E', // Emerald
+    '#EAB308', // Yellow
+    '#7C3AED', // Purple Dark
+    '#DB2777', // Pink Dark
+    '#0891B2', // Cyan Dark
+    '#EA580C', // Orange Dark
+  ];
 
   // Pipeline data from API - show empty state if no data
   // Use deal_count for pie chart value so all deals are visible regardless of dollar amount
@@ -327,7 +331,7 @@ export default function Analytics() {
           value: stage.deal_count,  // Use deal count instead of total_value for equal representation
           totalValue: stage.total_value,  // Keep total value for tooltip
           deals: stage.deal_count,
-          color: generateColorFromString(stageName, index)
+          color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
         };
       })
     : [{ name: 'No Data', fullName: 'No Data', value: 0, totalValue: 0, deals: 0, color: '#E5E7EB' }];
