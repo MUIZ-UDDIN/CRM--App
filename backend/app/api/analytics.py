@@ -1836,6 +1836,7 @@ async def export_analytics_pdf(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     pipeline_id: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
     report_type: Optional[str] = Query("sales", description="Report type: sales, pipeline, activity, contacts, revenue"),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
@@ -1843,11 +1844,25 @@ async def export_analytics_pdf(
     """Export analytics data to PDF with support for different report types"""
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
+    # Check for super admin - same logic as dashboard
+    is_superuser = current_user.get("is_superuser", False) or current_user.get("role", "").lower() == "super_admin"
+    filter_user_id = uuid.UUID(user_id) if user_id else None
     
-    # Build filters
+    # Parse dates
+    date_from_obj = datetime.fromisoformat(date_from).date() if date_from else None
+    date_to_obj = datetime.fromisoformat(date_to).date() if date_to else None
+    
+    # Build filters - matching dashboard logic exactly
     filters = [Deal.is_deleted == False]
-    if company_id:
+    
+    # User/Company filtering - Super Admin sees all companies (same as dashboard)
+    if filter_user_id:
+        filters.append(Deal.owner_id == filter_user_id)
+    elif not is_superuser and company_id:
+        # Only filter by company if NOT super admin
         filters.append(Deal.company_id == company_id)
+    # If is_superuser and no filter_user_id, don't add company filter (see all companies)
+    
     if date_from:
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
     if date_to:
@@ -1912,15 +1927,19 @@ async def export_analytics_pdf(
         # Pipeline Analysis Report - Only show WON deals to match analytics dashboard
         from ..models.deals import Pipeline as PipelineModel, PipelineStage
         
-        # Get pipeline stages data - ONLY WON DEALS
+        # Get pipeline stages data - ONLY WON DEALS (same filters as dashboard)
         stage_filters = [Deal.is_deleted == False, Deal.status == DealStatus.WON]
-        if company_id:
+        
+        # User/Company filtering - Super Admin sees all companies (same as dashboard)
+        if filter_user_id:
+            stage_filters.append(Deal.owner_id == filter_user_id)
+        elif not is_superuser and company_id:
+            # Only filter by company if NOT super admin
             stage_filters.append(Deal.company_id == company_id)
+        # If is_superuser and no filter_user_id, don't add company filter (see all companies)
         
         # Use actual_close_date or updated_at for date filtering (same as dashboard)
-        if date_from and date_to:
-            date_from_obj = datetime.fromisoformat(date_from).date()
-            date_to_obj = datetime.fromisoformat(date_to).date()
+        if date_from_obj and date_to_obj:
             stage_filters.append(
                 or_(
                     and_(
@@ -1935,16 +1954,14 @@ async def export_analytics_pdf(
                     )
                 )
             )
-        elif date_from:
-            date_from_obj = datetime.fromisoformat(date_from).date()
+        elif date_from_obj:
             stage_filters.append(
                 or_(
                     and_(Deal.actual_close_date.isnot(None), func.date(Deal.actual_close_date) >= date_from_obj),
                     and_(Deal.actual_close_date.is_(None), func.date(Deal.updated_at) >= date_from_obj)
                 )
             )
-        elif date_to:
-            date_to_obj = datetime.fromisoformat(date_to).date()
+        elif date_to_obj:
             stage_filters.append(
                 or_(
                     and_(Deal.actual_close_date.isnot(None), func.date(Deal.actual_close_date) <= date_to_obj),
