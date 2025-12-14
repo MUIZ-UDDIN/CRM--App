@@ -294,6 +294,25 @@ export default function Analytics() {
         { month: 'Jun', revenue: 0, deals: 0, target: 0 },
       ];
 
+  // Extended color palette for pipeline stages - 15 distinct colors to avoid repetition
+  const PIPELINE_COLORS = [
+    '#3B82F6', // Blue
+    '#EAB308', // Yellow
+    '#F97316', // Orange
+    '#10B981', // Green
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink
+    '#06B6D4', // Cyan
+    '#EF4444', // Red
+    '#14B8A6', // Teal
+    '#F59E0B', // Amber
+    '#6366F1', // Indigo
+    '#84CC16', // Lime
+    '#A855F7', // Violet
+    '#0EA5E9', // Sky
+    '#F43F5E', // Rose
+  ];
+
   // Pipeline data from API - show empty state if no data
   const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0
     ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => {
@@ -305,7 +324,7 @@ export default function Analytics() {
           fullName: stageName,
           value: stage.total_value,
           deals: stage.deal_count,
-          color: ['#3B82F6', '#EAB308', '#F97316', '#10B981', '#8B5CF6'][index % 5]
+          color: PIPELINE_COLORS[index % PIPELINE_COLORS.length]
         };
       })
     : [{ name: 'No Data', fullName: 'No Data', value: 0, deals: 0, color: '#E5E7EB' }];
