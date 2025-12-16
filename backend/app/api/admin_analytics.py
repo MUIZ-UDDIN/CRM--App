@@ -12,7 +12,7 @@ import uuid
 from app.core.database import get_db
 from app.core.security import get_current_active_user
 from app.models.deals import Deal, Pipeline, PipelineStage, DealStatus
-from app.models.activities import Activity
+from app.models.activities import Activity, ActivityStatus
 from app.models.contacts import Contact
 from app.models.users import User, Team
 from app.models.companies import Company
@@ -117,7 +117,7 @@ async def get_admin_dashboard_analytics(
         # Get recent activities with role-based filtering
         # Recent Activities = COMPLETED activities (what was done recently)
         activities_query = db.query(Activity).filter(
-            Activity.status == 'completed',
+            Activity.status == ActivityStatus.COMPLETED,
             Activity.is_deleted == False
         )
         if user_role == 'super_admin':
@@ -156,11 +156,11 @@ async def get_admin_dashboard_analytics(
                 continue
         
         # Get upcoming activities with role-based filtering
-        # Upcoming Activities = PENDING/SCHEDULED activities with future due dates
+        # Upcoming Activities = PENDING activities with future due dates
         now = datetime.now()
         upcoming_query = db.query(Activity).filter(
             Activity.due_date >= now,
-            Activity.status.in_(['pending', 'scheduled', 'in_progress']),
+            Activity.status == ActivityStatus.PENDING,
             Activity.is_deleted == False
         )
         if user_role == 'super_admin':
@@ -186,12 +186,8 @@ async def get_admin_dashboard_analytics(
         for activity in upcoming_query.all():
             try:
                 user = db.query(User).filter(User.id == activity.owner_id).first()
-                # Determine display status - show overdue if due_date has passed
+                # Get status value as string
                 activity_status = str(activity.status.value) if hasattr(activity.status, 'value') else str(activity.status)
-                if activity.due_date and activity.due_date < now and activity_status in ['pending', 'scheduled', 'in_progress']:
-                    display_status = 'overdue'
-                else:
-                    display_status = activity_status
                 
                 upcoming_activities.append({
                     "id": str(activity.id),
@@ -199,7 +195,7 @@ async def get_admin_dashboard_analytics(
                     "title": activity.subject or f"{activity.type} activity",
                     "user_name": f"{user.first_name} {user.last_name}" if user else "Unknown",
                     "due_date": activity.due_date.isoformat() if activity.due_date else None,
-                    "status": display_status
+                    "status": activity_status
                 })
             except Exception as e:
                 logger.error(f"Error processing upcoming activity: {str(e)}")
