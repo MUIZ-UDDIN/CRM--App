@@ -338,13 +338,14 @@ function SuperAdminDashboard() {
                   const maxValue = Math.max(...pipelineStages.map(s => s.total_value || 0));
                   return pipelineStages.slice(0, showAllStages ? pipelineStages.length : 4).map((stage) => {
                     const isHighest = stage.total_value === maxValue;
-                    // Calculate bar width based on VALUE using square root scale
-                    // This gives better visual distinction between small and large values
+                    // Calculate bar width based on VALUE using logarithmic scale
+                    // This ensures small values are still visible while showing proportional differences
                     let barWidth = 0;
                     if (stage.total_value > 0 && maxValue > 0) {
-                      // Square root scale: sqrt(value) / sqrt(max) * 100
-                      // Better than log for showing differences in smaller values
-                      barWidth = Math.max(3, (Math.sqrt(stage.total_value) / Math.sqrt(maxValue)) * 100);
+                      // Use log scale: log(value+1) / log(max+1) * 100
+                      const logValue = Math.log10(stage.total_value + 1);
+                      const logMax = Math.log10(maxValue + 1);
+                      barWidth = Math.max(5, (logValue / logMax) * 100);
                     }
                     return (
                       <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
