@@ -338,6 +338,8 @@ function SuperAdminDashboard() {
                   const maxValue = Math.max(...pipelineStages.map(s => s.total_value || 0));
                   return pipelineStages.slice(0, showAllStages ? pipelineStages.length : 4).map((stage) => {
                     const isHighest = stage.total_value === maxValue;
+                    // Ensure minimum 3% width so all stages are visible, max 100%
+                    const barWidth = stage.total_value > 0 ? Math.max(3, Math.min(100, stage.percentage || 0)) : 0;
                     return (
                       <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
                         <div className="flex items-center justify-between mb-2">
@@ -360,7 +362,7 @@ function SuperAdminDashboard() {
                                 ? 'bg-gradient-to-r from-green-500 to-green-600' 
                                 : 'bg-gradient-to-r from-blue-500 to-blue-600'
                             }`}
-                            style={{ width: `${stage.percentage}%` }}
+                            style={{ width: `${barWidth}%` }}
                           >
                           </div>
                         </div>
