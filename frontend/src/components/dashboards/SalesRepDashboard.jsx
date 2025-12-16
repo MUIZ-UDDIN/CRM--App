@@ -263,8 +263,16 @@ function SalesRepDashboard() {
                   const maxValue = Math.max(...dashboardData.pipeline_stages.map(s => s.total_value || 0));
                   return dashboardData.pipeline_stages.slice(0, showAllStages ? dashboardData.pipeline_stages.length : 4).map((stage) => {
                     const isHighest = stage.total_value === maxValue;
-                    // Ensure minimum 3% width so all stages are visible, max 100%
-                    const barWidth = stage.total_value > 0 ? Math.max(3, Math.min(100, stage.percentage || 0)) : 0;
+                    // Calculate bar width based on VALUE (not deal count) using logarithmic scale
+                    // This ensures small values are still visible while showing proportional differences
+                    let barWidth = 0;
+                    if (stage.total_value > 0 && maxValue > 0) {
+                      // Use log scale: log(value+1) / log(max+1) * 100
+                      // This gives better visual distribution for large value ranges
+                      const logValue = Math.log10(stage.total_value + 1);
+                      const logMax = Math.log10(maxValue + 1);
+                      barWidth = Math.max(5, (logValue / logMax) * 100);
+                    }
                     return (
                       <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
                         <div className="flex items-center justify-between mb-2">
