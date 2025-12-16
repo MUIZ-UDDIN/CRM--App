@@ -217,6 +217,7 @@ function SalesManagerDashboard() {
                             ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
                             ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
                             ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                            ${activity.status === 'overdue' ? 'bg-red-100 text-red-800' : ''}
                           `}>
                             {activity.status ? activity.status.charAt(0).toUpperCase() + activity.status.slice(1) : ''}
                           </span>
@@ -267,6 +268,7 @@ function SalesManagerDashboard() {
                             ${activity.status === 'completed' ? 'bg-green-100 text-green-800' : ''}
                             ${activity.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
                             ${activity.status === 'cancelled' ? 'bg-red-100 text-red-800' : ''}
+                            ${activity.status === 'overdue' ? 'bg-red-100 text-red-800' : ''}
                           `}>
                             {activity.status ? activity.status.charAt(0).toUpperCase() + activity.status.slice(1) : ''}
                           </span>

@@ -115,8 +115,9 @@ async def get_admin_dashboard_analytics(
             ).scalar() or 0
         
         # Get recent activities with role-based filtering
+        # Recent Activities = COMPLETED activities (what was done recently)
         activities_query = db.query(Activity).filter(
-            Activity.created_at >= datetime.now() - timedelta(days=30),
+            Activity.status == 'completed',
             Activity.is_deleted == False
         )
         if user_role == 'super_admin':
@@ -137,7 +138,7 @@ async def get_admin_dashboard_analytics(
                 Activity.company_id == company_id,
                 Activity.owner_id == user_id
             )
-        activities_query = activities_query.order_by(Activity.created_at.desc()).limit(5)
+        activities_query = activities_query.order_by(Activity.updated_at.desc()).limit(5)
         
         for activity in activities_query.all():
             try:
@@ -147,17 +148,19 @@ async def get_admin_dashboard_analytics(
                     "type": str(activity.type.value) if hasattr(activity.type, 'value') else str(activity.type),
                     "title": activity.subject or f"{activity.type} activity",
                     "user_name": f"{user.first_name} {user.last_name}" if user else "Unknown",
-                    "created_at": activity.created_at.isoformat(),
-                    "status": str(activity.status.value) if hasattr(activity.status, 'value') else str(activity.status)
+                    "created_at": activity.updated_at.isoformat() if activity.updated_at else activity.created_at.isoformat(),
+                    "status": "completed"
                 })
             except Exception as e:
                 logger.error(f"Error processing activity: {str(e)}")
                 continue
         
         # Get upcoming activities with role-based filtering
+        # Upcoming Activities = PENDING/SCHEDULED activities with future due dates
+        now = datetime.now()
         upcoming_query = db.query(Activity).filter(
-            Activity.due_date >= datetime.now(),
-            Activity.status != 'completed',
+            Activity.due_date >= now,
+            Activity.status.in_(['pending', 'scheduled', 'in_progress']),
             Activity.is_deleted == False
         )
         if user_role == 'super_admin':
@@ -183,13 +186,20 @@ async def get_admin_dashboard_analytics(
         for activity in upcoming_query.all():
             try:
                 user = db.query(User).filter(User.id == activity.owner_id).first()
+                # Determine display status - show overdue if due_date has passed
+                activity_status = str(activity.status.value) if hasattr(activity.status, 'value') else str(activity.status)
+                if activity.due_date and activity.due_date < now and activity_status in ['pending', 'scheduled', 'in_progress']:
+                    display_status = 'overdue'
+                else:
+                    display_status = activity_status
+                
                 upcoming_activities.append({
                     "id": str(activity.id),
                     "type": str(activity.type.value) if hasattr(activity.type, 'value') else str(activity.type),
                     "title": activity.subject or f"{activity.type} activity",
                     "user_name": f"{user.first_name} {user.last_name}" if user else "Unknown",
                     "due_date": activity.due_date.isoformat() if activity.due_date else None,
-                    "status": str(activity.status.value) if hasattr(activity.status, 'value') else str(activity.status)
+                    "status": display_status
                 })
             except Exception as e:
                 logger.error(f"Error processing upcoming activity: {str(e)}")
