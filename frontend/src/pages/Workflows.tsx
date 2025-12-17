@@ -513,8 +513,8 @@ export default function Workflows() {
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex items-center gap-2 flex-shrink-0">
+                  {/* Actions - Fixed width to maintain consistent alignment */}
+                  <div className="flex items-center gap-2 flex-shrink-0 lg:w-[180px] lg:justify-end">
                     {/* Run/Execute Button */}
                     {workflow.actions_count > 0 && (
                       <button
@@ -524,6 +524,10 @@ export default function Workflows() {
                       >
                         <BoltIcon className="h-5 w-5" />
                       </button>
+                    )}
+                    {/* Empty spacer when no run button to maintain alignment */}
+                    {workflow.actions_count === 0 && (
+                      <div className="w-9 h-9"></div>
                     )}
                     
                     {/* Status Toggle Buttons - Click to toggle between Active/Inactive */}
@@ -545,7 +549,10 @@ export default function Workflows() {
                         <PauseIcon className="h-5 w-5" />
                       </button>
                     )}
-                    {/* No buttons shown for 'inactive' (deactivated) workflows */}
+                    {/* Empty spacer for inactive (deactivated) workflows to maintain alignment */}
+                    {workflow.status === 'inactive' && (
+                      <div className="w-9 h-9"></div>
+                    )}
                     <ActionButtons
                       onView={() => handleView(workflow)}
                       onEdit={() => handleEdit(workflow)}

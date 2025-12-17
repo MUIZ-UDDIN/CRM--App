@@ -118,10 +118,13 @@ export default function Analytics() {
 
   const fetchUsersAndPipelines = async () => {
     try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+      
       // Fetch users
-      const usersResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/users`, {
+      const usersResponse = await fetch(`${API_BASE_URL}/api/users`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (usersResponse.ok) {
@@ -130,13 +133,36 @@ export default function Analytics() {
       }
 
       // Fetch pipelines
-      const pipelinesResponse = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/pipelines`, {
+      const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
+          'Authorization': `Bearer ${token}`
         }
       });
       if (pipelinesResponse.ok) {
         const pipelinesData = await pipelinesResponse.json();
+        
+        // For Super Admin, fetch company names to display alongside pipeline names
+        if (currentUser?.role === 'super_admin') {
+          const companiesResponse = await fetch(`${API_BASE_URL}/api/admin-analytics/companies`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          if (companiesResponse.ok) {
+            const companiesData = await companiesResponse.json();
+            const companies = companiesData.companies || companiesData;
+            const companyMap = new Map(Array.isArray(companies) ? companies.map((c: any) => [c.id, c.name]) : []);
+            
+            // Add company_name to each pipeline
+            pipelinesData.forEach((pipeline: any) => {
+              if (pipeline.company_id) {
+                pipeline.company_name = companyMap.get(pipeline.company_id) || 'Unknown Company';
+              } else {
+                pipeline.company_name = 'No Company';
+              }
+            });
+          }
+        }
+        
         setPipelines(pipelinesData);
       }
     } catch (error) {
@@ -755,7 +781,10 @@ export default function Analytics() {
               <div className="relative pipeline-dropdown-container w-full sm:w-auto">
                 <input
                   type="text"
-                  value={showPipelineDropdown ? pipelineSearch : (selectedPipeline === 'all' ? 'All Pipelines' : pipelines.find(p => p.id === selectedPipeline)?.name || '')}
+                  value={showPipelineDropdown ? pipelineSearch : (selectedPipeline === 'all' ? 'All Pipelines' : (() => {
+                    const p = pipelines.find(p => p.id === selectedPipeline);
+                    return p ? (currentUser?.role === 'super_admin' && p.company_name ? `${p.name} (${p.company_name})` : p.name) : '';
+                  })())}
                   onChange={(e) => {
                     setPipelineSearch(e.target.value);
                     if (!showPipelineDropdown) setShowPipelineDropdown(true);
@@ -780,22 +809,30 @@ export default function Analytics() {
                       All Pipelines
                     </button>
                     {pipelines
-                      .filter(pipeline => 
-                        pipeline.name.toLowerCase().includes(pipelineSearch.toLowerCase())
-                      )
-                      .map(pipeline => (
-                        <button
-                          key={pipeline.id}
-                          onClick={() => {
-                            setSelectedPipeline(pipeline.id);
-                            setPipelineSearch('');
-                            setShowPipelineDropdown(false);
-                          }}
-                          className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
-                        >
-                          {pipeline.name}
-                        </button>
-                      ))}
+                      .filter(pipeline => {
+                        const displayName = currentUser?.role === 'super_admin' && pipeline.company_name 
+                          ? `${pipeline.name} (${pipeline.company_name})` 
+                          : pipeline.name;
+                        return displayName.toLowerCase().includes(pipelineSearch.toLowerCase());
+                      })
+                      .map(pipeline => {
+                        const displayName = currentUser?.role === 'super_admin' && pipeline.company_name 
+                          ? `${pipeline.name} (${pipeline.company_name})` 
+                          : pipeline.name;
+                        return (
+                          <button
+                            key={pipeline.id}
+                            onClick={() => {
+                              setSelectedPipeline(pipeline.id);
+                              setPipelineSearch('');
+                              setShowPipelineDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
+                          >
+                            {displayName}
+                          </button>
+                        );
+                      })}
                   </div>
                 )}
               </div>
