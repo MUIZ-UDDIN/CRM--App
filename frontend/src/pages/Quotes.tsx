@@ -632,25 +632,29 @@ export default function Quotes() {
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-                      <div>
-                        <p className="text-xs text-gray-500">Quote #</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
+                      <div className="min-w-[100px]">
+                        <p className="text-xs text-gray-500 mb-1">Quote #</p>
                         <p className="text-sm font-medium text-gray-900">{quote.quote_number}</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Amount</p>
+                      <div className="min-w-[80px]">
+                        <p className="text-xs text-gray-500 mb-1">Amount</p>
                         <p className="text-sm font-medium text-gray-900">{formatCurrency(quote.amount)}</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Client</p>
-                        <p className="text-sm font-medium text-gray-900 truncate">{getClientName(quote.client_id)}</p>
+                      <div className="min-w-[120px]">
+                        <p className="text-xs text-gray-500 mb-1">Client</p>
+                        <p className="text-sm font-medium text-gray-900 truncate max-w-[150px]">{getClientName(quote.client_id)}</p>
                       </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Valid Until</p>
+                      <div className="min-w-[100px]">
+                        <p className="text-xs text-gray-500 mb-1">Valid Until</p>
                         <p className="text-sm font-medium text-gray-900">{formatDate(quote.valid_until)}</p>
                         <span className={`inline-flex px-2 py-0.5 text-xs font-medium rounded-full mt-1 ${getExpiryMessage(quote.valid_until).color}`}>
                           {getExpiryMessage(quote.valid_until).text}
                         </span>
+                      </div>
+                      <div className="min-w-[80px]">
+                        <p className="text-xs text-gray-500 mb-1">Created</p>
+                        <p className="text-sm text-gray-600">{formatDate(quote.created_at)}</p>
                       </div>
                     </div>
 
@@ -660,11 +664,6 @@ export default function Quotes() {
                         <p className="text-sm text-primary-600">Deal ID: {quote.deal_id}</p>
                       </div>
                     )}
-
-                    <div className="mt-3">
-                      <p className="text-xs text-gray-500">Created</p>
-                      <p className="text-sm text-gray-600">{formatDate(quote.created_at)}</p>
-                    </div>
                   </div>
 
                   {/* Actions */}
