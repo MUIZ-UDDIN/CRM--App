@@ -143,7 +143,7 @@ export default function PipelineSettings() {
       if (isSuperAdmin()) {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-        const companiesResponse = await fetch(`${API_BASE_URL}/api/platform/companies`, {
+        const companiesResponse = await fetch(`${API_BASE_URL}/api/admin-analytics/companies`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
