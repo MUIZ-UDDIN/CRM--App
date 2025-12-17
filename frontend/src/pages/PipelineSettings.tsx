@@ -157,6 +157,8 @@ export default function PipelineSettings() {
           data.forEach((pipeline: any) => {
             if (pipeline.company_id) {
               pipeline.company_name = companyMap.get(pipeline.company_id) || 'Unknown Company';
+            } else {
+              pipeline.company_name = 'No Company';
             }
           });
         }
@@ -406,9 +408,9 @@ export default function PipelineSettings() {
               className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
               {pipelines.map(pipeline => {
-                // For Super Admin, show company name alongside pipeline name
-                const displayName = isSuperAdmin() && pipeline.company_name 
-                  ? `${pipeline.name} (${pipeline.company_name})`
+                // For Super Admin, always show company name alongside pipeline name
+                const displayName = isSuperAdmin() 
+                  ? `${pipeline.name} (${pipeline.company_name || 'Unknown'})`
                   : pipeline.name;
                 const truncatedName = displayName.length > 50 ? displayName.substring(0, 50) + '...' : displayName;
                 return (
