@@ -148,8 +148,10 @@ export default function PipelineSettings() {
         });
         
         if (companiesResponse.ok) {
-          const companies = await companiesResponse.json();
-          const companyMap = new Map(companies.map((c: any) => [c.id, c.name]));
+          const companiesData = await companiesResponse.json();
+          // API returns { companies: [...] } object, not a direct array
+          const companies = companiesData.companies || companiesData;
+          const companyMap = new Map(Array.isArray(companies) ? companies.map((c: any) => [c.id, c.name]) : []);
           
           // Add company_name to each pipeline
           data.forEach((pipeline: any) => {
