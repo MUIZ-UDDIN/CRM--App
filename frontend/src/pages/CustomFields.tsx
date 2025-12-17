@@ -266,7 +266,8 @@ export default function CustomFields() {
         <select
           value={filterEntity}
           onChange={(e) => setFilterEntity(e.target.value)}
-          className="px-4 py-2 border rounded-lg"
+          className="px-4 py-2 pr-8 border rounded-lg appearance-none bg-white bg-no-repeat bg-right"
+          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`, backgroundSize: '1.5rem', backgroundPosition: 'right 0.5rem center' }}
         >
           <option value="all">All Entities</option>
           {ENTITY_TYPES.map(type => (
