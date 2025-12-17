@@ -666,13 +666,13 @@ export default function Quotes() {
                     )}
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex lg:flex-col items-center gap-2 flex-shrink-0">
+                  {/* Actions - Fixed width to maintain consistent alignment */}
+                  <div className="flex lg:flex-col items-center gap-2 flex-shrink-0 lg:w-[200px] lg:items-end">
                     {quote.status === 'draft' && (
-                      <div className="flex gap-2 mb-2">
+                      <div className="flex gap-2 mb-2 justify-end w-full">
                         <button
                           onClick={() => handleSendQuote(quote)}
-                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700"
+                          className="px-3 py-1 text-xs font-medium text-white bg-blue-600 rounded hover:bg-blue-700 whitespace-nowrap"
                           title="Send quote to client via email"
                         >
                           Send to Client
@@ -680,19 +680,19 @@ export default function Quotes() {
                       </div>
                     )}
                     {quote.status === 'sent' && (
-                      <div className="flex flex-col gap-1 mb-2">
-                        <span className="text-xs text-gray-500 text-center">Awaiting client response</span>
+                      <div className="flex flex-col gap-1 mb-2 items-end w-full">
+                        <span className="text-xs text-gray-500 text-right">Awaiting client response</span>
                         <div className="flex gap-2">
                           <button
                             onClick={() => handleStatusChange(quote, 'accepted')}
-                            className="px-3 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700"
+                            className="px-2 py-1 text-xs font-medium text-white bg-green-600 rounded hover:bg-green-700 whitespace-nowrap"
                             title="Manually mark as accepted"
                           >
                             Mark Accepted
                           </button>
                           <button
                             onClick={() => handleStatusChange(quote, 'rejected')}
-                            className="px-3 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700"
+                            className="px-2 py-1 text-xs font-medium text-white bg-red-600 rounded hover:bg-red-700 whitespace-nowrap"
                             title="Manually mark as rejected"
                           >
                             Mark Rejected
@@ -700,7 +700,11 @@ export default function Quotes() {
                         </div>
                       </div>
                     )}
-                    <div className="flex items-center gap-2">
+                    {/* Empty spacer for quotes without status buttons to maintain alignment */}
+                    {quote.status !== 'draft' && quote.status !== 'sent' && (
+                      <div className="h-[52px] mb-2"></div>
+                    )}
+                    <div className="flex items-center gap-2 justify-end">
                       <button
                         onClick={() => handleDownload(quote)}
                         className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
