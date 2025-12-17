@@ -146,13 +146,18 @@ export default function WorkflowTemplates() {
   };
 
   const getCategoryColor = (category: string) => {
-    const cat = CATEGORIES.find(c => c.value === category);
+    const cat = CATEGORIES.find(c => c.value.toLowerCase() === category.toLowerCase());
     return cat?.color || 'gray';
   };
 
   const getCategoryIcon = (category: string) => {
-    const cat = CATEGORIES.find(c => c.value === category);
+    const cat = CATEGORIES.find(c => c.value.toLowerCase() === category.toLowerCase());
     return cat?.icon || '⚙️';
+  };
+
+  const getCategoryLabel = (category: string) => {
+    const cat = CATEGORIES.find(c => c.value.toLowerCase() === category.toLowerCase());
+    return cat?.label || category.charAt(0).toUpperCase() + category.slice(1).replace(/_/g, ' ');
   };
 
   // Permission check
@@ -247,7 +252,7 @@ export default function WorkflowTemplates() {
                   <div>
                     <h3 className="font-semibold text-gray-900">{template.name}</h3>
                     <span className={`text-xs px-2 py-1 rounded-full bg-${getCategoryColor(template.category)}-100 text-${getCategoryColor(template.category)}-700`}>
-                      {template.category}
+                      {getCategoryLabel(template.category)}
                     </span>
                   </div>
                 </div>
