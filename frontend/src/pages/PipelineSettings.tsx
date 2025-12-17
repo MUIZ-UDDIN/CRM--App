@@ -32,6 +32,8 @@ interface Pipeline {
   id: string;
   name: string;
   stages: Stage[];
+  company_id?: string;
+  company_name?: string;
 }
 
 export default function PipelineSettings() {
@@ -136,6 +138,28 @@ export default function PipelineSettings() {
     setLoading(true);
     try {
       const data = await pipelinesService.getPipelines();
+      
+      // For Super Admin, fetch company names to display in dropdown
+      if (isSuperAdmin()) {
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+        const companiesResponse = await fetch(`${API_BASE_URL}/api/platform/companies`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (companiesResponse.ok) {
+          const companies = await companiesResponse.json();
+          const companyMap = new Map(companies.map((c: any) => [c.id, c.name]));
+          
+          // Add company_name to each pipeline
+          data.forEach((pipeline: any) => {
+            if (pipeline.company_id) {
+              pipeline.company_name = companyMap.get(pipeline.company_id) || 'Unknown Company';
+            }
+          });
+        }
+      }
+      
       setPipelines(data);
       if (data.length > 0 && !selectedPipeline) {
         setSelectedPipeline(data[0].id);
@@ -379,11 +403,18 @@ export default function PipelineSettings() {
               onChange={(e) => setSelectedPipeline(e.target.value)}
               className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
             >
-              {pipelines.map(pipeline => (
-                <option key={pipeline.id} value={pipeline.id} title={pipeline.name}>
-                  {pipeline.name.length > 50 ? pipeline.name.substring(0, 50) + '...' : pipeline.name}
-                </option>
-              ))}
+              {pipelines.map(pipeline => {
+                // For Super Admin, show company name alongside pipeline name
+                const displayName = isSuperAdmin() && pipeline.company_name 
+                  ? `${pipeline.name} (${pipeline.company_name})`
+                  : pipeline.name;
+                const truncatedName = displayName.length > 50 ? displayName.substring(0, 50) + '...' : displayName;
+                return (
+                  <option key={pipeline.id} value={pipeline.id} title={displayName}>
+                    {truncatedName}
+                  </option>
+                );
+              })}
             </select>
           )}
         </div>
