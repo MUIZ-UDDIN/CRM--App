@@ -941,7 +941,10 @@ export default function Deals() {
                 title={stages.find(s => s.id === filterStage)?.name || 'All Stages'}
               >
                 <option value="all">All Stages</option>
-                {stages.map((stage) => (
+                {/* Deduplicate stages by name for the filter dropdown */}
+                {stages.filter((stage, index, self) => 
+                  self.findIndex(s => s.name === stage.name) === index
+                ).map((stage) => (
                   <option 
                     key={stage.id} 
                     value={stage.id}
@@ -966,7 +969,11 @@ export default function Deals() {
           <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
             {/* Mobile: Vertical Accordion, Desktop: Grid */}
             <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 space-y-3 md:space-y-0">
-              {stages.filter(stage => filterStage === 'all' || stage.id === filterStage).map((stage) => {
+              {stages.filter(stage => {
+                // Filter by stage name to handle duplicate stage names across pipelines
+                const selectedStageName = stages.find(s => s.id === filterStage)?.name;
+                return filterStage === 'all' || stage.id === filterStage || stage.name === selectedStageName;
+              }).map((stage) => {
                 const isExpanded = expandedStages.includes(stage.id);
                 const toggleStage = () => {
                   setExpandedStages(prev => 
