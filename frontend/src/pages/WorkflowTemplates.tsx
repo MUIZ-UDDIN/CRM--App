@@ -4,7 +4,8 @@ import {
   PlusIcon, 
   RocketLaunchIcon,
   SparklesIcon,
-  TagIcon
+  TagIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -45,6 +46,20 @@ export default function WorkflowTemplates() {
   const [workflowName, setWorkflowName] = useState('');
   const [existingWorkflows, setExistingWorkflows] = useState<string[]>([]);
   const [nameError, setNameError] = useState('');
+  
+  // Create Template Modal State
+  const [showCreateTemplateModal, setShowCreateTemplateModal] = useState(false);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    description: '',
+    category: 'general',
+    trigger_type: 'contact_created',
+    tags: [] as string[],
+    is_global: true
+  });
+  const [templateNameError, setTemplateNameError] = useState('');
+  const [tagInput, setTagInput] = useState('');
   
   // Check if user can manage automations
   const canManageAutomations = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
@@ -145,6 +160,123 @@ export default function WorkflowTemplates() {
     }
   };
 
+  // Create Template Functions
+  const openCreateTemplateModal = () => {
+    setTemplateForm({
+      name: '',
+      description: '',
+      category: 'general',
+      trigger_type: 'contact_created',
+      tags: [],
+      is_global: true
+    });
+    setTemplateNameError('');
+    setTagInput('');
+    setShowCreateTemplateModal(true);
+  };
+
+  const closeCreateTemplateModal = () => {
+    setShowCreateTemplateModal(false);
+    setTemplateForm({
+      name: '',
+      description: '',
+      category: 'general',
+      trigger_type: 'contact_created',
+      tags: [],
+      is_global: true
+    });
+    setTemplateNameError('');
+    setTagInput('');
+  };
+
+  const validateTemplateName = (name: string): boolean => {
+    const trimmedName = name.trim();
+    
+    if (!trimmedName) {
+      setTemplateNameError('Template name is required');
+      return false;
+    }
+    
+    if (trimmedName.length < 3) {
+      setTemplateNameError('Template name must be at least 3 characters');
+      return false;
+    }
+
+    if (trimmedName.length > 255) {
+      setTemplateNameError('Template name cannot exceed 255 characters');
+      return false;
+    }
+
+    // Check for HTML/script tags
+    if (/<[^>]*>/gi.test(trimmedName)) {
+      setTemplateNameError('HTML tags are not allowed in template name');
+      return false;
+    }
+    
+    // Check for duplicate name
+    const duplicateTemplate = templates.find(
+      t => t.name.toLowerCase().trim() === trimmedName.toLowerCase()
+    );
+    if (duplicateTemplate) {
+      setTemplateNameError('A template with this name already exists');
+      return false;
+    }
+    
+    setTemplateNameError('');
+    return true;
+  };
+
+  const handleAddTag = () => {
+    const tag = tagInput.trim();
+    if (tag && !templateForm.tags.includes(tag)) {
+      setTemplateForm({ ...templateForm, tags: [...templateForm.tags, tag] });
+      setTagInput('');
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTemplateForm({
+      ...templateForm,
+      tags: templateForm.tags.filter(tag => tag !== tagToRemove)
+    });
+  };
+
+  const handleCreateTemplate = async () => {
+    if (isCreatingTemplate) return;
+    
+    if (!validateTemplateName(templateForm.name)) {
+      return;
+    }
+
+    // Validate description length
+    if (templateForm.description.length > 1000) {
+      toast.error('Description cannot exceed 1000 characters');
+      return;
+    }
+
+    setIsCreatingTemplate(true);
+    try {
+      await apiClient.post('/workflow-templates/', {
+        name: templateForm.name.trim(),
+        description: templateForm.description.trim() || null,
+        category: templateForm.category,
+        trigger_type: templateForm.trigger_type,
+        trigger_config: {},
+        actions: [], // Empty actions - user will add them later
+        conditions: null,
+        tags: templateForm.tags.length > 0 ? templateForm.tags : null,
+        is_global: templateForm.is_global
+      });
+      toast.success('Template created successfully!');
+      closeCreateTemplateModal();
+      fetchTemplates();
+    } catch (error) {
+      handleApiError(error, { toastMessage: 'Failed to create template' });
+    } finally {
+      setIsCreatingTemplate(false);
+    }
+  };
+
   const getCategoryColor = (category: string) => {
     const cat = CATEGORIES.find(c => c.value.toLowerCase() === category.toLowerCase());
     return cat?.color || 'gray';
@@ -185,7 +317,7 @@ export default function WorkflowTemplates() {
             </div>
             {user?.role === 'super_admin' && (
               <button
-                onClick={() => navigate('/workflows')}
+                onClick={openCreateTemplateModal}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
                 <PlusIcon className="h-5 w-5" />
@@ -308,6 +440,210 @@ export default function WorkflowTemplates() {
         </p>
       </div>
       </div>
+
+      {/* Create Template Modal */}
+      {showCreateTemplateModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Create Workflow Template
+                </h3>
+                <button
+                  onClick={closeCreateTemplateModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Template Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Template Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={templateForm.name}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!/<[^>]*>/gi.test(value)) {
+                        setTemplateForm({ ...templateForm, name: value });
+                        if (templateNameError) setTemplateNameError('');
+                      } else {
+                        toast.error('HTML tags are not allowed');
+                      }
+                    }}
+                    placeholder="Enter template name"
+                    maxLength={255}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      templateNameError ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  <div className="flex justify-between mt-1">
+                    {templateNameError ? (
+                      <p className="text-sm text-red-600">{templateNameError}</p>
+                    ) : (
+                      <span></span>
+                    )}
+                    <span className="text-xs text-gray-500">{templateForm.name.length}/255</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={templateForm.description}
+                    onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                    placeholder="Enter template description (optional)"
+                    rows={3}
+                    maxLength={1000}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <div className="text-xs text-gray-500 text-right mt-1">
+                    {templateForm.description.length}/1000
+                  </div>
+                </div>
+
+                {/* Category and Trigger Type */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={templateForm.category}
+                      onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.icon} {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Trigger Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={templateForm.trigger_type}
+                      onChange={(e) => setTemplateForm({ ...templateForm, trigger_type: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="contact_created">Contact Created</option>
+                      <option value="deal_created">Deal Created</option>
+                      <option value="deal_stage_changed">Deal Stage Changed</option>
+                      <option value="deal_won">Deal Won</option>
+                      <option value="deal_lost">Deal Lost</option>
+                      <option value="activity_completed">Activity Completed</option>
+                      <option value="email_opened">Email Opened</option>
+                      <option value="document_signed">Document Signed</option>
+                      <option value="scheduled">Scheduled (Time-based)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tags
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
+                      placeholder="Add a tag"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTag}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {templateForm.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {templateForm.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Global Template Toggle (for Super Admin) */}
+                {user?.role === 'super_admin' && (
+                  <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <input
+                      type="checkbox"
+                      id="isGlobal"
+                      checked={templateForm.is_global}
+                      onChange={(e) => setTemplateForm({ ...templateForm, is_global: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="isGlobal" className="text-sm">
+                      <span className="font-medium text-yellow-900">Global Template</span>
+                      <p className="text-yellow-700 text-xs mt-0.5">
+                        Global templates are available to all companies
+                      </p>
+                    </label>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t">
+                  <button
+                    onClick={closeCreateTemplateModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleCreateTemplate}
+                    disabled={isCreatingTemplate || !templateForm.name.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isCreatingTemplate ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="h-4 w-4" />
+                        Create Template
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Create Workflow Modal */}
       {showModal && selectedTemplate && (
