@@ -202,8 +202,8 @@ export default function WorkflowTemplates() {
       return false;
     }
 
-    if (trimmedName.length > 255) {
-      setTemplateNameError('Template name cannot exceed 255 characters');
+    if (trimmedName.length > 50) {
+      setTemplateNameError('Template name cannot exceed 50 characters');
       return false;
     }
 
@@ -249,8 +249,8 @@ export default function WorkflowTemplates() {
     }
 
     // Validate description length
-    if (templateForm.description.length > 1000) {
-      toast.error('Description cannot exceed 1000 characters');
+    if (templateForm.description.length > 100) {
+      toast.error('Description cannot exceed 100 characters');
       return;
     }
 
@@ -477,7 +477,7 @@ export default function WorkflowTemplates() {
                       }
                     }}
                     placeholder="Enter template name"
-                    maxLength={255}
+                    maxLength={50}
                     className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
                       templateNameError ? 'border-red-500' : 'border-gray-300'
                     }`}
@@ -488,7 +488,7 @@ export default function WorkflowTemplates() {
                     ) : (
                       <span></span>
                     )}
-                    <span className="text-xs text-gray-500">{templateForm.name.length}/255</span>
+                    <span className="text-xs text-gray-500">{templateForm.name.length}/50</span>
                   </div>
                 </div>
 
@@ -501,12 +501,12 @@ export default function WorkflowTemplates() {
                     value={templateForm.description}
                     onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
                     placeholder="Enter template description (optional)"
-                    rows={3}
-                    maxLength={1000}
+                    rows={2}
+                    maxLength={100}
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                   <div className="text-xs text-gray-500 text-right mt-1">
-                    {templateForm.description.length}/1000
+                    {templateForm.description.length}/100
                   </div>
                 </div>
 

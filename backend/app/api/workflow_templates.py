@@ -28,7 +28,7 @@ class TemplateCreate(BaseModel):
     category: str
     trigger_type: str
     trigger_config: Optional[Dict[str, Any]] = None
-    actions: List[Dict[str, Any]]
+    actions: Optional[List[Dict[str, Any]]] = []
     conditions: Optional[Dict[str, Any]] = None
     tags: Optional[List[str]] = None
     is_global: bool = True
