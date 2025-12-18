@@ -470,9 +470,24 @@ async def delete_workflow(
                 detail="You can only delete your own workflows."
             )
     
-    # Permanent delete - CASCADE will handle related workflow executions
-    db.delete(workflow)
-    db.commit()
+    # Delete related records first to avoid foreign key constraint errors
+    try:
+        # Delete template usage records that reference this workflow
+        from app.models.workflow_templates import TemplateUsage
+        db.query(TemplateUsage).filter(TemplateUsage.workflow_id == workflow.id).delete(synchronize_session=False)
+        
+        # Delete workflow executions
+        db.query(WorkflowExecution).filter(WorkflowExecution.workflow_id == workflow.id).delete(synchronize_session=False)
+        
+        # Now delete the workflow
+        db.delete(workflow)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot complete this operation due to data constraints: {str(e)}"
+        )
     
     # Send deletion notification
     try:
