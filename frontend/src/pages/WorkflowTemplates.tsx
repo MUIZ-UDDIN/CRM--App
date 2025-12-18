@@ -241,17 +241,20 @@ export default function WorkflowTemplates() {
 
   const handleAddTag = () => {
     const tag = tagInput.trim();
-    if (tag && !templateForm.tags.includes(tag)) {
-      setTemplateForm({ ...templateForm, tags: [...templateForm.tags, tag] });
+    if (tag) {
+      setTemplateForm(prev => {
+        if (prev.tags.includes(tag)) return prev;
+        return { ...prev, tags: [...prev.tags, tag] };
+      });
       setTagInput('');
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTemplateForm({
-      ...templateForm,
-      tags: templateForm.tags.filter(tag => tag !== tagToRemove)
-    });
+    setTemplateForm(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
   };
 
   const handleCreateTemplate = async () => {
