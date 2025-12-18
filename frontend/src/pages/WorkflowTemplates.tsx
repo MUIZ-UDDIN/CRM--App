@@ -6,7 +6,10 @@ import {
   SparklesIcon,
   TagIcon,
   XMarkIcon,
-  EyeIcon
+  EyeIcon,
+  EllipsisVerticalIcon,
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -63,6 +66,12 @@ export default function WorkflowTemplates() {
   const [tagInput, setTagInput] = useState('');
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [detailTemplate, setDetailTemplate] = useState<Template | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [templateToDelete, setTemplateToDelete] = useState<Template | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
   
   // Check if user can manage automations
   const canManageAutomations = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
@@ -280,6 +289,83 @@ export default function WorkflowTemplates() {
     }
   };
 
+  // Delete template function
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete || isDeleting) return;
+    
+    setIsDeleting(true);
+    try {
+      await apiClient.delete(`/workflow-templates/${templateToDelete.id}`);
+      toast.success('Template deleted permanently');
+      setShowDeleteModal(false);
+      setTemplateToDelete(null);
+      fetchTemplates();
+    } catch (error) {
+      handleApiError(error, { toastMessage: 'Failed to delete template' });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  // Open edit modal
+  const openEditModal = (template: Template) => {
+    setEditingTemplate(template);
+    setTemplateForm({
+      name: template.name,
+      description: template.description || '',
+      category: template.category,
+      trigger_type: template.trigger_type,
+      tags: template.tags || [],
+      is_global: template.is_global
+    });
+    setTemplateNameError('');
+    setTagInput('');
+    setShowEditModal(true);
+    setOpenDropdownId(null);
+  };
+
+  // Update template function
+  const handleUpdateTemplate = async () => {
+    if (!editingTemplate || isCreatingTemplate) return;
+    
+    if (!validateTemplateName(templateForm.name)) {
+      return;
+    }
+
+    if (templateForm.description.length > 100) {
+      toast.error('Description cannot exceed 100 characters');
+      return;
+    }
+
+    setIsCreatingTemplate(true);
+    try {
+      await apiClient.put(`/workflow-templates/${editingTemplate.id}`, {
+        name: templateForm.name.trim(),
+        description: templateForm.description.trim() || null,
+        category: templateForm.category,
+        trigger_type: templateForm.trigger_type,
+        tags: templateForm.tags.length > 0 ? templateForm.tags : null,
+        is_global: templateForm.is_global
+      });
+      toast.success('Template updated successfully!');
+      setShowEditModal(false);
+      setEditingTemplate(null);
+      setTemplateForm({
+        name: '',
+        description: '',
+        category: 'general',
+        trigger_type: 'contact_created',
+        tags: [],
+        is_global: true
+      });
+      fetchTemplates();
+    } catch (error) {
+      handleApiError(error, { toastMessage: 'Failed to update template' });
+    } finally {
+      setIsCreatingTemplate(false);
+    }
+  };
+
   const getCategoryColor = (category: string) => {
     const cat = CATEGORIES.find(c => c.value.toLowerCase() === category.toLowerCase());
     return cat?.color || 'gray';
@@ -379,33 +465,60 @@ export default function WorkflowTemplates() {
           {templates.map((template) => (
             <div
               key={template.id}
-              className="bg-white rounded-lg border p-6 hover:shadow-lg transition-shadow"
+              className="bg-white rounded-lg border p-6 hover:shadow-lg transition-shadow relative"
             >
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900 truncate" title={template.name}>
-                      {template.name.length > 25 ? `${template.name.substring(0, 25)}...` : template.name}
-                    </h3>
-                    {(template.name.length > 25 || (template.description && template.description.length > 50)) && (
-                      <button
-                        onClick={() => {
-                          setDetailTemplate(template);
-                          setShowDetailModal(true);
-                        }}
-                        className="text-gray-400 hover:text-blue-600 flex-shrink-0"
-                        title="View details"
-                      >
-                        <EyeIcon className="h-4 w-4" />
-                      </button>
-                    )}
-                  </div>
+                  <h3 className="font-semibold text-gray-900 truncate" title={template.name}>
+                    {template.name.length > 25 ? `${template.name.substring(0, 25)}...` : template.name}
+                  </h3>
                   <span className={`inline-block mt-1 text-xs px-2 py-1 rounded-full bg-${getCategoryColor(template.category)}-100 text-${getCategoryColor(template.category)}-700`}>
                     {getCategoryLabel(template.category)}
                   </span>
                 </div>
-                {template.is_global && (
-                  <SparklesIcon className="h-5 w-5 text-yellow-500 flex-shrink-0 ml-2" title="Global Template" />
+                {/* 3-dots dropdown menu */}
+                {user?.role === 'super_admin' && (
+                  <div className="relative">
+                    <button
+                      onClick={() => setOpenDropdownId(openDropdownId === template.id ? null : template.id)}
+                      className="p-1 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                    >
+                      <EllipsisVerticalIcon className="h-5 w-5" />
+                    </button>
+                    {openDropdownId === template.id && (
+                      <div className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg border z-10">
+                        <button
+                          onClick={() => {
+                            setDetailTemplate(template);
+                            setShowDetailModal(true);
+                            setOpenDropdownId(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2 rounded-t-lg"
+                        >
+                          <EyeIcon className="h-4 w-4" />
+                          View Details
+                        </button>
+                        <button
+                          onClick={() => openEditModal(template)}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                        >
+                          <PencilIcon className="h-4 w-4" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => {
+                            setTemplateToDelete(template);
+                            setShowDeleteModal(true);
+                            setOpenDropdownId(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-b-lg"
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                          Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -426,7 +539,7 @@ export default function WorkflowTemplates() {
                   {template.tags.slice(0, 3).map((tag, index) => (
                     <span
                       key={index}
-                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
+                      className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded"
                     >
                       {tag}
                     </span>
@@ -804,6 +917,292 @@ export default function WorkflowTemplates() {
                 >
                   Use Template
                 </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && templateToDelete && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 bg-red-100 rounded-full">
+                  <TrashIcon className="h-6 w-6 text-red-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900">Delete Template</h3>
+              </div>
+              
+              <p className="text-gray-600 mb-2">
+                Are you sure you want to permanently delete this template?
+              </p>
+              <p className="text-sm font-medium text-gray-900 mb-4 p-2 bg-gray-50 rounded">
+                "{templateToDelete.name}"
+              </p>
+              <p className="text-sm text-red-600 mb-6">
+                ⚠️ This action cannot be undone. The template will be permanently removed.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setTemplateToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteTemplate}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon className="h-4 w-4" />
+                      Delete Permanently
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Template Modal */}
+      {showEditModal && editingTemplate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-semibold text-gray-900">
+                  Edit Template
+                </h3>
+                <button
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingTemplate(null);
+                    setTemplateForm({
+                      name: '',
+                      description: '',
+                      category: 'general',
+                      trigger_type: 'contact_created',
+                      tags: [],
+                      is_global: true
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {/* Template Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Template Name <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={templateForm.name}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!/<[^>]*>/gi.test(value)) {
+                        setTemplateForm({ ...templateForm, name: value });
+                        if (templateNameError) setTemplateNameError('');
+                      } else {
+                        toast.error('HTML tags are not allowed');
+                      }
+                    }}
+                    placeholder="Enter template name"
+                    maxLength={50}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                      templateNameError ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                  />
+                  <div className="flex justify-between mt-1">
+                    {templateNameError ? (
+                      <p className="text-sm text-red-600">{templateNameError}</p>
+                    ) : (
+                      <span></span>
+                    )}
+                    <span className="text-xs text-gray-500">{templateForm.name.length}/50</span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Description
+                  </label>
+                  <textarea
+                    value={templateForm.description}
+                    onChange={(e) => setTemplateForm({ ...templateForm, description: e.target.value })}
+                    placeholder="Enter template description (optional)"
+                    rows={2}
+                    maxLength={100}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <div className="text-xs text-gray-500 text-right mt-1">
+                    {templateForm.description.length}/100
+                  </div>
+                </div>
+
+                {/* Category and Trigger Type */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Category <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={templateForm.category}
+                      onChange={(e) => setTemplateForm({ ...templateForm, category: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat.value} value={cat.value}>
+                          {cat.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Trigger Type <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={templateForm.trigger_type}
+                      onChange={(e) => setTemplateForm({ ...templateForm, trigger_type: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="contact_created">Contact Created</option>
+                      <option value="deal_created">Deal Created</option>
+                      <option value="deal_stage_changed">Deal Stage Changed</option>
+                      <option value="deal_won">Deal Won</option>
+                      <option value="deal_lost">Deal Lost</option>
+                      <option value="activity_completed">Activity Completed</option>
+                      <option value="email_opened">Email Opened</option>
+                      <option value="document_signed">Document Signed</option>
+                      <option value="scheduled">Scheduled (Time-based)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Tags */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tags
+                  </label>
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddTag();
+                        }
+                      }}
+                      placeholder="Add a tag"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddTag}
+                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                    >
+                      Add
+                    </button>
+                  </div>
+                  {templateForm.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {templateForm.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveTag(tag)}
+                            className="text-blue-500 hover:text-blue-700"
+                          >
+                            <XMarkIcon className="h-4 w-4" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Global Template Toggle */}
+                {user?.role === 'super_admin' && (
+                  <div className="flex items-center gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <input
+                      type="checkbox"
+                      id="isGlobalEdit"
+                      checked={templateForm.is_global}
+                      onChange={(e) => setTemplateForm({ ...templateForm, is_global: e.target.checked })}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <label htmlFor="isGlobalEdit" className="text-sm">
+                      <span className="font-medium text-yellow-900">Global Template</span>
+                      <p className="text-yellow-700 text-xs mt-0.5">
+                        Global templates are available to all companies
+                      </p>
+                    </label>
+                  </div>
+                )}
+
+                {/* Action Buttons */}
+                <div className="flex gap-3 pt-4 border-t">
+                  <button
+                    onClick={() => {
+                      setShowEditModal(false);
+                      setEditingTemplate(null);
+                      setTemplateForm({
+                        name: '',
+                        description: '',
+                        category: 'general',
+                        trigger_type: 'contact_created',
+                        tags: [],
+                        is_global: true
+                      });
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleUpdateTemplate}
+                    disabled={isCreatingTemplate || !templateForm.name.trim()}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    {isCreatingTemplate ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Updating...
+                      </>
+                    ) : (
+                      <>
+                        <PencilIcon className="h-4 w-4" />
+                        Update Template
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
