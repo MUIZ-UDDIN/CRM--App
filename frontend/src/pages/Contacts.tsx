@@ -569,8 +569,11 @@ export default function Contacts() {
       
       setSubmitting(true);
       
-      // Remove empty source field to avoid enum validation errors
-      const { source, ...updateData } = contactForm;
+      // Include source field in update (only exclude if empty to avoid validation errors)
+      const updateData = { ...contactForm };
+      if (!updateData.source) {
+        delete updateData.source;
+      }
       await contactsService.updateContact(selectedContact.id, updateData);
       
       // Save custom field values if any
@@ -1061,6 +1064,30 @@ export default function Contacts() {
                 />
               </div>
               
+              {/* Source Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Lead Source
+                </label>
+                <select
+                  value={contactForm.source}
+                  onChange={(e) => setContactForm({...contactForm, source: e.target.value})}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  <option value="">Select Source</option>
+                  <option value="Website">Website</option>
+                  <option value="Referral">Referral</option>
+                  <option value="LinkedIn">LinkedIn</option>
+                  <option value="Cold Call">Cold Call</option>
+                  <option value="Email Campaign">Email Campaign</option>
+                  <option value="Trade Show">Trade Show</option>
+                  <option value="Social Media">Social Media</option>
+                  <option value="Advertisement">Advertisement</option>
+                  <option value="Partner">Partner</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              
               {/* Owner Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1240,6 +1267,30 @@ export default function Contacts() {
                     placeholder="Select or type status"
                     required
                   />
+                </div>
+                
+                {/* Source Field */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Lead Source
+                  </label>
+                  <select
+                    value={contactForm.source}
+                    onChange={(e) => setContactForm({...contactForm, source: e.target.value})}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                  >
+                    <option value="">Select Source</option>
+                    <option value="Website">Website</option>
+                    <option value="Referral">Referral</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="Cold Call">Cold Call</option>
+                    <option value="Email Campaign">Email Campaign</option>
+                    <option value="Trade Show">Trade Show</option>
+                    <option value="Social Media">Social Media</option>
+                    <option value="Advertisement">Advertisement</option>
+                    <option value="Partner">Partner</option>
+                    <option value="Other">Other</option>
+                  </select>
                 </div>
                 
                 {/* Owner Field */}
