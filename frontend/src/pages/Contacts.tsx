@@ -570,7 +570,7 @@ export default function Contacts() {
       setSubmitting(true);
       
       // Include source field in update (only exclude if empty to avoid validation errors)
-      const updateData = { ...contactForm };
+      const updateData: Record<string, any> = { ...contactForm };
       if (!updateData.source) {
         delete updateData.source;
       }
