@@ -9,7 +9,9 @@ import {
   EyeIcon,
   EllipsisVerticalIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
@@ -72,6 +74,7 @@ export default function WorkflowTemplates() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<Template | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
   
   // Check if user can manage automations
   const canManageAutomations = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
@@ -96,7 +99,6 @@ export default function WorkflowTemplates() {
       setLoading(true);
       const params: any = {};
       if (filterCategory !== 'all') params.category = filterCategory;
-      if (searchTerm) params.search = searchTerm;
       
       const response = await apiClient.get('/workflow-templates/', { params });
       setTemplates(response.data);
@@ -106,6 +108,16 @@ export default function WorkflowTemplates() {
       setLoading(false);
     }
   };
+
+  // Client-side filtering for search
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = searchTerm.trim() === '' || 
+      template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (template.description && template.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (template.tags && template.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())));
+    
+    return matchesSearch;
+  });
 
   const openTemplateModal = (template: Template) => {
     setSelectedTemplate(template);
@@ -423,33 +435,44 @@ export default function WorkflowTemplates() {
 
       {/* Filters */}
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
-        <div className="flex gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search templates..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          onKeyPress={(e) => e.key === 'Enter' && fetchTemplates()}
-          className="flex-1 px-4 py-2 border rounded-lg"
-        />
-        <select
-          value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="px-4 py-2 border rounded-lg"
-        >
-          <option value="all">All Categories</option>
-          {CATEGORIES.map(cat => (
-            <option key={cat.value} value={cat.value}>
-              {cat.icon} {cat.label}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={fetchTemplates}
-          className="px-4 py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
-        >
-          Search
-        </button>
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex-1 relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search templates..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+            />
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`p-2 rounded-lg transition-colors ${
+                showFilters 
+                  ? 'bg-primary-100 text-primary-600' 
+                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+              }`}
+              title="Toggle Filters"
+            >
+              <FunnelIcon className="h-5 w-5" />
+            </button>
+            {showFilters && (
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 min-w-[140px]"
+              >
+                <option value="all">All Categories</option>
+                {CATEGORIES.map(cat => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
       </div>
 
@@ -459,14 +482,14 @@ export default function WorkflowTemplates() {
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
         </div>
-      ) : templates.length === 0 ? (
+      ) : filteredTemplates.length === 0 ? (
         <div className="text-center py-12 bg-white rounded-lg border">
           <SparklesIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <p className="text-gray-600">No templates found</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {templates.map((template) => (
+          {filteredTemplates.map((template) => (
             <div
               key={template.id}
               className="bg-white rounded-lg border p-6 hover:shadow-lg transition-shadow relative"
