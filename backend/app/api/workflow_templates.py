@@ -14,7 +14,7 @@ import uuid
 from app.core.security import get_current_active_user
 from app.core.database import get_db
 from app.models.workflow_templates import WorkflowTemplate, TemplateUsage, TemplateCategory
-from app.models.workflows import Workflow
+from app.models.workflows import Workflow, WorkflowTrigger, WorkflowStatus
 from app.middleware.tenant import get_tenant_context
 from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
@@ -229,15 +229,22 @@ async def use_template(
         if not template.is_global and str(template.company_id) != company_id:
             raise HTTPException(status_code=403, detail="Access denied")
         
+        # Convert trigger_type string to enum
+        try:
+            trigger_enum = WorkflowTrigger(template.trigger_type)
+        except ValueError:
+            # Default to contact_created if invalid trigger type
+            trigger_enum = WorkflowTrigger.CONTACT_CREATED
+        
         # Create workflow from template
         new_workflow = Workflow(
             id=uuid.uuid4(),
             name=workflow_name,
             description=f"Created from template: {template.name}",
-            trigger_type=template.trigger_type,
+            trigger_type=trigger_enum,
             trigger_conditions=template.trigger_config,  # Map trigger_config to trigger_conditions
-            actions=template.actions,
-            status='active',
+            actions=template.actions if template.actions else [],
+            status=WorkflowStatus.ACTIVE,
             is_active=True,
             is_deleted=False,
             owner_id=uuid.UUID(user_id),
