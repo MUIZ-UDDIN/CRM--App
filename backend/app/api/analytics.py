@@ -1148,36 +1148,33 @@ async def get_contact_analytics(
             "conversion_rate": round(conversion_rate, 1)
         })
     
-    # Simple lead scoring distribution based on contact status
-    # Status is stored as lowercase string in DB (e.g., "new", "customer", "qualified")
-    status_scores = {
-        "customer": "Customer (100)",
-        "qualified": "Qualified (80)",
-        "prospect": "Prospect (60)",
-        "contacted": "Contacted (40)",
-        "lead": "Lead (20)",
-        "new": "New (10)",
-        "unqualified": "Unqualified (0)",
-        "inactive": "Inactive (0)"
-    }
-    
+    # Simple lead status distribution based on contact status
+    # Status is stored in DB - normalize to title case for display
+    # Group by normalized status to avoid duplicates (e.g., "new" and "NEW")
     lead_scoring_query = db.query(
         Contact.status,
         func.count(Contact.id).label('count')
     ).filter(and_(*filters)).group_by(Contact.status).all()
     
-    lead_scoring_data = []
+    # Aggregate by normalized status to handle case variations
+    status_counts = {}
     for row in lead_scoring_query:
         status = (row.status or "").lower().strip()
-        score_label = status_scores.get(status, f"{status.title()} (0)") if status else "Unknown (0)"
-        lead_scoring_data.append({
-            "score": score_label,
-            "count": row.count or 0
-        })
+        # Convert to title case for display
+        display_status = status.title() if status else "Unknown"
+        if display_status in status_counts:
+            status_counts[display_status] += row.count or 0
+        else:
+            status_counts[display_status] = row.count or 0
     
-    # Sort by score (highest first)
-    score_order = ["Customer (100)", "Qualified (80)", "Prospect (60)", "Contacted (40)", "Lead (20)", "New (10)", "Unqualified (0)", "Inactive (0)"]
-    lead_scoring_data.sort(key=lambda x: score_order.index(x["score"]) if x["score"] in score_order else 999)
+    lead_scoring_data = [
+        {"score": status, "count": count}
+        for status, count in status_counts.items()
+    ]
+    
+    # Sort by predefined order (most important first), then alphabetically for custom statuses
+    status_order = ["Customer", "Qualified", "Prospect", "Contacted", "Lead", "New", "Unqualified", "Inactive", "Unknown"]
+    lead_scoring_data.sort(key=lambda x: status_order.index(x["score"]) if x["score"] in status_order else 999)
     
     return {
         "filters": {

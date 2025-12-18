@@ -1381,6 +1381,18 @@ export default function Contacts() {
                 <p className="text-gray-900">{selectedContact.title || 'N/A'}</p>
               </div>
               <div>
+                <label className="text-sm font-medium text-gray-500">Type</label>
+                <p className="text-gray-900">{selectedContact.type || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Status</label>
+                <p className="text-gray-900">{selectedContact.status ? selectedContact.status.charAt(0).toUpperCase() + selectedContact.status.slice(1) : 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Lead Source</label>
+                <p className="text-gray-900">{selectedContact.source || 'N/A'}</p>
+              </div>
+              <div>
                 <label className="text-sm font-medium text-gray-500">Lead Score</label>
                 <p className="text-gray-900">{selectedContact.lead_score || 0}</p>
               </div>

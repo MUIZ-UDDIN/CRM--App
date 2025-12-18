@@ -24,6 +24,7 @@ class ContactBase(BaseModel):
     company: Optional[str] = None
     title: Optional[str] = None
     type: Optional[str] = None
+    source: Optional[str] = None
 
 class ContactCreate(ContactBase):
     status: Optional[str] = 'new'
@@ -38,6 +39,7 @@ class ContactUpdate(BaseModel):
     title: Optional[str] = None
     type: Optional[str] = None
     status: Optional[str] = None
+    source: Optional[str] = None
     owner_id: Optional[str] = None
 
 class Contact(ContactBase):
