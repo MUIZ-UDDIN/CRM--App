@@ -283,6 +283,88 @@ async def use_template(
         )
 
 
+class TemplateUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    category: Optional[str] = None
+    trigger_type: Optional[str] = None
+    tags: Optional[List[str]] = None
+    is_global: Optional[bool] = None
+
+
+@router.put("/{template_id}", response_model=TemplateResponse)
+async def update_template(
+    template_id: str,
+    template_update: TemplateUpdate,
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """Update a template - Super Admin for global, Company Admin for company"""
+    context = get_tenant_context(current_user)
+    company_id = current_user.get('company_id')
+    
+    template = db.query(WorkflowTemplate).filter(WorkflowTemplate.id == uuid.UUID(template_id)).first()
+    
+    if not template:
+        raise HTTPException(status_code=404, detail="Template not found")
+    
+    # Check permissions
+    can_update = False
+    if context.is_super_admin():
+        can_update = True
+    elif template.company_id and str(template.company_id) == company_id:
+        if has_permission(current_user, Permission.MANAGE_COMPANY_AUTOMATIONS):
+            can_update = True
+    
+    if not can_update:
+        raise HTTPException(status_code=403, detail="Access denied")
+    
+    # Update fields if provided
+    if template_update.name is not None:
+        template.name = template_update.name
+    if template_update.description is not None:
+        template.description = template_update.description
+    if template_update.category is not None:
+        try:
+            template.category = TemplateCategory(template_update.category.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid category. Must be one of: {[c.value for c in TemplateCategory]}"
+            )
+    if template_update.trigger_type is not None:
+        template.trigger_type = template_update.trigger_type
+    if template_update.tags is not None:
+        template.tags = template_update.tags
+    if template_update.is_global is not None:
+        # Only Super Admin can change global status
+        if context.is_super_admin():
+            template.is_global = template_update.is_global
+    
+    template.updated_at = datetime.utcnow()
+    
+    db.commit()
+    db.refresh(template)
+    
+    return TemplateResponse(
+        id=str(template.id),
+        name=template.name,
+        description=template.description,
+        category=template.category.value,
+        trigger_type=template.trigger_type,
+        trigger_config=template.trigger_config,
+        actions=template.actions,
+        conditions=template.conditions,
+        is_global=template.is_global,
+        is_active=template.is_active,
+        usage_count=template.usage_count,
+        tags=template.tags,
+        created_by_id=str(template.created_by_id),
+        company_id=str(template.company_id) if template.company_id else None,
+        created_at=template.created_at
+    )
+
+
 @router.delete("/{template_id}")
 async def delete_template(
     template_id: str,
