@@ -225,9 +225,10 @@ export default function WorkflowTemplates() {
       return false;
     }
     
-    // Check for duplicate name
+    // Check for duplicate name (exclude current template when editing)
     const duplicateTemplate = templates.find(
-      t => t.name.toLowerCase().trim() === trimmedName.toLowerCase()
+      t => t.name.toLowerCase().trim() === trimmedName.toLowerCase() && 
+           t.id !== editingTemplate?.id
     );
     if (duplicateTemplate) {
       setTemplateNameError('A template with this name already exists');
@@ -951,14 +952,14 @@ export default function WorkflowTemplates() {
                     setShowDeleteModal(false);
                     setTemplateToDelete(null);
                   }}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                  className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleDeleteTemplate}
                   disabled={isDeleting}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="flex-1 px-4 py-2.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-medium"
                 >
                   {isDeleting ? (
                     <>
@@ -968,7 +969,7 @@ export default function WorkflowTemplates() {
                   ) : (
                     <>
                       <TrashIcon className="h-4 w-4" />
-                      Delete Permanently
+                      Delete
                     </>
                   )}
                 </button>
