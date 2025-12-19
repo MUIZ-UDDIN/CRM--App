@@ -302,16 +302,19 @@ function SalesManagerDashboard() {
               <>
                 {(() => {
                   const maxValue = Math.max(...dashboardData.pipeline_stages.map(s => s.total_value || 0));
+                  const minValue = Math.min(...dashboardData.pipeline_stages.filter(s => s.total_value > 0).map(s => s.total_value || 0));
                   return dashboardData.pipeline_stages.slice(0, showAllStages ? dashboardData.pipeline_stages.length : 4).map((stage) => {
                     const isHighest = stage.total_value === maxValue;
-                    // Calculate bar width based on VALUE using linear scale with smart minimum
-                    // Cap at 85% max width to show proportional differences clearly
+                    // Calculate bar width using hybrid approach for better differentiation
                     let barWidth = 0;
                     if (stage.total_value > 0 && maxValue > 0) {
-                      // Linear scale: (value / max) * 85 to cap at 85%
-                      const proportionalWidth = (stage.total_value / maxValue) * 85;
-                      // Use 2% minimum to ensure even $1 vs $2 shows difference
-                      barWidth = Math.max(2, proportionalWidth);
+                      // Use square root scale for better visual distribution
+                      // This shows differences better than linear for wide value ranges
+                      const sqrtValue = Math.sqrt(stage.total_value);
+                      const sqrtMax = Math.sqrt(maxValue);
+                      barWidth = (sqrtValue / sqrtMax) * 85;
+                      // Ensure minimum 3% for visibility
+                      barWidth = Math.max(3, barWidth);
                     }
                     return (
                       <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
