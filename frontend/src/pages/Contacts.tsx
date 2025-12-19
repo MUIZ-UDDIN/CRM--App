@@ -444,6 +444,12 @@ export default function Contacts() {
       return;
     }
     
+    // Validate Lead Source is set
+    if (!contactForm.source || !contactForm.source.trim()) {
+      toast.error('Lead Source is required');
+      return;
+    }
+    
     // Validate required custom fields
     const requiredCustomFields = customFields.filter(f => f.is_required);
     for (const field of requiredCustomFields) {
@@ -578,6 +584,12 @@ export default function Contacts() {
         return;
       }
       
+      // Validate Lead Source is set
+      if (!contactForm.source || !contactForm.source.trim()) {
+        toast.error('Lead Source is required');
+        return;
+      }
+      
       // Validate required custom fields
       const requiredCustomFields = customFields.filter(f => f.is_required);
       for (const field of requiredCustomFields) {
@@ -590,11 +602,8 @@ export default function Contacts() {
       
       setSubmitting(true);
       
-      // Include source field in update (only exclude if empty to avoid validation errors)
+      // Include source field in update
       const updateData: Record<string, any> = { ...contactForm };
-      if (!updateData.source) {
-        delete updateData.source;
-      }
       await contactsService.updateContact(selectedContact.id, updateData);
       
       // Save custom field values if any
@@ -1075,7 +1084,7 @@ export default function Contacts() {
               {/* Status Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Status <span className="text-red-500">*</span>
+                  Status(Lead Status Distribution) <span className="text-red-500">*</span>
                 </label>
                 <StatusCombobox
                   value={contactForm.status}
@@ -1088,12 +1097,13 @@ export default function Contacts() {
               {/* Source Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Lead Source
+                  Lead Source <span className="text-red-500">*</span>
                 </label>
                 <LeadSourceCombobox
                   value={contactForm.source || ''}
                   onChange={(value) => setContactForm({...contactForm, source: value})}
                   placeholder="Select or type lead source"
+                  required
                 />
               </div>
               
@@ -1268,7 +1278,7 @@ export default function Contacts() {
                 {/* Status Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Status <span className="text-red-500">*</span>
+                    Status(Lead Status Distribution) <span className="text-red-500">*</span>
                   </label>
                   <StatusCombobox
                     value={contactForm.status}
@@ -1281,12 +1291,13 @@ export default function Contacts() {
                 {/* Source Field */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Lead Source
+                    Lead Source <span className="text-red-500">*</span>
                   </label>
                   <LeadSourceCombobox
                     value={contactForm.source || ''}
                     onChange={(value) => setContactForm({...contactForm, source: value})}
                     placeholder="Select or type lead source"
+                    required
                   />
                 </div>
                 
