@@ -304,12 +304,14 @@ function SalesManagerDashboard() {
                   const maxValue = Math.max(...dashboardData.pipeline_stages.map(s => s.total_value || 0));
                   return dashboardData.pipeline_stages.slice(0, showAllStages ? dashboardData.pipeline_stages.length : 4).map((stage) => {
                     const isHighest = stage.total_value === maxValue;
-                    // Calculate bar width based on VALUE using linear scale
+                    // Calculate bar width based on VALUE using linear scale with smart minimum
                     // Cap at 85% max width to show proportional differences clearly
                     let barWidth = 0;
                     if (stage.total_value > 0 && maxValue > 0) {
                       // Linear scale: (value / max) * 85 to cap at 85%
-                      barWidth = Math.max(5, (stage.total_value / maxValue) * 85);
+                      const proportionalWidth = (stage.total_value / maxValue) * 85;
+                      // Use 2% minimum to ensure even $1 vs $2 shows difference
+                      barWidth = Math.max(2, proportionalWidth);
                     }
                     return (
                       <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
