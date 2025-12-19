@@ -64,7 +64,7 @@ class Contact(BaseModel):
     
     # Lead Information
     status = Column(String(50), default='new', nullable=False, index=True)
-    source = Column(SQLEnum(LeadSource), index=True)
+    source = Column(String(100), index=True)  # Lead source (Website, Referral, LinkedIn, etc.)
     lead_score = Column(Integer, default=0, index=True)  # AI-generated score 0-100
     
     # Ownership

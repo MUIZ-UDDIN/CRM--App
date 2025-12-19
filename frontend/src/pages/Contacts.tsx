@@ -1352,7 +1352,7 @@ export default function Contacts() {
       {/* View Contact Modal */}
       {showViewModal && selectedContact && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
-          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white">
+          <div className="relative mx-auto p-6 border w-full max-w-md max-h-[90vh] overflow-y-auto shadow-lg rounded-md bg-white my-8">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Contact Details</h3>
               <button onClick={() => setShowViewModal(false)} className="text-gray-400 hover:text-gray-600">
