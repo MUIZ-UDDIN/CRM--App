@@ -305,16 +305,18 @@ function SalesManagerDashboard() {
                   const minValue = Math.min(...dashboardData.pipeline_stages.filter(s => s.total_value > 0).map(s => s.total_value || 0));
                   return dashboardData.pipeline_stages.slice(0, showAllStages ? dashboardData.pipeline_stages.length : 4).map((stage) => {
                     const isHighest = stage.total_value === maxValue;
-                    // Calculate bar width using hybrid approach for better differentiation
+                    // Calculate bar width with logarithmic scale for extreme differentiation
                     let barWidth = 0;
                     if (stage.total_value > 0 && maxValue > 0) {
-                      // Use square root scale for better visual distribution
-                      // This shows differences better than linear for wide value ranges
-                      const sqrtValue = Math.sqrt(stage.total_value);
-                      const sqrtMax = Math.sqrt(maxValue);
-                      barWidth = (sqrtValue / sqrtMax) * 85;
-                      // Ensure minimum 3% for visibility
-                      barWidth = Math.max(3, barWidth);
+                      // Use log10 scale with offset to ensure even $1 vs $2 shows difference
+                      // Map to range: 8% (minimum visible) to 85% (maximum)
+                      const logValue = Math.log10(stage.total_value + 1);
+                      const logMax = Math.log10(maxValue + 1);
+                      const logMin = Math.log10(minValue + 1);
+                      
+                      // Normalize to 0-1 range, then map to 8-85%
+                      const normalized = (logValue - logMin) / (logMax - logMin);
+                      barWidth = 8 + (normalized * 77); // 8% min, 85% max
                     }
                     return (
                       <div key={stage.stage_id} className="border-b border-gray-100 pb-3 last:border-0">
