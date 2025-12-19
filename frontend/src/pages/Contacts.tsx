@@ -8,6 +8,7 @@ import ContactUpload from '../components/contacts/ContactUpload';
 import Pagination from '../components/common/Pagination';
 import CompanyCombobox from '../components/common/CompanyCombobox';
 import StatusCombobox from '../components/common/StatusCombobox';
+import LeadSourceCombobox from '../components/common/LeadSourceCombobox';
 import CustomFieldsForm from '../components/CustomFieldsForm';
 import CustomFieldsDisplay from '../components/CustomFieldsDisplay';
 import { usePermissions } from '../hooks/usePermissions';
@@ -443,6 +444,16 @@ export default function Contacts() {
       return;
     }
     
+    // Validate required custom fields
+    const requiredCustomFields = customFields.filter(f => f.is_required);
+    for (const field of requiredCustomFields) {
+      const value = customFieldValues[field.field_key];
+      if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+        toast.error(`${field.name} is required`);
+        return;
+      }
+    }
+    
     // Character limit validation
     if (contactForm.first_name && contactForm.first_name.length > 100) {
       toast.error('First name must be less than 100 characters');
@@ -565,6 +576,16 @@ export default function Contacts() {
       if (!contactForm.owner_id) {
         toast.error('Please select an owner');
         return;
+      }
+      
+      // Validate required custom fields
+      const requiredCustomFields = customFields.filter(f => f.is_required);
+      for (const field of requiredCustomFields) {
+        const value = customFieldValues[field.field_key];
+        if (value === undefined || value === null || value === '' || (Array.isArray(value) && value.length === 0)) {
+          toast.error(`${field.name} is required`);
+          return;
+        }
       }
       
       setSubmitting(true);
@@ -1069,23 +1090,11 @@ export default function Contacts() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Lead Source
                 </label>
-                <select
-                  value={contactForm.source}
-                  onChange={(e) => setContactForm({...contactForm, source: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="">Select Source</option>
-                  <option value="Website">Website</option>
-                  <option value="Referral">Referral</option>
-                  <option value="LinkedIn">LinkedIn</option>
-                  <option value="Cold Call">Cold Call</option>
-                  <option value="Email Campaign">Email Campaign</option>
-                  <option value="Trade Show">Trade Show</option>
-                  <option value="Social Media">Social Media</option>
-                  <option value="Advertisement">Advertisement</option>
-                  <option value="Partner">Partner</option>
-                  <option value="Other">Other</option>
-                </select>
+                <LeadSourceCombobox
+                  value={contactForm.source || ''}
+                  onChange={(value) => setContactForm({...contactForm, source: value})}
+                  placeholder="Select or type lead source"
+                />
               </div>
               
               {/* Owner Field */}
@@ -1274,23 +1283,11 @@ export default function Contacts() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Lead Source
                   </label>
-                  <select
-                    value={contactForm.source}
-                    onChange={(e) => setContactForm({...contactForm, source: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  >
-                    <option value="">Select Source</option>
-                    <option value="Website">Website</option>
-                    <option value="Referral">Referral</option>
-                    <option value="LinkedIn">LinkedIn</option>
-                    <option value="Cold Call">Cold Call</option>
-                    <option value="Email Campaign">Email Campaign</option>
-                    <option value="Trade Show">Trade Show</option>
-                    <option value="Social Media">Social Media</option>
-                    <option value="Advertisement">Advertisement</option>
-                    <option value="Partner">Partner</option>
-                    <option value="Other">Other</option>
-                  </select>
+                  <LeadSourceCombobox
+                    value={contactForm.source || ''}
+                    onChange={(value) => setContactForm({...contactForm, source: value})}
+                    placeholder="Select or type lead source"
+                  />
                 </div>
                 
                 {/* Owner Field */}
