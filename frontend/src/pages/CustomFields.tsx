@@ -367,6 +367,11 @@ export default function CustomFields() {
                   <p className="text-gray-600 text-xs mt-2">{field.description}</p>
                 )}
                 <div className="flex gap-2 mt-3">
+                  {field.is_required && (
+                    <span className="px-2 py-1 bg-red-100 text-red-700 text-xs rounded">
+                      Required
+                    </span>
+                  )}
                   {field.show_in_list && (
                     <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
                       List View
