@@ -790,7 +790,6 @@ async def download_quote(
     amount_data = [
         ['Description', 'Amount'],
         [Paragraph(quote.title or '', description_style), f'${quote.amount:,.2f}'],
-        ['', ''],
         ['Total Amount', f'${quote.amount:,.2f}'],
     ]
     
