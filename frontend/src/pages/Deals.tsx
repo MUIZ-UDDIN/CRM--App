@@ -39,6 +39,7 @@ interface Deal {
   status?: string;
   owner_id?: string;
   owner_name?: string;
+  company_id?: string;
 }
 
 interface AssignableUser {
@@ -55,6 +56,12 @@ interface Stage {
   name: string;
   color: string;
   textColor: string;
+  originalStageIds?: string[]; // For merged stages (Super Admin view)
+}
+
+interface Company {
+  id: string;
+  name: string;
 }
 
 export default function Deals() {
@@ -140,6 +147,9 @@ export default function Deals() {
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
   const [pipelines, setPipelines] = useState<any[]>([]); // Store all pipelines
   const [dynamicStages, setDynamicStages] = useState<Stage[]>([]); // Dynamic stages from backend
+  const [companies, setCompanies] = useState<Company[]>([]); // For Super Admin company filter
+  const [filterCompany, setFilterCompany] = useState<string>('all'); // Company filter for Super Admin
+  const [stageMergeMap, setStageMergeMap] = useState<Record<string, string[]>>({}); // Maps merged stage ID to original stage IDs
 
   // Fallback hardcoded stages (used if backend stages not loaded)
   const fallbackStages: Stage[] = [
@@ -192,10 +202,24 @@ export default function Deals() {
           { color: 'bg-pink-50 border-pink-200', textColor: 'text-pink-700' },
         ];
         
-        // For Super Admin: Fetch stages from ALL pipelines
+        // For Super Admin: Fetch stages from ALL pipelines and MERGE by name
         // For other roles: Fetch stages from default pipeline only
         if (isSuperAdmin()) {
-          console.log('🔍 Super Admin: Fetching stages from ALL pipelines');
+          console.log('🔍 Super Admin: Fetching stages from ALL pipelines and merging by name');
+          
+          // Fetch companies for filter dropdown
+          try {
+            const companiesResponse = await fetch(`${API_BASE_URL}/api/platform/companies`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (companiesResponse.ok) {
+              const companiesData = await companiesResponse.json();
+              setCompanies(companiesData.map((c: any) => ({ id: c.id, name: c.name })));
+            }
+          } catch (err) {
+            console.error('Failed to fetch companies:', err);
+          }
+          
           const allStages: any[] = [];
           
           // Fetch stages from each pipeline
@@ -206,6 +230,11 @@ export default function Deals() {
             
             if (stagesResponse.ok) {
               const stages = await stagesResponse.json();
+              // Add pipeline info to each stage for reference
+              stages.forEach((s: any) => {
+                s.pipeline_company_id = pipeline.company_id;
+                s.pipeline_name = pipeline.name;
+              });
               allStages.push(...stages);
             }
           }
@@ -216,26 +245,48 @@ export default function Deals() {
             return;
           }
           
-          // Create mapping and dynamic stages array
+          // MERGE stages by name - group stages with same name together
+          const stagesByName: Record<string, any[]> = {};
+          allStages.forEach((stage: any) => {
+            const normalizedName = stage.name.trim().toLowerCase();
+            if (!stagesByName[normalizedName]) {
+              stagesByName[normalizedName] = [];
+            }
+            stagesByName[normalizedName].push(stage);
+          });
+          
+          // Create merged stages array and mapping
           const mapping: Record<string, string> = {};
+          const mergeMap: Record<string, string[]> = {};
           const dynamicStagesArray: Stage[] = [];
           
-          allStages.forEach((stage: any, index: number) => {
-            mapping[stage.id] = stage.id;
+          Object.entries(stagesByName).forEach(([normalizedName, stagesGroup], index) => {
+            // Use the first stage's ID as the merged stage ID
+            const primaryStage = stagesGroup[0];
+            const mergedId = primaryStage.id;
+            
+            // Map all original stage IDs to the merged ID
+            const originalIds = stagesGroup.map(s => s.id);
+            originalIds.forEach(id => {
+              mapping[id] = mergedId;
+            });
+            mergeMap[mergedId] = originalIds;
             
             const colorScheme = colors[index % colors.length];
             dynamicStagesArray.push({
-              id: stage.id,
-              name: stage.name,
+              id: mergedId,
+              name: primaryStage.name, // Use original case from first stage
               color: colorScheme.color,
-              textColor: colorScheme.textColor
+              textColor: colorScheme.textColor,
+              originalStageIds: originalIds
             });
           });
           
           setStageMapping(mapping);
+          setStageMergeMap(mergeMap);
           setDynamicStages(dynamicStagesArray);
           
-          // Initialize deals state
+          // Initialize deals state with merged stages
           const initialDeals: Record<string, Deal[]> = {};
           dynamicStagesArray.forEach(stage => {
             initialDeals[stage.id] = [];
@@ -441,9 +492,15 @@ export default function Deals() {
         grouped[stage.id] = [];
       });
       
-      // Group deals by stage (using actual stage UUID)
+      // For Super Admin: Group deals by MERGED stage IDs
+      // For others: Group by actual stage ID
       data.forEach((deal: Deal) => {
-        if (grouped[deal.stage_id]) {
+        // Check if this deal's stage_id maps to a merged stage
+        const mergedStageId = stageMapping[deal.stage_id] || deal.stage_id;
+        
+        if (grouped[mergedStageId]) {
+          grouped[mergedStageId].push(deal);
+        } else if (grouped[deal.stage_id]) {
           grouped[deal.stage_id].push(deal);
         } else {
           // For deals whose stage is not in the current pipeline,
@@ -934,26 +991,48 @@ export default function Deals() {
               <FunnelIcon className="h-5 w-5" />
             </button>
             {showFilters && (
-              <select
-                value={filterStage}
-                onChange={(e) => setFilterStage(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-[200px] truncate"
-                title={stages.find(s => s.id === filterStage)?.name || 'All Stages'}
-              >
-                <option value="all">All Stages</option>
-                {/* Deduplicate stages by name for the filter dropdown */}
-                {stages.filter((stage, index, self) => 
-                  self.findIndex(s => s.name === stage.name) === index
-                ).map((stage) => (
-                  <option 
-                    key={stage.id} 
-                    value={stage.id}
-                    title={stage.name}
+              <>
+                {/* Company Filter - Super Admin Only */}
+                {isSuperAdmin() && companies.length > 0 && (
+                  <select
+                    value={filterCompany}
+                    onChange={(e) => setFilterCompany(e.target.value)}
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-[200px] truncate"
+                    title={companies.find(c => c.id === filterCompany)?.name || 'All Companies'}
                   >
-                    {stage.name.length > 25 ? stage.name.substring(0, 25) + '...' : stage.name}
-                  </option>
-                ))}
-              </select>
+                    <option value="all">All Companies</option>
+                    {companies.map((company) => (
+                      <option 
+                        key={company.id} 
+                        value={company.id}
+                        title={company.name}
+                      >
+                        {company.name.length > 20 ? company.name.substring(0, 20) + '...' : company.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+                <select
+                  value={filterStage}
+                  onChange={(e) => setFilterStage(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-[200px] truncate"
+                  title={stages.find(s => s.id === filterStage)?.name || 'All Stages'}
+                >
+                  <option value="all">All Stages</option>
+                  {/* Deduplicate stages by name for the filter dropdown */}
+                  {stages.filter((stage, index, self) => 
+                    self.findIndex(s => s.name === stage.name) === index
+                  ).map((stage) => (
+                    <option 
+                      key={stage.id} 
+                      value={stage.id}
+                      title={stage.name}
+                    >
+                      {stage.name.length > 25 ? stage.name.substring(0, 25) + '...' : stage.name}
+                    </option>
+                  ))}
+                </select>
+              </>
             )}
           </div>
         </div>
@@ -1022,6 +1101,10 @@ export default function Deals() {
                       >
                         {(deals[stage.id] || [])
                           .filter(deal => {
+                            // Company filter for Super Admin
+                            if (filterCompany !== 'all' && deal.company_id !== filterCompany) {
+                              return false;
+                            }
                             if (!searchQuery.trim()) return true;
                             const query = searchQuery.toLowerCase().trim();
                             const id = deal.id?.toLowerCase() || '';

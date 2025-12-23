@@ -205,10 +205,27 @@ async def update_pipeline(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Update pipeline"""
+    from ..models.companies import Company
+    
+    context = get_tenant_context(current_user)
+    company_id = current_user.get('company_id')
+    
     pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
     
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
+    
+    # Super Admin can ONLY edit pipelines from their own company
+    if context.is_super_admin():
+        super_admin_company_id = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+        if pipeline.company_id != super_admin_company_id:
+            # Get the company name for the error message
+            pipeline_company = db.query(Company).filter(Company.id == pipeline.company_id).first()
+            company_name = pipeline_company.name if pipeline_company else "another company"
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"You cannot edit this pipeline. It belongs to '{company_name}'. Super Admins can only edit pipelines from their own company."
+            )
     
     pipeline.name = pipeline_update.name
     pipeline.description = pipeline_update.description
@@ -244,7 +261,10 @@ async def delete_pipeline(
     current_user: dict = Depends(get_current_active_user)
 ):
     """Soft delete pipeline - Only Admins (CRM Customization)"""
+    from ..models.companies import Company
+    
     context = get_tenant_context(current_user)
+    company_id = current_user.get('company_id')
     
     # Only Super Admin and Company Admin can delete pipelines (CRM customization)
     if not (context.is_super_admin() or has_permission(current_user, Permission.CUSTOMIZE_COMPANY_CRM)):
@@ -257,6 +277,18 @@ async def delete_pipeline(
     
     if not pipeline:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Pipeline not found")
+    
+    # Super Admin can ONLY delete pipelines from their own company
+    if context.is_super_admin():
+        super_admin_company_id = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+        if pipeline.company_id != super_admin_company_id:
+            # Get the company name for the error message
+            pipeline_company = db.query(Company).filter(Company.id == pipeline.company_id).first()
+            company_name = pipeline_company.name if pipeline_company else "another company"
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"You cannot delete this pipeline. It belongs to '{company_name}'. Super Admins can only delete pipelines from their own company."
+            )
     
     # Check if there are deals in this pipeline
     deal_count = db.query(Deal).filter(

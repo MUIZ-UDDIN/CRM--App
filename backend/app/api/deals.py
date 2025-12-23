@@ -433,6 +433,7 @@ async def update_deal(
 ):
     """Update a specific deal"""
     import logging
+    from ..models.companies import Company
     logger = logging.getLogger(__name__)
     
     context = get_tenant_context(current_user)
@@ -441,7 +442,7 @@ async def update_deal(
     
     logger.info(f"Update deal request - Deal ID: {deal_id}, User: {user_id}, Company: {company_id}, Data: {deal_data}")
     
-    # Super Admin can access deals from any company
+    # Super Admin: First find the deal, then check if it belongs to their company
     if context.is_super_admin():
         deal = db.query(DealModel).filter(
             and_(
@@ -449,6 +450,18 @@ async def update_deal(
                 DealModel.is_deleted == False
             )
         ).first()
+        
+        if deal:
+            # Super Admin can ONLY edit deals from their own company
+            super_admin_company_id = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+            if deal.company_id != super_admin_company_id:
+                # Get the company name for the error message
+                deal_company = db.query(Company).filter(Company.id == deal.company_id).first()
+                company_name = deal_company.name if deal_company else "another company"
+                raise HTTPException(
+                    status_code=403, 
+                    detail=f"You cannot edit this deal. It belongs to '{company_name}'. Super Admins can only edit deals from their own company."
+                )
     else:
         # Regular users must belong to a company
         if not company_id:
@@ -748,45 +761,75 @@ async def delete_deal(
     db: Session = Depends(get_db)
 ):
     """Delete a specific deal - Only Managers and Admins"""
+    from ..models.companies import Company
+    
     context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
     user_id = current_user.get('id')
     user_team_id = current_user.get('team_id')
     
-    if not company_id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User must belong to a company"
-        )
-    
     # Convert deal_id to UUID
     try:
         deal_uuid = uuid.UUID(deal_id)
-        company_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
     except (ValueError, AttributeError) as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid ID format: {str(e)}"
         )
     
-    deal = db.query(DealModel).filter(
-        and_(
-            DealModel.id == deal_uuid,
-            DealModel.company_id == company_uuid,
-            DealModel.is_deleted == False
-        )
-    ).first()
-    
-    if not deal:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Deal not found"
-        )
+    # For Super Admin: First find the deal without company filter to get proper error message
+    if context.is_super_admin():
+        deal = db.query(DealModel).filter(
+            and_(
+                DealModel.id == deal_uuid,
+                DealModel.is_deleted == False
+            )
+        ).first()
+        
+        if not deal:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Deal not found"
+            )
+        
+        # Super Admin can ONLY delete deals from their own company
+        super_admin_company_id = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+        if deal.company_id != super_admin_company_id:
+            # Get the company name for the error message
+            deal_company = db.query(Company).filter(Company.id == deal.company_id).first()
+            company_name = deal_company.name if deal_company else "another company"
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"You cannot delete this deal. It belongs to '{company_name}'. Super Admins can only delete deals from their own company."
+            )
+    else:
+        # For non-Super Admin users
+        if not company_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User must belong to a company"
+            )
+        
+        company_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+        
+        deal = db.query(DealModel).filter(
+            and_(
+                DealModel.id == deal_uuid,
+                DealModel.company_id == company_uuid,
+                DealModel.is_deleted == False
+            )
+        ).first()
+        
+        if not deal:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Deal not found"
+            )
     
     # CRITICAL: Only Managers and Admins can delete deals
     # Sales Reps CANNOT delete deals per permission matrix
     if context.is_super_admin():
-        # Super admin can delete any deal
+        # Super admin can delete deals from their own company (already verified above)
         pass
     elif has_permission(current_user, Permission.VIEW_COMPANY_DATA):
         # Company admin can delete any deal in their company
