@@ -1845,8 +1845,10 @@ async def export_analytics_csv(
     if pipeline_id:
         filters.append(Deal.pipeline_id == uuid.UUID(str(pipeline_id)))
     
-    # Get deals data
-    deals = db.query(Deal).filter(and_(*filters)).all()
+    # Get deals data with stage relationship
+    deals = db.query(Deal).options(
+        joinedload(Deal.stage)
+    ).filter(and_(*filters)).all()
     
     # Create CSV in memory
     output = io.StringIO()
@@ -1857,13 +1859,20 @@ async def export_analytics_csv(
     
     # Write data
     for deal in deals:
+        # Get stage name from relationship
+        stage_name = deal.stage.name if deal.stage else 'N/A'
+        # Use expected_close_date for Close Date column
+        close_date = deal.expected_close_date.strftime('%Y-%m-%d') if deal.expected_close_date else (
+            deal.actual_close_date.strftime('%Y-%m-%d') if deal.actual_close_date else 'N/A'
+        )
+        
         writer.writerow([
             deal.title,
             f'${deal.value:,.2f}',
             deal.status.value if deal.status else 'N/A',
-            'N/A',  # Stage name would need a join
+            stage_name,
             deal.created_at.strftime('%Y-%m-%d') if deal.created_at else 'N/A',
-            deal.actual_close_date.strftime('%Y-%m-%d') if deal.actual_close_date else 'N/A',
+            close_date,
             deal.company or 'N/A'
         ])
     
