@@ -302,34 +302,39 @@ export default function Analytics() {
       const stageIds = allStages.map((s: any) => s.id);
       allDeals = allDeals.filter((deal: any) => stageIds.includes(deal.stage_id));
       
-      // If a specific pipeline is selected, show its stages directly without merging
-      // If "All Pipelines" is selected, merge stages by name across all pipelines
+      // Always merge stages by name for consistent display
       if (selectedPipeline !== 'all') {
-        // Single pipeline selected - show stages directly by stage name
+        // Single pipeline selected - merge stages by name within that pipeline
         const stagesByName: Record<string, { name: string; stageIds: string[]; deal_count: number; total_value: number }> = {};
         
         allStages.forEach((stage: any) => {
-          // Use stage ID as key to keep stages separate (no merging)
-          if (!stagesByName[stage.id]) {
-            stagesByName[stage.id] = {
+          const normalizedName = stage.name.trim().toLowerCase();
+          if (!stagesByName[normalizedName]) {
+            stagesByName[normalizedName] = {
               name: stage.name,
-              stageIds: [stage.id],
+              stageIds: [],
               deal_count: 0,
               total_value: 0
             };
           }
+          stagesByName[normalizedName].stageIds.push(stage.id);
         });
         
-        // Count deals and sum values for each stage
+        // Count deals and sum values for each merged stage
         allDeals.forEach((deal: any) => {
-          if (stagesByName[deal.stage_id]) {
-            stagesByName[deal.stage_id].deal_count += 1;
-            stagesByName[deal.stage_id].total_value += deal.value || 0;
+          // Find which merged stage this deal belongs to
+          for (const [normalizedName, stageData] of Object.entries(stagesByName)) {
+            if (stageData.stageIds.includes(deal.stage_id)) {
+              stageData.deal_count += 1;
+              stageData.total_value += deal.value || 0;
+              break;
+            }
           }
         });
         
-        // Convert to array - include all stages even if no deals
+        // Convert to array and filter out stages with 0 deals
         const stages = Object.values(stagesByName)
+          .filter(stage => stage.deal_count > 0)
           .sort((a, b) => b.total_value - a.total_value);
         
         setMergedPipelineStages(stages);
