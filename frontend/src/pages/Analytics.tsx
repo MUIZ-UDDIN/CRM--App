@@ -61,6 +61,10 @@ export default function Analytics() {
   const [chartKey, setChartKey] = useState(0);
   const [mergedPipelineStages, setMergedPipelineStages] = useState<any[]>([]);
   const [showAllStages, setShowAllStages] = useState(false);
+  const [companies, setCompanies] = useState<any[]>([]);
+  const [selectedCompany, setSelectedCompany] = useState('all');
+  const [showCompanyDropdown, setShowCompanyDropdown] = useState(false);
+  const [companySearch, setCompanySearch] = useState('');
   
   // Check if user can see all company data and filter by user
   // super_admin, company_admin, admin, sales_manager: Can see company/team data + filter by user
@@ -104,6 +108,9 @@ export default function Analytics() {
       if (!target.closest('.pipeline-dropdown-container')) {
         setShowPipelineDropdown(false);
       }
+      if (!target.closest('.company-dropdown-container')) {
+        setShowCompanyDropdown(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -116,7 +123,7 @@ export default function Analytics() {
       setFilterApplied(true);
       fetchAllAnalytics();
     }
-  }, [dateRange, selectedUser, selectedPipeline]);
+  }, [dateRange, selectedUser, selectedPipeline, selectedCompany]);
 
   const fetchUsersAndPipelines = async () => {
     try {
@@ -145,14 +152,14 @@ export default function Analytics() {
         
         // For Super Admin, fetch company names to display alongside pipeline names
         if (currentUser?.role === 'super_admin') {
-          const companiesResponse = await fetch(`${API_BASE_URL}/api/admin-analytics/companies`, {
+          const companiesResponse = await fetch(`${API_BASE_URL}/api/platform/companies`, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           
           if (companiesResponse.ok) {
             const companiesData = await companiesResponse.json();
-            const companies = companiesData.companies || companiesData;
-            const companyMap = new Map(Array.isArray(companies) ? companies.map((c: any) => [c.id, c.name]) : []);
+            setCompanies(companiesData);
+            const companyMap = new Map(Array.isArray(companiesData) ? companiesData.map((c: any) => [c.id, c.name]) : []);
             
             // Add company_name to each pipeline
             pipelinesData.forEach((pipeline: any) => {
@@ -283,6 +290,11 @@ export default function Analytics() {
       // Apply user filter to deals
       if (selectedUser !== 'all') {
         allDeals = allDeals.filter((deal: any) => deal.owner_id === selectedUser);
+      }
+      
+      // Apply company filter to deals (Super Admin only)
+      if (selectedCompany !== 'all') {
+        allDeals = allDeals.filter((deal: any) => deal.company_id === selectedCompany);
       }
       
       // Fetch stages from pipelines
@@ -796,7 +808,7 @@ export default function Analytics() {
         )}
         
         {/* Filter Applied Indicator - Hidden for Sales Reps (they can't change filters) */}
-        {!loading && canFilterByUser && filterApplied && (dateRange !== 'last30days' || selectedUser !== 'all' || selectedPipeline !== 'all') && (
+        {!loading && canFilterByUser && filterApplied && (dateRange !== 'last30days' || selectedUser !== 'all' || selectedPipeline !== 'all' || selectedCompany !== 'all') && (
           <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
@@ -815,6 +827,9 @@ export default function Analytics() {
                   {selectedPipeline !== 'all' && <span className="ml-2 px-2 py-0.5 bg-blue-100 rounded">
                     {pipelines.find(p => p.id === selectedPipeline)?.name}
                   </span>}
+                  {selectedCompany !== 'all' && <span className="ml-2 px-2 py-0.5 bg-blue-100 rounded">
+                    {companies.find(c => c.id === selectedCompany)?.name}
+                  </span>}
                 </span>
               </div>
               <button
@@ -822,6 +837,7 @@ export default function Analytics() {
                   setDateRange('last30days');
                   setSelectedUser('all');
                   setSelectedPipeline('all');
+                  setSelectedCompany('all');
                   setFilterApplied(true);
                   // Trigger data fetch after clearing filters
                   setTimeout(() => fetchAllAnalytics(), 0);
@@ -1012,6 +1028,55 @@ export default function Analytics() {
                   </div>
                 )}
               </div>
+              
+              {/* Company Filter - Super Admin Only */}
+              {currentUser?.role === 'super_admin' && companies.length > 0 && (
+                <div className="relative company-dropdown-container w-full sm:w-auto">
+                  <input
+                    type="text"
+                    value={showCompanyDropdown ? companySearch : (selectedCompany === 'all' ? 'All Companies' : companies.find(c => c.id === selectedCompany)?.name || '')}
+                    onChange={(e) => {
+                      setCompanySearch(e.target.value);
+                      if (!showCompanyDropdown) setShowCompanyDropdown(true);
+                    }}
+                    onFocus={() => {
+                      setShowCompanyDropdown(true);
+                      setCompanySearch('');
+                    }}
+                    placeholder="Search companies..."
+                    className="w-full sm:w-48 px-2 sm:px-3 py-1.5 sm:py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 text-xs sm:text-sm"
+                  />
+                  {showCompanyDropdown && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          setSelectedCompany('all');
+                          setCompanySearch('');
+                          setShowCompanyDropdown(false);
+                        }}
+                        className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b"
+                      >
+                        All Companies
+                      </button>
+                      {companies
+                        .filter(company => company.name.toLowerCase().includes(companySearch.toLowerCase()))
+                        .map(company => (
+                          <button
+                            key={company.id}
+                            onClick={() => {
+                              setSelectedCompany(company.id);
+                              setCompanySearch('');
+                              setShowCompanyDropdown(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 text-sm border-b last:border-b-0"
+                          >
+                            {company.name}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
               <button
