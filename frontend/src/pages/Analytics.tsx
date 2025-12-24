@@ -227,18 +227,40 @@ export default function Analytics() {
   };
   
   // Fetch merged pipeline stages for Super Admin (same logic as Deals page)
+  // Now respects filters: date range, user, and pipeline
   const fetchMergedPipelineStages = async () => {
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
       const token = localStorage.getItem('token');
       
-      // Fetch all pipelines
-      const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      // Get date range for filtering
+      const dateFrom = getDateFrom(dateRange);
+      const dateTo = getDateTo();
       
-      if (!pipelinesResponse.ok) return;
-      const allPipelines = await pipelinesResponse.json();
+      // Fetch all pipelines (or specific pipeline if filtered)
+      let allPipelines: any[] = [];
+      if (selectedPipeline !== 'all') {
+        // Fetch only the selected pipeline
+        const pipelineResponse = await fetch(`${API_BASE_URL}/api/pipelines/${selectedPipeline}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (pipelineResponse.ok) {
+          const pipeline = await pipelineResponse.json();
+          allPipelines = [pipeline];
+        }
+      } else {
+        const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (pipelinesResponse.ok) {
+          allPipelines = await pipelinesResponse.json();
+        }
+      }
+      
+      if (allPipelines.length === 0) {
+        setMergedPipelineStages([]);
+        return;
+      }
       
       // Fetch all deals
       const dealsResponse = await fetch(`${API_BASE_URL}/api/deals`, {
@@ -246,10 +268,27 @@ export default function Analytics() {
       });
       
       if (!dealsResponse.ok) return;
-      const allDeals = await dealsResponse.json();
+      let allDeals = await dealsResponse.json();
       
-      // Fetch stages from all pipelines
+      // Apply date filter to deals
+      if (dateFrom || dateTo) {
+        allDeals = allDeals.filter((deal: any) => {
+          const dealDate = new Date(deal.created_at);
+          if (dateFrom && dealDate < new Date(dateFrom)) return false;
+          if (dateTo && dealDate > new Date(dateTo + 'T23:59:59')) return false;
+          return true;
+        });
+      }
+      
+      // Apply user filter to deals
+      if (selectedUser !== 'all') {
+        allDeals = allDeals.filter((deal: any) => deal.owner_id === selectedUser);
+      }
+      
+      // Fetch stages from pipelines
       const allStages: any[] = [];
+      const pipelineIds = allPipelines.map((p: any) => p.id);
+      
       for (const pipeline of allPipelines) {
         const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${pipeline.id}/stages`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -259,6 +298,10 @@ export default function Analytics() {
           allStages.push(...stages);
         }
       }
+      
+      // Filter deals to only include those in selected pipeline(s)
+      const stageIds = allStages.map((s: any) => s.id);
+      allDeals = allDeals.filter((deal: any) => stageIds.includes(deal.stage_id));
       
       // Merge stages by name (same logic as Deals page)
       const stagesByName: Record<string, { name: string; stageIds: string[]; deal_count: number; total_value: number }> = {};
