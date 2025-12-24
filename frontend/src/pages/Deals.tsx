@@ -448,11 +448,34 @@ export default function Deals() {
       if (entity_type === 'deal') {
         fetchDeals();
       }
+      
+      // Refresh companies list when a new company is added (Super Admin only)
+      if (entity_type === 'company' && isSuperAdmin()) {
+        fetchCompanies();
+      }
     };
 
     window.addEventListener('entity_change', handleEntityChange);
     return () => window.removeEventListener('entity_change', handleEntityChange);
   }, [dynamicStages]);
+  
+  // Function to fetch companies for Super Admin filter
+  const fetchCompanies = async () => {
+    if (!isSuperAdmin()) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const companiesResponse = await fetch(`${API_BASE_URL}/api/platform/companies`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (companiesResponse.ok) {
+        const companiesData = await companiesResponse.json();
+        setCompanies(companiesData.map((c: any) => ({ id: c.id, name: c.name })));
+      }
+    } catch (err) {
+      console.error('Failed to fetch companies:', err);
+    }
+  };
 
   // Prevent background scroll when modals are open
   useEffect(() => {
@@ -1064,6 +1087,14 @@ export default function Deals() {
                   );
                 };
                 
+                // Filter deals by company for Super Admin - used for both count and total value
+                const filteredStageDeals = (deals[stage.id] || []).filter(deal => {
+                  if (filterCompany !== 'all' && deal.company_id !== filterCompany) {
+                    return false;
+                  }
+                  return true;
+                });
+                
                 return (
                 <div key={stage.id} className={`rounded-lg border-2 ${stage.color} overflow-hidden`}>
                   {/* Stage Header - Clickable on All Devices */}
@@ -1078,14 +1109,14 @@ export default function Deals() {
                             {stage.name}
                           </h3>
                           <span className={`text-sm ${stage.textColor} flex-shrink-0`}>
-                            ({deals[stage.id]?.length || 0})
+                            ({filteredStageDeals.length})
                           </span>
                           <ChevronDownIcon 
                             className={`h-4 w-4 ${stage.textColor} transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                           />
                         </div>
                         <p className={`text-lg font-bold ${stage.textColor} mt-1`}>
-                          {formatCurrency(getTotalValue(deals[stage.id] || []))}
+                          {formatCurrency(getTotalValue(filteredStageDeals))}
                         </p>
                       </div>
                     </div>
