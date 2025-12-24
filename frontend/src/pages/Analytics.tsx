@@ -328,9 +328,8 @@ export default function Analytics() {
           }
         });
         
-        // Convert to array and sort by total value
+        // Convert to array - include all stages even if no deals
         const stages = Object.values(stagesByName)
-          .filter(stage => stage.deal_count > 0)
           .sort((a, b) => b.total_value - a.total_value);
         
         setMergedPipelineStages(stages);
