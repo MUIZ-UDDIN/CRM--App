@@ -151,6 +151,34 @@ async def get_platform_dashboard(
     return response
 
 
+@router.get("/companies")
+async def get_companies_list(
+    current_user: dict = Depends(get_current_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    Get list of all companies (simple list for filters)
+    Only accessible by Super Admin
+    """
+    user_role = current_user.get('role', 'user')
+    
+    if user_role != 'super_admin':
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only Super Admins can view all companies"
+        )
+    
+    companies = db.query(Company).filter(Company.is_deleted == False).all()
+    
+    return [
+        {
+            "id": str(company.id),
+            "name": company.name
+        }
+        for company in companies
+    ]
+
+
 @router.post("/companies/{company_id}/suspend")
 async def suspend_company(
     company_id: UUID4,

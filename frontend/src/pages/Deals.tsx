@@ -832,8 +832,10 @@ export default function Deals() {
       setCustomFieldValues({});
       setSelectedDeal(null);
       fetchDeals();
-    } catch (error) {
-      toast.error('Failed to update deal');
+    } catch (error: any) {
+      // Display user-friendly error message from backend
+      const errorMessage = error?.response?.data?.detail || error?.message || 'Failed to update deal';
+      toast.error(errorMessage);
     }
   };
 
