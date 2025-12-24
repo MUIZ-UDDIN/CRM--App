@@ -269,22 +269,7 @@ export default function Analytics() {
       if (!dealsResponse.ok) return;
       let allDeals = await dealsResponse.json();
       
-      // Apply date filter to deals
-      if (dateFrom || dateTo) {
-        allDeals = allDeals.filter((deal: any) => {
-          const dealDate = new Date(deal.created_at);
-          if (dateFrom && dealDate < new Date(dateFrom)) return false;
-          if (dateTo && dealDate > new Date(dateTo + 'T23:59:59')) return false;
-          return true;
-        });
-      }
-      
-      // Apply user filter to deals
-      if (selectedUser !== 'all') {
-        allDeals = allDeals.filter((deal: any) => deal.owner_id === selectedUser);
-      }
-      
-      // Fetch stages from pipelines
+      // Fetch stages from pipelines FIRST
       const allStages: any[] = [];
       const pipelineIds = allPipelines.map((p: any) => p.id);
       
@@ -301,6 +286,21 @@ export default function Analytics() {
       // Filter deals to only include those in selected pipeline(s)
       const stageIds = allStages.map((s: any) => s.id);
       allDeals = allDeals.filter((deal: any) => stageIds.includes(deal.stage_id));
+      
+      // Apply date filter to deals AFTER pipeline filter
+      if (dateFrom || dateTo) {
+        allDeals = allDeals.filter((deal: any) => {
+          const dealDate = new Date(deal.created_at);
+          if (dateFrom && dealDate < new Date(dateFrom)) return false;
+          if (dateTo && dealDate > new Date(dateTo + 'T23:59:59')) return false;
+          return true;
+        });
+      }
+      
+      // Apply user filter to deals
+      if (selectedUser !== 'all') {
+        allDeals = allDeals.filter((deal: any) => deal.owner_id === selectedUser);
+      }
       
       // Always merge stages by name for consistent display
       if (selectedPipeline !== 'all') {
