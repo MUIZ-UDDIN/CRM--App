@@ -1188,13 +1188,12 @@ export default function Analytics() {
                 <PieChart>
                   <Pie
                     data={currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 ? mergedPipelineStages.map((stage: any, index: number) => {
-                      // Apply logarithmic scale for pie chart values to show visual difference
-                      const logValue = Math.log10((stage.total_value || 0) + 1);
+                      // Use deal count for pie chart to ensure all stages are visible
                       const truncatedName = stage.name.length > 20 ? stage.name.substring(0, 20) + '...' : stage.name;
                       return {
                         name: truncatedName,
                         fullName: stage.name,
-                        value: logValue > 0 ? logValue : 0.1, // Use log value for pie slice size
+                        value: stage.deal_count || 1, // Use deal count so all stages are visible
                         totalValue: stage.total_value,
                         deals: stage.deal_count,
                         color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
