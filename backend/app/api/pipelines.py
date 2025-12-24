@@ -183,13 +183,23 @@ async def get_pipeline(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_active_user)
 ):
-    """Get pipeline by ID with stages (company-scoped)"""
+    """Get pipeline by ID with stages - Super Admin sees ALL companies, others see only their company"""
+    context = get_tenant_context(current_user)
     company_id = current_user.get('company_id')
-    pipeline = db.query(Pipeline).filter(
-        Pipeline.id == pipeline_id,
-        Pipeline.is_deleted == False,
-        Pipeline.company_id == company_id
-    ).first()
+    
+    # Super Admin can access pipelines from ANY company
+    if context.is_super_admin():
+        pipeline = db.query(Pipeline).filter(
+            Pipeline.id == pipeline_id,
+            Pipeline.is_deleted == False
+        ).first()
+    # Other users can only access their company's pipelines
+    else:
+        pipeline = db.query(Pipeline).filter(
+            Pipeline.id == pipeline_id,
+            Pipeline.is_deleted == False,
+            Pipeline.company_id == company_id
+        ).first()
     
     if not pipeline:
         raise HTTPException(status_code=404, detail="Pipeline not found")
