@@ -1098,110 +1098,56 @@ export default function Analytics() {
 
         {/* Pipeline & Activities */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          {/* Pipeline Distribution - Progress Bar Style for Super Admin, Pie Chart for others */}
+          {/* Pipeline Distribution */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Pipeline by Stage</h3>
             </div>
             <div className="p-4 sm:p-6">
-              {currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 ? (
-                /* Progress Bar Style for Super Admin (like Dashboard) */
-                <div className="space-y-4 max-h-[250px] overflow-y-auto">
-                  {(() => {
-                    const maxValue = Math.max(...mergedPipelineStages.map((s: any) => s.total_value || 0));
-                    const minValue = Math.min(...mergedPipelineStages.filter((s: any) => s.total_value > 0).map((s: any) => s.total_value || 0));
-                    const stagesToShow = showAllStages ? mergedPipelineStages : mergedPipelineStages.slice(0, 4);
-                    
-                    return stagesToShow.map((stage: any, index: number) => {
-                      const isHighest = stage.total_value === maxValue;
-                      // Calculate bar width with logarithmic scale for extreme differentiation
-                      let barWidth = 0;
-                      if (stage.total_value > 0 && maxValue > 0) {
-                        // Use log10 scale with offset to ensure even $1 vs $2 shows difference
-                        const logValue = Math.log10(stage.total_value + 1);
-                        const logMax = Math.log10(maxValue + 1);
-                        const logMin = Math.log10((minValue || 1) + 1);
-                        
-                        // Normalize to 0-1 range, then map to 8-85%
-                        const normalized = logMax === logMin ? 1 : (logValue - logMin) / (logMax - logMin);
-                        barWidth = 8 + (normalized * 77); // 8% min, 85% max
-                      }
-                      
-                      return (
-                        <div key={stage.name} className="border-b border-gray-100 pb-3 last:border-0">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-semibold text-gray-700 truncate max-w-[200px]" title={stage.name}>
-                              {stage.name}
-                            </span>
-                            <span className="text-sm text-gray-600 font-medium">
-                              ${(() => {
-                                const value = stage.total_value || 0;
-                                const absValue = Math.abs(value);
-                                if (absValue >= 1e9) return (value / 1e9).toFixed(1) + 'B';
-                                if (absValue >= 1e6) return (value / 1e6).toFixed(1) + 'M';
-                                if (absValue >= 1e3) return (value / 1e3).toFixed(1) + 'K';
-                                return Math.round(value).toLocaleString();
-                              })()} ({stage.deal_count} deals)
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-3">
-                            <div
-                              className={`h-3 rounded-full transition-all duration-300 ${
-                                isHighest 
-                                  ? 'bg-gradient-to-r from-green-500 to-green-600' 
-                                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
-                              }`}
-                              style={{ width: `${barWidth}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                  
-                  {mergedPipelineStages.length > 4 && (
-                    <button
-                      onClick={() => setShowAllStages(!showAllStages)}
-                      className="w-full mt-2 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
-                    >
-                      {showAllStages ? 'Show Less' : `Show All Stages (${mergedPipelineStages.length - 4} more)`}
-                    </button>
-                  )}
-                </div>
-              ) : (
-                /* Pie Chart for other roles */
-                <ResponsiveContainer width="100%" height={250} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                  <PieChart>
-                    <Pie
-                      data={pipelineData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={false}
-                      outerRadius={60}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {pipelineData.map((entry: any, index: number) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: any, name: any, props: any) => {
-                        // Show deals count and total value in tooltip
-                        const totalValue = props.payload.totalValue || 0;
-                        return [`${value} deals ($${totalValue.toLocaleString()})`, props.payload.fullName || name];
-                      }}
-                    />
-                    <Legend 
-                      wrapperStyle={{ fontSize: '11px', maxHeight: '80px', overflowY: 'auto' }}
-                      iconType="circle"
-                      layout="horizontal"
-                      align="center"
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              )}
+              <ResponsiveContainer width="100%" height={250} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+                <PieChart>
+                  <Pie
+                    data={currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 ? mergedPipelineStages.map((stage: any, index: number) => {
+                      // Apply logarithmic scale for pie chart values to show visual difference
+                      const logValue = Math.log10((stage.total_value || 0) + 1);
+                      const truncatedName = stage.name.length > 20 ? stage.name.substring(0, 20) + '...' : stage.name;
+                      return {
+                        name: truncatedName,
+                        fullName: stage.name,
+                        value: logValue > 0 ? logValue : 0.1, // Use log value for pie slice size
+                        totalValue: stage.total_value,
+                        deals: stage.deal_count,
+                        color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
+                      };
+                    }) : pipelineData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={false}
+                    outerRadius={60}
+                    fill="#8884d8"
+                    dataKey="value"
+                  >
+                    {(currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 ? mergedPipelineStages : pipelineData).map((entry: any, index: number) => (
+                      <Cell key={`cell-${index}`} fill={entry.color || DISTINCT_COLORS[index % DISTINCT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip 
+                    formatter={(value: any, name: any, props: any) => {
+                      // Show deals count and total value in tooltip
+                      const totalValue = props.payload.totalValue || 0;
+                      const deals = props.payload.deals || props.payload.value || 0;
+                      return [`${deals} deals ($${totalValue.toLocaleString()})`, props.payload.fullName || name];
+                    }}
+                  />
+                  <Legend 
+                    wrapperStyle={{ fontSize: '11px', maxHeight: '80px', overflowY: 'auto' }}
+                    iconType="circle"
+                    layout="horizontal"
+                    align="center"
+                  />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
