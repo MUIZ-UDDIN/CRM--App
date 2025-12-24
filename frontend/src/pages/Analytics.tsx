@@ -59,6 +59,8 @@ export default function Analytics() {
   const [revenueAnalytics, setRevenueAnalytics] = useState<any>(null);
   const [dashboardKPIs, setDashboardKPIs] = useState<any>(null);
   const [chartKey, setChartKey] = useState(0);
+  const [mergedPipelineStages, setMergedPipelineStages] = useState<any[]>([]);
+  const [showAllStages, setShowAllStages] = useState(false);
   
   // Check if user can see all company data and filter by user
   // super_admin, company_admin, admin, sales_manager: Can see company/team data + filter by user
@@ -211,11 +213,89 @@ export default function Analytics() {
       setDashboardKPIs(dashboard);
       setChartKey(prev => prev + 1); // Force chart re-render
       
+      // For Super Admin: Fetch and merge pipeline stages by name (like Deals page)
+      if (currentUser?.role === 'super_admin') {
+        await fetchMergedPipelineStages();
+      }
+      
     } catch (error) {
       console.error('Error fetching analytics:', error);
       toast.error('Failed to load analytics data');
     } finally {
       setLoading(false);
+    }
+  };
+  
+  // Fetch merged pipeline stages for Super Admin (same logic as Deals page)
+  const fetchMergedPipelineStages = async () => {
+    try {
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const token = localStorage.getItem('token');
+      
+      // Fetch all pipelines
+      const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!pipelinesResponse.ok) return;
+      const allPipelines = await pipelinesResponse.json();
+      
+      // Fetch all deals
+      const dealsResponse = await fetch(`${API_BASE_URL}/api/deals`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      if (!dealsResponse.ok) return;
+      const allDeals = await dealsResponse.json();
+      
+      // Fetch stages from all pipelines
+      const allStages: any[] = [];
+      for (const pipeline of allPipelines) {
+        const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${pipeline.id}/stages`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (stagesResponse.ok) {
+          const stages = await stagesResponse.json();
+          allStages.push(...stages);
+        }
+      }
+      
+      // Merge stages by name (same logic as Deals page)
+      const stagesByName: Record<string, { name: string; stageIds: string[]; deal_count: number; total_value: number }> = {};
+      
+      allStages.forEach((stage: any) => {
+        const normalizedName = stage.name.trim().toLowerCase();
+        if (!stagesByName[normalizedName]) {
+          stagesByName[normalizedName] = {
+            name: stage.name,
+            stageIds: [],
+            deal_count: 0,
+            total_value: 0
+          };
+        }
+        stagesByName[normalizedName].stageIds.push(stage.id);
+      });
+      
+      // Count deals and sum values for each merged stage
+      allDeals.forEach((deal: any) => {
+        // Find which merged stage this deal belongs to
+        for (const [normalizedName, stageData] of Object.entries(stagesByName)) {
+          if (stageData.stageIds.includes(deal.stage_id)) {
+            stageData.deal_count += 1;
+            stageData.total_value += deal.value || 0;
+            break;
+          }
+        }
+      });
+      
+      // Convert to array and sort by total value
+      const mergedStages = Object.values(stagesByName)
+        .filter(stage => stage.deal_count > 0)
+        .sort((a, b) => b.total_value - a.total_value);
+      
+      setMergedPipelineStages(mergedStages);
+    } catch (error) {
+      console.error('Error fetching merged pipeline stages:', error);
     }
   };
   
@@ -346,20 +426,49 @@ export default function Analytics() {
 
   // Pipeline data from API - show empty state if no data
   // Use deal_count for pie chart value so all deals are visible regardless of dollar amount
+  // For Super Admin: Merge stages with same name (combine deal counts and values)
   const pipelineData = Array.isArray(pipelineAnalytics?.pipeline_analytics) && pipelineAnalytics.pipeline_analytics.length > 0
-    ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => {
-        // Truncate long stage names to max 20 characters
-        const stageName = stage.stage_name || 'Unnamed';
-        const truncatedName = stageName.length > 20 ? stageName.substring(0, 20) + '...' : stageName;
-        return {
-          name: truncatedName,
-          fullName: stageName,
-          value: stage.deal_count,  // Use deal count instead of total_value for equal representation
-          totalValue: stage.total_value,  // Keep total value for tooltip
-          deals: stage.deal_count,
-          color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
-        };
-      })
+    ? (() => {
+        // For Super Admin, merge stages by name
+        if (currentUser?.role === 'super_admin') {
+          const stagesByName: Record<string, { deal_count: number; total_value: number }> = {};
+          
+          pipelineAnalytics.pipeline_analytics.forEach((stage: any) => {
+            const stageName = stage.stage_name || 'Unnamed';
+            if (!stagesByName[stageName]) {
+              stagesByName[stageName] = { deal_count: 0, total_value: 0 };
+            }
+            stagesByName[stageName].deal_count += stage.deal_count || 0;
+            stagesByName[stageName].total_value += stage.total_value || 0;
+          });
+          
+          return Object.entries(stagesByName).map(([stageName, data], index) => {
+            const truncatedName = stageName.length > 20 ? stageName.substring(0, 20) + '...' : stageName;
+            return {
+              name: truncatedName,
+              fullName: stageName,
+              value: data.deal_count,
+              totalValue: data.total_value,
+              deals: data.deal_count,
+              color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
+            };
+          });
+        } else {
+          // For other roles, show stages as-is
+          return pipelineAnalytics.pipeline_analytics.map((stage: any, index: number) => {
+            const stageName = stage.stage_name || 'Unnamed';
+            const truncatedName = stageName.length > 20 ? stageName.substring(0, 20) + '...' : stageName;
+            return {
+              name: truncatedName,
+              fullName: stageName,
+              value: stage.deal_count,
+              totalValue: stage.total_value,
+              deals: stage.deal_count,
+              color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
+            };
+          });
+        }
+      })()
     : [{ name: 'No Data', fullName: 'No Data', value: 0, totalValue: 0, deals: 0, color: '#E5E7EB' }];
   
 
@@ -393,12 +502,36 @@ export default function Analytics() {
     : [{ name: 'No Data', value: 0, color: '#E5E7EB' }];
 
   // Conversion funnel from pipeline data
+  // For Super Admin: Merge stages with same name
   const conversionData = Array.isArray(pipelineAnalytics?.pipeline_analytics)
-    ? pipelineAnalytics.pipeline_analytics.map((stage: any, index: number, arr: any[]) => ({
-        stage: stage.stage_name,
-        count: stage.deal_count || 0,
-        rate: arr[0]?.deal_count ? Math.round((stage.deal_count / arr[0].deal_count) * 100) : 0
-      }))
+    ? (() => {
+        if (currentUser?.role === 'super_admin') {
+          const stagesByName: Record<string, number> = {};
+          
+          pipelineAnalytics.pipeline_analytics.forEach((stage: any) => {
+            const stageName = stage.stage_name || 'Unnamed';
+            if (!stagesByName[stageName]) {
+              stagesByName[stageName] = 0;
+            }
+            stagesByName[stageName] += stage.deal_count || 0;
+          });
+          
+          const stages = Object.entries(stagesByName);
+          const firstStageCount = stages[0]?.[1] || 0;
+          
+          return stages.map(([stageName, count]) => ({
+            stage: stageName,
+            count: count,
+            rate: firstStageCount ? Math.round((count / firstStageCount) * 100) : 0
+          }));
+        } else {
+          return pipelineAnalytics.pipeline_analytics.map((stage: any, index: number, arr: any[]) => ({
+            stage: stage.stage_name,
+            count: stage.deal_count || 0,
+            rate: arr[0]?.deal_count ? Math.round((stage.deal_count / arr[0].deal_count) * 100) : 0
+          }));
+        }
+      })()
     : [];
 
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
@@ -965,43 +1098,110 @@ export default function Analytics() {
 
         {/* Pipeline & Activities */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 mb-8">
-          {/* Pipeline Distribution */}
+          {/* Pipeline Distribution - Progress Bar Style for Super Admin, Pie Chart for others */}
           <div className="bg-white rounded-lg shadow">
             <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">Pipeline by Stage</h3>
             </div>
             <div className="p-4 sm:p-6">
-              <ResponsiveContainer width="100%" height={250} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
-                <PieChart>
-                  <Pie
-                    data={pipelineData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={false}
-                    outerRadius={60}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {pipelineData.map((entry: any, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    formatter={(value: any, name: any, props: any) => {
-                      // Show deals count and total value in tooltip
-                      const totalValue = props.payload.totalValue || 0;
-                      return [`${value} deals ($${totalValue.toLocaleString()})`, props.payload.fullName || name];
-                    }}
-                  />
-                  <Legend 
-                    wrapperStyle={{ fontSize: '11px', maxHeight: '80px', overflowY: 'auto' }}
-                    iconType="circle"
-                    layout="horizontal"
-                    align="center"
-                  />
-                </PieChart>
-              </ResponsiveContainer>
+              {currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 ? (
+                /* Progress Bar Style for Super Admin (like Dashboard) */
+                <div className="space-y-4 max-h-[250px] overflow-y-auto">
+                  {(() => {
+                    const maxValue = Math.max(...mergedPipelineStages.map((s: any) => s.total_value || 0));
+                    const minValue = Math.min(...mergedPipelineStages.filter((s: any) => s.total_value > 0).map((s: any) => s.total_value || 0));
+                    const stagesToShow = showAllStages ? mergedPipelineStages : mergedPipelineStages.slice(0, 4);
+                    
+                    return stagesToShow.map((stage: any, index: number) => {
+                      const isHighest = stage.total_value === maxValue;
+                      // Calculate bar width with logarithmic scale for extreme differentiation
+                      let barWidth = 0;
+                      if (stage.total_value > 0 && maxValue > 0) {
+                        // Use log10 scale with offset to ensure even $1 vs $2 shows difference
+                        const logValue = Math.log10(stage.total_value + 1);
+                        const logMax = Math.log10(maxValue + 1);
+                        const logMin = Math.log10((minValue || 1) + 1);
+                        
+                        // Normalize to 0-1 range, then map to 8-85%
+                        const normalized = logMax === logMin ? 1 : (logValue - logMin) / (logMax - logMin);
+                        barWidth = 8 + (normalized * 77); // 8% min, 85% max
+                      }
+                      
+                      return (
+                        <div key={stage.name} className="border-b border-gray-100 pb-3 last:border-0">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm font-semibold text-gray-700 truncate max-w-[200px]" title={stage.name}>
+                              {stage.name}
+                            </span>
+                            <span className="text-sm text-gray-600 font-medium">
+                              ${(() => {
+                                const value = stage.total_value || 0;
+                                const absValue = Math.abs(value);
+                                if (absValue >= 1e9) return (value / 1e9).toFixed(1) + 'B';
+                                if (absValue >= 1e6) return (value / 1e6).toFixed(1) + 'M';
+                                if (absValue >= 1e3) return (value / 1e3).toFixed(1) + 'K';
+                                return Math.round(value).toLocaleString();
+                              })()} ({stage.deal_count} deals)
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-3">
+                            <div
+                              className={`h-3 rounded-full transition-all duration-300 ${
+                                isHighest 
+                                  ? 'bg-gradient-to-r from-green-500 to-green-600' 
+                                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
+                              }`}
+                              style={{ width: `${barWidth}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                  
+                  {mergedPipelineStages.length > 4 && (
+                    <button
+                      onClick={() => setShowAllStages(!showAllStages)}
+                      className="w-full mt-2 py-2 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg flex items-center justify-center gap-2 transition-colors text-sm"
+                    >
+                      {showAllStages ? 'Show Less' : `Show All Stages (${mergedPipelineStages.length - 4} more)`}
+                    </button>
+                  )}
+                </div>
+              ) : (
+                /* Pie Chart for other roles */
+                <ResponsiveContainer width="100%" height={250} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
+                  <PieChart>
+                    <Pie
+                      data={pipelineData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={false}
+                      outerRadius={60}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {pipelineData.map((entry: any, index: number) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: any, name: any, props: any) => {
+                        // Show deals count and total value in tooltip
+                        const totalValue = props.payload.totalValue || 0;
+                        return [`${value} deals ($${totalValue.toLocaleString()})`, props.payload.fullName || name];
+                      }}
+                    />
+                    <Legend 
+                      wrapperStyle={{ fontSize: '11px', maxHeight: '80px', overflowY: 'auto' }}
+                      iconType="circle"
+                      layout="horizontal"
+                      align="center"
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
