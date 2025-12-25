@@ -332,6 +332,17 @@ export default function Analytics() {
           .filter(stage => stage.deal_count > 0)
           .sort((a, b) => b.total_value - a.total_value);
         
+        console.log('🔍 DEBUG Analytics Pipeline Stages:', {
+          selectedPipeline,
+          allStagesCount: allStages.length,
+          allStages: allStages.map((s: any) => ({ id: s.id, name: s.name })),
+          allDealsCount: allDeals.length,
+          allDeals: allDeals.map((d: any) => ({ id: d.id, stage_id: d.stage_id, value: d.value })),
+          stagesById: Object.entries(stagesById).map(([id, data]) => ({ id, name: data.name, count: data.deal_count, value: data.total_value })),
+          finalStagesCount: stages.length,
+          finalStages: stages.map(s => ({ name: s.name, count: s.deal_count, value: s.total_value }))
+        });
+        
         setMergedPipelineStages(stages);
       } else {
         // All pipelines - merge stages by name (same logic as Deals page)
