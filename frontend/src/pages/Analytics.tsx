@@ -287,20 +287,9 @@ export default function Analytics() {
       const stageIds = allStages.map((s: any) => s.id);
       allDeals = allDeals.filter((deal: any) => stageIds.includes(deal.stage_id));
       
-      // Apply date filter to deals AFTER pipeline filter
-      if (dateFrom || dateTo) {
-        allDeals = allDeals.filter((deal: any) => {
-          const dealDate = new Date(deal.created_at);
-          if (dateFrom && dealDate < new Date(dateFrom)) return false;
-          if (dateTo && dealDate > new Date(dateTo + 'T23:59:59')) return false;
-          return true;
-        });
-      }
-      
-      // Apply user filter to deals
-      if (selectedUser !== 'all') {
-        allDeals = allDeals.filter((deal: any) => deal.owner_id === selectedUser);
-      }
+      // NOTE: Date and user filters are NOT applied to pipeline stages chart
+      // This ensures the "Pipeline by Stage" chart shows ALL deals in the pipeline
+      // matching the behavior of the Deals page
       
       // For single pipeline, show each stage separately (no merging by name)
       if (selectedPipeline !== 'all') {
