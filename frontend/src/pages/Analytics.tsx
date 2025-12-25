@@ -302,38 +302,33 @@ export default function Analytics() {
         allDeals = allDeals.filter((deal: any) => deal.owner_id === selectedUser);
       }
       
-      // Always merge stages by name for consistent display
+      // For single pipeline, show each stage separately (no merging by name)
       if (selectedPipeline !== 'all') {
-        // Single pipeline selected - merge stages by name within that pipeline
-        const stagesByName: Record<string, { name: string; stageIds: string[]; deal_count: number; total_value: number }> = {};
+        // Single pipeline selected - show each stage separately by stage ID
+        const stagesById: Record<string, { name: string; stageIds: string[]; deal_count: number; total_value: number }> = {};
         
         allStages.forEach((stage: any) => {
-          const normalizedName = stage.name.trim().toLowerCase();
-          if (!stagesByName[normalizedName]) {
-            stagesByName[normalizedName] = {
+          // Use stage ID as key to keep stages separate (no merging)
+          if (!stagesById[stage.id]) {
+            stagesById[stage.id] = {
               name: stage.name,
-              stageIds: [],
+              stageIds: [stage.id],
               deal_count: 0,
               total_value: 0
             };
           }
-          stagesByName[normalizedName].stageIds.push(stage.id);
         });
         
-        // Count deals and sum values for each merged stage
+        // Count deals and sum values for each stage
         allDeals.forEach((deal: any) => {
-          // Find which merged stage this deal belongs to
-          for (const [normalizedName, stageData] of Object.entries(stagesByName)) {
-            if (stageData.stageIds.includes(deal.stage_id)) {
-              stageData.deal_count += 1;
-              stageData.total_value += deal.value || 0;
-              break;
-            }
+          if (stagesById[deal.stage_id]) {
+            stagesById[deal.stage_id].deal_count += 1;
+            stagesById[deal.stage_id].total_value += deal.value || 0;
           }
         });
         
         // Convert to array and filter out stages with 0 deals
-        const stages = Object.values(stagesByName)
+        const stages = Object.values(stagesById)
           .filter(stage => stage.deal_count > 0)
           .sort((a, b) => b.total_value - a.total_value);
         
