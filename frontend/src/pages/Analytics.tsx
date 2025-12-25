@@ -235,81 +235,54 @@ export default function Analytics() {
       // Get date range for filtering
       const dateFrom = getDateFrom(dateRange);
       const dateTo = getDateTo();
-      
-      // Fetch all pipelines (or specific pipeline if filtered)
-      let allPipelines: any[] = [];
+
+      const params = new URLSearchParams();
       if (selectedPipeline !== 'all') {
-        // Fetch only the selected pipeline
-        const pipelineResponse = await fetch(`${API_BASE_URL}/api/pipelines/${selectedPipeline}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (pipelineResponse.ok) {
-          const pipeline = await pipelineResponse.json();
-          allPipelines = [pipeline];
-        }
-      } else {
-        const pipelinesResponse = await fetch(`${API_BASE_URL}/api/pipelines`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (pipelinesResponse.ok) {
-          allPipelines = await pipelinesResponse.json();
-        }
+        params.set('pipeline_id', selectedPipeline);
       }
-      
-      if (allPipelines.length === 0) {
+      if (selectedUser !== 'all') {
+        params.set('owner_id', selectedUser);
+      }
+      if (dateFrom) {
+        params.set('date_from', dateFrom);
+      }
+      if (dateTo) {
+        params.set('date_to', dateTo);
+      }
+
+      const dealsUrl = `${API_BASE_URL}/api/deals${params.toString() ? `?${params.toString()}` : ''}`;
+      const dealsResponse = await fetch(dealsUrl, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (!dealsResponse.ok) {
         setMergedPipelineStages([]);
         return;
       }
-      
-      // Fetch all deals
-      const dealsResponse = await fetch(`${API_BASE_URL}/api/deals`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      if (!dealsResponse.ok) return;
-      let allDeals = await dealsResponse.json();
-      
-      // Fetch stages from pipelines FIRST
-      const allStages: any[] = [];
-      const pipelineIds = allPipelines.map((p: any) => p.id);
-      
-      for (const pipeline of allPipelines) {
-        const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${pipeline.id}/stages`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (stagesResponse.ok) {
-          const stages = await stagesResponse.json();
-          allStages.push(...stages);
-        }
+
+      const allDeals = await dealsResponse.json();
+      if (!Array.isArray(allDeals) || allDeals.length === 0) {
+        setMergedPipelineStages([]);
+        return;
       }
-      
-      // Filter deals to only include those in selected pipeline(s)
-      const stageIds = allStages.map((s: any) => s.id);
-      allDeals = allDeals.filter((deal: any) => stageIds.includes(deal.stage_id));
       
       // For single pipeline, show each stage separately (no merging by name)
       if (selectedPipeline !== 'all') {
         // Single pipeline selected - show each stage separately by stage ID
         const stagesById: Record<string, { name: string; stageIds: string[]; deal_count: number; total_value: number }> = {};
-        
-        allStages.forEach((stage: any) => {
-          // Use stage ID as key to keep stages separate (no merging)
-          if (!stagesById[stage.id]) {
-            stagesById[stage.id] = {
-              name: stage.name,
-              stageIds: [stage.id],
+
+        allDeals.forEach((deal: any) => {
+          if (!deal?.stage_id) return;
+          if (!stagesById[deal.stage_id]) {
+            stagesById[deal.stage_id] = {
+              name: deal.stage_name || 'Unnamed',
+              stageIds: [deal.stage_id],
               deal_count: 0,
               total_value: 0
             };
           }
-        });
-        
-        // Count deals and sum values for each stage
-        allDeals.forEach((deal: any) => {
-          if (stagesById[deal.stage_id]) {
-            stagesById[deal.stage_id].deal_count += 1;
-            stagesById[deal.stage_id].total_value += deal.value || 0;
-          }
+          stagesById[deal.stage_id].deal_count += 1;
+          stagesById[deal.stage_id].total_value += deal.value || 0;
         });
         
         // Convert to array and filter out stages with 0 deals
@@ -321,30 +294,25 @@ export default function Analytics() {
       } else {
         // All pipelines - merge stages by name (same logic as Deals page)
         const stagesByName: Record<string, { name: string; stageIds: string[]; deal_count: number; total_value: number }> = {};
-        
-        allStages.forEach((stage: any) => {
-          const normalizedName = stage.name.trim().toLowerCase();
+
+        allDeals.forEach((deal: any) => {
+          const rawName = (deal?.stage_name || 'Unnamed').trim();
+          const normalizedName = rawName.toLowerCase();
           if (!stagesByName[normalizedName]) {
             stagesByName[normalizedName] = {
-              name: stage.name,
+              name: rawName,
               stageIds: [],
               deal_count: 0,
               total_value: 0
             };
           }
-          stagesByName[normalizedName].stageIds.push(stage.id);
-        });
-        
-        // Count deals and sum values for each merged stage
-        allDeals.forEach((deal: any) => {
-          // Find which merged stage this deal belongs to
-          for (const [normalizedName, stageData] of Object.entries(stagesByName)) {
-            if (stageData.stageIds.includes(deal.stage_id)) {
-              stageData.deal_count += 1;
-              stageData.total_value += deal.value || 0;
-              break;
-            }
+
+          if (deal?.stage_id && !stagesByName[normalizedName].stageIds.includes(deal.stage_id)) {
+            stagesByName[normalizedName].stageIds.push(deal.stage_id);
           }
+
+          stagesByName[normalizedName].deal_count += 1;
+          stagesByName[normalizedName].total_value += deal.value || 0;
         });
         
         // Convert to array and sort by total value

@@ -5,8 +5,8 @@ Deals API endpoints
 from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from pydantic import BaseModel
-from datetime import datetime
-from sqlalchemy.orm import Session
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import and_
 import uuid
 
@@ -40,6 +40,8 @@ class DealResponse(BaseModel):
     value: float
     stage_id: str
     pipeline_id: str
+    stage_name: Optional[str] = None
+    pipeline_name: Optional[str] = None
     company: Optional[str] = None
     contact: Optional[str] = None
     contact_id: Optional[str] = None
@@ -49,7 +51,7 @@ class DealResponse(BaseModel):
     company_id: str  # Include for verification
     owner_id: Optional[str] = None  # For assignment functionality
     owner_name: Optional[str] = None  # Display name of owner
-    created_at: Optional[str] = None  # Include for date filtering
+    created_at: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -72,6 +74,10 @@ class DealCreateResponse(BaseModel):
 @router.get("/", response_model=List[DealResponse])
 def get_deals(
     stage: Optional[str] = None,
+    pipeline_id: Optional[str] = None,
+    owner_id: Optional[str] = None,
+    date_from: Optional[str] = None,
+    date_to: Optional[str] = None,
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -122,9 +128,48 @@ def get_deals(
                 DealModel.is_deleted == False
             )
         )
+
+    query = query.options(
+        joinedload(DealModel.stage),
+        joinedload(DealModel.pipeline),
+        joinedload(DealModel.owner),
+        joinedload(DealModel.contact)
+    )
     
     if stage:
-        query = query.filter(DealModel.stage_id == uuid.UUID(stage))
+        try:
+            query = query.filter(DealModel.stage_id == uuid.UUID(stage))
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid stage format")
+
+    if pipeline_id:
+        try:
+            query = query.filter(DealModel.pipeline_id == uuid.UUID(pipeline_id))
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid pipeline_id format")
+
+    if owner_id:
+        try:
+            query = query.filter(DealModel.owner_id == uuid.UUID(owner_id))
+        except (ValueError, TypeError):
+            raise HTTPException(status_code=400, detail="Invalid owner_id format")
+
+    if date_from:
+        try:
+            dt_from = datetime.fromisoformat(date_from)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_from format")
+        query = query.filter(DealModel.created_at >= dt_from)
+
+    if date_to:
+        try:
+            if isinstance(date_to, str) and len(date_to) == 10:
+                dt_to = datetime.fromisoformat(date_to) + timedelta(days=1) - timedelta(microseconds=1)
+            else:
+                dt_to = datetime.fromisoformat(date_to)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date_to format")
+        query = query.filter(DealModel.created_at <= dt_to)
     
     deals = query.all()
     
@@ -136,6 +181,8 @@ def get_deals(
             value=deal.value,
             stage_id=str(deal.stage_id),
             pipeline_id=str(deal.pipeline_id),
+            stage_name=deal.stage.name if getattr(deal, "stage", None) else None,
+            pipeline_name=deal.pipeline.name if getattr(deal, "pipeline", None) else None,
             company=deal.company,
             contact=f"{deal.contact.first_name} {deal.contact.last_name}" if deal.contact else None,
             contact_id=str(deal.contact_id) if deal.contact_id else None,
@@ -192,6 +239,16 @@ async def create_deal(
     # Handle stage_id - accept either UUID or stage name
     try:
         stage_id = uuid.UUID(deal.stage_id)
+        stage = db.query(PipelineStage).filter(
+            and_(
+                PipelineStage.id == stage_id,
+                PipelineStage.is_deleted == False
+            )
+        ).first()
+        if not stage:
+            raise HTTPException(status_code=400, detail="Stage not found")
+        if stage.pipeline_id != pipeline_id:
+            raise HTTPException(status_code=400, detail="Stage does not belong to the selected pipeline")
     except (ValueError, AttributeError):
         # Try to find stage by name (case-insensitive)
         stage_name_map = {
@@ -525,6 +582,8 @@ async def update_deal(
                 detail="You don't have permission to assign deals to this user. Sales Managers can only assign to their team members."
             )
     
+    from ..models.deals import PipelineStage
+
     # Update fields
     for field, value in deal_data.items():
         if field == 'contact':
@@ -542,11 +601,52 @@ async def update_deal(
                 'abandoned': DealStatus.ABANDONED
             }
             deal.status = status_map.get(value.lower() if value else 'open', DealStatus.OPEN)
+        elif field == 'stage_id' and value is not None:
+            try:
+                new_stage_id = uuid.UUID(value)
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=400, detail="Invalid stage_id format")
+
+            new_stage = db.query(PipelineStage).filter(
+                and_(
+                    PipelineStage.id == new_stage_id,
+                    PipelineStage.is_deleted == False
+                )
+            ).first()
+
+            if not new_stage:
+                raise HTTPException(status_code=400, detail="Stage not found")
+
+            if 'pipeline_id' in deal_data and deal_data.get('pipeline_id'):
+                try:
+                    requested_pipeline_id = uuid.UUID(deal_data.get('pipeline_id'))
+                except (ValueError, TypeError):
+                    raise HTTPException(status_code=400, detail="Invalid pipeline_id format")
+                if new_stage.pipeline_id != requested_pipeline_id:
+                    raise HTTPException(status_code=400, detail="Stage does not belong to the selected pipeline")
+
+            deal.stage_id = new_stage.id
+            deal.pipeline_id = new_stage.pipeline_id
+        elif field == 'pipeline_id' and value is not None:
+            try:
+                new_pipeline_id = uuid.UUID(value)
+            except (ValueError, TypeError):
+                raise HTTPException(status_code=400, detail="Invalid pipeline_id format")
+
+            if 'stage_id' not in deal_data:
+                stage_for_pipeline = db.query(PipelineStage).filter(
+                    and_(
+                        PipelineStage.id == deal.stage_id,
+                        PipelineStage.pipeline_id == new_pipeline_id,
+                        PipelineStage.is_deleted == False
+                    )
+                ).first()
+
+                if not stage_for_pipeline:
+                    raise HTTPException(status_code=400, detail="Current stage does not belong to the selected pipeline")
+                deal.pipeline_id = new_pipeline_id
         elif hasattr(deal, field) and value is not None:
-            if field in ['stage_id', 'pipeline_id']:
-                setattr(deal, field, uuid.UUID(value))
-            else:
-                setattr(deal, field, value)
+            setattr(deal, field, value)
     
     deal.updated_at = datetime.utcnow()
     
@@ -996,6 +1096,7 @@ def move_deal_stage(
     
     try:
         deal.stage_id = stage_id
+        deal.pipeline_id = stage.pipeline_id
         deal.updated_at = datetime.utcnow()
         
         db.commit()
