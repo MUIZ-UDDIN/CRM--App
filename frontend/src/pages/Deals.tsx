@@ -1077,7 +1077,26 @@ export default function Deals() {
               {stages.filter(stage => {
                 // Filter by stage name to handle duplicate stage names across pipelines
                 const selectedStageName = stages.find(s => s.id === filterStage)?.name;
-                return filterStage === 'all' || stage.id === filterStage || stage.name === selectedStageName;
+                const stageFilterMatch = filterStage === 'all' || stage.id === filterStage || stage.name === selectedStageName;
+                
+                // If searching, only show stages that have matching deals
+                if (searchQuery.trim() && stageFilterMatch) {
+                  const stageDeals = deals[stage.id] || [];
+                  const hasMatchingDeals = stageDeals.some(deal => {
+                    if (filterCompany !== 'all' && deal.company_id !== filterCompany) {
+                      return false;
+                    }
+                    const query = searchQuery.toLowerCase().trim();
+                    const id = deal.id?.toLowerCase() || '';
+                    const title = deal.title?.toLowerCase() || '';
+                    const company = deal.company?.toLowerCase() || '';
+                    const contact = deal.contact?.toLowerCase() || '';
+                    return id.includes(query) || title.includes(query) || company.includes(query) || contact.includes(query);
+                  });
+                  return hasMatchingDeals;
+                }
+                
+                return stageFilterMatch;
               }).map((stage) => {
                 const isExpanded = expandedStages.includes(stage.id);
                 const toggleStage = () => {
@@ -1153,9 +1172,16 @@ export default function Deals() {
                               <div
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
-                                className={`bg-white rounded-lg p-4 shadow-sm border border-gray-200 hover:shadow-md transition-shadow ${
+                                className={`bg-white rounded-lg p-4 shadow-sm border transition-shadow ${
                                   snapshot.isDragging ? 'shadow-lg ring-2 ring-primary-500' : ''
-                                }`}
+                                } ${
+                                  searchQuery.trim() && (
+                                    deal.id?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+                                    deal.title?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+                                    deal.company?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+                                    deal.contact?.toLowerCase().includes(searchQuery.toLowerCase().trim())
+                                  ) ? 'border-yellow-400 border-2 bg-yellow-50 ring-2 ring-yellow-200' : 'border-gray-200'
+                                } hover:shadow-md`}
                               >
                                 {/* Drag Handle */}
                                 <div className="flex items-start justify-between mb-2">
