@@ -49,6 +49,7 @@ class DealResponse(BaseModel):
     company_id: str  # Include for verification
     owner_id: Optional[str] = None  # For assignment functionality
     owner_name: Optional[str] = None  # Display name of owner
+    created_at: Optional[str] = None  # Include for date filtering
 
     class Config:
         from_attributes = True
@@ -143,7 +144,8 @@ def get_deals(
             status=deal.status.value if deal.status else 'open',
             company_id=str(deal.company_id),
             owner_id=str(deal.owner_id) if deal.owner_id else None,
-            owner_name=f"{deal.owner.first_name} {deal.owner.last_name}" if deal.owner else None
+            owner_name=f"{deal.owner.first_name} {deal.owner.last_name}" if deal.owner else None,
+            created_at=deal.created_at.isoformat() if deal.created_at else None
         )
         for deal in deals
     ]

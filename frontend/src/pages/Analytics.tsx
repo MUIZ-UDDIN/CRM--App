@@ -287,27 +287,6 @@ export default function Analytics() {
       const stageIds = allStages.map((s: any) => s.id);
       allDeals = allDeals.filter((deal: any) => stageIds.includes(deal.stage_id));
       
-      // DEBUG: Log all deals and stages for investigation
-      console.log('🔍 COMPREHENSIVE DEBUG - Analytics Pipeline:', {
-        selectedPipeline,
-        pipelineName: allPipelines[0]?.name,
-        allStagesCount: allStages.length,
-        allStages: allStages.map((s: any) => ({ id: s.id, name: s.name })),
-        allDealsCount: allDeals.length,
-        allDealsDetailed: allDeals.map((d: any) => ({ 
-          id: d.id, 
-          title: d.title,
-          stage_id: d.stage_id, 
-          value: d.value,
-          created_at: d.created_at,
-          pipeline_id: d.pipeline_id
-        }))
-      });
-      
-      // NOTE: Date and user filters are NOT applied to pipeline stages chart
-      // This ensures the "Pipeline by Stage" chart shows ALL deals in the pipeline
-      // matching the behavior of the Deals page
-      
       // For single pipeline, show each stage separately (no merging by name)
       if (selectedPipeline !== 'all') {
         // Single pipeline selected - show each stage separately by stage ID
