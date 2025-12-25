@@ -475,7 +475,7 @@ export default function Analytics() {
             return {
               name: truncatedName,
               fullName: stageName,
-              value: data.deal_count,
+              value: data.total_value || 1, // Use total value for proportional pie slices
               totalValue: data.total_value,
               deals: data.deal_count,
               color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
@@ -489,7 +489,7 @@ export default function Analytics() {
             return {
               name: truncatedName,
               fullName: stageName,
-              value: stage.deal_count,
+              value: stage.total_value || 1, // Use total value for proportional pie slices
               totalValue: stage.total_value,
               deals: stage.deal_count,
               color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
@@ -1136,12 +1136,12 @@ export default function Analytics() {
                 <PieChart>
                   <Pie
                     data={currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 ? mergedPipelineStages.map((stage: any, index: number) => {
-                      // Use deal count for pie chart to ensure all stages are visible
+                      // Use total_value for pie chart so slices are proportional to dollar amount
                       const truncatedName = stage.name.length > 20 ? stage.name.substring(0, 20) + '...' : stage.name;
                       return {
                         name: truncatedName,
                         fullName: stage.name,
-                        value: stage.deal_count || 1, // Use deal count so all stages are visible
+                        value: stage.total_value || 1, // Use total value for proportional slices
                         totalValue: stage.total_value,
                         deals: stage.deal_count,
                         color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
