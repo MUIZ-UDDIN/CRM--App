@@ -1135,18 +1135,30 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height={250} key={`pipeline-${dateRange}-${selectedUser}-${selectedPipeline}`}>
                 <PieChart>
                   <Pie
-                    data={currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 ? mergedPipelineStages.map((stage: any, index: number) => {
-                      // Use total_value for pie chart so slices are proportional to dollar amount
-                      const truncatedName = stage.name.length > 20 ? stage.name.substring(0, 20) + '...' : stage.name;
-                      return {
-                        name: truncatedName,
-                        fullName: stage.name,
-                        value: stage.total_value || 1, // Use total value for proportional slices
-                        totalValue: stage.total_value,
-                        deals: stage.deal_count,
-                        color: DISTINCT_COLORS[index % DISTINCT_COLORS.length]
-                      };
-                    }) : pipelineData}
+                    data={(() => {
+                      const rawData = currentUser?.role === 'super_admin' && mergedPipelineStages.length > 0 
+                        ? mergedPipelineStages 
+                        : pipelineData;
+                      
+                      // Calculate min visible slice: ensure smallest value gets at least 5% of max
+                      const maxVal = Math.max(...rawData.map((s: any) => s.totalValue || s.total_value || 1));
+                      const minSlice = maxVal * 0.05; // 5% minimum slice size
+                      
+                      return rawData.map((stage: any, index: number) => {
+                        const truncatedName = stage.name?.length > 20 ? stage.name.substring(0, 20) + '...' : (stage.name || 'Unnamed');
+                        const actualValue = stage.totalValue || stage.total_value || 0;
+                        // Use actual value but ensure minimum visibility
+                        const displayValue = Math.max(actualValue, minSlice);
+                        return {
+                          name: truncatedName,
+                          fullName: stage.fullName || stage.name,
+                          value: displayValue,
+                          totalValue: actualValue,
+                          deals: stage.deals || stage.deal_count || 0,
+                          color: stage.color || DISTINCT_COLORS[index % DISTINCT_COLORS.length]
+                        };
+                      });
+                    })()}
                     cx="50%"
                     cy="50%"
                     labelLine={false}
