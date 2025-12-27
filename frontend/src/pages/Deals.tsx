@@ -223,7 +223,7 @@ export default function Deals() {
           
           const allStages: any[] = [];
           
-          console.log('🔍 All pipelines:', pipelines.map(p => ({ id: p.id, name: p.name, company_id: p.company_id })));
+          console.log('🔍 All pipelines:', pipelines.map((p: any) => ({ id: p.id, name: p.name, company_id: p.company_id })));
           
           // Fetch stages from each pipeline
           for (const pipeline of pipelines) {
