@@ -287,6 +287,8 @@ export default function Deals() {
             });
           });
           
+          console.log('🔍 Merged stages with company IDs:', dynamicStagesArray.map(s => ({ name: s.name, companyIds: s.companyIds })));
+          
           setStageMapping(mapping);
           setStageMergeMap(mergeMap);
           setDynamicStages(dynamicStagesArray);
@@ -1089,6 +1091,7 @@ export default function Deals() {
                 if (isSuperAdmin() && filterCompany !== 'all') {
                   // Check if this stage's companyIds includes the selected company
                   const belongsToSelectedCompany = stage.companyIds?.includes(filterCompany);
+                  console.log(`🔍 Stage "${stage.name}" - companyIds:`, stage.companyIds, `- belongs to ${filterCompany}:`, belongsToSelectedCompany);
                   if (!belongsToSelectedCompany) {
                     return false;
                   }
