@@ -57,6 +57,7 @@ interface Stage {
   color: string;
   textColor: string;
   originalStageIds?: string[]; // For merged stages (Super Admin view)
+  companyIds?: string[]; // Company IDs for this merged stage (Super Admin view)
 }
 
 interface Company {
@@ -272,13 +273,17 @@ export default function Deals() {
             });
             mergeMap[mergedId] = originalIds;
             
+            // Collect unique company IDs for this merged stage
+            const companyIds = [...new Set(stagesGroup.map(s => s.pipeline_company_id).filter(Boolean))];
+            
             const colorScheme = colors[index % colors.length];
             dynamicStagesArray.push({
               id: mergedId,
               name: primaryStage.name, // Use original case from first stage
               color: colorScheme.color,
               textColor: colorScheme.textColor,
-              originalStageIds: originalIds
+              originalStageIds: originalIds,
+              companyIds: companyIds // Store company IDs for filtering
             });
           });
           
@@ -1078,6 +1083,16 @@ export default function Deals() {
                 // Filter by stage name to handle duplicate stage names across pipelines
                 const selectedStageName = stages.find(s => s.id === filterStage)?.name;
                 const stageFilterMatch = filterStage === 'all' || stage.id === filterStage || stage.name === selectedStageName;
+                
+                // For Super Admin: Filter stages by selected company
+                // Only show stages that belong to pipelines of the selected company
+                if (isSuperAdmin() && filterCompany !== 'all') {
+                  // Check if this stage's companyIds includes the selected company
+                  const belongsToSelectedCompany = stage.companyIds?.includes(filterCompany);
+                  if (!belongsToSelectedCompany) {
+                    return false;
+                  }
+                }
                 
                 // If searching, only show stages that have matching deals
                 if (searchQuery.trim() && stageFilterMatch) {
