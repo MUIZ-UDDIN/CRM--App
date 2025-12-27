@@ -36,7 +36,7 @@ interface Pipeline {
   company_name?: string;
 }
 
-interface CompanyWithoutPipeline {
+interface Company {
   id: string;
   name: string;
 }
@@ -57,10 +57,8 @@ export default function PipelineSettings() {
   const [showDeleteStageModal, setShowDeleteStageModal] = useState(false);
   const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [companiesWithoutPipeline, setCompaniesWithoutPipeline] = useState<CompanyWithoutPipeline[]>([]);
-  const [showCreatePipelineModal, setShowCreatePipelineModal] = useState(false);
-  const [selectedCompanyForPipeline, setSelectedCompanyForPipeline] = useState<CompanyWithoutPipeline | null>(null);
-  const [newPipelineName, setNewPipelineName] = useState('Sales Pipeline');
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [filterCompany, setFilterCompany] = useState('all');
   
   // Check if user can customize CRM (Company Admin = Admin = Sales Manager)
   const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
@@ -148,7 +146,7 @@ export default function PipelineSettings() {
     try {
       const data = await pipelinesService.getPipelines();
       
-      // For Super Admin, fetch company names to display in dropdown
+      // For Super Admin, fetch all companies for filter dropdown
       if (isSuperAdmin()) {
         const token = localStorage.getItem('token');
         const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -159,8 +157,13 @@ export default function PipelineSettings() {
         if (companiesResponse.ok) {
           const companiesData = await companiesResponse.json();
           // API returns { companies: [...] } object, not a direct array
-          const companies = companiesData.companies || companiesData;
-          const companyMap = new Map(Array.isArray(companies) ? companies.map((c: any) => [c.id, c.name]) : []);
+          const companiesList = companiesData.companies || companiesData;
+          const companyMap = new Map(Array.isArray(companiesList) ? companiesList.map((c: any) => [c.id, c.name]) : []);
+          
+          // Store all companies for filter dropdown
+          if (Array.isArray(companiesList)) {
+            setCompanies(companiesList.map((c: any) => ({ id: c.id, name: c.name })));
+          }
           
           // Add company_name to each pipeline
           data.forEach((pipeline: any) => {
@@ -170,18 +173,6 @@ export default function PipelineSettings() {
               pipeline.company_name = 'No Company';
             }
           });
-          
-          // Find companies without pipelines
-          const companiesWithPipelines = new Set(data.map((p: any) => p.company_id).filter(Boolean));
-          const companiesWithoutPipelines: CompanyWithoutPipeline[] = [];
-          if (Array.isArray(companies)) {
-            companies.forEach((company: any) => {
-              if (!companiesWithPipelines.has(company.id)) {
-                companiesWithoutPipelines.push({ id: company.id, name: company.name });
-              }
-            });
-          }
-          setCompaniesWithoutPipeline(companiesWithoutPipelines);
         }
       }
       
@@ -206,48 +197,6 @@ export default function PipelineSettings() {
     } catch (error) {
       console.error('Error fetching stages:', error);
       toast.error('Failed to load stages');
-    }
-  };
-
-  const handleCreatePipelineForCompany = async () => {
-    if (!selectedCompanyForPipeline || !newPipelineName.trim()) {
-      toast.error('Please enter a pipeline name');
-      return;
-    }
-    
-    try {
-      const token = localStorage.getItem('token');
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-      
-      const response = await fetch(`${API_BASE_URL}/api/pipelines`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: newPipelineName.trim(),
-          company_id: selectedCompanyForPipeline.id
-        })
-      });
-      
-      if (response.ok) {
-        const newPipeline = await response.json();
-        toast.success(`Pipeline created for ${selectedCompanyForPipeline.name}`);
-        setShowCreatePipelineModal(false);
-        setSelectedCompanyForPipeline(null);
-        setNewPipelineName('Sales Pipeline');
-        // Refresh pipelines list
-        fetchPipelines();
-        // Select the new pipeline
-        setSelectedPipeline(newPipeline.id);
-      } else {
-        const error = await response.json();
-        toast.error(error.detail || 'Failed to create pipeline');
-      }
-    } catch (error) {
-      console.error('Error creating pipeline:', error);
-      toast.error('Failed to create pipeline');
     }
   };
 
@@ -451,6 +400,38 @@ export default function PipelineSettings() {
       </div>
 
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
+        {/* Company Filter - Super Admin Only */}
+        {isSuperAdmin() && companies.length > 0 && (
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Filter by Company
+            </label>
+            <select
+              value={filterCompany}
+              onChange={(e) => {
+                setFilterCompany(e.target.value);
+                // Reset selected pipeline when company changes
+                const companyPipelines = e.target.value === 'all' 
+                  ? pipelines 
+                  : pipelines.filter(p => p.company_id === e.target.value);
+                if (companyPipelines.length > 0) {
+                  setSelectedPipeline(companyPipelines[0].id);
+                } else {
+                  setSelectedPipeline('');
+                }
+              }}
+              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+            >
+              <option value="all">All Companies</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>
+                  {company.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Pipeline Selector */}
         <div className="mb-6">
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -458,56 +439,60 @@ export default function PipelineSettings() {
           </label>
           {loading ? (
             <div className="text-sm text-gray-500">Loading pipelines...</div>
-          ) : pipelines.length === 0 ? (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-sm text-yellow-800">
-                No pipelines found. Please create a pipeline first in the Deals section.
-              </p>
-            </div>
-          ) : (
-            <select
-              value={selectedPipeline}
-              onChange={(e) => setSelectedPipeline(e.target.value)}
-              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-            >
-              {pipelines.map(pipeline => {
-                // For Super Admin, always show company name alongside pipeline name
-                const displayName = isSuperAdmin() 
-                  ? `${pipeline.name} (${pipeline.company_name || 'Unknown'})`
-                  : pipeline.name;
-                const truncatedName = displayName.length > 50 ? displayName.substring(0, 50) + '...' : displayName;
-                return (
-                  <option key={pipeline.id} value={pipeline.id} title={displayName}>
-                    {truncatedName}
-                  </option>
-                );
-              })}
-            </select>
-          )}
-          
-          {/* Companies without pipelines - Super Admin only */}
-          {isSuperAdmin() && companiesWithoutPipeline.length > 0 && (
-            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
-              <p className="text-sm font-medium text-orange-800 mb-2">
-                Companies without pipelines ({companiesWithoutPipeline.length}):
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {companiesWithoutPipeline.map(company => (
-                  <button
-                    key={company.id}
-                    onClick={() => {
-                      setSelectedCompanyForPipeline(company);
-                      setShowCreatePipelineModal(true);
-                    }}
-                    className="inline-flex items-center px-3 py-1.5 text-sm bg-white border border-orange-300 rounded-lg text-orange-700 hover:bg-orange-100 transition-colors"
-                  >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    {company.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          ) : (() => {
+            // Filter pipelines by selected company
+            const filteredPipelines = filterCompany === 'all' 
+              ? pipelines 
+              : pipelines.filter(p => p.company_id === filterCompany);
+            
+            // Check if selected company has no pipelines
+            const selectedCompanyName = companies.find(c => c.id === filterCompany)?.name;
+            
+            if (filterCompany !== 'all' && filteredPipelines.length === 0) {
+              return (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800 font-medium">No pipeline stages found</p>
+                  <p className="text-sm text-yellow-700 mt-1">
+                    "{selectedCompanyName}" has no pipeline configured.
+                  </p>
+                  <p className="text-sm text-yellow-600 mt-2">
+                    Please create a pipeline in Pipeline Management for this company.
+                  </p>
+                </div>
+              );
+            }
+            
+            if (filteredPipelines.length === 0) {
+              return (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                  <p className="text-sm text-yellow-800">
+                    No pipelines found. Please create a pipeline first in the Deals section.
+                  </p>
+                </div>
+              );
+            }
+            
+            return (
+              <select
+                value={selectedPipeline}
+                onChange={(e) => setSelectedPipeline(e.target.value)}
+                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+              >
+                {filteredPipelines.map(pipeline => {
+                  // For Super Admin, always show company name alongside pipeline name
+                  const displayName = isSuperAdmin() 
+                    ? `${pipeline.name} (${pipeline.company_name || 'Unknown'})`
+                    : pipeline.name;
+                  const truncatedName = displayName.length > 50 ? displayName.substring(0, 50) + '...' : displayName;
+                  return (
+                    <option key={pipeline.id} value={pipeline.id} title={displayName}>
+                      {truncatedName}
+                    </option>
+                  );
+                })}
+              </select>
+            );
+          })()}
         </div>
 
         {/* Stages List */}
