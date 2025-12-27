@@ -400,109 +400,83 @@ export default function PipelineSettings() {
       </div>
 
       <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-8">
-        {/* Company Filter - Super Admin Only */}
+        {/* Pipeline Selector - Super Admin Only */}
         {isSuperAdmin() && companies.length > 0 && (
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Filter by Company
+              Select Pipeline
             </label>
-            <select
-              value={filterCompany}
-              onChange={(e) => {
-                setFilterCompany(e.target.value);
-                // Reset selected pipeline when company changes
-                const companyPipelines = e.target.value === 'all' 
-                  ? pipelines 
-                  : pipelines.filter(p => p.company_id === e.target.value);
-                if (companyPipelines.length > 0) {
-                  setSelectedPipeline(companyPipelines[0].id);
-                } else {
-                  setSelectedPipeline('');
-                }
-              }}
-              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-            >
-              <option value="all">All Companies</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Pipeline Selector - shown when company is selected or for non-Super Admin */}
-        {(() => {
-          // Filter pipelines by selected company
-          const filteredPipelines = filterCompany === 'all' 
-            ? pipelines 
-            : pipelines.filter(p => p.company_id === filterCompany);
-          
-          // Check if selected company has no pipelines
-          const selectedCompanyName = companies.find(c => c.id === filterCompany)?.name;
-          
-          if (loading) {
-            return (
-              <div className="mb-6 text-sm text-gray-500">Loading pipelines...</div>
-            );
-          }
-          
-          if (filterCompany !== 'all' && filteredPipelines.length === 0) {
-            return (
-              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800 font-medium">No pipeline stages found</p>
-                <p className="text-sm text-yellow-700 mt-1">
-                  "{selectedCompanyName}" has no pipeline configured.
-                </p>
-                <p className="text-sm text-yellow-600 mt-2">
-                  Please create a pipeline in Pipeline Management for this company.
-                </p>
-              </div>
-            );
-          }
-          
-          if (filteredPipelines.length === 0) {
-            return (
-              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800">
-                  No pipelines found. Please create a pipeline first in the Deals section.
-                </p>
-              </div>
-            );
-          }
-          
-          // Only show pipeline selector if there are multiple pipelines for the selected company
-          if (filteredPipelines.length > 1) {
-            return (
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Pipeline
-                </label>
+            {loading ? (
+              <div className="text-sm text-gray-500">Loading pipelines...</div>
+            ) : (() => {
+              // Check if selected company has no pipelines
+              const selectedCompany = companies.find(c => c.id === filterCompany);
+              const companyPipelines = pipelines.filter(p => p.company_id === filterCompany);
+              
+              if (filterCompany !== 'all' && companyPipelines.length === 0) {
+                return (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800 font-medium">No pipeline stages found</p>
+                    <p className="text-sm text-yellow-700 mt-1">
+                      "{selectedCompany?.name}" has no pipeline configured.
+                    </p>
+                    <p className="text-sm text-yellow-600 mt-2">
+                      Please create a pipeline in Pipeline Management for this company.
+                    </p>
+                  </div>
+                );
+              }
+              
+              if (pipelines.length === 0) {
+                return (
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p className="text-sm text-yellow-800">
+                      No pipelines found. Please create a pipeline first in the Deals section.
+                    </p>
+                  </div>
+                );
+              }
+              
+              return (
                 <select
-                  value={selectedPipeline}
-                  onChange={(e) => setSelectedPipeline(e.target.value)}
+                  value={filterCompany}
+                  onChange={(e) => {
+                    setFilterCompany(e.target.value);
+                    // Reset selected pipeline when company changes
+                    const companyPipelines = e.target.value === 'all' 
+                      ? pipelines 
+                      : pipelines.filter(p => p.company_id === e.target.value);
+                    if (companyPipelines.length > 0) {
+                      setSelectedPipeline(companyPipelines[0].id);
+                    } else {
+                      setSelectedPipeline('');
+                    }
+                  }}
                   className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
-                  {filteredPipelines.map(pipeline => {
-                    // For Super Admin, always show company name alongside pipeline name
-                    const displayName = isSuperAdmin() 
-                      ? `${pipeline.name} (${pipeline.company_name || 'Unknown'})`
-                      : pipeline.name;
-                    const truncatedName = displayName.length > 50 ? displayName.substring(0, 50) + '...' : displayName;
+                  <option value="all">All Pipelines</option>
+                  {companies.map((company) => {
+                    // Find pipeline for this company
+                    const companyPipeline = pipelines.find(p => p.company_id === company.id);
+                    if (companyPipeline) {
+                      return (
+                        <option key={company.id} value={company.id}>
+                          {companyPipeline.name} ({company.name})
+                        </option>
+                      );
+                    }
+                    // Show companies without pipelines too
                     return (
-                      <option key={pipeline.id} value={pipeline.id} title={displayName}>
-                        {truncatedName}
+                      <option key={company.id} value={company.id}>
+                        No Pipeline ({company.name})
                       </option>
                     );
                   })}
                 </select>
-              </div>
-            );
-          }
-          
-          return null;
-        })()}
+              );
+            })()}
+          </div>
+        )}
 
         {/* Stages List */}
         <div className="bg-white rounded-lg shadow">
