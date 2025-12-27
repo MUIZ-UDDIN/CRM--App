@@ -1027,7 +1027,12 @@ export default function Deals() {
                 {isSuperAdmin() && companies.length > 0 && (
                   <select
                     value={filterCompany}
-                    onChange={(e) => setFilterCompany(e.target.value)}
+                    onChange={(e) => {
+                      const newCompany = e.target.value;
+                      setFilterCompany(newCompany);
+                      // Reset stage filter when company changes (selected stage may not exist in new company)
+                      setFilterStage('all');
+                    }}
                     className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 w-[200px] truncate"
                     title={companies.find(c => c.id === filterCompany)?.name || 'All Companies'}
                   >
@@ -1050,10 +1055,17 @@ export default function Deals() {
                   title={stages.find(s => s.id === filterStage)?.name || 'All Stages'}
                 >
                   <option value="all">All Stages</option>
-                  {/* Deduplicate stages by name for the filter dropdown */}
-                  {stages.filter((stage, index, self) => 
-                    self.findIndex(s => s.name === stage.name) === index
-                  ).map((stage) => (
+                  {/* Filter stages by selected company, then deduplicate by name */}
+                  {stages.filter((stage, index, self) => {
+                    // For Super Admin with company filter: only show stages belonging to selected company
+                    if (isSuperAdmin() && filterCompany !== 'all') {
+                      if (!stage.companyIds?.includes(filterCompany)) {
+                        return false;
+                      }
+                    }
+                    // Deduplicate by name
+                    return self.findIndex(s => s.name === stage.name) === index;
+                  }).map((stage) => (
                     <option 
                       key={stage.id} 
                       value={stage.id}

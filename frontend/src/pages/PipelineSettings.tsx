@@ -36,6 +36,11 @@ interface Pipeline {
   company_name?: string;
 }
 
+interface CompanyWithoutPipeline {
+  id: string;
+  name: string;
+}
+
 export default function PipelineSettings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
@@ -52,6 +57,10 @@ export default function PipelineSettings() {
   const [showDeleteStageModal, setShowDeleteStageModal] = useState(false);
   const [stageToDelete, setStageToDelete] = useState<Stage | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [companiesWithoutPipeline, setCompaniesWithoutPipeline] = useState<CompanyWithoutPipeline[]>([]);
+  const [showCreatePipelineModal, setShowCreatePipelineModal] = useState(false);
+  const [selectedCompanyForPipeline, setSelectedCompanyForPipeline] = useState<CompanyWithoutPipeline | null>(null);
+  const [newPipelineName, setNewPipelineName] = useState('Sales Pipeline');
   
   // Check if user can customize CRM (Company Admin = Admin = Sales Manager)
   const canCustomizeCRM = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
@@ -161,6 +170,18 @@ export default function PipelineSettings() {
               pipeline.company_name = 'No Company';
             }
           });
+          
+          // Find companies without pipelines
+          const companiesWithPipelines = new Set(data.map((p: any) => p.company_id).filter(Boolean));
+          const companiesWithoutPipelines: CompanyWithoutPipeline[] = [];
+          if (Array.isArray(companies)) {
+            companies.forEach((company: any) => {
+              if (!companiesWithPipelines.has(company.id)) {
+                companiesWithoutPipelines.push({ id: company.id, name: company.name });
+              }
+            });
+          }
+          setCompaniesWithoutPipeline(companiesWithoutPipelines);
         }
       }
       
@@ -185,6 +206,48 @@ export default function PipelineSettings() {
     } catch (error) {
       console.error('Error fetching stages:', error);
       toast.error('Failed to load stages');
+    }
+  };
+
+  const handleCreatePipelineForCompany = async () => {
+    if (!selectedCompanyForPipeline || !newPipelineName.trim()) {
+      toast.error('Please enter a pipeline name');
+      return;
+    }
+    
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      
+      const response = await fetch(`${API_BASE_URL}/api/pipelines`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: newPipelineName.trim(),
+          company_id: selectedCompanyForPipeline.id
+        })
+      });
+      
+      if (response.ok) {
+        const newPipeline = await response.json();
+        toast.success(`Pipeline created for ${selectedCompanyForPipeline.name}`);
+        setShowCreatePipelineModal(false);
+        setSelectedCompanyForPipeline(null);
+        setNewPipelineName('Sales Pipeline');
+        // Refresh pipelines list
+        fetchPipelines();
+        // Select the new pipeline
+        setSelectedPipeline(newPipeline.id);
+      } else {
+        const error = await response.json();
+        toast.error(error.detail || 'Failed to create pipeline');
+      }
+    } catch (error) {
+      console.error('Error creating pipeline:', error);
+      toast.error('Failed to create pipeline');
     }
   };
 
@@ -420,6 +483,30 @@ export default function PipelineSettings() {
                 );
               })}
             </select>
+          )}
+          
+          {/* Companies without pipelines - Super Admin only */}
+          {isSuperAdmin() && companiesWithoutPipeline.length > 0 && (
+            <div className="mt-4 bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <p className="text-sm font-medium text-orange-800 mb-2">
+                Companies without pipelines ({companiesWithoutPipeline.length}):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {companiesWithoutPipeline.map(company => (
+                  <button
+                    key={company.id}
+                    onClick={() => {
+                      setSelectedCompanyForPipeline(company);
+                      setShowCreatePipelineModal(true);
+                    }}
+                    className="inline-flex items-center px-3 py-1.5 text-sm bg-white border border-orange-300 rounded-lg text-orange-700 hover:bg-orange-100 transition-colors"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-1" />
+                    {company.name}
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 
@@ -730,6 +817,67 @@ export default function PipelineSettings() {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
               >
                 Yes, Delete Stage
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Pipeline Modal - For companies without pipelines */}
+      {showCreatePipelineModal && selectedCompanyForPipeline && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={() => {
+            setShowCreatePipelineModal(false);
+            setSelectedCompanyForPipeline(null);
+          }}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Create Pipeline</h3>
+              <button 
+                onClick={() => {
+                  setShowCreatePipelineModal(false);
+                  setSelectedCompanyForPipeline(null);
+                }} 
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="mb-4">
+              <p className="text-sm text-gray-600 mb-4">
+                Create a pipeline for <span className="font-semibold text-primary-600">{selectedCompanyForPipeline.name}</span>
+              </p>
+              
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Pipeline Name
+              </label>
+              <input
+                type="text"
+                value={newPipelineName}
+                onChange={(e) => setNewPipelineName(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                placeholder="e.g., Sales Pipeline"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-3 pt-4">
+              <button
+                onClick={() => {
+                  setShowCreatePipelineModal(false);
+                  setSelectedCompanyForPipeline(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreatePipelineForCompany}
+                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
+              >
+                Create Pipeline
               </button>
             </div>
           </div>
