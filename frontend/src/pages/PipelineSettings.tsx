@@ -808,66 +808,6 @@ export default function PipelineSettings() {
         </div>
       )}
 
-      {/* Create Pipeline Modal - For companies without pipelines */}
-      {showCreatePipelineModal && selectedCompanyForPipeline && (
-        <div 
-          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
-          onClick={() => {
-            setShowCreatePipelineModal(false);
-            setSelectedCompanyForPipeline(null);
-          }}
-        >
-          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Create Pipeline</h3>
-              <button 
-                onClick={() => {
-                  setShowCreatePipelineModal(false);
-                  setSelectedCompanyForPipeline(null);
-                }} 
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <XMarkIcon className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-4">
-                Create a pipeline for <span className="font-semibold text-primary-600">{selectedCompanyForPipeline.name}</span>
-              </p>
-              
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Pipeline Name
-              </label>
-              <input
-                type="text"
-                value={newPipelineName}
-                onChange={(e) => setNewPipelineName(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-                placeholder="e.g., Sales Pipeline"
-              />
-            </div>
-
-            <div className="flex justify-end space-x-3 pt-4">
-              <button
-                onClick={() => {
-                  setShowCreatePipelineModal(false);
-                  setSelectedCompanyForPipeline(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreatePipelineForCompany}
-                className="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-lg hover:bg-primary-700"
-              >
-                Create Pipeline
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
