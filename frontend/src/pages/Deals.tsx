@@ -223,6 +223,8 @@ export default function Deals() {
           
           const allStages: any[] = [];
           
+          console.log('🔍 All pipelines:', pipelines.map(p => ({ id: p.id, name: p.name, company_id: p.company_id })));
+          
           // Fetch stages from each pipeline
           for (const pipeline of pipelines) {
             const stagesResponse = await fetch(`${API_BASE_URL}/api/pipelines/${pipeline.id}/stages`, {
@@ -236,6 +238,7 @@ export default function Deals() {
                 s.pipeline_company_id = pipeline.company_id;
                 s.pipeline_name = pipeline.name;
               });
+              console.log(`🔍 Pipeline "${pipeline.name}" (company_id: ${pipeline.company_id}) has ${stages.length} stages:`, stages.map((s: any) => s.name));
               allStages.push(...stages);
             }
           }
