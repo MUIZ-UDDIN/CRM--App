@@ -1827,6 +1827,7 @@ async def export_analytics_csv(
     date_from: Optional[str] = Query(None),
     date_to: Optional[str] = Query(None),
     pipeline_id: Optional[str] = Query(None),
+    user_id: Optional[str] = Query(None),
     current_user: dict = Depends(get_current_active_user),
     db: Session = Depends(get_db)
 ):
@@ -1834,10 +1835,21 @@ async def export_analytics_csv(
     owner_id = uuid.UUID(current_user["id"]) if isinstance(current_user["id"], str) else current_user["id"]
     company_id = current_user.get('company_id')
     
-    # Build filters
+    # Check for super admin - same logic as PDF export
+    is_superuser = current_user.get("is_superuser", False) or current_user.get("role", "").lower() == "super_admin"
+    filter_user_id = uuid.UUID(user_id) if user_id else None
+    
+    # Build filters - matching PDF export logic
     filters = [Deal.is_deleted == False]
-    if company_id:
+    
+    # User/Company filtering - Super Admin sees all companies (same as PDF export)
+    if filter_user_id:
+        filters.append(Deal.owner_id == filter_user_id)
+    elif not is_superuser and company_id:
+        # Only filter by company if NOT super admin
         filters.append(Deal.company_id == company_id)
+    # If is_superuser and no filter_user_id, don't add company filter (see all companies)
+    
     if date_from:
         filters.append(Deal.created_at >= datetime.fromisoformat(date_from))
     if date_to:

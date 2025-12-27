@@ -701,7 +701,7 @@ export default function Analytics() {
     try {
       const filters: any = {
         date_from: getDateFrom(dateRange),
-        date_to: new Date().toISOString().split('T')[0],
+        date_to: getDateTo(),
         report_type: reportType, // Add report type to filters
       };
       
@@ -732,7 +732,7 @@ export default function Analytics() {
     try {
       const filters: any = {
         date_from: getDateFrom(dateRange),
-        date_to: new Date().toISOString().split('T')[0],
+        date_to: getDateTo(),
       };
       
       // Only add filter if it's not 'all'
