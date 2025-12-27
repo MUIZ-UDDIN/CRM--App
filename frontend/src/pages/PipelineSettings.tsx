@@ -432,68 +432,77 @@ export default function PipelineSettings() {
           </div>
         )}
 
-        {/* Pipeline Selector */}
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Select Pipeline
-          </label>
-          {loading ? (
-            <div className="text-sm text-gray-500">Loading pipelines...</div>
-          ) : (() => {
-            // Filter pipelines by selected company
-            const filteredPipelines = filterCompany === 'all' 
-              ? pipelines 
-              : pipelines.filter(p => p.company_id === filterCompany);
-            
-            // Check if selected company has no pipelines
-            const selectedCompanyName = companies.find(c => c.id === filterCompany)?.name;
-            
-            if (filterCompany !== 'all' && filteredPipelines.length === 0) {
-              return (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm text-yellow-800 font-medium">No pipeline stages found</p>
-                  <p className="text-sm text-yellow-700 mt-1">
-                    "{selectedCompanyName}" has no pipeline configured.
-                  </p>
-                  <p className="text-sm text-yellow-600 mt-2">
-                    Please create a pipeline in Pipeline Management for this company.
-                  </p>
-                </div>
-              );
-            }
-            
-            if (filteredPipelines.length === 0) {
-              return (
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                  <p className="text-sm text-yellow-800">
-                    No pipelines found. Please create a pipeline first in the Deals section.
-                  </p>
-                </div>
-              );
-            }
-            
+        {/* Pipeline Selector - shown when company is selected or for non-Super Admin */}
+        {(() => {
+          // Filter pipelines by selected company
+          const filteredPipelines = filterCompany === 'all' 
+            ? pipelines 
+            : pipelines.filter(p => p.company_id === filterCompany);
+          
+          // Check if selected company has no pipelines
+          const selectedCompanyName = companies.find(c => c.id === filterCompany)?.name;
+          
+          if (loading) {
             return (
-              <select
-                value={selectedPipeline}
-                onChange={(e) => setSelectedPipeline(e.target.value)}
-                className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
-              >
-                {filteredPipelines.map(pipeline => {
-                  // For Super Admin, always show company name alongside pipeline name
-                  const displayName = isSuperAdmin() 
-                    ? `${pipeline.name} (${pipeline.company_name || 'Unknown'})`
-                    : pipeline.name;
-                  const truncatedName = displayName.length > 50 ? displayName.substring(0, 50) + '...' : displayName;
-                  return (
-                    <option key={pipeline.id} value={pipeline.id} title={displayName}>
-                      {truncatedName}
-                    </option>
-                  );
-                })}
-              </select>
+              <div className="mb-6 text-sm text-gray-500">Loading pipelines...</div>
             );
-          })()}
-        </div>
+          }
+          
+          if (filterCompany !== 'all' && filteredPipelines.length === 0) {
+            return (
+              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800 font-medium">No pipeline stages found</p>
+                <p className="text-sm text-yellow-700 mt-1">
+                  "{selectedCompanyName}" has no pipeline configured.
+                </p>
+                <p className="text-sm text-yellow-600 mt-2">
+                  Please create a pipeline in Pipeline Management for this company.
+                </p>
+              </div>
+            );
+          }
+          
+          if (filteredPipelines.length === 0) {
+            return (
+              <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <p className="text-sm text-yellow-800">
+                  No pipelines found. Please create a pipeline first in the Deals section.
+                </p>
+              </div>
+            );
+          }
+          
+          // Only show pipeline selector if there are multiple pipelines for the selected company
+          if (filteredPipelines.length > 1) {
+            return (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Pipeline
+                </label>
+                <select
+                  value={selectedPipeline}
+                  onChange={(e) => setSelectedPipeline(e.target.value)}
+                  className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
+                >
+                  {filteredPipelines.map(pipeline => {
+                    // For Super Admin, always show company name alongside pipeline name
+                    const displayName = isSuperAdmin() 
+                      ? `${pipeline.name} (${pipeline.company_name || 'Unknown'})`
+                      : pipeline.name;
+                    const truncatedName = displayName.length > 50 ? displayName.substring(0, 50) + '...' : displayName;
+                    return (
+                      <option key={pipeline.id} value={pipeline.id} title={displayName}>
+                        {truncatedName}
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            );
+          }
+          
+          return null;
+        })()}
 
         {/* Stages List */}
         <div className="bg-white rounded-lg shadow">
