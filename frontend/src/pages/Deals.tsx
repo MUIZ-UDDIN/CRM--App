@@ -1084,41 +1084,59 @@ export default function Deals() {
           <DragDropContext onDragEnd={onDragEnd} onDragUpdate={onDragUpdate}>
             {/* Mobile: Vertical Accordion, Desktop: Grid */}
             <div className="md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 space-y-3 md:space-y-0">
-              {stages.filter(stage => {
-                // Filter by stage name to handle duplicate stage names across pipelines
-                const selectedStageName = stages.find(s => s.id === filterStage)?.name;
-                const stageFilterMatch = filterStage === 'all' || stage.id === filterStage || stage.name === selectedStageName;
-                
-                // For Super Admin: Filter stages by selected company
-                // Only show stages that belong to pipelines of the selected company
-                if (isSuperAdmin() && filterCompany !== 'all') {
-                  // Check if this stage's companyIds includes the selected company
-                  const belongsToSelectedCompany = stage.companyIds?.includes(filterCompany);
-                  console.log(`🔍 Stage "${stage.name}" - companyIds:`, stage.companyIds, `- belongs to ${filterCompany}:`, belongsToSelectedCompany);
-                  if (!belongsToSelectedCompany) {
-                    return false;
-                  }
-                }
-                
-                // If searching, only show stages that have matching deals
-                if (searchQuery.trim() && stageFilterMatch) {
-                  const stageDeals = deals[stage.id] || [];
-                  const hasMatchingDeals = stageDeals.some(deal => {
-                    if (filterCompany !== 'all' && deal.company_id !== filterCompany) {
+              {(() => {
+                // Filter stages first
+                const filteredStages = stages.filter(stage => {
+                  // Filter by stage name to handle duplicate stage names across pipelines
+                  const selectedStageName = stages.find(s => s.id === filterStage)?.name;
+                  const stageFilterMatch = filterStage === 'all' || stage.id === filterStage || stage.name === selectedStageName;
+                  
+                  // For Super Admin: Filter stages by selected company
+                  // Only show stages that belong to pipelines of the selected company
+                  if (isSuperAdmin() && filterCompany !== 'all') {
+                    // Check if this stage's companyIds includes the selected company
+                    const belongsToSelectedCompany = stage.companyIds?.includes(filterCompany);
+                    if (!belongsToSelectedCompany) {
                       return false;
                     }
-                    const query = searchQuery.toLowerCase().trim();
-                    const id = deal.id?.toLowerCase() || '';
-                    const title = deal.title?.toLowerCase() || '';
-                    const company = deal.company?.toLowerCase() || '';
-                    const contact = deal.contact?.toLowerCase() || '';
-                    return id.includes(query) || title.includes(query) || company.includes(query) || contact.includes(query);
-                  });
-                  return hasMatchingDeals;
+                  }
+                  
+                  // If searching, only show stages that have matching deals
+                  if (searchQuery.trim() && stageFilterMatch) {
+                    const stageDeals = deals[stage.id] || [];
+                    const hasMatchingDeals = stageDeals.some(deal => {
+                      if (filterCompany !== 'all' && deal.company_id !== filterCompany) {
+                        return false;
+                      }
+                      const query = searchQuery.toLowerCase().trim();
+                      const id = deal.id?.toLowerCase() || '';
+                      const title = deal.title?.toLowerCase() || '';
+                      const company = deal.company?.toLowerCase() || '';
+                      const contact = deal.contact?.toLowerCase() || '';
+                      return id.includes(query) || title.includes(query) || company.includes(query) || contact.includes(query);
+                    });
+                    return hasMatchingDeals;
+                  }
+                  
+                  return stageFilterMatch;
+                });
+                
+                // Show message if no stages found for selected company
+                if (filteredStages.length === 0 && isSuperAdmin() && filterCompany !== 'all') {
+                  const selectedCompanyName = companies.find(c => c.id === filterCompany)?.name || 'Selected company';
+                  return (
+                    <div className="col-span-full flex flex-col items-center justify-center py-12 text-gray-500">
+                      <svg className="w-16 h-16 mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
+                      </svg>
+                      <p className="text-lg font-medium">No pipeline stages found</p>
+                      <p className="text-sm mt-1">"{selectedCompanyName}" has no pipeline configured.</p>
+                      <p className="text-sm text-gray-400 mt-2">Please create a pipeline in Pipeline Management for this company.</p>
+                    </div>
+                  );
                 }
                 
-                return stageFilterMatch;
-              }).map((stage) => {
+                return filteredStages.map((stage) => {
                 const isExpanded = expandedStages.includes(stage.id);
                 const toggleStage = () => {
                   setExpandedStages(prev => 
@@ -1321,7 +1339,8 @@ export default function Deals() {
                   </Droppable>
                 </div>
                 );
-              })}
+              });
+              })()}
             </div>
           </DragDropContext>
         )}
