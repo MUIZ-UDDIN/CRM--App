@@ -108,8 +108,8 @@ async def create_import_job(
         db=db
     )
     
-    # Send notification to company admins if Super Admin imported data for another company
-    if context.is_super_admin() and company_id and result.get("processed_rows", 0) > 0:
+    # Send notification to company admins if Super Admin imported data
+    if context.is_super_admin() and target_company_id and result.get("processed_rows", 0) > 0:
         await send_import_notification_to_company(
             db=db,
             company_id=target_company_id,
@@ -481,22 +481,30 @@ async def send_import_notification_to_company(
     importer_name: str
 ):
     """Send notification to company admins when Super Admin imports data for their company"""
+    import logging
+    logger = logging.getLogger("uvicorn")
+    
     try:
         target_company_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+        logger.info(f"Sending import notification for company: {target_company_uuid}")
         
         # Get company name
         company = db.query(Company).filter(Company.id == target_company_uuid).first()
         company_name = company.name if company else "your company"
+        logger.info(f"Company name: {company_name}")
         
-        # Get all company admins for this company
+        # Get all company admins for this company (use user_role field, not legacy role field)
         company_admins = db.query(User).filter(
             User.company_id == target_company_uuid,
-            User.role.in_(['company_admin', 'admin', 'Admin']),
+            User.user_role == 'company_admin',
             User.is_deleted == False,
             User.is_active == True
         ).all()
         
+        logger.info(f"Found {len(company_admins)} company admins for notification")
+        
         if not company_admins:
+            logger.warning(f"No company admins found for company {target_company_uuid}")
             return
         
         # Format entity type for display
@@ -522,8 +530,10 @@ async def send_import_notification_to_company(
                 }
             )
             db.add(notification)
+            logger.info(f"Created notification for admin: {admin.email}")
         
         db.commit()
+        logger.info(f"Successfully committed {len(company_admins)} notifications to database")
         
         # Broadcast WebSocket event for real-time sync
         try:
@@ -542,7 +552,7 @@ async def send_import_notification_to_company(
                     }
                 ))
         except Exception as ws_error:
-            print(f"WebSocket broadcast error: {ws_error}")
+            logger.warning(f"WebSocket broadcast error: {ws_error}")
             
     except Exception as e:
-        print(f"Failed to send import notification: {str(e)}")
+        logger.error(f"Failed to send import notification: {str(e)}")
