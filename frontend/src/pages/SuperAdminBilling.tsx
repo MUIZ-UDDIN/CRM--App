@@ -56,6 +56,9 @@ export default function SuperAdminBilling() {
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [newPrice, setNewPrice] = useState('50');
   const [suspendReason, setSuspendReason] = useState('');
+  const [showInvoiceModal, setShowInvoiceModal] = useState(false);
+  const [selectedCompanyInvoices, setSelectedCompanyInvoices] = useState<any[]>([]);
+  const [invoiceLoading, setInvoiceLoading] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -81,7 +84,8 @@ export default function SuperAdminBilling() {
             id: company.id,
             company_id: company.id,
             company_name: company.name,
-            plan_name: company.plan || 'free',
+            // Show 'free' for trial users, 'pro' only if they have actually paid
+            plan_name: hasPaymentMethod ? 'pro' : 'free',
             status: company.subscription_status || 'trial',
             billing_cycle: 'monthly',
             monthly_price: monthlyPrice,
@@ -151,6 +155,24 @@ export default function SuperAdminBilling() {
       fetchData();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to activate subscription');
+    }
+  };
+
+  const fetchCompanyInvoices = async (companyId: string) => {
+    setInvoiceLoading(true);
+    try {
+      const response = await apiClient.get(`/billing/companies/${companyId}/invoices`);
+      setSelectedCompanyInvoices(response.data || []);
+    } catch (error: any) {
+      // If no invoices found, show empty state
+      if (error.response?.status === 404) {
+        setSelectedCompanyInvoices([]);
+      } else {
+        console.error('Failed to load invoices:', error);
+        setSelectedCompanyInvoices([]);
+      }
+    } finally {
+      setInvoiceLoading(false);
     }
   };
 
@@ -378,7 +400,15 @@ export default function SuperAdminBilling() {
                           Activate
                         </button>
                       ) : null}
-                      <button className="text-blue-600 hover:text-blue-800 text-sm font-medium">
+                      <button 
+                        onClick={() => {
+                          setSelectedSubscription(sub);
+                          setShowInvoiceModal(true);
+                          // Fetch invoices for this company
+                          fetchCompanyInvoices(sub.company_id);
+                        }}
+                        className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                      >
                         <DocumentTextIcon className="w-4 h-4 inline" /> Invoices
                       </button>
                     </div>
@@ -404,7 +434,15 @@ export default function SuperAdminBilling() {
                 <input
                   type="number"
                   value={newPrice}
-                  onChange={(e) => setNewPrice(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    // Limit to reasonable price (max $99,999.99)
+                    if (value === '' || (parseFloat(value) >= 0 && parseFloat(value) <= 99999.99)) {
+                      setNewPrice(value);
+                    }
+                  }}
+                  max="99999.99"
+                  min="0"
                   className="w-full pl-8 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="50.00"
                   step="0.01"
@@ -469,6 +507,106 @@ export default function SuperAdminBilling() {
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
               >
                 Suspend
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Invoice Modal */}
+      {showInvoiceModal && selectedSubscription && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Invoices - {selectedSubscription.company_name}</h3>
+              <button
+                onClick={() => {
+                  setShowInvoiceModal(false);
+                  setSelectedSubscription(null);
+                  setSelectedCompanyInvoices([]);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircleIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            {invoiceLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              </div>
+            ) : selectedCompanyInvoices.length === 0 ? (
+              <div className="text-center py-12">
+                <DocumentTextIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-gray-600 font-medium">No invoices found</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  This company hasn't made any payments yet.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {selectedCompanyInvoices.map((invoice: any) => (
+                      <tr key={invoice.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          {invoice.invoice_number || `INV-${invoice.id.slice(0, 8).toUpperCase()}`}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-gray-600">
+                          {new Date(invoice.created_at || invoice.due_date).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                          ${(invoice.amount || 0).toFixed(2)}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
+                            invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }`}>
+                            {(invoice.status || 'pending').toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {invoice.invoice_pdf ? (
+                            <a
+                              href={invoice.invoice_pdf}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                            >
+                              Download PDF
+                            </a>
+                          ) : (
+                            <span className="text-gray-400 text-sm">No PDF</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowInvoiceModal(false);
+                  setSelectedSubscription(null);
+                  setSelectedCompanyInvoices([]);
+                }}
+                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Close
               </button>
             </div>
           </div>
