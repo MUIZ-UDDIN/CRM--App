@@ -85,8 +85,6 @@ export default function TrialBanner() {
     return null;
   }
 
-  // ONLY show trial banner to Company Admin
-  // Regular users (sales_rep, regular_user, company_user) and Super Admin should NOT see trial messages
   const isCompanyAdmin = userRole === 'company_admin' || 
                          userRole === 'admin' || 
                          userRole === 'Admin';
@@ -94,8 +92,10 @@ export default function TrialBanner() {
   const isSuperAdmin = userRole === 'super_admin' || 
                        userEmail === 'admin@sunstonecrm.com';
   
-  // Hide banner completely for Super Admin (they manage billing globally) and regular users
-  if (isSuperAdmin || !isCompanyAdmin) {
+  const isRegularUser = !isCompanyAdmin && !isSuperAdmin;
+
+  // Hide banner completely for Super Admin (they manage billing globally)
+  if (isSuperAdmin) {
     return null;
   }
 
@@ -106,17 +106,37 @@ export default function TrialBanner() {
   const isTrialExpired = companyInfo.subscription_status === 'expired' || companyInfo.days_remaining <= 0;
   const isTrialEndingSoon = companyInfo.days_remaining <= 3 && companyInfo.days_remaining > 0;
 
-  // Trial Expired - Critical
+  // Trial Expired - Show different messages for Company Admin vs Regular Users
   if (isTrialExpired) {
+    // Regular users see "contact administrator" message
+    if (isRegularUser) {
+      return (
+        <div className="bg-red-600 text-white px-4 py-3 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <ClockIcon className="w-6 h-6 flex-shrink-0" />
+              <div>
+                <p className="font-semibold">Your company's trial has ended</p>
+                <p className="text-sm text-red-100">
+                  Please contact your administrator to upgrade and continue using all features.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Company Admin sees upgrade option
     return (
       <div className="bg-red-600 text-white px-4 py-3 shadow-lg">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 flex-1">
             <ClockIcon className="w-6 h-6 flex-shrink-0" />
             <div>
-              <p className="font-semibold">Your trial has expired</p>
+              <p className="font-semibold">Your trial has ended</p>
               <p className="text-sm text-red-100">
-                Upgrade now to continue using Sunstone CRM
+                Please upgrade to continue using all features.
               </p>
             </div>
           </div>
@@ -134,6 +154,11 @@ export default function TrialBanner() {
         </div>
       </div>
     );
+  }
+  
+  // For active trial banners, only show to Company Admin (not regular users)
+  if (isRegularUser) {
+    return null;
   }
 
   // Trial Ending Soon - Warning
