@@ -90,8 +90,8 @@ export default function SuperAdminBilling() {
             billing_cycle: 'monthly',
             monthly_price: monthlyPrice,
             user_count: company.user_count || 0,
-            // Only calculate cost if they have payment method, otherwise $0
-            total_amount: hasPaymentMethod ? (monthlyPrice * (company.user_count || 0)) : 0,
+            // Flat rate pricing - show monthly price if they have payment method, otherwise $0
+            total_amount: hasPaymentMethod ? monthlyPrice : 0,
             current_period_start: company.created_at,
             current_period_end: company.trial_ends_at,
             trial_ends_at: company.trial_ends_at,

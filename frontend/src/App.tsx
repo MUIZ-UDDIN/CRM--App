@@ -37,7 +37,6 @@ import ScheduledSMS from './pages/ScheduledSMS';
 import PhoneNumbers from './pages/PhoneNumbers';
 import Calls from './pages/Calls';
 import SearchResults from './pages/SearchResults';
-import SupportTickets from './pages/SupportTickets';
 import CustomFields from './pages/CustomFields';
 import WorkflowTemplates from './pages/WorkflowTemplates';
 import Login from './pages/auth/Login';
@@ -147,7 +146,6 @@ function App() {
                 <Route path="admin/billing" element={<SuperAdminBilling />} />
                 <Route path="billing" element={<CompanyBilling />} />
                 <Route path="data-import" element={<DataImport />} />
-                <Route path="support-tickets" element={<SupportTickets />} />
                 <Route path="workflow-templates" element={<WorkflowTemplates />} />
                 <Route path="profile" element={<Profile />} />
                 <Route path="notifications" element={<Notifications />} />

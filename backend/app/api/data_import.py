@@ -19,6 +19,8 @@ from app.core.security import get_current_active_user
 from app.middleware.tenant import get_tenant_context
 from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
+from app.models.notifications import Notification as NotificationModel, NotificationType
+from app.models import User, Company
 
 router = APIRouter(prefix="/api/import", tags=["data_import"])
 
@@ -105,6 +107,16 @@ async def create_import_job(
         is_super_admin=context.is_super_admin(),
         db=db
     )
+    
+    # Send notification to company admins if Super Admin imported data for another company
+    if context.is_super_admin() and company_id and result.get("processed_rows", 0) > 0:
+        await send_import_notification_to_company(
+            db=db,
+            company_id=target_company_id,
+            entity_type=entity_type,
+            processed_rows=result.get("processed_rows", 0),
+            importer_name=f"{current_user.get('first_name', '')} {current_user.get('last_name', '')}".strip() or "Super Admin"
+        )
     
     # Return job details with results
     return ImportJobResponse(
@@ -459,3 +471,78 @@ async def process_import_job(
             "error_rows": 0,
             "errors": [f"Failed to process file: {str(e)}"]
         }
+
+
+async def send_import_notification_to_company(
+    db: Session,
+    company_id: str,
+    entity_type: str,
+    processed_rows: int,
+    importer_name: str
+):
+    """Send notification to company admins when Super Admin imports data for their company"""
+    try:
+        target_company_uuid = uuid.UUID(company_id) if isinstance(company_id, str) else company_id
+        
+        # Get company name
+        company = db.query(Company).filter(Company.id == target_company_uuid).first()
+        company_name = company.name if company else "your company"
+        
+        # Get all company admins for this company
+        company_admins = db.query(User).filter(
+            User.company_id == target_company_uuid,
+            User.role.in_(['company_admin', 'admin', 'Admin']),
+            User.is_deleted == False,
+            User.is_active == True
+        ).all()
+        
+        if not company_admins:
+            return
+        
+        # Format entity type for display
+        entity_display = {
+            "contacts": "contacts",
+            "deals": "deals", 
+            "activities": "activities"
+        }.get(entity_type, entity_type)
+        
+        # Create notification for each company admin
+        for admin in company_admins:
+            notification = NotificationModel(
+                title=f"Data Import Completed",
+                message=f"{importer_name} has imported {processed_rows} {entity_display} to {company_name}.",
+                type=NotificationType.SUCCESS,
+                link=f"/{entity_type}",
+                user_id=admin.id,
+                company_id=target_company_uuid,
+                extra_data={
+                    "entity_type": entity_type,
+                    "processed_rows": processed_rows,
+                    "importer": importer_name
+                }
+            )
+            db.add(notification)
+        
+        db.commit()
+        
+        # Broadcast WebSocket event for real-time sync
+        try:
+            from app.services.websocket_manager import broadcast_entity_change
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                asyncio.ensure_future(broadcast_entity_change(
+                    company_id=str(target_company_uuid),
+                    entity_type="notification",
+                    action="created",
+                    entity_id="import_notification",
+                    data={
+                        "title": "Data Import Completed",
+                        "type": "success"
+                    }
+                ))
+        except Exception as ws_error:
+            print(f"WebSocket broadcast error: {ws_error}")
+            
+    except Exception as e:
+        print(f"Failed to send import notification: {str(e)}")

@@ -170,11 +170,6 @@ export default function Notifications() {
       return '/quotes';
     }
     
-    // Support tickets
-    if (text.includes('ticket') || text.includes('support')) {
-      return '/support-tickets';
-    }
-    
     // Activities
     if (text.includes('activity') || text.includes('meeting') || text.includes('call')) {
       return '/activities';
