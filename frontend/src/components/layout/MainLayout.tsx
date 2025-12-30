@@ -27,6 +27,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { usePermissions } from '../../hooks/usePermissions';
 import ImageViewer from '../ImageViewer';
 import TrialBanner from '../TrialBanner';
+import TrialExpiredModal from '../TrialExpiredModal';
 import ActiveCallPanel from '../ActiveCallPanel';
 import IncomingCallNotification from '../IncomingCallNotification';
 import OutgoingCallNotification from '../OutgoingCallNotification';
@@ -1230,6 +1231,9 @@ export default function MainLayout() {
         call={activeCall}
         onHangup={handleHangupCall}
       />
+
+      {/* Trial Expired Modal - Shows once per session when trial is expired */}
+      <TrialExpiredModal />
     </div>
   );
 }
