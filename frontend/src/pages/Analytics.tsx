@@ -1014,7 +1014,7 @@ export default function Analytics() {
                 }`}
               >
                 <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-                {isReadOnly ? '🔒 Export PDF' : 'Export PDF'}
+                Export PDF
               </button>
               <button
                 onClick={() => {
@@ -1029,7 +1029,7 @@ export default function Analytics() {
                 }`}
               >
                 <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-                {isReadOnly ? '🔒 Export CSV' : 'Export CSV'}
+                Export CSV
               </button>
               <button
                 onClick={() => {
@@ -1044,7 +1044,7 @@ export default function Analytics() {
                 }`}
               >
                 <DocumentChartBarIcon className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
-                <span className="whitespace-nowrap">{isReadOnly ? '🔒 Generate Report' : 'Generate Report'}</span>
+                <span className="whitespace-nowrap">Generate Report</span>
               </button>
             </div>
           </div>

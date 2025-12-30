@@ -411,7 +411,7 @@ export default function Workflows() {
               }`}
             >
               <PlusIcon className="h-4 w-4 mr-2" />
-              {isReadOnly ? '🔒 Create Workflow' : 'Create Workflow'}
+              Create Workflow
             </button>
           </div>
         </div>

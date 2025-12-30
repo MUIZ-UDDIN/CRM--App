@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { PhoneIcon, PlusIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import useSubscription from '../hooks/useSubscription';
 import toast from 'react-hot-toast';
 import SearchableSelect from '../components/common/SearchableSelect';
 import { CallModal } from '../components/CallModal';
@@ -27,6 +28,7 @@ interface Call {
 }
 
 export default function CallsNew() {
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const [calls, setCalls] = useState<Call[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -371,8 +373,16 @@ export default function CallsNew() {
                 <span>Fix Old Calls</span>
               </button>
               <button
-                onClick={() => setShowCallFormModal(true)}
-                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 flex-1 sm:flex-initial whitespace-nowrap"
+                onClick={() => {
+                  if (!checkFeatureAccess('Make Call')) return;
+                  setShowCallFormModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white flex-1 sm:flex-initial whitespace-nowrap ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
                 <PhoneIcon className="h-4 w-4 sm:mr-2" />
                 <span className="hidden xs:inline ml-1">Make Call</span>

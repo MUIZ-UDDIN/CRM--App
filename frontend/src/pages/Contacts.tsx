@@ -716,7 +716,7 @@ export default function Contacts() {
                   }`}
                 >
                   <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                  {isReadOnly ? '🔒 Import' : 'Import'}
+                  Import
                 </button>
               )}
               <button
@@ -733,7 +733,7 @@ export default function Contacts() {
                 }`}
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
-                {isReadOnly ? '🔒 Add Contact' : 'Add Contact'}
+                Add Contact
               </button>
             </div>
           </div>

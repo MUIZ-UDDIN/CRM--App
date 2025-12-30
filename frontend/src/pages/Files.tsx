@@ -703,8 +703,16 @@ export default function Files() {
             </div>
             <div className="flex flex-wrap gap-3">
               <button
-                onClick={() => setShowCreateFolderModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                onClick={() => {
+                  if (!checkFeatureAccess('Create Folder')) return;
+                  setShowCreateFolderModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-4 py-2 border shadow-sm text-sm font-medium rounded-lg ${
+                  isReadOnly 
+                    ? 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed' 
+                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
               >
                 <FolderPlusIcon className="h-4 w-4 mr-2" />
                 New Folder
@@ -722,7 +730,7 @@ export default function Files() {
                 }`}
               >
                 <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                {isReadOnly ? '🔒 Upload File' : 'Upload File'}
+                Upload File
               </button>
             </div>
           </div>

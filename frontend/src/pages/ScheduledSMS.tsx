@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ClockIcon, PlusIcon, TrashIcon, CalendarIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import useSubscription from '../hooks/useSubscription';
 import toast from 'react-hot-toast';
 
 interface Contact {
@@ -37,6 +38,7 @@ interface PhoneNumber {
 
 export default function ScheduledSMS() {
   const navigate = useNavigate();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [scheduledMessages, setScheduledMessages] = useState<ScheduledSMS[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
@@ -276,8 +278,16 @@ export default function ScheduledSMS() {
               </div>
             </div>
             <button
-              onClick={() => setShowModal(true)}
-              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 flex-shrink-0"
+              onClick={() => {
+                if (!checkFeatureAccess('Schedule SMS')) return;
+                setShowModal(true);
+              }}
+              disabled={isReadOnly}
+              className={`inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white flex-shrink-0 ${
+                isReadOnly 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-primary-600 hover:bg-primary-700'
+              }`}
             >
               <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               <span className="whitespace-nowrap">Schedule Message</span>
@@ -295,8 +305,16 @@ export default function ScheduledSMS() {
             <p className="mt-1 text-sm text-gray-500">Get started by scheduling a new message.</p>
             <div className="mt-6">
               <button
-                onClick={() => setShowModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                onClick={() => {
+                  if (!checkFeatureAccess('Schedule SMS')) return;
+                  setShowModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
                 <PlusIcon className="w-5 h-5 mr-2" />
                 Schedule Message

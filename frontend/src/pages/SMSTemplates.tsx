@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DocumentDuplicateIcon, PlusIcon, TrashIcon, SparklesIcon, ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import useSubscription from '../hooks/useSubscription';
 import toast from 'react-hot-toast';
 import ActionButtons from '../components/common/ActionButtons';
 import Pagination from '../components/Pagination';
@@ -19,6 +20,7 @@ interface SMSTemplate {
 
 export default function SMSTemplates() {
   const navigate = useNavigate();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -202,8 +204,16 @@ export default function SMSTemplates() {
               </div>
             </div>
             <button
-              onClick={() => setShowModal(true)}
-              className="inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 flex-shrink-0"
+              onClick={() => {
+                if (!checkFeatureAccess('Create Template')) return;
+                setShowModal(true);
+              }}
+              disabled={isReadOnly}
+              className={`inline-flex items-center px-3 sm:px-4 py-2 border border-transparent rounded-lg shadow-sm text-xs sm:text-sm font-medium text-white flex-shrink-0 ${
+                isReadOnly 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-primary-600 hover:bg-primary-700'
+              }`}
             >
               <PlusIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
               <span className="whitespace-nowrap">New Template</span>
@@ -221,8 +231,16 @@ export default function SMSTemplates() {
             <p className="mt-1 text-sm text-gray-500">Get started by creating a new template.</p>
             <div className="mt-6">
               <button
-                onClick={() => setShowModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                onClick={() => {
+                  if (!checkFeatureAccess('Create Template')) return;
+                  setShowModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
                 <PlusIcon className="w-5 h-5 mr-2" />
                 New Template

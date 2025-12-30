@@ -525,7 +525,7 @@ export default function Activities() {
               }`}
             >
               <PlusIcon className="h-4 w-4 mr-2" />
-              {isReadOnly ? '🔒 Add Activity' : 'Add Activity'}
+              Add Activity
             </button>
           </div>
         </div>

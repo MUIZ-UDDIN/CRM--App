@@ -556,7 +556,7 @@ export default function Quotes() {
               }`}
             >
               <PlusIcon className="h-4 w-4 mr-2" />
-              {isReadOnly ? '🔒 Create Quote' : 'Create Quote'}
+              Create Quote
             </button>
           </div>
         </div>

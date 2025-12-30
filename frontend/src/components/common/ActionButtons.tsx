@@ -53,7 +53,7 @@ export default function ActionButtons({
               ? 'text-gray-300 cursor-not-allowed' 
               : 'text-gray-400 hover:text-primary-600 hover:bg-primary-50'
           }`}
-          title={disableEdit ? 'Edit (Disabled - Trial Expired)' : 'Edit'}
+          title={disableEdit ? 'Upgrade to edit' : 'Edit'}
         >
           <PencilIcon className="h-4 w-4" />
         </button>
@@ -71,7 +71,7 @@ export default function ActionButtons({
               ? 'text-gray-300 cursor-not-allowed' 
               : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
           }`}
-          title={disableDelete ? 'Delete (Disabled - Trial Expired)' : 'Delete'}
+          title={disableDelete ? 'Upgrade to delete' : 'Delete'}
         >
           <TrashIcon className="h-4 w-4" />
         </button>

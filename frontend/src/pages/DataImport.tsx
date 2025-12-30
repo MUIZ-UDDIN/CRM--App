@@ -262,8 +262,16 @@ export default function DataImport() {
                 <p className="text-sm text-gray-600">{type.description}</p>
               </div>
               <button
-                onClick={() => downloadTemplate(type.value as EntityType)}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
+                onClick={() => {
+                  if (!checkFeatureAccess('Download Template')) return;
+                  downloadTemplate(type.value as EntityType);
+                }}
+                disabled={isReadOnly}
+                className={`px-4 py-2 text-sm rounded-lg font-medium ${
+                  isReadOnly 
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               >
                 Download Template
               </button>
@@ -312,7 +320,7 @@ export default function DataImport() {
                         ) : (
                           <>
                             <ArrowUpTrayIcon className="w-5 h-5" />
-                            {isReadOnly ? '🔒 Import' : 'Import'}
+                            Import
                           </>
                         )}
                       </button>
@@ -322,12 +330,22 @@ export default function DataImport() {
               ) : (
                 <div className="text-center">
                   <ArrowUpTrayIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                  <label
-                    htmlFor={`file-upload-${type.value}`}
-                    className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
-                  >
-                    Choose File
-                  </label>
+                  {isReadOnly ? (
+                    <button
+                      onClick={() => checkFeatureAccess('Choose File')}
+                      className="inline-block px-6 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed"
+                      disabled
+                    >
+                      Choose File
+                    </button>
+                  ) : (
+                    <label
+                      htmlFor={`file-upload-${type.value}`}
+                      className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer"
+                    >
+                      Choose File
+                    </label>
+                  )}
                   <p className="text-xs text-gray-500 mt-2">CSV, XLSX, or XLS (Max 10MB)</p>
                 </div>
               )}

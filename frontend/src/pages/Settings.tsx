@@ -1791,8 +1791,16 @@ export default function Settings() {
               </div>
               {(isCompanyAdmin || isSuperAdmin) && (
                 <button
-                  onClick={() => setShowCreateTeamModal(true)}
-                  className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => {
+                    if (!checkFeatureAccess('Create Team')) return;
+                    setShowCreateTeamModal(true);
+                  }}
+                  disabled={isReadOnly}
+                  className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg transition-colors ${
+                    isReadOnly 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   <PlusCircleIcon className="w-5 h-5" />
                   Create Team
@@ -1870,10 +1878,16 @@ export default function Settings() {
                         {(isCompanyAdmin || isSuperAdmin) && (
                           <button
                             onClick={() => {
+                              if (!checkFeatureAccess('Add Team Member')) return;
                               fetchAvailableUsers();
                               setShowAddMemberModal(true);
                             }}
-                            className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                            disabled={isReadOnly}
+                            className={`flex items-center gap-2 text-white px-3 py-1 rounded-lg transition-colors text-sm ${
+                              isReadOnly 
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
                           >
                             <UserPlusIcon className="w-4 h-4" />
                             Add Member
@@ -1983,7 +1997,7 @@ export default function Settings() {
                   }`}
                 >
                   <UserPlusIcon className="w-5 h-5" />
-                  {isReadOnly ? '🔒 Invite Team Member' : 'Invite Team Member'}
+                  Invite Team Member
                 </button>
               )}
             </div>

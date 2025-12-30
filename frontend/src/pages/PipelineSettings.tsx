@@ -497,7 +497,7 @@ export default function PipelineSettings() {
               }`}
             >
               <PlusIcon className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">{isReadOnly ? '🔒 Add Stage' : 'Add Stage'}</span>
+              <span className="hidden sm:inline">Add Stage</span>
             </button>
           </div>
 

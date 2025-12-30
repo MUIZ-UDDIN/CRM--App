@@ -15,6 +15,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import useSubscription from '../hooks/useSubscription';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../utils/errorHandler';
@@ -43,6 +44,7 @@ export default function WorkflowTemplates() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterCategory, setFilterCategory] = useState<string>('all');
@@ -578,8 +580,16 @@ export default function WorkflowTemplates() {
               )}
 
               <button
-                onClick={() => openTemplateModal(template)}
-                className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center justify-center gap-2"
+                onClick={() => {
+                  if (!checkFeatureAccess('Use Template')) return;
+                  openTemplateModal(template);
+                }}
+                disabled={isReadOnly}
+                className={`w-full px-4 py-2 text-white rounded-lg flex items-center justify-center gap-2 ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
               >
                 Use Template
               </button>

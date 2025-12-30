@@ -1355,7 +1355,7 @@ export default function Deals() {
                               : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600'
                           }`}
                         >
-                          {isReadOnly ? '🔒 Add Deal' : 'Add Deal'}
+                          Add Deal
                         </button>
                       </div>
                     )}

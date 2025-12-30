@@ -15,6 +15,7 @@ import {
   UserPlusIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import useSubscription from '../hooks/useSubscription';
 import toast from 'react-hot-toast';
 import { CallModal } from '../components/CallModal';
 import { twilioVoiceService } from '../services/twilioVoiceService';
@@ -56,6 +57,7 @@ interface PhoneNumber {
 
 export default function SMSEnhanced() {
   const navigate = useNavigate();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [messages, setMessages] = useState<SMSMessage[]>([]);
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [templates, setTemplates] = useState<SMSTemplate[]>([]);
@@ -623,15 +625,31 @@ export default function SMSEnhanced() {
               </button>
               <div className="hidden lg:block border-l border-gray-300 mx-1"></div>
               <button
-                onClick={() => setShowBulkModal(true)}
-                className="inline-flex items-center px-2 sm:px-2.5 md:px-3 lg:px-4 py-1.5 border border-gray-300 shadow-sm text-xs md:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                onClick={() => {
+                  if (!checkFeatureAccess('Bulk SMS')) return;
+                  setShowBulkModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-2 sm:px-2.5 md:px-3 lg:px-4 py-1.5 border shadow-sm text-xs md:text-sm font-medium rounded-lg ${
+                  isReadOnly 
+                    ? 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed' 
+                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
               >
                 <UserGroupIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                 <span className="whitespace-nowrap">Bulk SMS</span>
               </button>
               <button
-                onClick={() => setShowComposeModal(true)}
-                className="inline-flex items-center px-2 sm:px-2.5 md:px-3 lg:px-4 py-1.5 border border-transparent shadow-sm text-xs md:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+                onClick={() => {
+                  if (!checkFeatureAccess('Send SMS')) return;
+                  setShowComposeModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-2 sm:px-2.5 md:px-3 lg:px-4 py-1.5 border border-transparent shadow-sm text-xs md:text-sm font-medium rounded-lg text-white ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
                 <PlusIcon className="h-3 w-3 md:h-4 md:w-4 mr-1" />
                 <span className="whitespace-nowrap">New Message</span>
