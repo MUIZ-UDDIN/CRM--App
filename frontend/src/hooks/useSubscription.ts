@@ -49,6 +49,11 @@ export function useSubscription(): UseSubscriptionReturn {
                        user?.email === 'admin@sunstonecrm.com';
 
   const fetchSubscriptionStatus = useCallback(async () => {
+    console.log('=== fetchSubscriptionStatus called ===');
+    console.log('user:', user);
+    console.log('user?.company_id:', user?.company_id);
+    console.log('isSuperAdmin:', isSuperAdmin);
+    
     if (!user?.company_id || isSuperAdmin) {
       setLoading(false);
       // Super admin always has access
@@ -60,13 +65,29 @@ export function useSubscription(): UseSubscriptionReturn {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) return;
+      if (!token) {
+        console.log('No token found');
+        return;
+      }
 
+      console.log('Fetching company data for company_id:', user.company_id);
       const response = await axios.get(`${API_URL}/companies/${user.company_id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
+      console.log('=== Full API Response ===');
+      console.log('response.status:', response.status);
+      console.log('response.data:', JSON.stringify(response.data, null, 2));
+      console.log('=========================');
+
       const company = response.data;
+      
+      // Check if company data is valid
+      if (!company || !company.id) {
+        console.error('Invalid company data received:', company);
+        setLoading(false);
+        return;
+      }
       
       // Calculate days remaining
       let daysRemaining = 14; // Default to 14 days for new companies without trial_ends_at
