@@ -9,6 +9,7 @@ import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 import * as pipelinesService from '../services/pipelinesService';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import useSubscription from '../hooks/useSubscription';
 import {
   PlusIcon,
   XMarkIcon,
@@ -45,6 +46,7 @@ export default function PipelineSettings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [pipelines, setPipelines] = useState<Pipeline[]>([]);
   const [selectedPipeline, setSelectedPipeline] = useState('');
   const [showAddStageModal, setShowAddStageModal] = useState(false);
@@ -483,11 +485,19 @@ export default function PipelineSettings() {
           <div className="px-4 sm:px-6 py-4 border-b border-gray-200 flex justify-between items-center gap-2">
             <h3 className="text-lg font-medium text-gray-900 truncate">Pipeline Stages</h3>
             <button
-              onClick={() => setShowAddStageModal(true)}
-              className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 flex-shrink-0"
+              onClick={() => {
+                if (!checkFeatureAccess('Add Pipeline Stage')) return;
+                setShowAddStageModal(true);
+              }}
+              disabled={isReadOnly}
+              className={`inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-lg text-white flex-shrink-0 ${
+                isReadOnly 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-primary-600 hover:bg-primary-700'
+              }`}
             >
               <PlusIcon className="h-4 w-4 sm:mr-2" />
-              <span className="hidden sm:inline">Add Stage</span>
+              <span className="hidden sm:inline">{isReadOnly ? '🔒 Add Stage' : 'Add Stage'}</span>
             </button>
           </div>
 

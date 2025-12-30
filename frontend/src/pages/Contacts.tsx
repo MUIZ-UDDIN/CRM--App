@@ -12,6 +12,7 @@ import LeadSourceCombobox from '../components/common/LeadSourceCombobox';
 import CustomFieldsForm from '../components/CustomFieldsForm';
 import CustomFieldsDisplay from '../components/CustomFieldsDisplay';
 import { usePermissions } from '../hooks/usePermissions';
+import useSubscription from '../hooks/useSubscription';
 import { 
   UserGroupIcon, 
   PlusIcon, 
@@ -41,6 +42,7 @@ interface Contact {
 
 export default function Contacts() {
   const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const canImport = isSuperAdmin() || isCompanyAdmin() || isSalesManager();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -702,22 +704,36 @@ export default function Contacts() {
             <div className="flex flex-wrap gap-3">
               {canImport && (
                 <button
-                  onClick={() => setShowUploadModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50"
+                  onClick={() => {
+                    if (!checkFeatureAccess('Import Contacts')) return;
+                    setShowUploadModal(true);
+                  }}
+                  disabled={isReadOnly}
+                  className={`inline-flex items-center px-4 py-2 border shadow-sm text-sm font-medium rounded-lg ${
+                    isReadOnly 
+                      ? 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed' 
+                      : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                  }`}
                 >
                   <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                  Import
+                  {isReadOnly ? '🔒 Import' : 'Import'}
                 </button>
               )}
               <button
                 onClick={async () => {
+                  if (!checkFeatureAccess('Add Contact')) return;
                   await resetContactForm();
                   setShowAddModal(true);
                 }}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
-                Add Contact
+                {isReadOnly ? '🔒 Add Contact' : 'Add Contact'}
               </button>
             </div>
           </div>
@@ -836,8 +852,16 @@ export default function Contacts() {
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <ActionButtons
                           onView={() => handleView(contact)}
-                          onEdit={() => handleEdit(contact)}
-                          onDelete={() => handleDelete(contact)}
+                          onEdit={() => {
+                            if (!checkFeatureAccess('Edit Contact')) return;
+                            handleEdit(contact);
+                          }}
+                          onDelete={() => {
+                            if (!checkFeatureAccess('Delete Contact')) return;
+                            handleDelete(contact);
+                          }}
+                          disableEdit={isReadOnly}
+                          disableDelete={isReadOnly}
                         />
                       </td>
                     </tr>

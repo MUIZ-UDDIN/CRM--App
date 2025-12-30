@@ -11,6 +11,7 @@ import CustomFieldsDisplay from '../components/CustomFieldsDisplay';
 import { useSubmitOnce } from '../hooks/useSubmitOnce';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import useSubscription from '../hooks/useSubscription';
 import apiClient from '../services/apiClient';
 import { handleApiError } from '../utils/errorHandler';
 import { 
@@ -68,6 +69,7 @@ interface Company {
 export default function Deals() {
   const { user } = useAuth();
   const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddDealModal, setShowAddDealModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -1240,8 +1242,16 @@ export default function Deals() {
                                   </div>
                                   <ActionButtons
                                     onView={() => handleView(deal)}
-                                    onEdit={() => handleEdit(deal)}
-                                    onDelete={() => handleDelete(deal)}
+                                    onEdit={() => {
+                                      if (!checkFeatureAccess('Edit Deal')) return;
+                                      handleEdit(deal);
+                                    }}
+                                    onDelete={() => {
+                                      if (!checkFeatureAccess('Delete Deal')) return;
+                                      handleDelete(deal);
+                                    }}
+                                    disableEdit={isReadOnly}
+                                    disableDelete={isReadOnly}
                                   />
                                 </div>
 
@@ -1334,12 +1344,18 @@ export default function Deals() {
                         {/* Add Deal Button */}
                         <button
                           onClick={() => {
+                            if (!checkFeatureAccess('Add Deal')) return;
                             setDealFormData({ ...dealFormData, stage_id: stage.id });
                             setShowAddDealModal(true);
                           }}
-                          className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                          disabled={isReadOnly}
+                          className={`w-full py-3 border-2 border-dashed rounded-lg transition-colors ${
+                            isReadOnly 
+                              ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50' 
+                              : 'border-gray-300 text-gray-500 hover:border-gray-400 hover:text-gray-600'
+                          }`}
                         >
-                          Add Deal
+                          {isReadOnly ? '🔒 Add Deal' : 'Add Deal'}
                         </button>
                       </div>
                     )}

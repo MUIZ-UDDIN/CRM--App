@@ -6,6 +6,7 @@ import Pagination from '../components/Pagination';
 import ActionButtons from '../components/common/ActionButtons';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import useSubscription from '../hooks/useSubscription';
 import { handleApiError } from '../utils/errorHandler';
 import { 
   BoltIcon, 
@@ -40,6 +41,7 @@ interface Workflow {
 export default function Workflows() {
   const { user } = useAuth();
   const { isSuperAdmin, isCompanyAdmin, isSalesManager } = usePermissions();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAddModal, setShowAddModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -397,11 +399,19 @@ export default function Workflows() {
               </p>
             </div>
             <button
-              onClick={handleOpenAddModal}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+              onClick={() => {
+                if (!checkFeatureAccess('Create Workflow')) return;
+                handleOpenAddModal();
+              }}
+              disabled={isReadOnly}
+              className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white ${
+                isReadOnly 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-primary-600 hover:bg-primary-700'
+              }`}
             >
               <PlusIcon className="h-4 w-4 mr-2" />
-              Create Workflow
+              {isReadOnly ? '🔒 Create Workflow' : 'Create Workflow'}
             </button>
           </div>
         </div>

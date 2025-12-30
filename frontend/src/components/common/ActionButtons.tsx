@@ -12,6 +12,8 @@ interface ActionButtonsProps {
   showView?: boolean;
   showEdit?: boolean;
   showDelete?: boolean;
+  disableEdit?: boolean;
+  disableDelete?: boolean;
 }
 
 export default function ActionButtons({
@@ -21,6 +23,8 @@ export default function ActionButtons({
   showView = true,
   showEdit = true,
   showDelete = true,
+  disableEdit = false,
+  disableDelete = false,
 }: ActionButtonsProps) {
   return (
     <div className="flex items-center space-x-2">
@@ -41,10 +45,15 @@ export default function ActionButtons({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onEdit();
+            if (!disableEdit) onEdit();
           }}
-          className="p-1.5 text-gray-400 hover:text-primary-600 hover:bg-primary-50 rounded transition-colors"
-          title="Edit"
+          disabled={disableEdit}
+          className={`p-1.5 rounded transition-colors ${
+            disableEdit 
+              ? 'text-gray-300 cursor-not-allowed' 
+              : 'text-gray-400 hover:text-primary-600 hover:bg-primary-50'
+          }`}
+          title={disableEdit ? 'Edit (Disabled - Trial Expired)' : 'Edit'}
         >
           <PencilIcon className="h-4 w-4" />
         </button>
@@ -54,10 +63,15 @@ export default function ActionButtons({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            if (!disableDelete) onDelete();
           }}
-          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-          title="Delete"
+          disabled={disableDelete}
+          className={`p-1.5 rounded transition-colors ${
+            disableDelete 
+              ? 'text-gray-300 cursor-not-allowed' 
+              : 'text-gray-400 hover:text-red-600 hover:bg-red-50'
+          }`}
+          title={disableDelete ? 'Delete (Disabled - Trial Expired)' : 'Delete'}
         >
           <TrashIcon className="h-4 w-4" />
         </button>

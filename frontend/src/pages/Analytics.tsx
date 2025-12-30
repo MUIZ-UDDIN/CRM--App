@@ -28,9 +28,11 @@ import {
 } from 'recharts';
 import toast from 'react-hot-toast';
 import * as analyticsService from '../services/analyticsService';
+import useSubscription from '../hooks/useSubscription';
 
 export default function Analytics() {
   const { user: currentUser } = useAuth();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [showPipelineModal, setShowPipelineModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportType, setReportType] = useState('sales');
@@ -1000,25 +1002,49 @@ export default function Analytics() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={handleExportToPDF}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                onClick={() => {
+                  if (!checkFeatureAccess('Export PDF')) return;
+                  handleExportToPDF();
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm font-medium rounded-lg transition-colors ${
+                  isReadOnly 
+                    ? 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed' 
+                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
               >
                 <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-                Export PDF
+                {isReadOnly ? '🔒 Export PDF' : 'Export PDF'}
               </button>
               <button
-                onClick={handleExportToCSV}
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+                onClick={() => {
+                  if (!checkFeatureAccess('Export CSV')) return;
+                  handleExportToCSV();
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-3 py-2 border shadow-sm text-sm font-medium rounded-lg transition-colors ${
+                  isReadOnly 
+                    ? 'border-gray-200 text-gray-400 bg-gray-100 cursor-not-allowed' 
+                    : 'border-gray-300 text-gray-700 bg-white hover:bg-gray-50'
+                }`}
               >
                 <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-                Export CSV
+                {isReadOnly ? '🔒 Export CSV' : 'Export CSV'}
               </button>
               <button
-                onClick={() => setShowReportModal(true)}
-                className="inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+                onClick={() => {
+                  if (!checkFeatureAccess('Generate Report')) return;
+                  setShowReportModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center justify-center px-3 sm:px-4 py-1.5 sm:py-2 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-lg text-white ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
                 <DocumentChartBarIcon className="h-4 sm:h-5 w-4 sm:w-5 mr-2" />
-                <span className="whitespace-nowrap">Generate Report</span>
+                <span className="whitespace-nowrap">{isReadOnly ? '🔒 Generate Report' : 'Generate Report'}</span>
               </button>
             </div>
           </div>

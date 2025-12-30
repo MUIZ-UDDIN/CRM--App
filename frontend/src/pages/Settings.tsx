@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import ActionButtons from '../components/common/ActionButtons';
 import { useAuth } from '../contexts/AuthContext';
+import useSubscription from '../hooks/useSubscription';
 import * as twilioService from '../services/twilioService';
 import * as emailService from '../services/emailService';
 import apiClient from '../services/apiClient';
@@ -88,6 +89,7 @@ interface Invoice {
 export default function Settings() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const tabFromUrl = searchParams.get('tab') as TabType | null;
   const subPageFromUrl = searchParams.get('subpage');
   const [activeTab, setActiveTab] = useState<TabType>(tabFromUrl || 'company');
@@ -1969,11 +1971,19 @@ export default function Settings() {
               <h2 className="text-xl font-semibold text-gray-900">Team Members</h2>
               {(isCompanyAdmin || isSuperAdmin) && (
                 <button
-                  onClick={handleOpenAddModal}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                  onClick={() => {
+                    if (!checkFeatureAccess('Invite Team Member')) return;
+                    handleOpenAddModal();
+                  }}
+                  disabled={isReadOnly}
+                  className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg transition-colors shadow-sm ${
+                    isReadOnly 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   <UserPlusIcon className="w-5 h-5" />
-                  Invite Team Member
+                  {isReadOnly ? '🔒 Invite Team Member' : 'Invite Team Member'}
                 </button>
               )}
             </div>

@@ -18,6 +18,9 @@ interface SubscriptionStatus {
 
 interface UseSubscriptionReturn extends SubscriptionStatus {
   loading: boolean;
+  isReadOnly: boolean;
+  isCompanyAdmin: boolean;
+  isSuperAdmin: boolean;
   checkFeatureAccess: (featureName?: string) => boolean;
   redirectToBilling: () => void;
   showUpgradePrompt: (featureName?: string) => void;
@@ -145,9 +148,15 @@ export function useSubscription(): UseSubscriptionReturn {
     return false;
   }, [isSuperAdmin, status.canAccessPremiumFeatures, showUpgradePrompt]);
 
+  // Read-only mode is active when trial is expired and user is not super admin
+  const isReadOnly = !isSuperAdmin && status.isTrialExpired;
+
   return {
     ...status,
     loading,
+    isReadOnly,
+    isCompanyAdmin,
+    isSuperAdmin,
     checkFeatureAccess,
     redirectToBilling,
     showUpgradePrompt,

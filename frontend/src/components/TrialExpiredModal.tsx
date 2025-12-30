@@ -22,21 +22,18 @@ export default function TrialExpiredModal() {
     // Don't show for super admin
     if (isSuperAdmin) return;
     
-    // Check if we've already shown the modal this session
-    const sessionKey = `trial_modal_shown_${user?.id}`;
-    const alreadyShown = sessionStorage.getItem(sessionKey);
-    
-    if (!loading && isTrialExpired && !alreadyShown && !hasShownThisSession) {
+    // Show modal every time user logs in when trial is expired
+    // We use a flag that resets on page refresh/new login
+    if (!loading && isTrialExpired && !hasShownThisSession) {
       // Small delay to let the page load first
       const timer = setTimeout(() => {
         setIsOpen(true);
         setHasShownThisSession(true);
-        sessionStorage.setItem(sessionKey, 'true');
       }, 1000);
       
       return () => clearTimeout(timer);
     }
-  }, [loading, isTrialExpired, isSuperAdmin, user?.id, hasShownThisSession]);
+  }, [loading, isTrialExpired, isSuperAdmin, hasShownThisSession]);
 
   const handleClose = () => {
     setIsOpen(false);

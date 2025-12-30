@@ -8,6 +8,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
+import useSubscription from '../hooks/useSubscription';
 import apiClient from '../services/apiClient';
 import toast from 'react-hot-toast';
 import { handleApiError } from '../utils/errorHandler';
@@ -28,6 +29,7 @@ interface ImportResult {
 export default function DataImport() {
   const { user } = useAuth();
   const { isCompanyAdmin, isSuperAdmin, isSalesManager } = usePermissions();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [files, setFiles] = useState<{[key: string]: File | null}>({
     contacts: null,
     deals: null,
@@ -293,9 +295,14 @@ export default function DataImport() {
                         Change
                       </label>
                       <button
-                        onClick={() => handleUpload(type.value as EntityType)}
-                        disabled={uploading[type.value]}
-                        className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        onClick={() => {
+                          if (!checkFeatureAccess('Import Data')) return;
+                          handleUpload(type.value as EntityType);
+                        }}
+                        disabled={uploading[type.value] || isReadOnly}
+                        className={`px-6 py-2 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
+                          isReadOnly ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'
+                        }`}
                       >
                         {uploading[type.value] ? (
                           <>
@@ -305,7 +312,7 @@ export default function DataImport() {
                         ) : (
                           <>
                             <ArrowUpTrayIcon className="w-5 h-5" />
-                            Import
+                            {isReadOnly ? '🔒 Import' : 'Import'}
                           </>
                         )}
                       </button>

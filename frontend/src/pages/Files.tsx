@@ -5,6 +5,7 @@ import * as filesService from '../services/filesService';
 import ActionButtons from '../components/common/ActionButtons';
 import SearchableCategorySelect from '../components/common/SearchableCategorySelect';
 import Pagination from '../components/Pagination';
+import useSubscription from '../hooks/useSubscription';
 import { 
   FolderIcon, 
   DocumentIcon,
@@ -36,6 +37,7 @@ interface FileItem {
 }
 
 export default function Files() {
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [searchParams, setSearchParams] = useSearchParams();
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showCreateFolderModal, setShowCreateFolderModal] = useState(false);
@@ -708,11 +710,19 @@ export default function Files() {
                 New Folder
               </button>
               <button
-                onClick={() => setShowUploadModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700"
+                onClick={() => {
+                  if (!checkFeatureAccess('Upload File')) return;
+                  setShowUploadModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-primary-600 hover:bg-primary-700'
+                }`}
               >
                 <ArrowUpTrayIcon className="h-4 w-4 mr-2" />
-                Upload File
+                {isReadOnly ? '🔒 Upload File' : 'Upload File'}
               </button>
             </div>
           </div>
