@@ -69,17 +69,28 @@ export function useSubscription(): UseSubscriptionReturn {
       const company = response.data;
       
       // Calculate days remaining
-      let daysRemaining = 0;
+      let daysRemaining = 14; // Default to 14 days for new companies without trial_ends_at
+      let hasTrialEndDate = false;
+      
       if (company.trial_ends_at) {
+        hasTrialEndDate = true;
         const trialEnd = new Date(company.trial_ends_at);
         const now = new Date();
         daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       }
 
       const subscriptionStatus = company.subscription_status || 'trial';
-      const isTrialExpired = subscriptionStatus === 'expired' || daysRemaining <= 0;
+      
+      // Trial is only expired if:
+      // 1. subscription_status is explicitly 'expired', OR
+      // 2. trial_ends_at exists AND the date has passed (daysRemaining <= 0)
+      // New companies without trial_ends_at are NOT considered expired
+      const isTrialExpired = subscriptionStatus === 'expired' || 
+                             (hasTrialEndDate && daysRemaining <= 0);
       const isSubscriptionActive = subscriptionStatus === 'active';
-      const isTrialActive = subscriptionStatus === 'trial' && daysRemaining > 0;
+      // Trial is active if status is 'trial' and either no end date set OR days remaining > 0
+      const isTrialActive = subscriptionStatus === 'trial' && 
+                            (!hasTrialEndDate || daysRemaining > 0);
 
       // Sunstone company (platform owner) always has access
       const companyNameLower = company.name?.toLowerCase() || '';

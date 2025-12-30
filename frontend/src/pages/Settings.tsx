@@ -2049,9 +2049,17 @@ export default function Settings() {
                       {(isCompanyAdmin || isSuperAdmin) && (
                         <td className="px-6 py-4 text-right">
                           <ActionButtons
-                            onEdit={() => handleEditTeamMember(member)}
-                            onDelete={() => openDeleteTeamMemberModal(member)}
+                            onEdit={() => {
+                              if (!checkFeatureAccess('Edit Team Member')) return;
+                              handleEditTeamMember(member);
+                            }}
+                            onDelete={() => {
+                              if (!checkFeatureAccess('Delete Team Member')) return;
+                              openDeleteTeamMemberModal(member);
+                            }}
                             showView={false}
+                            disableEdit={isReadOnly}
+                            disableDelete={isReadOnly}
                           />
                         </td>
                       )}
