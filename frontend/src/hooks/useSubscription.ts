@@ -76,21 +76,38 @@ export function useSubscription(): UseSubscriptionReturn {
         hasTrialEndDate = true;
         const trialEnd = new Date(company.trial_ends_at);
         const now = new Date();
-        daysRemaining = Math.ceil((trialEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        // Use floor instead of ceil to ensure we don't give extra time
+        // If trial_ends_at is in the past, daysRemaining will be negative
+        const timeDiff = trialEnd.getTime() - now.getTime();
+        daysRemaining = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
       }
 
       const subscriptionStatus = company.subscription_status || 'trial';
       
-      // Trial is only expired if:
+      // Debug logging
+      console.log('=== Subscription Status Check ===');
+      console.log('Company:', company.name);
+      console.log('trial_ends_at:', company.trial_ends_at);
+      console.log('hasTrialEndDate:', hasTrialEndDate);
+      console.log('daysRemaining:', daysRemaining);
+      console.log('subscriptionStatus:', subscriptionStatus);
+      
+      // Trial is expired if:
       // 1. subscription_status is explicitly 'expired', OR
-      // 2. trial_ends_at exists AND the date has passed (daysRemaining <= 0)
+      // 2. trial_ends_at exists AND the date has passed (daysRemaining < 0)
+      // daysRemaining === 0 means trial ends today, so still allow access
       // New companies without trial_ends_at are NOT considered expired
       const isTrialExpired = subscriptionStatus === 'expired' || 
-                             (hasTrialEndDate && daysRemaining <= 0);
+                             (hasTrialEndDate && daysRemaining < 0);
       const isSubscriptionActive = subscriptionStatus === 'active';
-      // Trial is active if status is 'trial' and either no end date set OR days remaining > 0
+      // Trial is active if status is 'trial' and either no end date set OR days remaining >= 0
       const isTrialActive = subscriptionStatus === 'trial' && 
-                            (!hasTrialEndDate || daysRemaining > 0);
+                            (!hasTrialEndDate || daysRemaining >= 0);
+      
+      console.log('isTrialExpired:', isTrialExpired);
+      console.log('isSubscriptionActive:', isSubscriptionActive);
+      console.log('isTrialActive:', isTrialActive);
+      console.log('=================================');
 
       // Sunstone company (platform owner) always has access
       const companyNameLower = company.name?.toLowerCase() || '';
