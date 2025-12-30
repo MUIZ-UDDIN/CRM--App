@@ -49,11 +49,6 @@ export function useSubscription(): UseSubscriptionReturn {
                        user?.email === 'admin@sunstonecrm.com';
 
   const fetchSubscriptionStatus = useCallback(async () => {
-    console.log('=== fetchSubscriptionStatus called ===');
-    console.log('user:', user);
-    console.log('user?.company_id:', user?.company_id);
-    console.log('isSuperAdmin:', isSuperAdmin);
-    
     if (!user?.company_id || isSuperAdmin) {
       setLoading(false);
       // Super admin always has access
@@ -65,26 +60,16 @@ export function useSubscription(): UseSubscriptionReturn {
 
     try {
       const token = localStorage.getItem('token');
-      if (!token) {
-        console.log('No token found');
-        return;
-      }
+      if (!token) return;
 
-      console.log('Fetching company data for company_id:', user.company_id);
       const response = await axios.get(`${API_URL}/companies/${user.company_id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-
-      console.log('=== Full API Response ===');
-      console.log('response.status:', response.status);
-      console.log('response.data:', JSON.stringify(response.data, null, 2));
-      console.log('=========================');
 
       const company = response.data;
       
       // Check if company data is valid
       if (!company || !company.id) {
-        console.error('Invalid company data received:', company);
         setLoading(false);
         return;
       }
@@ -105,14 +90,6 @@ export function useSubscription(): UseSubscriptionReturn {
 
       const subscriptionStatus = company.subscription_status || 'trial';
       
-      // Debug logging
-      console.log('=== Subscription Status Check ===');
-      console.log('Company:', company.name);
-      console.log('trial_ends_at:', company.trial_ends_at);
-      console.log('hasTrialEndDate:', hasTrialEndDate);
-      console.log('daysRemaining:', daysRemaining);
-      console.log('subscriptionStatus:', subscriptionStatus);
-      
       // Trial is expired if:
       // 1. subscription_status is explicitly 'expired', OR
       // 2. trial_ends_at exists AND the date has passed (daysRemaining < 0)
@@ -124,11 +101,6 @@ export function useSubscription(): UseSubscriptionReturn {
       // Trial is active if status is 'trial' and either no end date set OR days remaining >= 0
       const isTrialActive = subscriptionStatus === 'trial' && 
                             (!hasTrialEndDate || daysRemaining >= 0);
-      
-      console.log('isTrialExpired:', isTrialExpired);
-      console.log('isSubscriptionActive:', isSubscriptionActive);
-      console.log('isTrialActive:', isTrialActive);
-      console.log('=================================');
 
       // Sunstone company (platform owner) always has access
       const companyNameLower = company.name?.toLowerCase() || '';

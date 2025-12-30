@@ -36,6 +36,7 @@ import SMSAnalytics from './pages/SMSAnalytics';
 import ScheduledSMS from './pages/ScheduledSMS';
 import PhoneNumbers from './pages/PhoneNumbers';
 import Calls from './pages/Calls';
+import Chat from './pages/Chat';
 import SearchResults from './pages/SearchResults';
 import CustomFields from './pages/CustomFields';
 import WorkflowTemplates from './pages/WorkflowTemplates';
@@ -156,6 +157,7 @@ function App() {
                 <Route path="sms-scheduled" element={<ScheduledSMS />} />
                 <Route path="phone-numbers" element={<PhoneNumbers />} />
                 <Route path="calls" element={<Calls />} />
+                <Route path="chat" element={<Chat />} />
                 <Route path="search" element={<SearchResults />} />
               </Route>
 

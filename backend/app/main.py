@@ -56,6 +56,7 @@ from app.api.teams import router as teams_router
 from app.api.billing import router as billing_router
 from app.api.platform import router as platform_router
 from app.api.admin_users import router as admin_users_router
+from app.api.chat import router as chat_router
 
 # Import with error handling for debugging
 try:
@@ -621,6 +622,10 @@ if data_import_router:
     logger.info("✅ Data Import routes registered at /api/import")
 else:
     logger.warning("⚠️ Data Import router not loaded - skipping registration")
+
+# Chat System (Company-scoped, no Super Admin access)
+app.include_router(chat_router)
+logger.info("✅ Chat routes registered at /api/chat")
 
 # Register custom error handlers to prevent database query exposure
 register_error_handlers(app)
