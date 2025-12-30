@@ -565,8 +565,16 @@ export default function Workflows() {
                     )}
                     <ActionButtons
                       onView={() => handleView(workflow)}
-                      onEdit={() => handleEdit(workflow)}
-                      onDelete={() => handleDelete(workflow)}
+                      onEdit={() => {
+                        if (!checkFeatureAccess('Edit Workflow')) return;
+                        handleEdit(workflow);
+                      }}
+                      onDelete={() => {
+                        if (!checkFeatureAccess('Delete Workflow')) return;
+                        handleDelete(workflow);
+                      }}
+                      disableEdit={isReadOnly}
+                      disableDelete={isReadOnly}
                     />
                   </div>
                 </div>

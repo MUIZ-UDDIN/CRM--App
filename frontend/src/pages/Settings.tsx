@@ -1861,8 +1861,16 @@ export default function Settings() {
                         </div>
                         {(isCompanyAdmin || isSuperAdmin) && (
                           <button
-                            onClick={() => openDeleteTeamModal(selectedTeam)}
-                            className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                            onClick={() => {
+                              if (!checkFeatureAccess('Delete Team')) return;
+                              openDeleteTeamModal(selectedTeam);
+                            }}
+                            disabled={isReadOnly}
+                            className={`p-2 rounded ${
+                              isReadOnly 
+                                ? 'text-gray-300 cursor-not-allowed' 
+                                : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                            }`}
                             title="Delete team"
                           >
                             <TrashIcon className="w-5 h-5" />
@@ -1956,8 +1964,16 @@ export default function Settings() {
                                           </button>
                                         )}
                                         <button
-                                          onClick={() => openRemoveMemberModal(member)}
-                                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                                          onClick={() => {
+                                            if (!checkFeatureAccess('Remove Team Member')) return;
+                                            openRemoveMemberModal(member);
+                                          }}
+                                          disabled={isReadOnly}
+                                          className={`p-1 rounded ${
+                                            isReadOnly 
+                                              ? 'text-gray-300 cursor-not-allowed' 
+                                              : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                                          }`}
                                           title="Remove from team"
                                         >
                                           <TrashIcon className="w-5 h-5" />

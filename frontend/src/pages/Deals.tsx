@@ -987,8 +987,16 @@ export default function Deals() {
                 <ArrowPathIcon className="h-4 w-4" />
               </button>
               <button
-                onClick={() => setShowAddDealModal(true)}
-                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white bg-red-600 hover:bg-red-700"
+                onClick={() => {
+                  if (!checkFeatureAccess('Add Deal')) return;
+                  setShowAddDealModal(true);
+                }}
+                disabled={isReadOnly}
+                className={`inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-lg text-white ${
+                  isReadOnly 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
                 Add New Deal

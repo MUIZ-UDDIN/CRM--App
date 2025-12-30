@@ -552,16 +552,30 @@ export default function PipelineSettings() {
                               <div className="flex items-center space-x-1 flex-shrink-0">
                                 <button
                                   onClick={() => {
+                                    if (!checkFeatureAccess('Edit Stage')) return;
                                     setEditingStage(stage);
                                     setShowEditStageModal(true);
                                   }}
-                                  className="p-2 text-gray-400 hover:text-primary-600 rounded"
+                                  disabled={isReadOnly}
+                                  className={`p-2 rounded ${
+                                    isReadOnly 
+                                      ? 'text-gray-300 cursor-not-allowed' 
+                                      : 'text-gray-400 hover:text-primary-600'
+                                  }`}
                                 >
                                   <PencilIcon className="h-5 w-5" />
                                 </button>
                                 <button
-                                  onClick={() => openDeleteStageModal(stage)}
-                                  className="p-2 text-gray-400 hover:text-red-600 rounded"
+                                  onClick={() => {
+                                    if (!checkFeatureAccess('Delete Stage')) return;
+                                    openDeleteStageModal(stage);
+                                  }}
+                                  disabled={isReadOnly}
+                                  className={`p-2 rounded ${
+                                    isReadOnly 
+                                      ? 'text-gray-300 cursor-not-allowed' 
+                                      : 'text-gray-400 hover:text-red-600'
+                                  }`}
                                 >
                                   <TrashIcon className="h-5 w-5" />
                                 </button>

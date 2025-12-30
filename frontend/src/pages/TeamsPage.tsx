@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { Permission } from '../components/PermissionGuard';
+import useSubscription from '../hooks/useSubscription';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
@@ -34,6 +35,7 @@ interface TeamMember {
 
 export default function TeamsPage() {
   const { user, hasPermission } = useAuth();
+  const { isReadOnly, checkFeatureAccess } = useSubscription();
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
@@ -330,8 +332,16 @@ export default function TeamsPage() {
         </div>
         {canManageTeams && (
           <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            onClick={() => {
+              if (!checkFeatureAccess('Create Team')) return;
+              setShowCreateModal(true);
+            }}
+            disabled={isReadOnly}
+            className={`flex items-center gap-2 text-white px-4 py-2 rounded-lg transition-colors ${
+              isReadOnly 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-blue-600 hover:bg-blue-700'
+            }`}
           >
             <PlusCircleIcon className="w-5 h-5" />
             Create Team
@@ -382,8 +392,16 @@ export default function TeamsPage() {
               <p className="text-lg">Select a team to view details</p>
               {teams.length === 0 && canManageTeams && (
                 <button
-                  onClick={() => setShowCreateModal(true)}
-                  className="mt-4 inline-flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                  onClick={() => {
+                    if (!checkFeatureAccess('Create Team')) return;
+                    setShowCreateModal(true);
+                  }}
+                  disabled={isReadOnly}
+                  className={`mt-4 inline-flex items-center gap-2 text-white px-4 py-2 rounded-lg transition-colors ${
+                    isReadOnly 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  }`}
                 >
                   <PlusCircleIcon className="w-5 h-5" />
                   Create Team
@@ -403,15 +421,31 @@ export default function TeamsPage() {
                   {canManageTeams && (
                     <div className="flex gap-2">
                       <button
-                        onClick={() => toast('Edit feature coming soon!', { icon: 'ℹ️' })}
-                        className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded"
+                        onClick={() => {
+                          if (!checkFeatureAccess('Edit Team')) return;
+                          toast('Edit feature coming soon!', { icon: 'ℹ️' });
+                        }}
+                        disabled={isReadOnly}
+                        className={`p-2 rounded ${
+                          isReadOnly 
+                            ? 'text-gray-300 cursor-not-allowed' 
+                            : 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
+                        }`}
                         title="Edit team"
                       >
                         <PencilIcon className="w-5 h-5" />
                       </button>
                       <button
-                        onClick={() => openDeleteTeamModal(selectedTeam)}
-                        className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                        onClick={() => {
+                          if (!checkFeatureAccess('Delete Team')) return;
+                          openDeleteTeamModal(selectedTeam);
+                        }}
+                        disabled={isReadOnly}
+                        className={`p-2 rounded ${
+                          isReadOnly 
+                            ? 'text-gray-300 cursor-not-allowed' 
+                            : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                        }`}
                         title="Delete team"
                       >
                         <TrashIcon className="w-5 h-5" />
@@ -428,10 +462,16 @@ export default function TeamsPage() {
                   {canManageMembers && (
                     <button
                       onClick={() => {
+                        if (!checkFeatureAccess('Add Team Member')) return;
                         fetchAvailableUsers();
                         setShowAddMemberModal(true);
                       }}
-                      className="flex items-center gap-2 bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      disabled={isReadOnly}
+                      className={`flex items-center gap-2 text-white px-3 py-1 rounded-lg transition-colors text-sm ${
+                        isReadOnly 
+                          ? 'bg-gray-400 cursor-not-allowed' 
+                          : 'bg-blue-600 hover:bg-blue-700'
+                      }`}
                     >
                       <UserPlusIcon className="w-4 h-4" />
                       Add Member
@@ -523,8 +563,16 @@ export default function TeamsPage() {
                                     </button>
                                   )}
                                   <button
-                                    onClick={() => openRemoveMemberModal(member)}
-                                    className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded"
+                                    onClick={() => {
+                                      if (!checkFeatureAccess('Remove Team Member')) return;
+                                      openRemoveMemberModal(member);
+                                    }}
+                                    disabled={isReadOnly}
+                                    className={`p-1 rounded ${
+                                      isReadOnly 
+                                        ? 'text-gray-300 cursor-not-allowed' 
+                                        : 'text-red-600 hover:text-red-800 hover:bg-red-50'
+                                    }`}
                                     title="Remove from team"
                                   >
                                     <TrashIcon className="w-5 h-5" />

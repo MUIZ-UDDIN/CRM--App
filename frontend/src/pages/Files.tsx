@@ -911,9 +911,17 @@ export default function Files() {
                   )}
                   <ActionButtons
                     onView={() => handleView(file)}
-                    onEdit={() => handleEdit(file)}
-                    onDelete={() => handleDelete(file)}
+                    onEdit={() => {
+                      if (!checkFeatureAccess('Edit File')) return;
+                      handleEdit(file);
+                    }}
+                    onDelete={() => {
+                      if (!checkFeatureAccess('Delete File')) return;
+                      handleDelete(file);
+                    }}
                     showView={true}
+                    disableEdit={isReadOnly}
+                    disableDelete={isReadOnly}
                   />
                 </div>
               </div>

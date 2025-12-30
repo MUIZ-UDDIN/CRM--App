@@ -366,13 +366,6 @@ export default function CallsNew() {
             </div>
             <div className="flex gap-2 w-full sm:w-auto">
               <button
-                onClick={cleanupStaleCalls}
-                className="inline-flex items-center justify-center px-3 sm:px-4 py-2 border border-gray-300 shadow-sm text-xs sm:text-sm font-medium rounded-lg text-gray-700 bg-white hover:bg-gray-50 flex-1 sm:flex-initial whitespace-nowrap"
-                title="Update old calls stuck in ringing status"
-              >
-                <span>Fix Old Calls</span>
-              </button>
-              <button
                 onClick={() => {
                   if (!checkFeatureAccess('Make Call')) return;
                   setShowCallFormModal(true);
