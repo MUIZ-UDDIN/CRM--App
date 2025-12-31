@@ -148,17 +148,26 @@ def get_conversations(
         )
     ).order_by(desc(ChatConversation.last_message_at)).all()
     
+    # Convert user_id to UUID for comparison
+    user_uuid = UUID(user_id) if isinstance(user_id, str) else user_id
+    
     result = []
     for conv in conversations:
+        # Skip conversations deleted for this user
+        deleted_for = conv.deleted_for_user_ids or []
+        if user_uuid in deleted_for:
+            continue
+            
         # Get the other participant
         other_user = conv.get_other_participant(user_id)
         
-        # Count unread messages
+        # Count unread messages (excluding deleted ones for this user)
         unread_count = db.query(ChatMessage).filter(
             ChatMessage.conversation_id == conv.id,
             ChatMessage.sender_id != user_id,
             ChatMessage.is_read == False,
-            ChatMessage.is_deleted == False
+            ChatMessage.is_deleted == False,
+            ~ChatMessage.deleted_for_user_ids.contains([user_uuid])
         ).count()
         
         result.append(ConversationResponse(
@@ -238,11 +247,23 @@ def get_or_create_conversation(
         db.commit()
         db.refresh(conversation)
     
-    # Get messages
-    messages = db.query(ChatMessage).filter(
+    # Convert current_user_id to UUID for comparison
+    current_user_uuid = UUID(current_user_id) if isinstance(current_user_id, str) else current_user_id
+    
+    # If conversation was deleted for this user, remove them from deleted list (they're re-opening it)
+    if conversation.deleted_for_user_ids and current_user_uuid in conversation.deleted_for_user_ids:
+        new_deleted = [uid for uid in conversation.deleted_for_user_ids if uid != current_user_uuid]
+        conversation.deleted_for_user_ids = new_deleted
+        db.commit()
+    
+    # Get messages (excluding those deleted for this user)
+    all_messages = db.query(ChatMessage).filter(
         ChatMessage.conversation_id == conversation.id,
         ChatMessage.is_deleted == False
     ).order_by(ChatMessage.created_at).all()
+    
+    # Filter out messages deleted for this user
+    messages = [m for m in all_messages if current_user_uuid not in (m.deleted_for_user_ids or [])]
     
     # Mark messages as read - use .value for PostgreSQL enum compatibility (lowercase)
     db.query(ChatMessage).filter(
@@ -442,8 +463,11 @@ def get_unread_count(
     user_id = current_user.get('id')
     company_id = current_user.get('company_id')
     
-    # Get all conversations for the user
-    conversation_ids = db.query(ChatConversation.id).filter(
+    # Convert user_id to UUID for comparison
+    user_uuid = UUID(user_id) if isinstance(user_id, str) else user_id
+    
+    # Get all conversations for the user (excluding deleted ones)
+    conversations = db.query(ChatConversation).filter(
         ChatConversation.company_id == company_id,
         or_(
             ChatConversation.participant_one_id == user_id,
@@ -451,18 +475,21 @@ def get_unread_count(
         )
     ).all()
     
-    conversation_ids = [c[0] for c in conversation_ids]
+    conversation_ids = [c.id for c in conversations if user_uuid not in (c.deleted_for_user_ids or [])]
     
     if not conversation_ids:
         return {"unread_count": 0}
     
-    # Count unread messages
-    unread_count = db.query(ChatMessage).filter(
+    # Count unread messages (excluding deleted ones for this user)
+    all_unread = db.query(ChatMessage).filter(
         ChatMessage.conversation_id.in_(conversation_ids),
         ChatMessage.sender_id != user_id,
         ChatMessage.is_read == False,
         ChatMessage.is_deleted == False
-    ).count()
+    ).all()
+    
+    # Filter out messages deleted for this user
+    unread_count = len([m for m in all_unread if user_uuid not in (m.deleted_for_user_ids or [])])
     
     return {"unread_count": unread_count}
 
@@ -473,7 +500,7 @@ def delete_message(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Permanently delete a message (only sender can delete)"""
+    """Soft delete a message for the current user only (per-user deletion)"""
     check_chat_access(current_user)
     
     current_user_id = current_user.get('id')
@@ -486,17 +513,14 @@ def delete_message(
             detail="Message not found"
         )
     
-    # Only sender can delete their own message
-    if str(message.sender_id) != str(current_user_id):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only delete your own messages"
-        )
-    
-    # Verify conversation belongs to user's company
+    # Verify conversation belongs to user's company and user is a participant
     conversation = db.query(ChatConversation).filter(
         ChatConversation.id == message.conversation_id,
-        ChatConversation.company_id == company_id
+        ChatConversation.company_id == company_id,
+        or_(
+            ChatConversation.participant_one_id == current_user_id,
+            ChatConversation.participant_two_id == current_user_id
+        )
     ).first()
     
     if not conversation:
@@ -505,11 +529,15 @@ def delete_message(
             detail="Access denied"
         )
     
-    # Permanent delete
-    db.delete(message)
-    db.commit()
+    # Per-user soft delete - add user ID to deleted_for_user_ids array
+    current_deleted = message.deleted_for_user_ids or []
+    user_uuid = UUID(current_user_id) if isinstance(current_user_id, str) else current_user_id
+    if user_uuid not in current_deleted:
+        current_deleted.append(user_uuid)
+        message.deleted_for_user_ids = current_deleted
+        db.commit()
     
-    return {"success": True, "message": "Message permanently deleted"}
+    return {"success": True, "message": "Message deleted for you"}
 
 
 @router.delete("/conversations/{user_id}")
@@ -518,7 +546,7 @@ def delete_conversation(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Permanently delete an entire conversation and all its messages"""
+    """Soft delete a conversation for the current user only (per-user deletion)"""
     check_chat_access(current_user)
     
     current_user_id = current_user.get('id')
@@ -545,13 +573,12 @@ def delete_conversation(
             detail="Conversation not found"
         )
     
-    # Delete all messages in the conversation first (cascade should handle this, but being explicit)
-    db.query(ChatMessage).filter(
-        ChatMessage.conversation_id == conversation.id
-    ).delete(synchronize_session=False)
+    # Per-user soft delete - add user ID to deleted_for_user_ids array
+    current_deleted = conversation.deleted_for_user_ids or []
+    user_uuid = UUID(current_user_id) if isinstance(current_user_id, str) else current_user_id
+    if user_uuid not in current_deleted:
+        current_deleted.append(user_uuid)
+        conversation.deleted_for_user_ids = current_deleted
+        db.commit()
     
-    # Delete the conversation
-    db.delete(conversation)
-    db.commit()
-    
-    return {"success": True, "message": "Conversation permanently deleted"}
+    return {"success": True, "message": "Conversation deleted for you"}

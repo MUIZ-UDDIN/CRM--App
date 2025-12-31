@@ -6,7 +6,7 @@ Super Admin does NOT have access to any company's chat
 
 from sqlalchemy import Column, String, Text, ForeignKey, TIMESTAMP, Boolean, Enum as SQLEnum
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, ARRAY
 from datetime import datetime
 import uuid
 import enum
@@ -42,6 +42,9 @@ class ChatConversation(Base):
     # Timestamps
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # Per-user soft delete - conversation is hidden only for the user who deleted it
+    deleted_for_user_ids = Column(ARRAY(UUID(as_uuid=True)), default=list)
     
     # Relationships
     company = relationship("Company", backref="chat_conversations")
@@ -86,7 +89,10 @@ class ChatMessage(Base):
     created_at = Column(TIMESTAMP, default=datetime.utcnow)
     updated_at = Column(TIMESTAMP, default=datetime.utcnow, onupdate=datetime.utcnow)
     
-    # Soft delete
+    # Per-user soft delete - message is hidden only for the user who deleted it
+    deleted_for_user_ids = Column(ARRAY(UUID(as_uuid=True)), default=list)
+    
+    # Legacy soft delete (kept for backward compatibility)
     is_deleted = Column(Boolean, default=False)
     deleted_at = Column(TIMESTAMP, nullable=True)
     

@@ -60,6 +60,10 @@ export default function Chat() {
   const [showConversationMenu, setShowConversationMenu] = useState<string | null>(null);
   const [deletingMessage, setDeletingMessage] = useState(false);
   const [deletingConversation, setDeletingConversation] = useState(false);
+  const [showDeleteMessageModal, setShowDeleteMessageModal] = useState(false);
+  const [showDeleteConversationModal, setShowDeleteConversationModal] = useState(false);
+  const [messageToDelete, setMessageToDelete] = useState<string | null>(null);
+  const [conversationToDelete, setConversationToDelete] = useState<{id: string; name: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -180,22 +184,29 @@ export default function Chat() {
     }
   };
 
-  const handleDeleteMessage = async (messageId: string) => {
-    if (deletingMessage) return;
-    
-    if (!confirm('Are you sure you want to permanently delete this message? This cannot be undone.')) {
-      return;
-    }
+  const openDeleteMessageModal = (messageId: string) => {
+    setMessageToDelete(messageId);
+    setShowDeleteMessageModal(true);
+    setShowMessageMenu(null);
+  };
+
+  const closeDeleteMessageModal = () => {
+    setShowDeleteMessageModal(false);
+    setMessageToDelete(null);
+  };
+
+  const confirmDeleteMessage = async () => {
+    if (!messageToDelete || deletingMessage) return;
     
     setDeletingMessage(true);
     try {
-      await axios.delete(`${API_URL}/chat/messages/${messageId}`, {
+      await axios.delete(`${API_URL}/chat/messages/${messageToDelete}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setMessages(prev => prev.filter(m => m.id !== messageId));
+      setMessages(prev => prev.filter(m => m.id !== messageToDelete));
       toast.success('Message deleted');
-      setShowMessageMenu(null);
+      closeDeleteMessageModal();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to delete message');
     } finally {
@@ -203,31 +214,38 @@ export default function Chat() {
     }
   };
 
-  const handleDeleteConversation = async (userId: string) => {
-    if (deletingConversation) return;
-    
-    if (!confirm('Are you sure you want to permanently delete this entire conversation? All messages will be lost and this cannot be undone.')) {
-      return;
-    }
+  const openDeleteConversationModal = (userId: string, userName: string) => {
+    setConversationToDelete({ id: userId, name: userName });
+    setShowDeleteConversationModal(true);
+    setShowConversationMenu(null);
+  };
+
+  const closeDeleteConversationModal = () => {
+    setShowDeleteConversationModal(false);
+    setConversationToDelete(null);
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!conversationToDelete || deletingConversation) return;
     
     setDeletingConversation(true);
     try {
-      await axios.delete(`${API_URL}/chat/conversations/${userId}`, {
+      await axios.delete(`${API_URL}/chat/conversations/${conversationToDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
       // Remove from conversations list
-      setConversations(prev => prev.filter(c => c.other_participant.id !== userId));
+      setConversations(prev => prev.filter(c => c.other_participant.id !== conversationToDelete.id));
       
       // Clear selected conversation if it was the deleted one
-      if (selectedConversation === userId) {
+      if (selectedConversation === conversationToDelete.id) {
         setSelectedConversation(null);
         setSelectedUser(null);
         setMessages([]);
       }
       
       toast.success('Conversation deleted');
-      setShowConversationMenu(null);
+      closeDeleteConversationModal();
     } catch (error: any) {
       toast.error(error.response?.data?.detail || 'Failed to delete conversation');
     } finally {
@@ -416,13 +434,15 @@ export default function Chat() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteConversation(conv.other_participant.id);
+                              openDeleteConversationModal(
+                                conv.other_participant.id,
+                                `${conv.other_participant.first_name} ${conv.other_participant.last_name}`
+                              );
                             }}
-                            disabled={deletingConversation}
                             className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <TrashIcon className="w-4 h-4" />
-                            {deletingConversation ? 'Deleting...' : 'Delete Chat'}
+                            Delete Chat
                           </button>
                         </div>
                       )}
@@ -489,12 +509,11 @@ export default function Chat() {
                           {showMessageMenu === message.id && (
                             <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[120px]">
                               <button
-                                onClick={() => handleDeleteMessage(message.id)}
-                                disabled={deletingMessage}
+                                onClick={() => openDeleteMessageModal(message.id)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                               >
                                 <TrashIcon className="w-4 h-4" />
-                                {deletingMessage ? 'Deleting...' : 'Delete'}
+                                Delete
                               </button>
                             </div>
                           )}
@@ -582,6 +601,90 @@ export default function Chat() {
           </div>
         )}
       </div>
+
+      {/* Delete Message Confirmation Modal */}
+      {showDeleteMessageModal && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={closeDeleteMessageModal}
+          onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
+          style={{ isolation: 'isolate' }}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Message</h3>
+              <button onClick={closeDeleteMessageModal} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete this message?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This message will be removed from your view only. The other person will still be able to see it.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeDeleteMessageModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDeleteMessage}
+                disabled={deletingMessage}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingMessage ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Conversation Confirmation Modal */}
+      {showDeleteConversationModal && conversationToDelete && (
+        <div 
+          className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-[9999] flex items-center justify-center p-4" 
+          onClick={closeDeleteConversationModal}
+          onMouseDown={(e) => e.target === e.currentTarget && e.preventDefault()}
+          style={{ isolation: 'isolate' }}
+        >
+          <div className="relative mx-auto p-6 border w-full max-w-md shadow-lg rounded-md bg-white pointer-events-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Delete Conversation</h3>
+              <button onClick={closeDeleteConversationModal} className="text-gray-400 hover:text-gray-600">
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="mb-6">
+              <p className="text-gray-700">
+                Are you sure you want to delete your conversation with <span className="font-semibold">"{conversationToDelete.name}"</span>?
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                This conversation will be removed from your view only. The other person will still be able to see it.
+              </p>
+            </div>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={closeDeleteConversationModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={confirmDeleteConversation}
+                disabled={deletingConversation}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingConversation ? 'Deleting...' : 'Yes, Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
