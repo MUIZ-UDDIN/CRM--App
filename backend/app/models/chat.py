@@ -14,7 +14,7 @@ import enum
 from app.models.base import Base
 
 
-class MessageStatus(enum.Enum):
+class ChatMessageStatus(enum.Enum):
     SENT = "sent"
     DELIVERED = "delivered"
     READ = "read"
@@ -74,8 +74,8 @@ class ChatMessage(Base):
     # Message content
     content = Column(Text, nullable=False)
     
-    # Message status
-    status = Column(SQLEnum(MessageStatus), default=MessageStatus.SENT)
+    # Message status - uses chat_message_status enum in database
+    status = Column(SQLEnum(ChatMessageStatus, name='chat_message_status', create_type=False), default=ChatMessageStatus.SENT)
     
     # Read status
     is_read = Column(Boolean, default=False)
@@ -100,7 +100,7 @@ class ChatMessage(Base):
         """Mark message as read"""
         self.is_read = True
         self.read_at = datetime.utcnow()
-        self.status = MessageStatus.READ
+        self.status = ChatMessageStatus.READ
     
     def soft_delete(self):
         """Soft delete the message"""

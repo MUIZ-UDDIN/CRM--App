@@ -68,8 +68,6 @@ const getNavigation = (isSuperAdmin: () => boolean, isCompanyAdmin: () => boolea
         { name: 'Email', href: '/inbox' },
         { name: 'SMS', href: '/sms' },
         { name: 'Calls', href: '/calls' },
-        // Chat - Hide from Super Admin (they don't have access to company chat)
-        ...(!isSuperAdmin() ? [{ name: 'Team Chat', href: '/chat' }] : []),
       ]
     },
     { 

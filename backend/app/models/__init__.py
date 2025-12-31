@@ -31,7 +31,7 @@ from .conversations import UserConversation
 from .call_transcripts import CallTranscript
 from .email_campaigns import BulkEmailCampaign, BulkEmailAnalytics
 from .performance_alerts import PerformanceAlert
-from .chat import ChatConversation, ChatMessage, MessageStatus
+from .chat import ChatConversation, ChatMessage, ChatMessageStatus
 
 # Analytics models (materialized views / aggregation tables)
 from .analytics import (
@@ -165,5 +165,5 @@ __all__ = [
     # Chat
     'ChatConversation',
     'ChatMessage',
-    'MessageStatus',
+    'ChatMessageStatus',
 ]
