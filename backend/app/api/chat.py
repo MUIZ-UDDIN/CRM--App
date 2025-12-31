@@ -14,7 +14,7 @@ from uuid import UUID
 
 from app.core.database import get_db
 from app.core.security import get_current_user
-from app.models import User, ChatConversation, ChatMessage, MessageStatus
+from app.models import User, ChatConversation, ChatMessage, ChatMessageStatus
 
 router = APIRouter(prefix="/api/chat", tags=["chat"])
 
@@ -249,7 +249,7 @@ def get_or_create_conversation(
     ).update({
         ChatMessage.is_read: True,
         ChatMessage.read_at: datetime.utcnow(),
-        ChatMessage.status: MessageStatus.READ
+        ChatMessage.status: ChatMessageStatus.READ
     })
     db.commit()
     
@@ -351,7 +351,7 @@ def send_message(
         conversation_id=conversation.id,
         sender_id=current_user.id,
         content=message.content.strip(),
-        status=MessageStatus.SENT
+        status=ChatMessageStatus.SENT
     )
     db.add(new_message)
     
@@ -416,7 +416,7 @@ def mark_message_as_read(
     if str(message.sender_id) != str(current_user.id):
         message.is_read = True
         message.read_at = datetime.utcnow()
-        message.status = MessageStatus.READ
+        message.status = ChatMessageStatus.READ
         db.commit()
     
     return {"success": True}
