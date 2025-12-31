@@ -473,7 +473,7 @@ def delete_message(
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
-    """Soft delete a message (only sender can delete)"""
+    """Permanently delete a message (only sender can delete)"""
     check_chat_access(current_user)
     
     current_user_id = current_user.get('id')
@@ -505,9 +505,53 @@ def delete_message(
             detail="Access denied"
         )
     
-    # Soft delete
-    message.is_deleted = True
-    message.deleted_at = datetime.utcnow()
+    # Permanent delete
+    db.delete(message)
     db.commit()
     
-    return {"success": True, "message": "Message deleted"}
+    return {"success": True, "message": "Message permanently deleted"}
+
+
+@router.delete("/conversations/{user_id}")
+def delete_conversation(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user)
+):
+    """Permanently delete an entire conversation and all its messages"""
+    check_chat_access(current_user)
+    
+    current_user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
+    
+    # Find the conversation between current user and the other user
+    conversation = db.query(ChatConversation).filter(
+        ChatConversation.company_id == company_id,
+        or_(
+            and_(
+                ChatConversation.participant_one_id == current_user_id,
+                ChatConversation.participant_two_id == user_id
+            ),
+            and_(
+                ChatConversation.participant_one_id == user_id,
+                ChatConversation.participant_two_id == current_user_id
+            )
+        )
+    ).first()
+    
+    if not conversation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Conversation not found"
+        )
+    
+    # Delete all messages in the conversation first (cascade should handle this, but being explicit)
+    db.query(ChatMessage).filter(
+        ChatMessage.conversation_id == conversation.id
+    ).delete(synchronize_session=False)
+    
+    # Delete the conversation
+    db.delete(conversation)
+    db.commit()
+    
+    return {"success": True, "message": "Conversation permanently deleted"}

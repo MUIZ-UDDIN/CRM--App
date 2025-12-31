@@ -10,6 +10,8 @@ import {
   XMarkIcon,
   CheckIcon,
   CheckCircleIcon,
+  TrashIcon,
+  EllipsisVerticalIcon,
 } from '@heroicons/react/24/outline';
 
 const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000') + '/api';
@@ -54,6 +56,10 @@ export default function Chat() {
   const [sendingMessage, setSendingMessage] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showMessageMenu, setShowMessageMenu] = useState<string | null>(null);
+  const [showConversationMenu, setShowConversationMenu] = useState<string | null>(null);
+  const [deletingMessage, setDeletingMessage] = useState(false);
+  const [deletingConversation, setDeletingConversation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -171,6 +177,61 @@ export default function Chat() {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (deletingMessage) return;
+    
+    if (!confirm('Are you sure you want to permanently delete this message? This cannot be undone.')) {
+      return;
+    }
+    
+    setDeletingMessage(true);
+    try {
+      await axios.delete(`${API_URL}/chat/messages/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast.success('Message deleted');
+      setShowMessageMenu(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to delete message');
+    } finally {
+      setDeletingMessage(false);
+    }
+  };
+
+  const handleDeleteConversation = async (userId: string) => {
+    if (deletingConversation) return;
+    
+    if (!confirm('Are you sure you want to permanently delete this entire conversation? All messages will be lost and this cannot be undone.')) {
+      return;
+    }
+    
+    setDeletingConversation(true);
+    try {
+      await axios.delete(`${API_URL}/chat/conversations/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Remove from conversations list
+      setConversations(prev => prev.filter(c => c.other_participant.id !== userId));
+      
+      // Clear selected conversation if it was the deleted one
+      if (selectedConversation === userId) {
+        setSelectedConversation(null);
+        setSelectedUser(null);
+        setMessages([]);
+      }
+      
+      toast.success('Conversation deleted');
+      setShowConversationMenu(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to delete conversation');
+    } finally {
+      setDeletingConversation(false);
     }
   };
 
@@ -295,14 +356,14 @@ export default function Chat() {
                 </div>
               ) : (
                 conversations.map((conv) => (
-                  <button
+                  <div
                     key={conv.id}
-                    onClick={() => handleSelectConversation(conv)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                    className={`relative group flex items-center gap-3 p-3 rounded-lg transition-colors cursor-pointer ${
                       selectedConversation === conv.other_participant.id
                         ? 'bg-blue-50 border-l-4 border-blue-600'
                         : 'hover:bg-gray-50'
                     }`}
+                    onClick={() => handleSelectConversation(conv)}
                   >
                     {conv.other_participant.avatar_url ? (
                       <img
@@ -339,7 +400,34 @@ export default function Chat() {
                         )}
                       </div>
                     </div>
-                  </button>
+                    {/* Delete conversation button */}
+                    <div className="relative">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowConversationMenu(showConversationMenu === conv.other_participant.id ? null : conv.other_participant.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
+                      >
+                        <EllipsisVerticalIcon className="w-5 h-5 text-gray-500" />
+                      </button>
+                      {showConversationMenu === conv.other_participant.id && (
+                        <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[140px]">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteConversation(conv.other_participant.id);
+                            }}
+                            disabled={deletingConversation}
+                            className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                          >
+                            <TrashIcon className="w-4 h-4" />
+                            {deletingConversation ? 'Deleting...' : 'Delete Chat'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ))
               )}
             </div>
@@ -387,8 +475,31 @@ export default function Chat() {
                   return (
                     <div
                       key={message.id}
-                      className={`flex ${isOwn ? 'justify-end' : 'justify-start'}`}
+                      className={`group flex items-start gap-2 ${isOwn ? 'justify-end' : 'justify-start'}`}
                     >
+                      {/* Delete button for own messages - left side */}
+                      {isOwn && (
+                        <div className="relative self-center">
+                          <button
+                            onClick={() => setShowMessageMenu(showMessageMenu === message.id ? null : message.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
+                          >
+                            <EllipsisVerticalIcon className="w-4 h-4 text-gray-500" />
+                          </button>
+                          {showMessageMenu === message.id && (
+                            <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[120px]">
+                              <button
+                                onClick={() => handleDeleteMessage(message.id)}
+                                disabled={deletingMessage}
+                                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                              >
+                                <TrashIcon className="w-4 h-4" />
+                                {deletingMessage ? 'Deleting...' : 'Delete'}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <div
                         className={`max-w-[70%] rounded-2xl px-4 py-2 ${
                           isOwn
