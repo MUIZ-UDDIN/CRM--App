@@ -14,10 +14,11 @@ import enum
 from app.models.base import Base
 
 
-class ChatMessageStatus(enum.Enum):
-    SENT = "sent"
-    DELIVERED = "delivered"
-    READ = "read"
+class ChatMessageStatus(str, enum.Enum):
+    """Enum values must match PostgreSQL enum values exactly (lowercase)"""
+    sent = "sent"
+    delivered = "delivered"
+    read = "read"
 
 
 class ChatConversation(Base):
@@ -100,7 +101,7 @@ class ChatMessage(Base):
         """Mark message as read"""
         self.is_read = True
         self.read_at = datetime.utcnow()
-        self.status = ChatMessageStatus.READ
+        self.status = ChatMessageStatus.read
     
     def soft_delete(self):
         """Soft delete the message"""

@@ -261,7 +261,7 @@ def get_or_create_conversation(
     ).update({
         ChatMessage.is_read: True,
         ChatMessage.read_at: datetime.utcnow(),
-        ChatMessage.status: ChatMessageStatus.READ.value
+        ChatMessage.status: ChatMessageStatus.read
     }, synchronize_session=False)
     db.commit()
     
@@ -366,7 +366,7 @@ def send_message(
         conversation_id=conversation.id,
         sender_id=current_user_id,
         content=message.content.strip(),
-        status=ChatMessageStatus.SENT.value
+        status=ChatMessageStatus.sent
     )
     db.add(new_message)
     
@@ -434,7 +434,7 @@ def mark_message_as_read(
     if str(message.sender_id) != str(current_user_id):
         message.is_read = True
         message.read_at = datetime.utcnow()
-        message.status = ChatMessageStatus.READ.value
+        message.status = ChatMessageStatus.read
         db.commit()
     
     return {"success": True}
