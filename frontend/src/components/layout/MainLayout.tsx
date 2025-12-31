@@ -1039,6 +1039,19 @@ export default function MainLayout() {
                         <CogIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
                         <span>Account Settings</span>
                       </button>
+                      {/* Team Chat - Hidden from Super Admin */}
+                      {!isSuperAdmin() && (
+                        <button 
+                          onClick={() => {
+                            setShowProfile(false);
+                            navigate('/chat');
+                          }}
+                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                        >
+                          <ChatBubbleLeftRightIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
+                          <span>Team Chat</span>
+                        </button>
+                      )}
                       <hr className="my-2" />
                       <button 
                         onClick={logout}
