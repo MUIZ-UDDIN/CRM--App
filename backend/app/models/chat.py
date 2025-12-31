@@ -76,7 +76,7 @@ class ChatMessage(Base):
     content = Column(Text, nullable=False)
     
     # Message status - uses chat_message_status enum in database
-    status = Column(SQLEnum(ChatMessageStatus, name='chat_message_status', create_type=False), default=ChatMessageStatus.SENT)
+    status = Column(SQLEnum(ChatMessageStatus, name='chat_message_status', create_type=False), default=ChatMessageStatus.sent)
     
     # Read status
     is_read = Column(Boolean, default=False)
