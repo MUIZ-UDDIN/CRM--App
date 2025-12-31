@@ -70,18 +70,21 @@ class ConversationWithMessages(BaseModel):
         from_attributes = True
 
 
-def check_chat_access(current_user: User):
+def check_chat_access(current_user: dict):
     """
     Check if user has access to chat feature.
     Super Admin does NOT have access to company chats.
     """
-    if current_user.role == 'super_admin' or current_user.email == 'admin@sunstonecrm.com':
+    user_role = current_user.get('role', '')
+    user_email = current_user.get('email', '')
+    
+    if user_role == 'super_admin' or user_email == 'admin@sunstonecrm.com':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Super Admin does not have access to company chat"
         )
     
-    if not current_user.company_id:
+    if not current_user.get('company_id'):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User must belong to a company to use chat"
@@ -90,9 +93,9 @@ def check_chat_access(current_user: User):
     return True
 
 
-def validate_same_company(current_user: User, other_user: User):
+def validate_same_company(current_user: dict, other_user: User):
     """Validate that both users belong to the same company"""
-    if str(current_user.company_id) != str(other_user.company_id):
+    if str(current_user.get('company_id')) != str(other_user.company_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Cannot chat with users from other companies"
@@ -102,7 +105,7 @@ def validate_same_company(current_user: User, other_user: User):
 @router.get("/teammates", response_model=List[UserInfo])
 def get_teammates(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get list of teammates (users from the same company) that can be chatted with.
@@ -110,9 +113,12 @@ def get_teammates(
     """
     check_chat_access(current_user)
     
+    user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
+    
     teammates = db.query(User).filter(
-        User.company_id == current_user.company_id,
-        User.id != current_user.id,
+        User.company_id == company_id,
+        User.id != user_id,
         User.status == 'active',
         User.role != 'super_admin'
     ).all()
@@ -132,7 +138,7 @@ def get_teammates(
 @router.get("/conversations", response_model=List[ConversationResponse])
 def get_conversations(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get all conversations for the current user.
@@ -140,23 +146,26 @@ def get_conversations(
     """
     check_chat_access(current_user)
     
+    user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
+    
     conversations = db.query(ChatConversation).filter(
-        ChatConversation.company_id == current_user.company_id,
+        ChatConversation.company_id == company_id,
         or_(
-            ChatConversation.participant_one_id == current_user.id,
-            ChatConversation.participant_two_id == current_user.id
+            ChatConversation.participant_one_id == user_id,
+            ChatConversation.participant_two_id == user_id
         )
     ).order_by(desc(ChatConversation.last_message_at)).all()
     
     result = []
     for conv in conversations:
         # Get the other participant
-        other_user = conv.get_other_participant(current_user.id)
+        other_user = conv.get_other_participant(user_id)
         
         # Count unread messages
         unread_count = db.query(ChatMessage).filter(
             ChatMessage.conversation_id == conv.id,
-            ChatMessage.sender_id != current_user.id,
+            ChatMessage.sender_id != user_id,
             ChatMessage.is_read == False,
             ChatMessage.is_deleted == False
         ).count()
@@ -183,13 +192,16 @@ def get_conversations(
 def get_or_create_conversation(
     user_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get or create a conversation with another user.
     Both users must be from the same company.
     """
     check_chat_access(current_user)
+    
+    current_user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
     
     # Get the other user
     other_user = db.query(User).filter(User.id == user_id).first()
@@ -211,15 +223,15 @@ def get_or_create_conversation(
     
     # Find existing conversation
     conversation = db.query(ChatConversation).filter(
-        ChatConversation.company_id == current_user.company_id,
+        ChatConversation.company_id == company_id,
         or_(
             and_(
-                ChatConversation.participant_one_id == current_user.id,
+                ChatConversation.participant_one_id == current_user_id,
                 ChatConversation.participant_two_id == other_user.id
             ),
             and_(
                 ChatConversation.participant_one_id == other_user.id,
-                ChatConversation.participant_two_id == current_user.id
+                ChatConversation.participant_two_id == current_user_id
             )
         )
     ).first()
@@ -227,8 +239,8 @@ def get_or_create_conversation(
     # Create new conversation if not exists
     if not conversation:
         conversation = ChatConversation(
-            company_id=current_user.company_id,
-            participant_one_id=current_user.id,
+            company_id=company_id,
+            participant_one_id=current_user_id,
             participant_two_id=other_user.id
         )
         db.add(conversation)
@@ -244,7 +256,7 @@ def get_or_create_conversation(
     # Mark messages as read
     db.query(ChatMessage).filter(
         ChatMessage.conversation_id == conversation.id,
-        ChatMessage.sender_id != current_user.id,
+        ChatMessage.sender_id != current_user_id,
         ChatMessage.is_read == False
     ).update({
         ChatMessage.is_read: True,
@@ -289,13 +301,16 @@ def send_message(
     user_id: str,
     message: MessageCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Send a message to another user.
     Both users must be from the same company.
     """
     check_chat_access(current_user)
+    
+    current_user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
     
     if not message.content or not message.content.strip():
         raise HTTPException(
@@ -323,23 +338,23 @@ def send_message(
     
     # Find or create conversation
     conversation = db.query(ChatConversation).filter(
-        ChatConversation.company_id == current_user.company_id,
+        ChatConversation.company_id == company_id,
         or_(
             and_(
-                ChatConversation.participant_one_id == current_user.id,
+                ChatConversation.participant_one_id == current_user_id,
                 ChatConversation.participant_two_id == other_user.id
             ),
             and_(
                 ChatConversation.participant_one_id == other_user.id,
-                ChatConversation.participant_two_id == current_user.id
+                ChatConversation.participant_two_id == current_user_id
             )
         )
     ).first()
     
     if not conversation:
         conversation = ChatConversation(
-            company_id=current_user.company_id,
-            participant_one_id=current_user.id,
+            company_id=company_id,
+            participant_one_id=current_user_id,
             participant_two_id=other_user.id
         )
         db.add(conversation)
@@ -349,7 +364,7 @@ def send_message(
     # Create message
     new_message = ChatMessage(
         conversation_id=conversation.id,
-        sender_id=current_user.id,
+        sender_id=current_user_id,
         content=message.content.strip(),
         status=ChatMessageStatus.SENT
     )
@@ -367,11 +382,11 @@ def send_message(
         conversation_id=str(new_message.conversation_id),
         sender_id=str(new_message.sender_id),
         sender=UserInfo(
-            id=str(current_user.id),
-            first_name=current_user.first_name or '',
-            last_name=current_user.last_name or '',
-            email=current_user.email,
-            avatar_url=current_user.avatar_url
+            id=str(current_user_id),
+            first_name=current_user.get('first_name') or '',
+            last_name=current_user.get('last_name') or '',
+            email=current_user.get('email'),
+            avatar_url=current_user.get('avatar_url')
         ),
         content=new_message.content,
         status=new_message.status.value if new_message.status else 'sent',
@@ -384,10 +399,13 @@ def send_message(
 def mark_message_as_read(
     message_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Mark a message as read"""
     check_chat_access(current_user)
+    
+    current_user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
     
     message = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
     if not message:
@@ -399,10 +417,10 @@ def mark_message_as_read(
     # Verify user is part of the conversation
     conversation = db.query(ChatConversation).filter(
         ChatConversation.id == message.conversation_id,
-        ChatConversation.company_id == current_user.company_id,
+        ChatConversation.company_id == company_id,
         or_(
-            ChatConversation.participant_one_id == current_user.id,
-            ChatConversation.participant_two_id == current_user.id
+            ChatConversation.participant_one_id == current_user_id,
+            ChatConversation.participant_two_id == current_user_id
         )
     ).first()
     
@@ -413,7 +431,7 @@ def mark_message_as_read(
         )
     
     # Only mark as read if current user is not the sender
-    if str(message.sender_id) != str(current_user.id):
+    if str(message.sender_id) != str(current_user_id):
         message.is_read = True
         message.read_at = datetime.utcnow()
         message.status = ChatMessageStatus.READ
@@ -425,17 +443,20 @@ def mark_message_as_read(
 @router.get("/unread-count")
 def get_unread_count(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Get total unread message count for the current user"""
     check_chat_access(current_user)
     
+    user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
+    
     # Get all conversations for the user
     conversation_ids = db.query(ChatConversation.id).filter(
-        ChatConversation.company_id == current_user.company_id,
+        ChatConversation.company_id == company_id,
         or_(
-            ChatConversation.participant_one_id == current_user.id,
-            ChatConversation.participant_two_id == current_user.id
+            ChatConversation.participant_one_id == user_id,
+            ChatConversation.participant_two_id == user_id
         )
     ).all()
     
@@ -447,7 +468,7 @@ def get_unread_count(
     # Count unread messages
     unread_count = db.query(ChatMessage).filter(
         ChatMessage.conversation_id.in_(conversation_ids),
-        ChatMessage.sender_id != current_user.id,
+        ChatMessage.sender_id != user_id,
         ChatMessage.is_read == False,
         ChatMessage.is_deleted == False
     ).count()
@@ -459,10 +480,13 @@ def get_unread_count(
 def delete_message(
     message_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """Soft delete a message (only sender can delete)"""
     check_chat_access(current_user)
+    
+    current_user_id = current_user.get('id')
+    company_id = current_user.get('company_id')
     
     message = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
     if not message:
@@ -472,7 +496,7 @@ def delete_message(
         )
     
     # Only sender can delete their own message
-    if str(message.sender_id) != str(current_user.id):
+    if str(message.sender_id) != str(current_user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You can only delete your own messages"
@@ -481,7 +505,7 @@ def delete_message(
     # Verify conversation belongs to user's company
     conversation = db.query(ChatConversation).filter(
         ChatConversation.id == message.conversation_id,
-        ChatConversation.company_id == current_user.company_id
+        ChatConversation.company_id == company_id
     ).first()
     
     if not conversation:
