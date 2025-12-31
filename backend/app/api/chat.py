@@ -1,7 +1,7 @@
 """
 Chat API endpoints for internal team communication
 Chat is strictly scoped to company - users can only chat with teammates from their own company
-Super Admin does NOT have access to any company's chat
+Super Admin can chat with users in their own company only (not other companies)
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
@@ -73,17 +73,8 @@ class ConversationWithMessages(BaseModel):
 def check_chat_access(current_user: dict):
     """
     Check if user has access to chat feature.
-    Super Admin does NOT have access to company chats.
+    All users including Super Admin can access chat for their own company.
     """
-    user_role = current_user.get('role', '')
-    user_email = current_user.get('email', '')
-    
-    if user_role == 'super_admin' or user_email == 'admin@sunstonecrm.com':
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Super Admin does not have access to company chat"
-        )
-    
     if not current_user.get('company_id'):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

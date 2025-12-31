@@ -103,6 +103,7 @@ export default function MainLayout() {
   const [loadingSearch, setLoadingSearch] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [userAvatar, setUserAvatar] = useState<string>('');
   const [showImageViewer, setShowImageViewer] = useState(false);
   const quickAddRef = useRef<HTMLDivElement>(null);
@@ -160,11 +161,13 @@ export default function MainLayout() {
     fetchNotifications();
     fetchUnreadCount();
     fetchUserProfile();
+    fetchChatUnreadCount();
     
     // Poll for new notifications every 5 seconds for immediate updates
     const notificationInterval = setInterval(() => {
       fetchNotifications();
       fetchUnreadCount();
+      fetchChatUnreadCount();
     }, 5000);
     
     // Listen for avatar updates
@@ -375,6 +378,27 @@ export default function MainLayout() {
       }
     } catch (error) {
       // Silently ignore network errors
+    }
+  };
+
+  const fetchChatUnreadCount = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/api/chat/unread-count`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setChatUnreadCount(data.unread_count || 0);
+      }
+    } catch (error) {
+      // Silently ignore errors
     }
   };
 
@@ -1037,19 +1061,24 @@ export default function MainLayout() {
                         <CogIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
                         <span>Account Settings</span>
                       </button>
-                      {/* Team Chat - Hidden from Super Admin */}
-                      {!isSuperAdmin() && (
-                        <button 
-                          onClick={() => {
-                            setShowProfile(false);
-                            navigate('/chat');
-                          }}
-                          className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                        >
+                      {/* Team Chat - Available to all users including Super Admin */}
+                      <button 
+                        onClick={() => {
+                          setShowProfile(false);
+                          navigate('/chat');
+                        }}
+                        className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                      >
+                        <div className="flex items-center">
                           <ChatBubbleLeftRightIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
                           <span>Team Chat</span>
-                        </button>
-                      )}
+                        </div>
+                        {chatUnreadCount > 0 && (
+                          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                            {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                          </span>
+                        )}
+                      </button>
                       <hr className="my-2" />
                       <button 
                         onClick={logout}
