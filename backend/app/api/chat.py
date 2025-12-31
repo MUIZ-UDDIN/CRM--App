@@ -253,7 +253,7 @@ def get_or_create_conversation(
         ChatMessage.is_deleted == False
     ).order_by(ChatMessage.created_at).all()
     
-    # Mark messages as read
+    # Mark messages as read - use .value for PostgreSQL enum compatibility (lowercase)
     db.query(ChatMessage).filter(
         ChatMessage.conversation_id == conversation.id,
         ChatMessage.sender_id != current_user_id,
@@ -261,8 +261,8 @@ def get_or_create_conversation(
     ).update({
         ChatMessage.is_read: True,
         ChatMessage.read_at: datetime.utcnow(),
-        ChatMessage.status: ChatMessageStatus.READ
-    })
+        ChatMessage.status: ChatMessageStatus.READ.value
+    }, synchronize_session=False)
     db.commit()
     
     return ConversationWithMessages(
@@ -361,12 +361,12 @@ def send_message(
         db.commit()
         db.refresh(conversation)
     
-    # Create message
+    # Create message - use .value for PostgreSQL enum compatibility (lowercase)
     new_message = ChatMessage(
         conversation_id=conversation.id,
         sender_id=current_user_id,
         content=message.content.strip(),
-        status=ChatMessageStatus.SENT
+        status=ChatMessageStatus.SENT.value
     )
     db.add(new_message)
     
@@ -434,7 +434,7 @@ def mark_message_as_read(
     if str(message.sender_id) != str(current_user_id):
         message.is_read = True
         message.read_at = datetime.utcnow()
-        message.status = ChatMessageStatus.READ
+        message.status = ChatMessageStatus.READ.value
         db.commit()
     
     return {"success": True}
