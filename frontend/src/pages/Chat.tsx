@@ -66,6 +66,8 @@ export default function Chat() {
   const [conversationToDelete, setConversationToDelete] = useState<{id: string; name: string} | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const conversationMenuRef = useRef<HTMLDivElement>(null);
+  const messageMenuRef = useRef<HTMLDivElement>(null);
 
   // All users including Super Admin can access chat for their own company
 
@@ -76,6 +78,23 @@ export default function Chat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Close menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      // Close conversation menu if clicking outside
+      if (showConversationMenu && conversationMenuRef.current && !conversationMenuRef.current.contains(event.target as Node)) {
+        setShowConversationMenu(null);
+      }
+      // Close message menu if clicking outside
+      if (showMessageMenu && messageMenuRef.current && !messageMenuRef.current.contains(event.target as Node)) {
+        setShowMessageMenu(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showConversationMenu, showMessageMenu]);
 
   const fetchConversations = useCallback(async () => {
     if (!token) return;
@@ -430,7 +449,10 @@ export default function Chat() {
                         <EllipsisVerticalIcon className="w-5 h-5 text-gray-500" />
                       </button>
                       {showConversationMenu === conv.other_participant.id && (
-                        <div className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[140px]">
+                        <div 
+                          ref={conversationMenuRef}
+                          className="absolute right-0 top-8 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[140px]"
+                        >
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -507,7 +529,10 @@ export default function Chat() {
                             <EllipsisVerticalIcon className="w-4 h-4 text-gray-500" />
                           </button>
                           {showMessageMenu === message.id && (
-                            <div className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[120px]">
+                            <div 
+                              ref={messageMenuRef}
+                              className="absolute right-0 top-6 bg-white border border-gray-200 rounded-lg shadow-lg z-10 py-1 min-w-[120px]"
+                            >
                               <button
                                 onClick={() => openDeleteMessageModal(message.id)}
                                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
