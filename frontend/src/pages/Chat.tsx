@@ -57,8 +57,7 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Check if user is super admin (should not have access)
-  const isSuperAdmin = user?.role === 'super_admin' || user?.email === 'admin@sunstonecrm.com';
+  // All users including Super Admin can access chat for their own company
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -69,7 +68,7 @@ export default function Chat() {
   }, [messages]);
 
   const fetchConversations = useCallback(async () => {
-    if (!token || isSuperAdmin) return;
+    if (!token) return;
     
     try {
       const response = await axios.get(`${API_URL}/chat/conversations`, {
@@ -81,10 +80,10 @@ export default function Chat() {
         toast.error('Chat is not available for your role');
       }
     }
-  }, [token, isSuperAdmin]);
+  }, [token]);
 
   const fetchTeammates = useCallback(async () => {
-    if (!token || isSuperAdmin) return;
+    if (!token) return;
     
     try {
       const response = await axios.get(`${API_URL}/chat/teammates`, {
@@ -94,7 +93,7 @@ export default function Chat() {
     } catch (error) {
       console.error('Failed to fetch teammates:', error);
     }
-  }, [token, isSuperAdmin]);
+  }, [token]);
 
   const fetchMessages = useCallback(async (userId: string) => {
     if (!token) return;
@@ -114,26 +113,22 @@ export default function Chat() {
   }, [token, fetchConversations]);
 
   useEffect(() => {
-    if (!isSuperAdmin) {
-      setLoading(true);
-      Promise.all([fetchConversations(), fetchTeammates()]).finally(() => {
-        setLoading(false);
-      });
-    } else {
+    setLoading(true);
+    Promise.all([fetchConversations(), fetchTeammates()]).finally(() => {
       setLoading(false);
-    }
-  }, [fetchConversations, fetchTeammates, isSuperAdmin]);
+    });
+  }, [fetchConversations, fetchTeammates]);
 
   // Poll for new messages every 5 seconds
   useEffect(() => {
-    if (!selectedConversation || isSuperAdmin) return;
+    if (!selectedConversation) return;
     
     const interval = setInterval(() => {
       fetchMessages(selectedConversation);
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [selectedConversation, fetchMessages, isSuperAdmin]);
+  }, [selectedConversation, fetchMessages]);
 
   const handleSelectConversation = (conv: Conversation) => {
     setSelectedConversation(conv.other_participant.id);
@@ -203,22 +198,6 @@ export default function Chat() {
     `${t.first_name} ${t.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
     t.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  // Super Admin restriction
-  if (isSuperAdmin) {
-    return (
-      <div className="flex items-center justify-center h-full bg-gray-50">
-        <div className="text-center p-8">
-          <ChatBubbleLeftRightIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-700 mb-2">Chat Not Available</h2>
-          <p className="text-gray-500">
-            Super Admin does not have access to company chat.<br />
-            Chat is a private communication tool for team members within each company.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
