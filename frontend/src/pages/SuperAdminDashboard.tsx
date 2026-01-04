@@ -804,7 +804,7 @@ export default function SuperAdminDashboard() {
                 </div>
                 <div>
                   <label className="text-sm font-medium text-gray-500">Company ID</label>
-                  <p className="text-sm text-gray-900 font-mono">{selectedCompany.id}</p>
+                  <p className="text-sm text-gray-900 font-mono">CMP-{selectedCompany.id.split('-')[0].toUpperCase()}</p>
                 </div>
               </div>
 

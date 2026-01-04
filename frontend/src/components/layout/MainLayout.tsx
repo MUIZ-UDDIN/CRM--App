@@ -1089,7 +1089,7 @@ export default function MainLayout() {
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
                       >
                         <ArrowRightOnRectangleIcon className="h-4 w-4 mr-3 text-red-500 flex-shrink-0" />
-// ... (rest of the code remains the same)
+                        <span>Logout</span>
                       </button>
                     </div>
                   </div>
