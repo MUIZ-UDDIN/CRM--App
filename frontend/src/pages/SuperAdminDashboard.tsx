@@ -313,7 +313,7 @@ export default function SuperAdminDashboard() {
     // Super admin company always shows Active
     if (company.is_super_admin_company) {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
           <CheckCircleIcon className="w-3 h-3" />
           Active
         </span>
@@ -323,7 +323,7 @@ export default function SuperAdminDashboard() {
     // Check if suspended (check status field for suspended)
     if (status === 'suspended') {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800 flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-orange-100 text-orange-800">
           <XCircleIcon className="w-3 h-3" />
           Suspended
         </span>
@@ -333,7 +333,7 @@ export default function SuperAdminDashboard() {
     // Check if trial expired (subscription_status='trial' and days_remaining=0)
     if (subscriptionStatus === 'trial' && daysLeft === 0) {
       return (
-        <span className="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800 flex items-center gap-1">
+        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
           <XCircleIcon className="w-3 h-3" />
           Expired
         </span>
@@ -342,7 +342,7 @@ export default function SuperAdminDashboard() {
     
     // Otherwise show Active
     return (
-      <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800 flex items-center gap-1">
+      <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
         <CheckCircleIcon className="w-3 h-3" />
         Active
       </span>
