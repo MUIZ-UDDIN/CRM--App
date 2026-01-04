@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 // Layout Components
 import MainLayout from './components/layout/MainLayout';
 import AuthLayout from './components/layout/AuthLayout';
+import ScrollToTop from './components/ScrollToTop';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -105,6 +106,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <ScrollToTop />
           <GlobalAuthHandler />
           <div className="min-h-screen bg-gray-50">
             <Routes>
