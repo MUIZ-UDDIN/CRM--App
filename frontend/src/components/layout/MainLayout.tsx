@@ -1062,30 +1062,34 @@ export default function MainLayout() {
                         <span>Account Settings</span>
                       </button>
                       {/* Team Chat - Available to all users including Super Admin */}
-                      <button 
-                        onClick={() => {
-                          setShowProfile(false);
-                          navigate('/chat');
-                        }}
-                        className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                      >
-                        <div className="flex items-center">
-                          <ChatBubbleLeftRightIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
-                          <span>Team Chat</span>
-                        </div>
-                        {chatUnreadCount > 0 && (
-                          <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
-                            {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
-                          </span>
-                        )}
-                      </button>
-                      <hr className="my-2" />
+                      {!isSuperAdmin() && (
+                        <>
+                          <button 
+                            onClick={() => {
+                              setShowProfile(false);
+                              navigate('/chat');
+                            }}
+                            className="flex items-center justify-between w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                          >
+                            <div className="flex items-center">
+                              <ChatBubbleLeftRightIcon className="h-4 w-4 mr-3 text-gray-400 flex-shrink-0" />
+                              <span>Team Chat</span>
+                            </div>
+                            {chatUnreadCount > 0 && (
+                              <span className="inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full">
+                                {chatUnreadCount > 99 ? '99+' : chatUnreadCount}
+                              </span>
+                            )}
+                          </button>
+                          <hr className="my-2" />
+                        </>
+                      )}
                       <button 
                         onClick={logout}
                         className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors duration-200"
                       >
                         <ArrowRightOnRectangleIcon className="h-4 w-4 mr-3 text-red-500 flex-shrink-0" />
-                        <span>Sign Out</span>
+// ... (rest of the code remains the same)
                       </button>
                     </div>
                   </div>
