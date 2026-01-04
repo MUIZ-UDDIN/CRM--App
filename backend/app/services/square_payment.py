@@ -11,8 +11,7 @@ from datetime import datetime, timedelta
 from decimal import Decimal
 
 # Square Python SDK
-from square.client import Client
-from square.exceptions import ApiException
+from square import Square
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +29,7 @@ class SquarePaymentService:
         if not self.access_token:
             logger.warning("Square access token not provided. Using sandbox mode with limited functionality.")
         
-        self.client = Client(
+        self.client = Square(
             access_token=self.access_token,
             environment=self.environment
         )
