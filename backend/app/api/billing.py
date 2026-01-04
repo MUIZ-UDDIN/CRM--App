@@ -10,6 +10,7 @@ from pydantic import BaseModel, UUID4, validator, Field
 from datetime import datetime, timedelta
 import uuid
 import os
+import logging
 from decimal import Decimal
 
 from app.core.database import get_db
@@ -24,6 +25,7 @@ from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
 from app.services.square_payment import SquarePaymentService
 
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
 
@@ -1045,41 +1047,58 @@ async def process_square_payment(
     if not company:
         raise HTTPException(status_code=404, detail="Company not found")
     
-    # Initialize Square service
-    square_service = SquarePaymentService()
+    # Check if Square is configured
+    if not os.getenv("SQUARE_ACCESS_TOKEN"):
+        raise HTTPException(
+            status_code=503,
+            detail="Payment processing is currently unavailable. Please contact support to complete your subscription setup."
+        )
     
-    # Get or create Square customer
-    square_customer_id = company.square_customer_id
-    if not square_customer_id:
-        customer_result = square_service.create_customer(
-            company_name=company.name,
-            email=current_user.get('email'),
-            phone=company.phone
+    try:
+        # Initialize Square service
+        square_service = SquarePaymentService()
+        
+        # Get or create Square customer
+        square_customer_id = company.square_customer_id
+        if not square_customer_id:
+            customer_result = square_service.create_customer(
+                company_name=company.name,
+                email=current_user.get('email'),
+                phone=company.phone
+            )
+            
+            if not customer_result.get('success'):
+                raise HTTPException(
+                    status_code=400,
+                    detail="Unable to set up your payment account. Please verify your payment details and try again."
+                )
+            
+            square_customer_id = customer_result['customer_id']
+            company.square_customer_id = square_customer_id
+            db.commit()
+        
+        # Process payment
+        payment_result = square_service.process_payment(
+            amount=Decimal(str(payment_request.amount)),
+            currency='USD',
+            customer_id=square_customer_id,
+            card_id=payment_request.source_id,
+            note=f"Subscription payment for {company.name}"
         )
         
-        if not customer_result.get('success'):
+        if not payment_result.get('success'):
+            error_msg = payment_result.get('errors', 'Unknown error')
             raise HTTPException(
                 status_code=400,
-                detail=f"Failed to create Square customer: {customer_result.get('errors')}"
+                detail=f"Payment declined. Please check your card details and try again. If the issue persists, contact your bank."
             )
-        
-        square_customer_id = customer_result['customer_id']
-        company.square_customer_id = square_customer_id
-        db.commit()
-    
-    # Process payment
-    payment_result = square_service.process_payment(
-        amount=Decimal(str(payment_request.amount)),
-        currency='USD',
-        customer_id=square_customer_id,
-        card_id=payment_request.source_id,
-        note=f"Subscription payment for {company.name}"
-    )
-    
-    if not payment_result.get('success'):
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Square payment error: {e}")
         raise HTTPException(
-            status_code=400,
-            detail=f"Payment failed: {payment_result.get('errors')}"
+            status_code=500,
+            detail="We're unable to process your payment at this time. Please try again in a few moments or contact support for assistance."
         )
     
     # Create or update subscription
