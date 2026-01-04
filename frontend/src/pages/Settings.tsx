@@ -2485,13 +2485,25 @@ export default function Settings() {
                                 return;
                               }
                               try {
-                                // TODO: Integrate with Square payment gateway
-                                // For now, show message that Square needs to be configured
-                                toast.error('Payment processing is not yet configured. Please contact support to set up Square payment gateway.');
-                                setShowPaymentModal(false);
-                                setBillingErrors({});
+                                // Process payment through Square
+                                const response = await apiClient.post('/billing/square/process-payment', {
+                                  source_id: billingForm.cardNumber,
+                                  amount: monthlyPrice,
+                                  billing_cycle: 'monthly'
+                                });
+                                
+                                if (response.data.success) {
+                                  toast.success('Payment processed successfully! Your subscription is now active.');
+                                  setShowPaymentModal(false);
+                                  setBillingErrors({});
+                                  // Refresh billing data
+                                  fetchBillingData();
+                                } else {
+                                  toast.error(response.data.error || 'Payment failed. Please try again.');
+                                }
                               } catch (error: any) {
-                                toast.error(error?.response?.data?.detail || 'Failed to process payment');
+                                const errorMessage = error?.response?.data?.detail || 'Failed to process payment. Please try again.';
+                                toast.error(errorMessage);
                               }
                             }}
                             className="flex-1 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"

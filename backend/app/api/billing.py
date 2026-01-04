@@ -9,6 +9,7 @@ from typing import List, Optional
 from pydantic import BaseModel, UUID4, validator, Field
 from datetime import datetime, timedelta
 import uuid
+import os
 from decimal import Decimal
 
 from app.core.database import get_db
@@ -17,9 +18,11 @@ from app.models import (
     Company, User, SubscriptionPlan, PlanFeature, Subscription, 
     Invoice, Payment, BillingCycle, PaymentMethod
 )
+from app.models.payment_history import PaymentHistory
 from app.middleware.tenant import require_super_admin, require_company_admin, get_tenant_context
 from app.middleware.permissions import has_permission
 from app.models.permissions import Permission
+from app.services.square_payment import SquarePaymentService
 
 router = APIRouter(prefix="/api/billing", tags=["billing"])
 
@@ -994,3 +997,189 @@ async def get_company_invoices(
         }
         for inv in invoices
     ]
+
+
+# Square Payment Endpoints
+class SquarePaymentRequest(BaseModel):
+    source_id: str
+    amount: float
+    plan_id: Optional[UUID4] = None
+    billing_cycle: Optional[str] = 'monthly'
+
+
+@router.get("/square/config")
+async def get_square_config(
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Get Square application ID for Web Payments SDK initialization"""
+    square_service = SquarePaymentService()
+    app_id = os.getenv('SQUARE_APPLICATION_ID')
+    environment = os.getenv('SQUARE_ENVIRONMENT', 'sandbox')
+    
+    if not app_id:
+        raise HTTPException(
+            status_code=500,
+            detail="Square payment gateway is not configured"
+        )
+    
+    return {
+        "application_id": app_id,
+        "environment": environment,
+        "location_id": os.getenv('SQUARE_LOCATION_ID')
+    }
+
+
+@router.post("/square/process-payment")
+async def process_square_payment(
+    payment_request: SquarePaymentRequest,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Process a payment through Square and activate subscription"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=404, detail="No company associated with user")
+    
+    # Get company
+    company = db.query(Company).filter(Company.id == uuid.UUID(company_id)).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    
+    # Initialize Square service
+    square_service = SquarePaymentService()
+    
+    # Get or create Square customer
+    square_customer_id = company.square_customer_id
+    if not square_customer_id:
+        customer_result = square_service.create_customer(
+            company_name=company.name,
+            email=current_user.get('email'),
+            phone=company.phone
+        )
+        
+        if not customer_result.get('success'):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Failed to create Square customer: {customer_result.get('errors')}"
+            )
+        
+        square_customer_id = customer_result['customer_id']
+        company.square_customer_id = square_customer_id
+        db.commit()
+    
+    # Process payment
+    payment_result = square_service.process_payment(
+        amount=Decimal(str(payment_request.amount)),
+        currency='USD',
+        customer_id=square_customer_id,
+        card_id=payment_request.source_id,
+        note=f"Subscription payment for {company.name}"
+    )
+    
+    if not payment_result.get('success'):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Payment failed: {payment_result.get('errors')}"
+        )
+    
+    # Create or update subscription
+    subscription = db.query(Subscription).filter(
+        Subscription.company_id == uuid.UUID(company_id)
+    ).first()
+    
+    if not subscription:
+        # Create new subscription
+        subscription = Subscription(
+            id=uuid.uuid4(),
+            company_id=uuid.UUID(company_id),
+            plan_id=payment_request.plan_id,
+            status='active',
+            billing_cycle=payment_request.billing_cycle,
+            current_period_start=datetime.utcnow(),
+            current_period_end=datetime.utcnow() + timedelta(days=30),
+            auto_renew=True,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow()
+        )
+        db.add(subscription)
+    else:
+        # Update existing subscription
+        subscription.status = 'active'
+        subscription.updated_at = datetime.utcnow()
+    
+    # Update company subscription status
+    company.subscription_status = 'active'
+    company.plan = 'pro'
+    company.updated_at = datetime.utcnow()
+    
+    # Save payment history record
+    payment_history = PaymentHistory(
+        id=uuid.uuid4(),
+        company_id=uuid.UUID(company_id),
+        square_payment_id=payment_result['payment_id'],
+        amount=Decimal(str(payment_request.amount)),
+        currency='USD',
+        status='completed',
+        payment_method='card',
+        receipt_url=payment_result.get('receipt_url'),
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow()
+    )
+    db.add(payment_history)
+    
+    db.commit()
+    
+    return {
+        "success": True,
+        "payment_id": payment_result['payment_id'],
+        "status": payment_result['status'],
+        "receipt_url": payment_result.get('receipt_url'),
+        "subscription_status": 'active'
+    }
+
+
+@router.post("/square/save-card")
+async def save_square_card(
+    card_request: dict,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_active_user)
+):
+    """Save a card to Square customer for future payments"""
+    company_id = current_user.get('company_id')
+    if not company_id:
+        raise HTTPException(status_code=404, detail="No company associated with user")
+    
+    company = db.query(Company).filter(Company.id == uuid.UUID(company_id)).first()
+    if not company or not company.square_customer_id:
+        raise HTTPException(status_code=404, detail="Square customer not found")
+    
+    square_service = SquarePaymentService()
+    
+    card_result = square_service.create_card_payment_method(
+        customer_id=company.square_customer_id,
+        card_nonce=card_request.get('card_nonce')
+    )
+    
+    if not card_result.get('success'):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to save card: {card_result.get('errors')}"
+        )
+    
+    # Update company with card details
+    subscription = db.query(Subscription).filter(
+        Subscription.company_id == uuid.UUID(company_id)
+    ).first()
+    
+    if subscription:
+        subscription.card_last_4 = card_result['last_4']
+        subscription.card_brand = card_result['card_brand']
+        subscription.updated_at = datetime.utcnow()
+        db.commit()
+    
+    return {
+        "success": True,
+        "card_id": card_result['card_id'],
+        "last_4": card_result['last_4'],
+        "card_brand": card_result['card_brand']
+    }
