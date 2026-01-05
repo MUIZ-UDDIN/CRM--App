@@ -118,13 +118,23 @@ export default function Notifications() {
 
   // Helper function to get proper navigation path based on notification
   const getNavigationPath = (notification: Notification): string | null => {
+    // Priority 1: Use the link field if it exists (most reliable)
+    if (notification.link) {
+      return notification.link;
+    }
+    
     const text = `${notification.title} ${notification.message}`.toLowerCase();
     
-    // Extract ID from message if present (format: "deal: Deal Name" or "ID: 123")
-    const idMatch = notification.message.match(/id[:\s]+([a-f0-9-]+)/i);
+    // Extract entity ID from message if present
+    // Patterns: "deal: Title" or "ID: uuid" or "(ID: uuid)"
+    const idMatch = notification.message.match(/\b([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\b/i);
     const entityId = idMatch ? idMatch[1] : null;
     
-    // Determine navigation based on content
+    // Extract entity name for highlighting (text between quotes or after colon)
+    const nameMatch = notification.message.match(/["']([^"']+)["']|:\s*([^(]+?)\s*(?:\(|$)/);
+    const entityName = nameMatch ? (nameMatch[1] || nameMatch[2])?.trim() : null;
+    
+    // Determine navigation based on content with entity-specific routing
     // Company management (Super Admin page)
     if (text.includes('company registered') || text.includes('company created') || text.includes('new company')) {
       return '/admin';
@@ -155,23 +165,47 @@ export default function Notifications() {
       return '/teams';
     }
     
-    // Deal management
+    // Deal management - with entity highlighting
     if (text.includes('deal')) {
+      if (entityId) {
+        return `/deals?highlight=${entityId}`;
+      }
+      if (entityName) {
+        return `/deals?highlight=${encodeURIComponent(entityName)}`;
+      }
       return '/deals';
     }
     
-    // Contact management
+    // Contact management - with entity highlighting
     if (text.includes('contact')) {
+      if (entityId) {
+        return `/contacts?highlight=${entityId}`;
+      }
+      if (entityName) {
+        return `/contacts?highlight=${encodeURIComponent(entityName)}`;
+      }
       return '/contacts';
     }
     
-    // Quote management
+    // Quote management - with entity highlighting
     if (text.includes('quote')) {
+      if (entityId) {
+        return `/quotes?highlight=${entityId}`;
+      }
+      if (entityName) {
+        return `/quotes?highlight=${encodeURIComponent(entityName)}`;
+      }
       return '/quotes';
     }
     
-    // Activities
+    // Activities - with entity highlighting
     if (text.includes('activity') || text.includes('meeting') || text.includes('call')) {
+      if (entityId) {
+        return `/activities?highlight=${entityId}`;
+      }
+      if (entityName) {
+        return `/activities?highlight=${encodeURIComponent(entityName)}`;
+      }
       return '/activities';
     }
     
@@ -182,17 +216,18 @@ export default function Notifications() {
     
     // Workflows
     if (text.includes('workflow')) {
+      if (entityId) {
+        return `/workflows?highlight=${entityId}`;
+      }
       return '/workflows';
     }
     
     // Files
     if (text.includes('file') || text.includes('folder')) {
+      if (entityName) {
+        return `/files?highlight=${encodeURIComponent(entityName)}`;
+      }
       return '/files';
-    }
-    
-    // If notification has a link, use it
-    if (notification.link) {
-      return notification.link;
     }
     
     return null;
