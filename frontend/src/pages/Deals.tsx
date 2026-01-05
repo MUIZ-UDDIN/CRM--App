@@ -1224,9 +1224,9 @@ export default function Deals() {
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className={`space-y-3 p-4 pt-0 md:p-4 transition-all overflow-hidden ${
+                        className={`space-y-3 p-4 pt-0 md:p-4 transition-all ${
                           snapshot.isDraggingOver ? 'bg-white bg-opacity-50 rounded-lg' : ''
-                        } ${isExpanded ? 'min-h-[50px] md:min-h-[200px] max-h-[2000px] opacity-100' : 'max-h-0 opacity-0 p-0'}`}
+                        } ${isExpanded ? 'min-h-[50px] md:min-h-[200px] max-h-[600px] opacity-100 overflow-y-auto' : 'max-h-0 opacity-0 p-0 overflow-hidden'}`}
                       >
                         {(deals[stage.id] || [])
                           .filter(deal => {
