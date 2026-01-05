@@ -429,10 +429,8 @@ export default function Deals() {
       setSearchParams(newParams, { replace: true });
     }
     
-    // If highlight parameter exists, set it as search filter and try to open the deal
+    // If highlight parameter exists, find and open the deal
     if (highlightValue) {
-      setSearchQuery(highlightValue);
-      
       // If it's a UUID, try to find and open the deal detail modal
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
@@ -448,12 +446,17 @@ export default function Deals() {
           });
           
           if (foundDeal) {
+            // Set search to deal title (not ID) for better UX
+            setSearchQuery(foundDeal.title);
             handleView(foundDeal);
           }
         }, 500); // Small delay to ensure deals are loaded
+      } else {
+        // If not a UUID, use it as search query (it's a name)
+        setSearchQuery(highlightValue);
       }
       
-      // Remove highlight param from URL after setting search
+      // Remove highlight param from URL after processing
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });

@@ -222,15 +222,29 @@ export default function Contacts() {
       setSearchParams(newParams, { replace: true });
     }
     
-    // If highlight parameter exists, set it as search filter
+    // If highlight parameter exists, find and open the contact
     if (highlightValue) {
-      setSearchQuery(highlightValue);
-      // Remove highlight param from URL after setting search
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(highlightValue)) {
+        // Wait for contacts to load, then find and open the specific contact
+        setTimeout(() => {
+          const foundContact = contacts.find(c => c.id === highlightValue);
+          if (foundContact) {
+            setSearchQuery(`${foundContact.first_name} ${foundContact.last_name}`);
+            handleView(foundContact);
+          }
+        }, 500);
+      } else {
+        // If not a UUID, use it as search query (it's a name)
+        setSearchQuery(highlightValue);
+      }
+      
+      // Remove highlight param from URL after processing
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams]); // Run when searchParams change
+  }, [searchParams, contacts]); // Run when searchParams or contacts change
 
   // Fetch all contact types (called on mount and after changes)
   const fetchAllTypes = async () => {
