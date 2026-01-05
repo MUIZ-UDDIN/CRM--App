@@ -448,7 +448,7 @@ export default function Deals() {
           });
           
           if (foundDeal) {
-            handleViewDeal(foundDeal);
+            handleView(foundDeal);
           }
         }, 500); // Small delay to ensure deals are loaded
       }
