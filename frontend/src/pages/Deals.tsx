@@ -437,13 +437,14 @@ export default function Deals() {
         // Wait for deals to load, then find and open the specific deal
         setTimeout(() => {
           // Search through all deals in all stages
-          let foundDeal: Deal | null = null;
-          Object.values(deals).forEach(stageDeals => {
+          let foundDeal: Deal | undefined = undefined;
+          for (const stageDeals of Object.values(deals)) {
             const deal = stageDeals.find(d => d.id === highlightValue);
             if (deal) {
               foundDeal = deal;
+              break;
             }
-          });
+          }
           
           if (foundDeal) {
             // Set search to deal title (not ID) for better UX
