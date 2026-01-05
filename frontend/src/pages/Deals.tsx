@@ -429,15 +429,36 @@ export default function Deals() {
       setSearchParams(newParams, { replace: true });
     }
     
-    // If highlight parameter exists, set it as search filter
+    // If highlight parameter exists, set it as search filter and try to open the deal
     if (highlightValue) {
       setSearchQuery(highlightValue);
+      
+      // If it's a UUID, try to find and open the deal detail modal
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(highlightValue)) {
+        // Wait for deals to load, then find and open the specific deal
+        setTimeout(() => {
+          // Search through all deals in all stages
+          let foundDeal: Deal | null = null;
+          Object.values(deals).forEach(stageDeals => {
+            const deal = stageDeals.find(d => d.id === highlightValue);
+            if (deal) {
+              foundDeal = deal;
+            }
+          });
+          
+          if (foundDeal) {
+            handleViewDeal(foundDeal);
+          }
+        }, 500); // Small delay to ensure deals are loaded
+      }
+      
       // Remove highlight param from URL after setting search
       const newParams = new URLSearchParams(searchParams);
       newParams.delete('highlight');
       setSearchParams(newParams, { replace: true });
     }
-  }, [searchParams]); // Run when searchParams change
+  }, [searchParams, deals]); // Run when searchParams or deals change
 
   useEffect(() => {
     // Only fetch deals after dynamic stages are loaded
