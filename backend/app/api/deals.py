@@ -304,10 +304,19 @@ async def create_deal(
         }
         deal_status = status_map.get(deal.status.lower() if deal.status else 'open', DealStatus.OPEN)
         
-        # Get company_id from current user
-        company_id = current_user.get('company_id')
+        # Get company_id from the pipeline (for Super Admin creating deals for other companies)
+        # or from current user (for regular users)
+        pipeline = db.query(Pipeline).filter(Pipeline.id == pipeline_id).first()
+        if not pipeline:
+            raise HTTPException(status_code=400, detail="Pipeline not found")
+        
+        # Use pipeline's company_id so Super Admin can create deals for any company
+        company_id = pipeline.company_id
         if not company_id:
-            raise HTTPException(status_code=400, detail="User must belong to a company to create deals")
+            # Fallback to user's company_id if pipeline doesn't have one
+            company_id = current_user.get('company_id')
+            if not company_id:
+                raise HTTPException(status_code=400, detail="User must belong to a company to create deals")
         
         new_deal = DealModel(
             title=deal.title,
