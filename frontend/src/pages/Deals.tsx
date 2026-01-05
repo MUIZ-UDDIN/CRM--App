@@ -765,10 +765,10 @@ export default function Deals() {
       }
     }
     
-    // Validate that the stage exists in current stages
-    const stageExists = stages.some(stage => stage.id === stageUUID);
+    // Validate that the stage exists in modal stages (for the selected pipeline)
+    const stageExists = modalStages.some(stage => stage.id === stageUUID);
     if (!stageExists) {
-      toast.error('Selected stage not found. Please refresh the page.');
+      toast.error('Selected stage not found. Please select a valid stage for this pipeline.');
       return;
     }
 
