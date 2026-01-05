@@ -150,6 +150,7 @@ export default function Deals() {
   const [pipelineId, setPipelineId] = useState<string>(''); // Store the actual pipeline UUID
   const [pipelines, setPipelines] = useState<any[]>([]); // Store all pipelines
   const [dynamicStages, setDynamicStages] = useState<Stage[]>([]); // Dynamic stages from backend
+  const [modalStages, setModalStages] = useState<Stage[]>([]); // Stages for the selected pipeline in Add Deal modal
   const [companies, setCompanies] = useState<Company[]>([]); // For Super Admin company filter
   const [filterCompany, setFilterCompany] = useState<string>('all'); // Company filter for Super Admin
   const [stageMergeMap, setStageMergeMap] = useState<Record<string, string[]>>({}); // Maps merged stage ID to original stage IDs
@@ -297,8 +298,6 @@ export default function Deals() {
             
             // Collect unique company IDs for this merged stage
             const companyIds = [...new Set(stagesGroup.map(s => s.pipeline_company_id).filter(Boolean))];
-            
-            console.log(`🔍 Stage "${primaryStage.name}" has companyIds:`, companyIds);
             
             const colorScheme = colors[index % colors.length];
             dynamicStagesArray.push({
@@ -681,39 +680,45 @@ export default function Deals() {
 
       if (stagesResponse.ok) {
         const stages = await stagesResponse.json();
-        const mapping: Record<string, string> = {};
-        const dynamicStagesData: Stage[] = [];
         
-        stages.forEach((stage: any, index: number) => {
-          // Map stage ID to stage ID (use actual UUID)
-          mapping[stage.id] = stage.id;
-          
-          // Assign colors based on index
-          const colors = [
-            { color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
-            { color: 'bg-yellow-50 border-yellow-200', textColor: 'text-yellow-700' },
-            { color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
-            { color: 'bg-green-50 border-green-200', textColor: 'text-green-700' }
-          ];
-          const colorIndex = index % colors.length;
-          
-          dynamicStagesData.push({
-            id: stage.id, // Use actual stage UUID
-            name: stage.name,
-            ...colors[colorIndex]
-          });
-        });
+        if (stages.length === 0) {
+          toast.error('No stages found for this pipeline. Please create stages in Pipeline Settings.');
+          setModalStages([]);
+          return;
+        }
         
-        setStageMapping(mapping);
-        setDynamicStages(dynamicStagesData);
+        // Assign colors based on index
+        const colors = [
+          { color: 'bg-blue-50 border-blue-200', textColor: 'text-blue-700' },
+          { color: 'bg-yellow-50 border-yellow-200', textColor: 'text-yellow-700' },
+          { color: 'bg-orange-50 border-orange-200', textColor: 'text-orange-700' },
+          { color: 'bg-green-50 border-green-200', textColor: 'text-green-700' },
+          { color: 'bg-purple-50 border-purple-200', textColor: 'text-purple-700' },
+          { color: 'bg-pink-50 border-pink-200', textColor: 'text-pink-700' }
+        ];
+        
+        const dynamicStagesData: Stage[] = stages.map((stage: any, index: number) => ({
+          id: stage.id,
+          name: stage.name,
+          color: colors[index % colors.length].color,
+          textColor: colors[index % colors.length].textColor
+        }));
+        
+        // Update modal stages (used in Add Deal modal)
+        setModalStages(dynamicStagesData);
         
         // Set first stage as default
         if (stages.length > 0) {
           setDealFormData(prev => ({ ...prev, stage_id: stages[0].id }));
         }
+      } else {
+        toast.error('Failed to load stages for selected pipeline');
+        setModalStages([]);
       }
     } catch (error) {
       console.error('Error fetching stages:', error);
+      toast.error('Error loading pipeline stages');
+      setModalStages([]);
     }
   };
 
@@ -1011,6 +1016,8 @@ export default function Deals() {
               <button
                 onClick={() => {
                   if (!checkFeatureAccess('Add Deal')) return;
+                  // Initialize modal stages with current pipeline's stages
+                  setModalStages(stages);
                   setShowAddDealModal(true);
                 }}
                 disabled={isReadOnly}
@@ -1091,11 +1098,6 @@ export default function Deals() {
                   {stages.filter((stage, index, self) => {
                     // For Super Admin with company filter: only show stages belonging to selected company
                     if (isSuperAdmin() && filterCompany !== 'all') {
-                      console.log(`🔍 Filtering stage "${stage.name}":`, {
-                        filterCompany,
-                        stageCompanyIds: stage.companyIds,
-                        includes: stage.companyIds?.includes(filterCompany)
-                      });
                       if (!stage.companyIds?.includes(filterCompany)) {
                         return false;
                       }
@@ -1140,11 +1142,6 @@ export default function Deals() {
                   if (isSuperAdmin() && filterCompany !== 'all') {
                     // Check if this stage's companyIds includes the selected company
                     const belongsToSelectedCompany = stage.companyIds?.includes(filterCompany);
-                    console.log(`🔍 Stage "${stage.name}" filter check:`, {
-                      filterCompany,
-                      stageCompanyIds: stage.companyIds,
-                      belongsToSelectedCompany
-                    });
                     if (!belongsToSelectedCompany) {
                       return false;
                     }
@@ -1386,6 +1383,8 @@ export default function Deals() {
                           onClick={() => {
                             if (!checkFeatureAccess('Add Deal')) return;
                             setDealFormData({ ...dealFormData, stage_id: stage.id });
+                            // Initialize modal stages with current pipeline's stages
+                            setModalStages(stages);
                             setShowAddDealModal(true);
                           }}
                           disabled={isReadOnly}
@@ -1497,11 +1496,15 @@ export default function Deals() {
                   onChange={handleInputChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
-                  {stages.map(stage => (
-                    <option key={stage.id} value={stage.id} title={stage.name}>
-                      {stage.name.length > 40 ? stage.name.substring(0, 40) + '...' : stage.name}
-                    </option>
-                  ))}
+                  {modalStages.length > 0 ? (
+                    modalStages.map(stage => (
+                      <option key={stage.id} value={stage.id} title={stage.name}>
+                        {stage.name.length > 40 ? stage.name.substring(0, 40) + '...' : stage.name}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">No stages available</option>
+                  )}
                 </select>
               </div>
               <div className="relative">
