@@ -298,6 +298,8 @@ export default function Deals() {
             // Collect unique company IDs for this merged stage
             const companyIds = [...new Set(stagesGroup.map(s => s.pipeline_company_id).filter(Boolean))];
             
+            console.log(`🔍 Stage "${primaryStage.name}" has companyIds:`, companyIds);
+            
             const colorScheme = colors[index % colors.length];
             dynamicStagesArray.push({
               id: mergedId,
@@ -1089,6 +1091,11 @@ export default function Deals() {
                   {stages.filter((stage, index, self) => {
                     // For Super Admin with company filter: only show stages belonging to selected company
                     if (isSuperAdmin() && filterCompany !== 'all') {
+                      console.log(`🔍 Filtering stage "${stage.name}":`, {
+                        filterCompany,
+                        stageCompanyIds: stage.companyIds,
+                        includes: stage.companyIds?.includes(filterCompany)
+                      });
                       if (!stage.companyIds?.includes(filterCompany)) {
                         return false;
                       }
@@ -1133,6 +1140,11 @@ export default function Deals() {
                   if (isSuperAdmin() && filterCompany !== 'all') {
                     // Check if this stage's companyIds includes the selected company
                     const belongsToSelectedCompany = stage.companyIds?.includes(filterCompany);
+                    console.log(`🔍 Stage "${stage.name}" filter check:`, {
+                      filterCompany,
+                      stageCompanyIds: stage.companyIds,
+                      belongsToSelectedCompany
+                    });
                     if (!belongsToSelectedCompany) {
                       return false;
                     }
