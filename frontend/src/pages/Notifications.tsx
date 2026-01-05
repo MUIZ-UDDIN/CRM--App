@@ -118,8 +118,45 @@ export default function Notifications() {
 
   // Helper function to get proper navigation path based on notification
   const getNavigationPath = (notification: Notification): string | null => {
-    // Priority 1: Use the link field if it exists (most reliable)
+    // Priority 1: Use the link field if it exists and convert entity paths to highlight params
     if (notification.link) {
+      // Convert /deals/{id} to /deals?highlight={id}
+      const dealsMatch = notification.link.match(/^\/deals\/([a-f0-9-]+)$/i);
+      if (dealsMatch) {
+        return `/deals?highlight=${dealsMatch[1]}`;
+      }
+      
+      // Convert /contacts/{id} to /contacts?highlight={id}
+      const contactsMatch = notification.link.match(/^\/contacts\/([a-f0-9-]+)$/i);
+      if (contactsMatch) {
+        return `/contacts?highlight=${contactsMatch[1]}`;
+      }
+      
+      // Convert /quotes/{id} to /quotes?highlight={id}
+      const quotesMatch = notification.link.match(/^\/quotes\/([a-f0-9-]+)$/i);
+      if (quotesMatch) {
+        return `/quotes?highlight=${quotesMatch[1]}`;
+      }
+      
+      // Convert /activities/{id} to /activities?highlight={id}
+      const activitiesMatch = notification.link.match(/^\/activities\/([a-f0-9-]+)$/i);
+      if (activitiesMatch) {
+        return `/activities?highlight=${activitiesMatch[1]}`;
+      }
+      
+      // Convert /workflows/{id} to /workflows?highlight={id}
+      const workflowsMatch = notification.link.match(/^\/workflows\/([a-f0-9-]+)$/i);
+      if (workflowsMatch) {
+        return `/workflows?highlight=${workflowsMatch[1]}`;
+      }
+      
+      // Convert /users/{id} to /users?highlight={id}
+      const usersMatch = notification.link.match(/^\/users\/([a-f0-9-]+)$/i);
+      if (usersMatch) {
+        return `/users?highlight=${usersMatch[1]}`;
+      }
+      
+      // For other links, return as-is
       return notification.link;
     }
     
