@@ -188,6 +188,26 @@ export default function Deals() {
           return;
         }
         
+        // For Super Admin: Fetch company names and add to pipelines
+        if (isSuperAdmin()) {
+          try {
+            const companiesResponse = await fetch(`${API_BASE_URL}/api/platform/companies`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (companiesResponse.ok) {
+              const companiesData = await companiesResponse.json();
+              const companyMap = new Map(companiesData.map((c: any) => [c.id, c.name]));
+              
+              // Add company name to each pipeline
+              pipelines.forEach((p: any) => {
+                p.company_name = companyMap.get(p.company_id) || 'Unknown';
+              });
+            }
+          } catch (err) {
+            console.error('Failed to fetch companies for pipeline names:', err);
+          }
+        }
+        
         // Store all pipelines
         setPipelines(pipelines);
         
@@ -1449,7 +1469,11 @@ export default function Deals() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500"
                 >
                   {pipelines.map(pipeline => (
-                    <option key={pipeline.id} value={pipeline.id}>{pipeline.name}</option>
+                    <option key={pipeline.id} value={pipeline.id}>
+                      {isSuperAdmin() && pipeline.company_name 
+                        ? `${pipeline.name} (${pipeline.company_name})` 
+                        : pipeline.name}
+                    </option>
                   ))}
                 </select>
               </div>
