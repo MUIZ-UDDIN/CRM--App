@@ -431,11 +431,18 @@ export default function Deals() {
     
     // If highlight parameter exists, find and open the deal
     if (highlightValue) {
+      console.log('🔍 Highlight value found:', highlightValue);
+      console.log('🔍 Deals loaded:', Object.keys(deals).length, 'stages');
+      console.log('🔍 Total deals:', Object.values(deals).flat().length);
+      
       // If it's a UUID, try to find and open the deal detail modal
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
         // Search through all deals in all stages
         let foundDeal: Deal | undefined = undefined;
+        const allDeals = Object.values(deals).flat();
+        console.log('🔍 All deal IDs:', allDeals.map(d => d.id));
+        
         for (const stageDeals of Object.values(deals)) {
           const deal = stageDeals.find(d => d.id === highlightValue);
           if (deal) {
@@ -443,6 +450,8 @@ export default function Deals() {
             break;
           }
         }
+        
+        console.log('🔍 Found deal:', foundDeal ? foundDeal.title : 'NOT FOUND');
         
         if (foundDeal) {
           // Set search to deal title (not ID) for better UX
@@ -453,11 +462,14 @@ export default function Deals() {
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('highlight');
           setSearchParams(newParams, { replace: true });
-        } else if (Object.keys(deals).length > 0) {
+        } else if (Object.values(deals).flat().length > 0) {
           // Deals are loaded but deal not found - remove param to avoid infinite loop
+          console.log('⚠️ Deal not found in loaded deals, removing highlight param');
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('highlight');
           setSearchParams(newParams, { replace: true });
+        } else {
+          console.log('⏳ Deals not loaded yet, waiting...');
         }
         // If deals not loaded yet, keep the param and wait for next render
       } else {
