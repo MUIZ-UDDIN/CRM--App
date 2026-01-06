@@ -3846,9 +3846,7 @@ export default function Settings() {
 
       {activeTab === 'custom_fields' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
           <CustomField />
-          </div>
         </div>
       )}
 
