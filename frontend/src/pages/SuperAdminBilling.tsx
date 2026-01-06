@@ -59,6 +59,9 @@ export default function SuperAdminBilling() {
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [selectedCompanyInvoices, setSelectedCompanyInvoices] = useState<any[]>([]);
   const [invoiceLoading, setInvoiceLoading] = useState(false);
+  const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
+  const [invoiceAmount, setInvoiceAmount] = useState('');
+  const [sendingInvoice, setSendingInvoice] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -173,6 +176,42 @@ export default function SuperAdminBilling() {
       }
     } finally {
       setInvoiceLoading(false);
+    }
+  };
+
+  const createInvoice = async () => {
+    if (!selectedSubscription || !invoiceAmount) {
+      toast.error('Please enter an amount');
+      return;
+    }
+
+    try {
+      await apiClient.post(`/billing/companies/${selectedSubscription.company_id}/invoices`, {
+        amount: parseFloat(invoiceAmount),
+        description: `Monthly subscription - ${selectedSubscription.plan_name}`,
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() // 30 days from now
+      });
+      toast.success('Invoice created successfully');
+      setShowCreateInvoiceModal(false);
+      setInvoiceAmount('');
+      // Refresh invoices
+      fetchCompanyInvoices(selectedSubscription.company_id);
+    } catch (error: any) {
+      handleApiError(error);
+    }
+  };
+
+  const sendInvoiceEmail = async (invoiceId: string, companyEmail: string) => {
+    setSendingInvoice(true);
+    try {
+      await apiClient.post(`/billing/invoices/${invoiceId}/send`, {
+        email: companyEmail
+      });
+      toast.success('Invoice sent successfully');
+    } catch (error: any) {
+      handleApiError(error);
+    } finally {
+      setSendingInvoice(false);
     }
   };
 
@@ -367,7 +406,7 @@ export default function SuperAdminBilling() {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{sub.user_count}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">${sub.total_amount.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">${sub.monthly_price.toFixed(2)}</td>
                   <td className="px-6 py-4 text-sm text-gray-900 capitalize">{sub.billing_cycle}</td>
                   <td className="px-6 py-4">
                     {sub.card_last_4 ? (
@@ -531,6 +570,19 @@ export default function SuperAdminBilling() {
               </button>
             </div>
             
+            <div className="mb-4 flex justify-end">
+              <button
+                onClick={() => {
+                  setShowCreateInvoiceModal(true);
+                  setInvoiceAmount(selectedSubscription.monthly_price.toString());
+                }}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Create Invoice
+              </button>
+            </div>
+
             {invoiceLoading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -565,7 +617,7 @@ export default function SuperAdminBilling() {
                           {new Date(invoice.created_at || invoice.due_date).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          ${(invoice.amount || 0).toFixed(2)}
+                          ${(invoice.amount || selectedSubscription.monthly_price).toFixed(2)}
                         </td>
                         <td className="px-4 py-3">
                           <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -577,18 +629,27 @@ export default function SuperAdminBilling() {
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          {invoice.invoice_pdf ? (
-                            <a
-                              href={invoice.invoice_pdf}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                          <div className="flex gap-2">
+                            {invoice.invoice_pdf ? (
+                              <a
+                                href={invoice.invoice_pdf}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                Download PDF
+                              </a>
+                            ) : (
+                              <span className="text-gray-400 text-sm">No PDF</span>
+                            )}
+                            <button
+                              onClick={() => sendInvoiceEmail(invoice.id, selectedSubscription.company_name)}
+                              disabled={sendingInvoice}
+                              className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50"
                             >
-                              Download PDF
-                            </a>
-                          ) : (
-                            <span className="text-gray-400 text-sm">No PDF</span>
-                          )}
+                              {sendingInvoice ? 'Sending...' : 'Send Email'}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -607,6 +668,71 @@ export default function SuperAdminBilling() {
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Invoice Modal */}
+      {showCreateInvoiceModal && selectedSubscription && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Create Invoice</h3>
+              <button
+                onClick={() => {
+                  setShowCreateInvoiceModal(false);
+                  setInvoiceAmount('');
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircleIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
+                <p className="text-gray-900">{selectedSubscription.company_name}</p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                <input
+                  type="number"
+                  value={invoiceAmount}
+                  onChange={(e) => setInvoiceAmount(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter amount"
+                  step="0.01"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Current monthly price: ${selectedSubscription.monthly_price.toFixed(2)}
+                </p>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <p className="text-sm text-gray-600">Monthly subscription - {selectedSubscription.plan_name}</p>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={createInvoice}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Create Invoice
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateInvoiceModal(false);
+                  setInvoiceAmount('');
+                }}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+              >
+                Cancel
               </button>
             </div>
           </div>

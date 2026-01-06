@@ -797,11 +797,9 @@ export default function SuperAdminDashboard() {
 
             <div className="space-y-4">
               {/* Company Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Company Name</label>
-                  <p className="text-lg font-semibold text-gray-900">{selectedCompany.name}</p>
-                </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Company Name</label>
+                <p className="text-lg font-semibold text-gray-900">{selectedCompany.name}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
