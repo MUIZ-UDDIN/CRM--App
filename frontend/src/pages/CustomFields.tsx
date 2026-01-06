@@ -269,7 +269,7 @@ export default function CustomFields() {
       </div>
 
       {/* Filter */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 py-6">
+      <div className="lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:py-6">
         <div className="mb-6 flex gap-4">
         <select
           value={filterEntity}
@@ -298,7 +298,7 @@ export default function CustomFields() {
       </div>
 
       {/* Fields List */}
-      <div className="px-4 sm:px-6 lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:px-8 pb-6">
+      <div className="lg:max-w-7xl xl:max-w-8xl 2xl:max-w-9xl 3xl:max-w-10xl lg:mx-auto lg:pb-6">
       {loading ? (
         <div className="text-center py-12">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
