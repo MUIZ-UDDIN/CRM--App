@@ -229,8 +229,6 @@ export default function Deals() {
         // For Super Admin: Fetch stages from ALL pipelines and MERGE by name
         // For other roles: Fetch stages from default pipeline only
         if (isSuperAdmin()) {
-          console.log('🔍 Super Admin: Fetching stages from ALL pipelines and merging by name');
-          
           // Fetch companies for filter dropdown
           try {
             const companiesResponse = await fetch(`${API_BASE_URL}/api/platform/companies`, {

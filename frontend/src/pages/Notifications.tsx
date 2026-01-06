@@ -111,7 +111,6 @@ export default function Notifications() {
     if (text.includes('contact')) return 'contact';
     if (text.includes('workflow')) return 'workflow';
     if (text.includes('file') || text.includes('folder')) return 'file';
-    if (text.includes('ticket') || text.includes('support')) return 'support';
     if (text.includes('quote')) return 'quote';
     return 'other';
   };
@@ -364,7 +363,6 @@ export default function Notifications() {
     { value: 'contact', label: 'Contacts', count: notifications.filter(n => getNotificationCategory(n) === 'contact').length },
     { value: 'workflow', label: 'Workflows', count: notifications.filter(n => getNotificationCategory(n) === 'workflow').length },
     { value: 'file', label: 'Files', count: notifications.filter(n => getNotificationCategory(n) === 'file').length },
-    { value: 'support', label: 'Support', count: notifications.filter(n => getNotificationCategory(n) === 'support').length },
     { value: 'quote', label: 'Quotes', count: notifications.filter(n => getNotificationCategory(n) === 'quote').length }
   ];
 
