@@ -7,6 +7,7 @@ import useSubscription from '../hooks/useSubscription';
 import * as twilioService from '../services/twilioService';
 import * as emailService from '../services/emailService';
 import apiClient from '../services/apiClient';
+import CustomField from './CustomFields'
 import {
   UserGroupIcon,
   BuildingOfficeIcon,
@@ -3850,22 +3851,8 @@ export default function Settings() {
               <h2 className="text-2xl font-bold text-gray-900">Custom Fields</h2>
               <p className="text-gray-600 mt-1">Manage custom fields for contacts, deals, and companies</p>
             </div>
-            <button
-              onClick={() => navigate('/settings/custom-fields')}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-            >
-              <AdjustmentsHorizontalIcon className="w-5 h-5" />
-              Manage Custom Fields
-            </button>
           </div>
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-sm text-blue-900">
-                Custom fields allow you to add additional data fields to your contacts, deals, and companies. 
-                Click "Manage Custom Fields" to create and configure custom fields for your organization.
-              </p>
-            </div>
-          </div>
+          <CustomField />
         </div>
       )}
 
