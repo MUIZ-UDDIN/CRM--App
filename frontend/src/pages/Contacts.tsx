@@ -226,23 +226,31 @@ export default function Contacts() {
     if (highlightValue) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
-        // Wait for contacts to load, then find and open the specific contact
-        setTimeout(() => {
-          const foundContact = contacts.find(c => c.id === highlightValue);
-          if (foundContact) {
-            setSearchQuery(`${foundContact.first_name} ${foundContact.last_name}`);
-            handleView(foundContact);
-          }
-        }, 500);
+        const foundContact = contacts.find(c => c.id === highlightValue);
+        if (foundContact) {
+          setSearchQuery(`${foundContact.first_name} ${foundContact.last_name}`);
+          handleView(foundContact);
+          
+          // Remove highlight param from URL after successfully opening the contact
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        } else if (contacts.length > 0) {
+          // Contacts are loaded but contact not found - remove param to avoid infinite loop
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        }
+        // If contacts not loaded yet, keep the param and wait for next render
       } else {
         // If not a UUID, use it as search query (it's a name)
         setSearchQuery(highlightValue);
+        
+        // Remove highlight param from URL after setting search
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('highlight');
+        setSearchParams(newParams, { replace: true });
       }
-      
-      // Remove highlight param from URL after processing
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('highlight');
-      setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, contacts]); // Run when searchParams or contacts change
 

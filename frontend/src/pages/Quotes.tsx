@@ -106,23 +106,31 @@ export default function Quotes() {
     if (highlightValue) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
-        // Wait for quotes to load, then find and open the specific quote
-        setTimeout(() => {
-          const foundQuote = quotes.find(q => q.id === highlightValue);
-          if (foundQuote) {
-            setSearchQuery(foundQuote.title);
-            handleView(foundQuote);
-          }
-        }, 500);
+        const foundQuote = quotes.find(q => q.id === highlightValue);
+        if (foundQuote) {
+          setSearchQuery(foundQuote.title);
+          handleView(foundQuote);
+          
+          // Remove highlight param from URL after successfully opening the quote
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        } else if (quotes.length > 0) {
+          // Quotes are loaded but quote not found - remove param to avoid infinite loop
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        }
+        // If quotes not loaded yet, keep the param and wait for next render
       } else {
         // If not a UUID, use it as search query (it's a name)
         setSearchQuery(highlightValue);
+        
+        // Remove highlight param from URL after setting search
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('highlight');
+        setSearchParams(newParams, { replace: true });
       }
-      
-      // Remove highlight param from URL after processing
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('highlight');
-      setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, quotes]); // Run when searchParams or quotes change
 

@@ -103,23 +103,31 @@ export default function Activities() {
     if (highlightValue) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
-        // Wait for activities to load, then find and open the specific activity
-        setTimeout(() => {
-          const foundActivity = activities.find(a => a.id === highlightValue);
-          if (foundActivity) {
-            setSearchQuery(foundActivity.subject);
-            handleView(foundActivity);
-          }
-        }, 500);
+        const foundActivity = activities.find(a => a.id === highlightValue);
+        if (foundActivity) {
+          setSearchQuery(foundActivity.subject);
+          handleView(foundActivity);
+          
+          // Remove highlight param from URL after successfully opening the activity
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        } else if (activities.length > 0) {
+          // Activities are loaded but activity not found - remove param to avoid infinite loop
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        }
+        // If activities not loaded yet, keep the param and wait for next render
       } else {
         // If not a UUID, use it as search query (it's a name)
         setSearchQuery(highlightValue);
+        
+        // Remove highlight param from URL after setting search
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('highlight');
+        setSearchParams(newParams, { replace: true });
       }
-      
-      // Remove highlight param from URL after processing
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('highlight');
-      setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, activities]); // Run when searchParams or activities change
 

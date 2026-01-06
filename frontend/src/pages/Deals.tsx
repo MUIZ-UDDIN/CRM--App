@@ -434,33 +434,41 @@ export default function Deals() {
       // If it's a UUID, try to find and open the deal detail modal
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
-        // Wait for deals to load, then find and open the specific deal
-        setTimeout(() => {
-          // Search through all deals in all stages
-          let foundDeal: Deal | undefined = undefined;
-          for (const stageDeals of Object.values(deals)) {
-            const deal = stageDeals.find(d => d.id === highlightValue);
-            if (deal) {
-              foundDeal = deal;
-              break;
-            }
+        // Search through all deals in all stages
+        let foundDeal: Deal | undefined = undefined;
+        for (const stageDeals of Object.values(deals)) {
+          const deal = stageDeals.find(d => d.id === highlightValue);
+          if (deal) {
+            foundDeal = deal;
+            break;
           }
+        }
+        
+        if (foundDeal) {
+          // Set search to deal title (not ID) for better UX
+          setSearchQuery(foundDeal.title);
+          handleView(foundDeal);
           
-          if (foundDeal) {
-            // Set search to deal title (not ID) for better UX
-            setSearchQuery(foundDeal.title);
-            handleView(foundDeal);
-          }
-        }, 500); // Small delay to ensure deals are loaded
+          // Remove highlight param from URL after successfully opening the deal
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        } else if (Object.keys(deals).length > 0) {
+          // Deals are loaded but deal not found - remove param to avoid infinite loop
+          const newParams = new URLSearchParams(searchParams);
+          newParams.delete('highlight');
+          setSearchParams(newParams, { replace: true });
+        }
+        // If deals not loaded yet, keep the param and wait for next render
       } else {
         // If not a UUID, use it as search query (it's a name)
         setSearchQuery(highlightValue);
+        
+        // Remove highlight param from URL after setting search
+        const newParams = new URLSearchParams(searchParams);
+        newParams.delete('highlight');
+        setSearchParams(newParams, { replace: true });
       }
-      
-      // Remove highlight param from URL after processing
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('highlight');
-      setSearchParams(newParams, { replace: true });
     }
   }, [searchParams, deals]); // Run when searchParams or deals change
 
