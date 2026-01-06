@@ -1235,7 +1235,7 @@ export default function Deals() {
                     const query = searchQuery.toLowerCase().trim();
                     const matchesSearch = 
                       deal.title?.toLowerCase().includes(query) ||
-                      deal.contact_name?.toLowerCase().includes(query) ||
+                      deal.contact?.toLowerCase().includes(query) ||
                       deal.owner_name?.toLowerCase().includes(query) ||
                       deal.status?.toLowerCase().includes(query) ||
                       (deal.value && deal.value.toString().includes(query));
