@@ -99,16 +99,16 @@ export default function Activities() {
       setSearchParams(newParams, { replace: true });
     }
     
-    // If highlight parameter exists, find and open the activity
+    // If highlight parameter exists, filter to show that specific activity
     if (highlightValue) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
         const foundActivity = activities.find(a => a.id === highlightValue);
         if (foundActivity) {
+          // Set search to activity subject to filter and highlight it (don't open view modal)
           setSearchQuery(foundActivity.subject);
-          handleView(foundActivity);
           
-          // Remove highlight param from URL after successfully opening the activity
+          // Remove highlight param from URL after successfully setting search
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('highlight');
           setSearchParams(newParams, { replace: true });

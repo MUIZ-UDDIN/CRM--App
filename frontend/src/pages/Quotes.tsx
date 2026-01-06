@@ -102,16 +102,16 @@ export default function Quotes() {
       setSearchParams(newParams, { replace: true });
     }
     
-    // If highlight parameter exists, find and open the quote
+    // If highlight parameter exists, filter to show that specific quote
     if (highlightValue) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
         const foundQuote = quotes.find(q => q.id === highlightValue);
         if (foundQuote) {
+          // Set search to quote title to filter and highlight it (don't open view modal)
           setSearchQuery(foundQuote.title);
-          handleView(foundQuote);
           
-          // Remove highlight param from URL after successfully opening the quote
+          // Remove highlight param from URL after successfully setting search
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('highlight');
           setSearchParams(newParams, { replace: true });

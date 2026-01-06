@@ -429,20 +429,13 @@ export default function Deals() {
       setSearchParams(newParams, { replace: true });
     }
     
-    // If highlight parameter exists, find and open the deal
+    // If highlight parameter exists, filter to show that specific deal
     if (highlightValue) {
-      console.log('🔍 Highlight value found:', highlightValue);
-      console.log('🔍 Deals loaded:', Object.keys(deals).length, 'stages');
-      console.log('🔍 Total deals:', Object.values(deals).flat().length);
-      
-      // If it's a UUID, try to find and open the deal detail modal
+      // If it's a UUID, find the deal and set search to its title
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
         // Search through all deals in all stages
         let foundDeal: Deal | undefined = undefined;
-        const allDeals = Object.values(deals).flat();
-        console.log('🔍 All deal IDs:', allDeals.map(d => d.id));
-        
         for (const stageDeals of Object.values(deals)) {
           const deal = stageDeals.find(d => d.id === highlightValue);
           if (deal) {
@@ -451,25 +444,19 @@ export default function Deals() {
           }
         }
         
-        console.log('🔍 Found deal:', foundDeal ? foundDeal.title : 'NOT FOUND');
-        
         if (foundDeal) {
-          // Set search to deal title (not ID) for better UX
+          // Set search to deal title to filter and highlight it (don't open view modal)
           setSearchQuery(foundDeal.title);
-          handleView(foundDeal);
           
-          // Remove highlight param from URL after successfully opening the deal
+          // Remove highlight param from URL after successfully setting search
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('highlight');
           setSearchParams(newParams, { replace: true });
         } else if (Object.values(deals).flat().length > 0) {
           // Deals are loaded but deal not found - remove param to avoid infinite loop
-          console.log('⚠️ Deal not found in loaded deals, removing highlight param');
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('highlight');
           setSearchParams(newParams, { replace: true });
-        } else {
-          console.log('⏳ Deals not loaded yet, waiting...');
         }
         // If deals not loaded yet, keep the param and wait for next render
       } else {
@@ -1237,10 +1224,22 @@ export default function Deals() {
                   );
                 };
                 
-                // Filter deals by company for Super Admin - used for both count and total value
+                // Filter deals by company AND search query - used for both count and total value
                 const filteredStageDeals = (deals[stage.id] || []).filter(deal => {
+                  // Company filter for Super Admin
                   if (filterCompany !== 'all' && deal.company_id !== filterCompany) {
                     return false;
+                  }
+                  // Search query filter
+                  if (searchQuery.trim()) {
+                    const query = searchQuery.toLowerCase().trim();
+                    const matchesSearch = 
+                      deal.title?.toLowerCase().includes(query) ||
+                      deal.contact_name?.toLowerCase().includes(query) ||
+                      deal.owner_name?.toLowerCase().includes(query) ||
+                      deal.status?.toLowerCase().includes(query) ||
+                      (deal.value && deal.value.toString().includes(query));
+                    if (!matchesSearch) return false;
                   }
                   return true;
                 });

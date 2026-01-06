@@ -222,16 +222,16 @@ export default function Contacts() {
       setSearchParams(newParams, { replace: true });
     }
     
-    // If highlight parameter exists, find and open the contact
+    // If highlight parameter exists, filter to show that specific contact
     if (highlightValue) {
       const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
       if (uuidRegex.test(highlightValue)) {
         const foundContact = contacts.find(c => c.id === highlightValue);
         if (foundContact) {
+          // Set search to contact name to filter and highlight it (don't open view modal)
           setSearchQuery(`${foundContact.first_name} ${foundContact.last_name}`);
-          handleView(foundContact);
           
-          // Remove highlight param from URL after successfully opening the contact
+          // Remove highlight param from URL after successfully setting search
           const newParams = new URLSearchParams(searchParams);
           newParams.delete('highlight');
           setSearchParams(newParams, { replace: true });
