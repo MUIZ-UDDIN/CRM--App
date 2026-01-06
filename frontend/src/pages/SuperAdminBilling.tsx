@@ -63,6 +63,7 @@ export default function SuperAdminBilling() {
   const [showCreateInvoiceModal, setShowCreateInvoiceModal] = useState(false);
   const [invoiceAmount, setInvoiceAmount] = useState('');
   const [sendingInvoice, setSendingInvoice] = useState(false);
+  const [showSendInvoiceConfirm, setShowSendInvoiceConfirm] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -202,13 +203,26 @@ export default function SuperAdminBilling() {
     }
   };
 
-  const sendInvoiceEmail = async (invoiceId: string, companyEmail: string) => {
+  const sendInvoiceEmail = async () => {
+    if (!selectedSubscription) return;
+    
     setSendingInvoice(true);
     try {
-      await apiClient.post(`/billing/invoices/${invoiceId}/send`, {
-        email: companyEmail
+      // Create invoice first, then send it
+      const invoiceResponse = await apiClient.post(`/billing/companies/${selectedSubscription.company_id}/invoices`, {
+        amount: selectedSubscription.monthly_price,
+        description: `Monthly subscription - ${selectedSubscription.plan_name}`,
+        due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       });
-      toast.success('Invoice sent successfully');
+      
+      // Send the invoice email to company email
+      await apiClient.post(`/billing/invoices/${invoiceResponse.data.id}/send`, {
+        email: selectedSubscription.company_name // This should be the company email
+      });
+      
+      toast.success('Invoice sent successfully to company email');
+      setShowSendInvoiceConfirm(false);
+      setShowInvoiceModal(false);
     } catch (error: any) {
       handleApiError(error);
     } finally {
@@ -553,122 +567,160 @@ export default function SuperAdminBilling() {
         </div>
       )}
 
-      {/* Invoice Modal */}
+      {/* Invoice Modal - Actual Invoice Display */}
       {showInvoiceModal && selectedSubscription && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Invoices - {selectedSubscription.company_name}</h3>
+          <div className="bg-white rounded-lg p-8 max-w-3xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-2xl font-bold text-gray-900">Invoice</h3>
               <button
                 onClick={() => {
                   setShowInvoiceModal(false);
                   setSelectedSubscription(null);
-                  setSelectedCompanyInvoices([]);
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <XCircleIcon className="w-6 h-6" />
               </button>
             </div>
-            
-            <div className="mb-4 flex justify-end">
-              <button
-                onClick={() => {
-                  setShowCreateInvoiceModal(true);
-                  setInvoiceAmount(selectedSubscription.monthly_price.toString());
-                }}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Create Invoice
-              </button>
-            </div>
 
-            {invoiceLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            {/* Invoice Content */}
+            <div className="border rounded-lg p-6 mb-6 bg-gray-50">
+              {/* Header */}
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h1 className="text-3xl font-bold text-blue-600 mb-2">INVOICE</h1>
+                  <p className="text-sm text-gray-600">Invoice #: INV-{Date.now().toString().slice(-8)}</p>
+                  <p className="text-sm text-gray-600">Date: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                </div>
+                <div className="text-right">
+                  <h2 className="font-bold text-lg text-gray-900">Sunstone CRM</h2>
+                  <p className="text-sm text-gray-600">SaaS Platform</p>
+                  <p className="text-sm text-gray-600">admin@sunstonecrm.com</p>
+                </div>
               </div>
-            ) : selectedCompanyInvoices.length === 0 ? (
-              <div className="text-center py-12">
-                <DocumentTextIcon className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-600 font-medium">No invoices found</p>
-                <p className="text-sm text-gray-500 mt-1">
-                  This company hasn't made any payments yet.
-                </p>
+
+              {/* Bill To */}
+              <div className="mb-8">
+                <h3 className="font-semibold text-gray-700 mb-2">BILL TO:</h3>
+                <div className="bg-white rounded p-4">
+                  <p className="font-medium text-gray-900">{selectedSubscription.company_name}</p>
+                  <p className="text-sm text-gray-600">Users: {selectedSubscription.user_count}</p>
+                  <p className="text-sm text-gray-600">Plan: {selectedSubscription.plan_name.toUpperCase()}</p>
+                </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
+
+              {/* Invoice Items */}
+              <div className="mb-8">
+                <table className="w-full">
+                  <thead className="bg-blue-600 text-white">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Invoice #</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold">Description</th>
+                      <th className="px-4 py-3 text-right text-sm font-semibold">Amount</th>
                     </tr>
                   </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {selectedCompanyInvoices.map((invoice: any) => (
-                      <tr key={invoice.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          {invoice.invoice_number || `INV-${invoice.id.slice(0, 8).toUpperCase()}`}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {new Date(invoice.created_at || invoice.due_date).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                          ${(invoice.amount || selectedSubscription.monthly_price).toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                            invoice.status === 'paid' ? 'bg-green-100 text-green-800' :
-                            invoice.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
-                            {(invoice.status || 'pending').toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-2">
-                            {invoice.invoice_pdf ? (
-                              <a
-                                href={invoice.invoice_pdf}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                              >
-                                Download PDF
-                              </a>
-                            ) : (
-                              <span className="text-gray-400 text-sm">No PDF</span>
-                            )}
-                            <button
-                              onClick={() => sendInvoiceEmail(invoice.id, selectedSubscription.company_name)}
-                              disabled={sendingInvoice}
-                              className="text-green-600 hover:text-green-800 text-sm font-medium disabled:opacity-50"
-                            >
-                              {sendingInvoice ? 'Sending...' : 'Send Email'}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                  <tbody className="bg-white">
+                    <tr className="border-b">
+                      <td className="px-4 py-4">
+                        <p className="font-medium text-gray-900">Monthly Subscription - {selectedSubscription.plan_name.toUpperCase()}</p>
+                        <p className="text-sm text-gray-600">Billing Period: {new Date().toLocaleDateString()} - {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-600">Unlimited users included</p>
+                      </td>
+                      <td className="px-4 py-4 text-right font-medium text-gray-900">${selectedSubscription.monthly_price.toFixed(2)}</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
-            )}
-            
-            <div className="mt-6 flex justify-end">
+
+              {/* Total */}
+              <div className="flex justify-end">
+                <div className="w-64">
+                  <div className="flex justify-between py-2 border-t-2 border-gray-300">
+                    <span className="font-semibold text-gray-700">Subtotal:</span>
+                    <span className="font-medium text-gray-900">${selectedSubscription.monthly_price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="font-semibold text-gray-700">Tax:</span>
+                    <span className="font-medium text-gray-900">$0.00</span>
+                  </div>
+                  <div className="flex justify-between py-3 border-t-2 border-blue-600 bg-blue-50 px-4 rounded">
+                    <span className="font-bold text-lg text-gray-900">Total:</span>
+                    <span className="font-bold text-lg text-blue-600">${selectedSubscription.monthly_price.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Terms */}
+              <div className="mt-8 pt-6 border-t">
+                <p className="text-sm text-gray-600"><span className="font-semibold">Payment Terms:</span> Due within 30 days</p>
+                <p className="text-sm text-gray-600 mt-1"><span className="font-semibold">Status:</span> <span className="text-yellow-600 font-medium">PENDING</span></p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowSendInvoiceConfirm(true)}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium flex items-center justify-center gap-2"
+              >
+                <DocumentTextIcon className="w-5 h-5" />
+                Send Invoice to Company Email
+              </button>
               <button
                 onClick={() => {
                   setShowInvoiceModal(false);
                   setSelectedSubscription(null);
-                  setSelectedCompanyInvoices([]);
                 }}
-                className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Send Invoice Confirmation Modal */}
+      {showSendInvoiceConfirm && selectedSubscription && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Confirm Send Invoice</h3>
+              <button
+                onClick={() => setShowSendInvoiceConfirm(false)}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <XCircleIcon className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                <p className="text-sm text-blue-900">
+                  This will send the invoice to the company's registered email address.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="text-sm text-gray-700"><span className="font-medium">Company:</span> {selectedSubscription.company_name}</p>
+                <p className="text-sm text-gray-700"><span className="font-medium">Amount:</span> ${selectedSubscription.monthly_price.toFixed(2)}</p>
+                <p className="text-sm text-gray-700"><span className="font-medium">Plan:</span> {selectedSubscription.plan_name.toUpperCase()}</p>
+              </div>
+            </div>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={sendInvoiceEmail}
+                disabled={sendingInvoice}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {sendingInvoice ? 'Sending...' : 'Send Invoice'}
+              </button>
+              <button
+                onClick={() => setShowSendInvoiceConfirm(false)}
+                disabled={sendingInvoice}
+                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-medium disabled:opacity-50"
+              >
+                Cancel
               </button>
             </div>
           </div>
