@@ -606,7 +606,7 @@ export default function SuperAdminBilling() {
                 <div className="bg-white rounded p-4">
                   <p className="font-medium text-gray-900">{selectedSubscription.company_name}</p>
                   <p className="text-sm text-gray-600">Users: {selectedSubscription.user_count}</p>
-                  <p className="text-sm text-gray-600">Plan: {selectedSubscription.plan_name.toUpperCase()}</p>
+                  <p className="text-sm text-gray-600">Current Plan: {selectedSubscription.plan_name.toUpperCase()}</p>
                 </div>
               </div>
 
@@ -622,7 +622,7 @@ export default function SuperAdminBilling() {
                   <tbody className="bg-white">
                     <tr className="border-b">
                       <td className="px-4 py-4">
-                        <p className="font-medium text-gray-900">Monthly Subscription - {selectedSubscription.plan_name.toUpperCase()}</p>
+                        <p className="font-medium text-gray-900">Monthly Subscription</p>
                         <p className="text-sm text-gray-600">Billing Period: {new Date().toLocaleDateString()} - {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString()}</p>
                         <p className="text-sm text-gray-600">Unlimited users included</p>
                       </td>
