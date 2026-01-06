@@ -271,13 +271,18 @@ export default function Notifications() {
   };
 
   const handleNotificationClick = (notification: Notification) => {
+    console.log('🔔 Notification clicked:', notification);
+    console.log('🔔 Notification link:', notification.link);
     const path = getNavigationPath(notification);
+    console.log('🔔 Navigation path:', path);
     if (path) {
       // Mark as read when clicking
       if (!notification.read) {
         handleMarkAsRead(notification.id);
       }
       navigate(path);
+    } else {
+      console.warn('⚠️ No navigation path found for notification');
     }
   };
 
