@@ -7,7 +7,8 @@ import {
   ClockIcon,
   PencilIcon,
   BanknotesIcon,
-  DocumentTextIcon
+  DocumentTextIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { usePermissions } from '../hooks/usePermissions';
