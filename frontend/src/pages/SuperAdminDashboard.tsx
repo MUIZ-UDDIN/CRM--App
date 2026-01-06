@@ -784,7 +784,7 @@ export default function SuperAdminDashboard() {
       {/* Company Details Modal */}
       {showDetailsModal && selectedCompany && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
+          <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900">Company Details</h2>
               <button
@@ -802,7 +802,7 @@ export default function SuperAdminDashboard() {
                 <p className="text-lg font-semibold text-gray-900">{selectedCompany.name}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Plan</label>
                   <p className="text-lg">{getPlanBadge(selectedCompany)}</p>
@@ -813,7 +813,7 @@ export default function SuperAdminDashboard() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-6">
                 <div>
                   <label className="text-sm font-medium text-gray-500">Total Users</label>
                   <p className="text-lg font-semibold text-gray-900">{selectedCompany.user_count}</p>
