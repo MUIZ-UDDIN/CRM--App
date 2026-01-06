@@ -3847,12 +3847,8 @@ export default function Settings() {
       {activeTab === 'custom_fields' && (
         <div className="space-y-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Custom Fields</h2>
-              <p className="text-gray-600 mt-1">Manage custom fields for contacts, deals, and companies</p>
-            </div>
-          </div>
           <CustomField />
+          </div>
         </div>
       )}
 
